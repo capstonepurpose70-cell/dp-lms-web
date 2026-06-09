@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Attendance;
+use App\Models\User;
+use App\Models\TeacherSubject;
+use Illuminate\Http\Request;
+
+class AttendanceController extends Controller
+{
+    // ESP32 calls this — no auth needed
+    public function store(Request $request)
+    {
+        // Device authentication — only a device with the matching X-Device-Key may
+        // push attendance. Enforced ONLY when a key is configured, so local LAN
+        // testing without a key still works (set ATTENDANCE_DEVICE_KEY in .env to enable).
+        $deviceKey = config('attendance.device_key');
+        if (!empty($deviceKey)
+            && !hash_equals((string) $deviceKey, (string) $request->header('X-Device-Key', ''))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized device.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'student_id'  => 'required|string',
+            'student_name'=> 'nullable|string',
+            'section_id'  => 'nullable|integer',
+        ]);
+
+        // LRN removed — match the student by EMAIL or by account ID.
+        $key = $validated['student_id'];
+        $user = User::where('role', 'student')
+                    ->where(function ($q) use ($key) {
+                        $q->where('email', $key)
+                          ->orWhere('id', $key);
+                    })
+                    ->first();
+
+        $attendance = Attendance::create([
+            'user_id'      => $user?->id,
+            'student_id'   => $validated['student_id'],
+            'student_name' => $validated['student_name'] ?? $user?->name,
+            'section_id'   => $validated['section_id'] ?? $user?->section_id,
+            'status'       => 'present',
+            'source'       => 'iot',
+            'attended_at'  => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Attendance recorded!',
+            'student' => $user?->name ?? $validated['student_id'],
+        ], 200);
+    }
+
+    // Teacher views attendance of their students only
+    public function teacherIndex()
+    {
+        $teacher = auth()->user();
+
+        $sectionIds = TeacherSubject::where('user_id', $teacher->id)
+            ->pluck('section_id')
+            ->unique();
+
+    $attendances = Attendance::with('user')
+    ->orderBy('attended_at', 'desc')
+    ->paginate(30);
+
+        return view('teacher.attendance.index', compact('attendances'));
+    }
+
+    // API — returns JSON list
+    public function index()
+    {
+        return response()->json(
+            Attendance::with('user')
+                ->orderBy('attended_at', 'desc')
+                ->take(50)
+                ->get()
+        );
+    }
+}
