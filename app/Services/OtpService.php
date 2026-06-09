@@ -37,7 +37,15 @@ class OtpService
 
         RateLimiter::hit($key, 3600);
 
-        Mail::to($user->email)->send(new OtpMail($code, $user->name));
+        // Log the OTP so it can be read from server logs while email delivery is being set up
+        \Illuminate\Support\Facades\Log::info("OTP for {$user->email}: {$code}");
+
+        // Try to email it, but don't crash if mail is unavailable (e.g. SMTP blocked on host)
+        try {
+            Mail::to($user->email)->send(new OtpMail($code, $user->name));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('OTP email failed: ' . $e->getMessage());
+        }
     }
 
     public function verify(User $user, string $inputCode, string $purpose): bool

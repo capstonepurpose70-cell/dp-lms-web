@@ -204,10 +204,13 @@ class UserManagementController extends Controller
             );
  
             AuditLogService::log("Created teacher: {$teacher->name}", 'User Management');
- 
+
+            $tempPw = $assignmentService->lastTempPassword;
+
             return redirect()
                 ->route('admin.users.index', ['tab' => 'teachers'])
-                ->with('success', "Teacher account for {$teacher->name} created. Invite email sent to {$teacher->email}.");
+                ->with('success', "Teacher account for {$teacher->name} created. "
+                    . "Temporary password: {$tempPw}  —  ibigay ito sa teacher; papalitan nila ito sa unang pag-login.");
  
         } catch (\Exception $e) {
             return back()

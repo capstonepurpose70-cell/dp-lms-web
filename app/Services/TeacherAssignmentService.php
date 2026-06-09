@@ -15,12 +15,18 @@ use Illuminate\Support\Str;
 
 class TeacherAssignmentService
 {
+    // Naka-store dito ang plaintext temp password para maipakita sa admin
+    public ?string $lastTempPassword = null;
+
 public function createTeacherWithAssignments(array $data): User
 {
+    // Readable temporary password (ipapakita sa admin; papalitan ng teacher sa first login)
+    $tempPassword = \Illuminate\Support\Str::random(10);
+    $this->lastTempPassword = $tempPassword;
     $teacher = User::create([
         'name'           => $data['name'],
         'email'          => $data['email'],
-        'password'       => Hash::make(Str::random(32)),
+        'password'       => Hash::make($tempPassword),
         'role'           => 'teacher',
         'status'         => 'approved',
         'employee_id'    => $data['employee_id'] ?? null,
@@ -88,7 +94,17 @@ public function createTeacherWithAssignments(array $data): User
         'must_change_password' => true,
     ]);
 
-    Mail::to($teacher->email)->send(new TeacherInviteMail($teacher, $token));
+    // Subukang mag-send ng invite email, pero HUWAG mag-crash kung pumalya (hal. blocked SMTP sa host)
+    try {
+        // Try to send invite email, but DON'T crash if mail is unavailable (e.g. SMTP blocked on host)
+    try {
+        Mail::to($teacher->email)->send(new TeacherInviteMail($teacher, $token));
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Teacher invite email failed (using temp password instead): ' . $e->getMessage());
+    }
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Teacher invite email failed: ' . $e->getMessage());
+    }
 
     return $teacher->fresh();
 }
