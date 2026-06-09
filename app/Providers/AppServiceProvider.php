@@ -4,9 +4,10 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 use App\Models\EnrollmentRequest;
-use Illuminate\Support\Facades\URL;
+use App\Mail\Transport\BrevoTransport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,10 +18,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Force HTTPS sa production (Railway behind proxy)
-        if (config('app.env') === 'production') {
-            URL::forceScheme('https');
-        }
+        // Register the Brevo HTTP-API mail transport (MAIL_MAILER=brevo)
+        Mail::extend('brevo', function (array $config) {
+            return new BrevoTransport($config['key'] ?? env('BREVO_API_KEY', ''));
+        });
 
         // Auto-share pendingCount sa lahat ng faculty.* views
         View::composer('faculty.*', function ($view) {
