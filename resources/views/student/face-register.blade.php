@@ -6,26 +6,25 @@
 
     <h1 class="text-xl font-bold text-gray-800 mb-1">Face Registration</h1>
     <p class="text-sm text-gray-500 mb-6">
-        Ito ang gagamitin ng attendance camera para makilala ka. Mukha mo lang
-        (hanggang leeg) ang kukunan — awtomatikong naka-crop.
+        This will be used by the attendance camera to recognize you. Only your face
+        (up to the neck) is captured &mdash; automatically cropped.
     </p>
 
-    {{-- ── STATUS BANNERS ─────────────────────────────────────────── --}}
     @if ($blocked)
         <div class="rounded-xl border border-red-200 bg-red-50 p-4 mb-6">
             <p class="font-bold text-red-700 text-sm">⛔ Face registration blocked</p>
             <p class="text-sm text-red-600 mt-1">
-                Dahil sa paulit-ulit na paglabag (hindi wastong larawan), hindi ka na
-                makakapag-register ng mukha. Pumunta sa admin office para maayos ito.
+                Due to repeated violations (inappropriate images), you can no longer
+                register your face. Please visit the admin office to resolve this.
             </p>
         </div>
     @else
         @if ($warnings > 0)
             <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
                 <p class="text-sm text-orange-700">
-                    ⚠️ <b>Babala {{ $warnings }}/3:</b> May na-reject na hindi wastong larawan.
-                    Mukha mo lamang ang kunan — sa ikatlong babala, maba-block ang account mo
-                    sa face registration at maipapatawag sa opisina.
+                    ⚠️ <b>Warning {{ $warnings }}/3:</b> An inappropriate image was rejected.
+                    Capture your face only &mdash; on the third warning, your account will be
+                    blocked from face registration and you may be called to the office.
                 </p>
             </div>
         @endif
@@ -34,29 +33,38 @@
             <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 mb-6">
                 <p class="font-bold text-yellow-700 text-sm">🕒 Pending verification</p>
                 <p class="text-sm text-yellow-600 mt-1">
-                    Naipasa na ang {{ $registration->images_count }} larawan. Hinihintay ang
-                    pag-verify ng admin. Pwede kang kumuha ulit — papalitan nito ang nauna.
+                    {{ $registration->images_count }} images submitted. Waiting for admin
+                    verification. You may capture again &mdash; it will replace the previous set.
                 </p>
             </div>
         @elseif ($registration && $registration->status === 'approved')
             <div class="rounded-xl border border-green-200 bg-green-50 p-4 mb-6">
-                <p class="font-bold text-green-700 text-sm">✅ Verified na ang mukha mo!</p>
+                <p class="font-bold text-green-700 text-sm">✅ Your face is verified!</p>
                 <p class="text-sm text-green-600 mt-1">
-                    Makikilala ka na ng attendance camera. Kung gusto mong palitan
-                    (hal. bagong salamin/gupit), kumuha lang ulit sa ibaba.
+                    The attendance camera can now recognize you. If you want to update it
+                    (e.g. new haircut), just capture again below.
                 </p>
             </div>
         @elseif ($registration && $registration->status === 'rejected')
             <div class="rounded-xl border border-red-200 bg-red-50 p-4 mb-6">
                 <p class="font-bold text-red-700 text-sm">❌ Rejected</p>
                 <p class="text-sm text-red-600 mt-1">
-                    {{ $registration->reject_reason ?: 'Hindi malinaw o hindi wasto ang mga larawan.' }}
-                    — Kumuha ulit sa ibaba.
+                    {{ $registration->reject_reason ?: 'Images were unclear or invalid.' }}
+                    &mdash; Please capture again below.
                 </p>
             </div>
         @endif
 
-        {{-- ── CAMERA CARD ────────────────────────────────────────── --}}
+        <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 mb-5">
+            <p class="text-sm font-semibold text-blue-800 mb-1">Before you start:</p>
+            <ul class="text-sm text-blue-700 space-y-0.5" style="list-style:disc;padding-left:18px;">
+                <li><b>Remove your eyeglasses</b> (and hats / face masks).</li>
+                <li>Make sure your face is well-lit and clearly visible.</li>
+                <li>Only one person should be in front of the camera.</li>
+                <li>Look at the camera and slowly turn your head left / right / up.</li>
+            </ul>
+        </div>
+
         <div class="bg-white rounded-2xl border border-gray-100 p-5"
              style="box-shadow:0 2px 16px rgba(0,0,0,0.05);">
 
@@ -64,20 +72,18 @@
                  style="max-width:480px; aspect-ratio:4/3;">
                 <video id="cam" autoplay playsinline muted
                        class="w-full h-full object-cover" style="transform:scaleX(-1);"></video>
-                {{-- oval guide --}}
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div id="oval" style="width:55%;height:78%;border:3px dashed rgba(255,255,255,.8);
-                         border-radius:50%/60%;"></div>
+                    <div id="oval" style="width:55%;height:78%;border:3px dashed rgba(255,255,255,.85);
+                         border-radius:50%/60%; transition:border-color .2s;"></div>
                 </div>
                 <div id="camMsg"
                      class="absolute bottom-0 left-0 right-0 text-center text-white text-sm py-2"
-                     style="background:rgba(0,0,0,.55);">Naghahanda…</div>
+                     style="background:rgba(0,0,0,.55);">Preparing&hellip;</div>
             </div>
 
-            {{-- progress --}}
             <div class="mt-4">
                 <div class="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Progress</span><span id="countTxt">0 / 20</span>
+                    <span>Capture progress</span><span id="countTxt">0 / 20</span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-2.5">
                     <div id="bar" class="h-2.5 rounded-full"
@@ -85,17 +91,16 @@
                 </div>
             </div>
 
-            <div class="flex gap-3 mt-4">
-                <button id="startBtn"
-                    class="flex-1 py-2.5 rounded-xl text-white font-semibold text-sm"
-                    style="background:#2563eb;">🎥 Enable Camera</button>
-                <button id="retryBtn" class="hidden flex-1 py-2.5 rounded-xl font-semibold text-sm border border-gray-200 text-gray-600">
-                    🔄 Ulitin</button>
-            </div>
+            <button id="enableBtn"
+                class="hidden w-full mt-4 py-2.5 rounded-xl text-white font-semibold text-sm"
+                style="background:#2563eb;">🎥 Enable Camera</button>
+
+            <button id="retryBtn"
+                class="hidden w-full mt-3 py-2.5 rounded-xl font-semibold text-sm border border-gray-200 text-gray-600">
+                🔄 Try again</button>
 
             <p id="phase" class="text-center text-xs text-gray-400 mt-3">
-                Pindutin ang Start, tumingin sa camera, at bahagyang igalaw ang ulo
-                (kaliwa / kanan / taas) habang kumukuha.
+                Capturing starts automatically once a clear face is detected.
             </p>
         </div>
     @endif
@@ -108,110 +113,150 @@ const CSRF      = '{{ csrf_token() }}';
 const POST_URL  = '{{ route('student.face.store') }}';
 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 const TARGET    = 20;
+const GLASSES_EDGE_THRESHOLD = 26;
 
 const video   = document.getElementById('cam');
 const camMsg  = document.getElementById('camMsg');
+const oval    = document.getElementById('oval');
 const bar     = document.getElementById('bar');
 const countTx = document.getElementById('countTxt');
-const startBt = document.getElementById('startBtn');
+const enableBt= document.getElementById('enableBtn');
 const retryBt = document.getElementById('retryBtn');
 const phase   = document.getElementById('phase');
 
-let captures = [], running = false, modelReady = false, camReady = false;
+let captures = [], modelsReady = false, camReady = false, finished = false;
+let lastShot = 0;
 
-// Initial checks (walang permission request pa dito)
-if (!window.isSecureContext) {
-    camMsg.textContent = '❌ Kailangan ng HTTPS (o localhost) para gumana ang camera.';
-} else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    camMsg.textContent = '❌ Hindi supported ng browser na ito ang camera. Gumamit ng Chrome/Brave/Edge.';
-} else {
-    camMsg.textContent = 'Pindutin ang "Enable Camera" sa ibaba 👇';
+function setMsg(t, good) {
+    camMsg.textContent = t;
+    oval.style.borderColor = good ? 'rgba(34,197,94,.95)' : 'rgba(255,255,255,.85)';
 }
 
-async function enableCamera() {
-    camMsg.textContent = 'Hinihingi ang camera permission… pindutin ang ALLOW sa taas.';
+async function boot() {
+    if (!window.isSecureContext) {
+        setMsg('HTTPS (or localhost) is required for the camera.'); return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setMsg('This browser does not support the camera. Use Chrome / Brave / Edge.'); return;
+    }
+    setMsg('Loading face detector...');
+    try {
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        ]);
+        modelsReady = true;
+    } catch (e) {
+        setMsg('Could not load the face detector (internet issue). Refresh to retry.'); return;
+    }
+    startCamera();
+}
+
+async function startCamera() {
+    setMsg('Requesting camera... please tap ALLOW.');
     let stream;
     try {
         stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-            audio: false
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false
         });
     } catch (e1) {
-        // Fallback: pinaka-simpleng constraints (para sa mga maarteng camera)
         if (e1.name === 'OverconstrainedError' || e1.name === 'ConstraintNotSatisfiedError') {
             try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
             catch (e2) { return camFail(e2); }
-        } else {
-            return camFail(e1);
-        }
+        } else { return camFail(e1); }
     }
-
     video.srcObject = stream;
     camReady = true;
-    camMsg.textContent = 'Nilo-load ang face detector…';
-    try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        modelReady = true;
-        startBt.textContent = '📸 Start Capture';
-        camMsg.textContent = 'Handa na — pindutin ang Start Capture';
-    } catch (e) {
-        camMsg.textContent = '❌ Hindi ma-load ang face detector (internet issue). I-refresh at subukan ulit.';
-    }
+    enableBt.classList.add('hidden');
+    retryBt.classList.add('hidden');
+    video.onloadedmetadata = () => { loop(); };
 }
 
 function camFail(e) {
     camReady = false;
     if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-        camMsg.innerHTML = '🔒 Naka-BLOCK ang camera. I-click ang <b>lock/camera icon sa address bar</b> '
-            + '→ piliin ang <b>Allow</b> sa Camera → i-refresh ang page.';
+        camMsg.innerHTML = 'Camera is BLOCKED. Click the <b>lock / camera icon</b> in the address bar '
+            + 'then set Camera to <b>Allow</b>, then tap the button below.';
+        enableBt.classList.remove('hidden');
     } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
-        camMsg.textContent = '❌ Walang nakitang camera sa device na ito.';
+        setMsg('No camera found on this device.');
     } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
-        camMsg.textContent = '❌ Ginagamit ng ibang app ang camera (Zoom/Teams/OBS?). Isara ito at subukan ulit.';
+        camMsg.innerHTML = 'The camera is in use by another app, or blocked by Windows privacy. '
+            + 'Close other camera apps, allow desktop apps in Camera privacy settings, then tap below.';
+        enableBt.classList.remove('hidden');
     } else {
-        camMsg.textContent = '❌ Camera error: ' + (e.name || e.message || 'unknown') + ' — subukan ulit.';
+        setMsg('Camera error: ' + (e.name || e.message || 'unknown'));
+        enableBt.classList.remove('hidden');
     }
 }
 
-startBt.addEventListener('click', async () => {
-    if (running) return;
-    if (!camReady || !modelReady) { await enableCamera(); return; }
-    captures = []; running = true;
-    startBt.disabled = true; startBt.style.opacity = .5;
-    phase.textContent = 'Kumukuha… tumingin sa camera, bahagyang igalaw ang ulo.';
-    loop();
-});
-
+enableBt.addEventListener('click', () => { enableBt.classList.add('hidden'); startCamera(); });
 retryBt.addEventListener('click', () => location.reload());
 
 async function loop() {
-    if (!running) return;
-    const det = await faceapi.detectAllFaces(
-        video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
-    );
+    if (finished || !camReady || !modelsReady) return;
 
-    if (det.length === 1) {
-        const b = det[0].box;
-        if (b.width >= video.videoWidth * 0.16) {
-            grabFace(b);
-            camMsg.textContent = `📸 Nakuha: ${captures.length}/${TARGET}`;
-        } else {
-            camMsg.textContent = 'Lumapit pa nang konti…';
-        }
-    } else if (det.length === 0) {
-        camMsg.textContent = 'Walang mukhang nakikita…';
+    const res = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+        .withFaceLandmarks();
+
+    if (res.length === 0) {
+        setMsg('No face detected - center your face in the oval.');
+    } else if (res.length > 1) {
+        setMsg('Only one person should be in front of the camera.');
     } else {
-        camMsg.textContent = 'Isang tao lang dapat sa camera!';
+        const det = res[0];
+        const b   = det.detection.box;
+        if (b.width < video.videoWidth * 0.20) {
+            setMsg('Move a little closer.');
+        } else if (wearingGlasses(det.landmarks)) {
+            setMsg('Please remove your eyeglasses to continue.');
+        } else {
+            const now = Date.now();
+            if (now - lastShot > 300) { grabFace(b); lastShot = now; }
+            setMsg('Hold still - capturing ' + captures.length + '/' + TARGET, true);
+        }
     }
 
-    countTx.textContent = `${captures.length} / ${TARGET}`;
+    countTx.textContent = captures.length + ' / ' + TARGET;
     bar.style.width = (captures.length / TARGET * 100) + '%';
 
-    if (captures.length >= TARGET) { running = false; upload(); return; }
-    setTimeout(loop, 350);
+    if (captures.length >= TARGET) { finished = true; upload(); return; }
+    setTimeout(loop, 120);
 }
 
-/** Crop face only — up to the neck (box + margins), 250×250 jpeg */
+function wearingGlasses(landmarks) {
+    const pts = landmarks.positions;
+    const le  = pts[36], re = pts[45];
+    const top = Math.min(pts[37].y, pts[44].y);
+    const bot = Math.max(pts[41].y, pts[46].y);
+    const padY = (bot - top) * 1.1;
+
+    const sx = Math.max(0, le.x - 6);
+    const sy = Math.max(0, top - padY);
+    const sw = Math.min(video.videoWidth  - sx, (re.x - le.x) + 12);
+    const sh = Math.min(video.videoHeight - sy, (bot - top) + padY * 2);
+    if (sw < 10 || sh < 6) return false;
+
+    const W = 64, H = 24;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
+    const d = ctx.getImageData(0, 0, W, H).data;
+
+    const g = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+        g[i] = 0.299 * d[i*4] + 0.587 * d[i*4+1] + 0.114 * d[i*4+2];
+    }
+    let sum = 0, n = 0;
+    for (let y = 1; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+            sum += Math.abs(g[y*W + x] - g[(y-1)*W + x]); n++;
+        }
+    }
+    return (sum / n) > GLASSES_EDGE_THRESHOLD;
+}
+
 function grabFace(b) {
     const mx = b.width * 0.25, mTop = b.height * 0.35, mBot = b.height * 0.55;
     const sx = Math.max(0, b.x - mx),
@@ -224,32 +269,31 @@ function grabFace(b) {
 }
 
 async function upload() {
-    camMsg.textContent = '⬆️ Ina-upload…'; phase.textContent = 'Ina-upload ang mga larawan…';
-    // wait for any pending toBlob callbacks
+    setMsg('Uploading...'); phase.textContent = 'Uploading your images...';
     await new Promise(r => setTimeout(r, 600));
 
     const fd = new FormData();
-    captures.forEach((blob, i) => fd.append('images[]', blob, `img_${i + 1}.jpg`));
+    captures.forEach((blob, i) => fd.append('images[]', blob, 'img_' + (i + 1) + '.jpg'));
 
     try {
-        const res  = await fetch(POST_URL, {
-            method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF }, body: fd
-        });
+        const res  = await fetch(POST_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF }, body: fd });
         const data = await res.json();
         if (data.ok) {
-            camMsg.textContent = '✅ ' + data.message;
-            phase.textContent  = 'Tapos! Hinihintay na ang admin verification.';
+            setMsg(data.message, true);
+            phase.textContent = 'Done! Waiting for admin verification.';
             (video.srcObject?.getTracks() || []).forEach(t => t.stop());
             setTimeout(() => location.reload(), 2500);
         } else {
-            camMsg.textContent = '❌ ' + (data.message || 'Upload failed');
+            setMsg(data.message || 'Upload failed');
             retryBt.classList.remove('hidden');
         }
     } catch (e) {
-        camMsg.textContent = '❌ Network error — subukan ulit.';
+        setMsg('Network error - please try again.');
         retryBt.classList.remove('hidden');
     }
 }
+
+boot();
 </script>
 @endif
 @endsection
