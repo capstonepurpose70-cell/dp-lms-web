@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-        /* Apply saved theme before paint to avoid a flash of light mode */
-        (function () {
-            try {
-                if (localStorage.getItem('dp-admin-theme') === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                }
-            } catch (e) {}
-        })();
-    </script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -964,82 +953,6 @@
 
 
 
-    
-        /* ═══════════════════════════════════════
-           DARK MODE  (token overrides — cascades to all token-based UI)
-        ═══════════════════════════════════════ */
-        html[data-theme="dark"] {
-            --white:           #161f30;
-            --surface-page:    #0c1322;
-            --surface-card:    #161f30;
-            --surface-nav:     #161f30;
-            --surface-sidebar: #0a1626;
-
-            --slate-50:  #131c2b;
-            --slate-100: #1c2740;
-            --slate-200: #2a3650;
-            --slate-400: #8b98ad;
-            --slate-500: #a3b0c4;
-            --slate-700: #c8d2e0;
-            --slate-900: #eef2f8;
-
-            --border-default: #2a3650;
-            --border-nav:     rgba(255,255,255,0.08);
-
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.45);
-            --shadow-md: 0 4px 16px -2px rgba(0,0,0,0.50);
-            --shadow-lg: 0 12px 32px -4px rgba(0,0,0,0.55);
-            --shadow-xl: 0 24px 56px -8px rgba(0,0,0,0.60);
-            --shadow-tooltip: 0 8px 24px -4px rgba(0,0,0,0.60);
-
-            color-scheme: dark;
-        }
-
-        /* Sidebar text/icons use var(--white) which is now dark — keep them light */
-        html[data-theme="dark"] .sidebar-brand-name,
-        html[data-theme="dark"] .nav-link:hover,
-        html[data-theme="dark"] .nav-link.active { color: #ffffff; }
-
-        /* Inline-styled skeleton/loader cards (literal colors) → adapt in dark */
-        html[data-theme="dark"] [style*="background:white"],
-        html[data-theme="dark"] [style*="background: white"],
-        html[data-theme="dark"] [style*="background:#fff"],
-        html[data-theme="dark"] [style*="background: #fff"] { background-color: var(--surface-card) !important; }
-        html[data-theme="dark"] [style*="background:#f8fafc"],
-        html[data-theme="dark"] [style*="background: #f8fafc"],
-        html[data-theme="dark"] [style*="background:#faf5ff"] { background-color: var(--slate-50) !important; }
-        html[data-theme="dark"] [style*="#e2e8f0"],
-        html[data-theme="dark"] [style*="#f1f5f9"],
-        html[data-theme="dark"] [style*="#e9d5ff"] { border-color: var(--slate-200) !important; }
-
-        /* Dark mode: hover states that used light tints or dark accent text
-           (these made hover text invisible) */
-        html[data-theme="dark"] .notif-item:hover     { background: var(--slate-100); }
-        html[data-theme="dark"] .user-chip:hover       { background: var(--slate-100); }
-        html[data-theme="dark"] .settings-item:hover   { background: var(--slate-100); color: var(--blue-300); }
-        html[data-theme="dark"] .settings-item:hover svg { color: var(--blue-300); }
-        html[data-theme="dark"] .icon-btn:hover        { color: var(--blue-300); }
-        html[data-theme="dark"] .notif-footer a:hover  { color: var(--blue-300); }
-
-        /* Theme toggle icon swap */
-        #themeToggle .icon-sun  { display: none; }
-        #themeToggle .icon-moon { display: block; }
-        html[data-theme="dark"] #themeToggle .icon-sun  { display: block; }
-        html[data-theme="dark"] #themeToggle .icon-moon { display: none; }
-
-        /* Smooth transition ONLY while toggling (added briefly, then removed) */
-        html.theme-transition,
-        html.theme-transition *,
-        html.theme-transition *::before,
-        html.theme-transition *::after {
-            transition: background-color 0.30s var(--ease-out),
-                        background 0.30s var(--ease-out),
-                        color 0.30s var(--ease-out),
-                        border-color 0.30s var(--ease-out),
-                        fill 0.30s var(--ease-out),
-                        box-shadow 0.30s var(--ease-out) !important;
-        }
-
     </style>
 </head>
 <body>
@@ -1090,6 +1003,19 @@
           d="M18 21a8 8 0 10-16 0M10 13a4 4 0 100-8 4 4 0 000 8zm8 1a3 3 0 100-6 3 3 0 000 6zm2 7a6 6 0 00-9.33-5"/>
 </svg>
                 <span class="nav-link-label">User Management</span>
+            </a>
+
+            <a href="{{ route('admin.face.index') }}"
+               class="nav-link {{ request()->routeIs('admin.face.*') ? 'active' : '' }}"
+               data-tooltip="Face Verification"
+               data-barba-prevent="self">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round"
+          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <path stroke-linecap="round" stroke-linejoin="round"
+          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+</svg>
+                <span class="nav-link-label">Face Verification</span>
             </a>
 
             <a href="{{ route('admin.enrollment.index') }}"
@@ -1179,16 +1105,6 @@
 
         {{-- Right: notifications, settings, user chip --}}
         <div class="topbar-right">
-            {{-- Dark mode toggle --}}
-            <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark mode">
-                <svg class="icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                </svg>
-                <svg class="icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-            </button>
-
 
             {{-- Notifications --}}
             <button class="icon-btn" id="notifBtn" aria-label="Notifications">
@@ -2084,29 +2000,5 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
 
 </script>
 
-    <script>
-        /* Dark mode toggle + persistence */
-        (function () {
-            var KEY  = 'dp-admin-theme';
-            var root = document.documentElement;
-            var btn  = document.getElementById('themeToggle');
-            if (!btn) return;
-            function syncLabel() {
-                var dark = root.getAttribute('data-theme') === 'dark';
-                btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
-                btn.setAttribute('title', dark ? 'Light mode' : 'Dark mode');
-            }
-            btn.addEventListener('click', function () {
-                var dark = root.getAttribute('data-theme') === 'dark';
-                root.classList.add('theme-transition');
-                window.setTimeout(function () { root.classList.remove('theme-transition'); }, 350);
-                if (dark) { root.removeAttribute('data-theme'); }
-                else      { root.setAttribute('data-theme', 'dark'); }
-                try { localStorage.setItem(KEY, dark ? 'light' : 'dark'); } catch (e) {}
-                syncLabel();
-            });
-            syncLabel();
-        })();
-    </script>
 </body>
 </html>

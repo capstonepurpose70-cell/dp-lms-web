@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\FaceVerificationController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\ReportController;
@@ -246,6 +247,11 @@ Route::patch('/profile/update-password',
         Route::get('/dashboard',  [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/reports',    [ReportController::class,    'index'])->name('reports');
         Route::get('/audit-logs', [AuditLogController::class,  'index'])->name('audit-logs.index');
+
+        // ── Face Verification ─────────────────────────────────────
+        Route::get('/face',                    [FaceVerificationController::class, 'index'])->name('face.index');
+        Route::patch('/face/{registration}/approve', [FaceVerificationController::class, 'approve'])->name('face.approve');
+        Route::patch('/face/{registration}/reject',  [FaceVerificationController::class, 'reject'])->name('face.reject');
 
         // ── User Management ───────────────────────────────────────
         Route::get('/users',
