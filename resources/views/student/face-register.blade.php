@@ -84,10 +84,6 @@
                  style="max-width:480px; aspect-ratio:4/3;">
                 <video id="cam" autoplay playsinline muted
                        class="w-full h-full object-cover" style="transform:scaleX(-1);"></video>
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div id="oval" style="width:55%;height:78%;border:3px dashed rgba(255,255,255,.85);
-                         border-radius:50%/60%; transition:border-color .2s;"></div>
-                </div>
                 <div id="camMsg"
                      class="absolute bottom-0 left-0 right-0 text-center text-white text-sm py-2"
                      style="background:rgba(0,0,0,.55);">Preparing&hellip;</div>
@@ -132,12 +128,12 @@
 const CSRF      = '{{ csrf_token() }}';
 const POST_URL  = '{{ route('student.face.store') }}';
 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
-const TARGET    = 20;
+const TARGET    = 21;
+const FRONT_END = 7, LEFT_END = 14;  // pose phases
 const GLASSES_EDGE_THRESHOLD = 26;
 
 const video   = document.getElementById('cam');
 const camMsg  = document.getElementById('camMsg');
-const oval    = document.getElementById('oval');
 const bar     = document.getElementById('bar');
 const countTx = document.getElementById('countTxt');
 const enableBt= document.getElementById('enableBtn');
@@ -152,7 +148,7 @@ let lastShot = 0;
 
 function setMsg(t, good) {
     camMsg.textContent = t;
-    oval.style.borderColor = good ? 'rgba(34,197,94,.95)' : 'rgba(255,255,255,.85)';
+    camMsg.style.background = good ? 'rgba(22,163,74,.85)' : 'rgba(0,0,0,.55)';
 }
 
 async function boot() {
@@ -254,7 +250,7 @@ async function loop() {
         .withFaceLandmarks();
 
     if (res.length === 0) {
-        setMsg('No face detected - center your face in the oval.');
+        setMsg('No face detected - face the camera.');
     } else if (res.length > 1) {
         setMsg('Only one person should be in front of the camera.');
     } else {
@@ -267,7 +263,12 @@ async function loop() {
         } else {
             const now = Date.now();
             if (now - lastShot > 300) { grabFace(b); lastShot = now; }
-            setMsg('Hold still - capturing ' + captures.length + '/' + TARGET, true);
+            // Guide the student through 3 poses: front -> left -> right
+            let pose;
+            if (captures.length < FRONT_END)      pose = 'Look straight at the camera';
+            else if (captures.length < LEFT_END)  pose = 'Now slowly turn your head to your LEFT';
+            else                                   pose = 'Now slowly turn your head to your RIGHT';
+            setMsg(pose + '  (' + captures.length + '/' + TARGET + ')', true);
         }
     }
 
