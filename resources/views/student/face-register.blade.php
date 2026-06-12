@@ -93,6 +93,14 @@
                      style="background:rgba(0,0,0,.55);">Preparing&hellip;</div>
             </div>
 
+            <div id="camSelectWrap" class="hidden mt-3">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">📷 Choose camera</label>
+                <select id="camSelect"
+                        class="w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-white text-gray-700">
+                </select>
+                <p class="text-[11px] text-gray-400 mt-1">Pumili kung built-in camera o USB webcam ang gagamitin.</p>
+            </div>
+
             <div class="mt-4">
                 <div class="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Capture progress</span><span id="countTxt">0 / 20</span>
@@ -137,6 +145,9 @@ const retryBt = document.getElementById('retryBtn');
 const phase   = document.getElementById('phase');
 
 let captures = [], modelsReady = false, camReady = false, finished = false;
+let currentStream = null, loopStarted = false;
+const camSelectWrap = document.getElementById('camSelectWrap');
+const camSelect     = document.getElementById('camSelect');
 let lastShot = 0;
 
 function setMsg(t, good) {
@@ -164,25 +175,55 @@ async function boot() {
     startCamera();
 }
 
-async function startCamera() {
+async function startCamera(deviceId) {
     setMsg('Requesting camera... please tap ALLOW.');
+    // Stop any previous stream before switching cameras
+    if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
+
+    const videoConstraints = deviceId
+        ? { deviceId: { exact: deviceId } }
+        : { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' };
+
     let stream;
     try {
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false
-        });
+        stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
     } catch (e1) {
         if (e1.name === 'OverconstrainedError' || e1.name === 'ConstraintNotSatisfiedError') {
             try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
             catch (e2) { return camFail(e2); }
         } else { return camFail(e1); }
     }
+    currentStream = stream;
     video.srcObject = stream;
     camReady = true;
     enableBt.classList.add('hidden');
     retryBt.classList.add('hidden');
-    video.onloadedmetadata = () => { loop(); };
+    await populateCameras();
+    video.onloadedmetadata = () => { if (!loopStarted) { loopStarted = true; loop(); } };
 }
+
+// List available cameras (webcam + built-in) and show a picker if there are 2+
+async function populateCameras() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        if (cams.length <= 1) { camSelectWrap.classList.add('hidden'); return; }
+        const activeId = currentStream && currentStream.getVideoTracks()[0]
+            ? currentStream.getVideoTracks()[0].getSettings().deviceId : null;
+        camSelect.innerHTML = '';
+        cams.forEach((c, i) => {
+            const opt = document.createElement('option');
+            opt.value = c.deviceId;
+            opt.textContent = c.label || ('Camera ' + (i + 1));
+            if (c.deviceId === activeId) opt.selected = true;
+            camSelect.appendChild(opt);
+        });
+        camSelectWrap.classList.remove('hidden');
+    } catch (e) { /* enumerate not allowed yet — ignore */ }
+}
+
+// Switch camera when the user picks a different one
+camSelect.addEventListener('change', () => { startCamera(camSelect.value); });
 
 function camFail(e) {
     camReady = false;
