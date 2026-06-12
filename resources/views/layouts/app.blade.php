@@ -76,8 +76,13 @@
             color: var(--text-1);
             min-height: 100vh;
             overflow-x: hidden;
-            opacity: 0;
             -webkit-font-smoothing: antialiased;
+        }
+
+        /* Instant, JS-free page entrance — chrome static, content quick-fade */
+        @keyframes contentIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: none; }
         }
 
         /* ═══════════════════════════════════════════
@@ -96,7 +101,7 @@
         .nav-brand-zone {
             width: var(--sidebar-w); flex-shrink: 0;
             display: flex; align-items: center; padding: 0 14px; gap: 10px;
-            height: 100%;
+            height: calc(100% + 1px); /* covers the top-nav border line under the brand */
             background: var(--sb-bg);
             transition: width .32s cubic-bezier(.4,0,.2,1);
         }
@@ -334,7 +339,8 @@ body.collapsed .sidebar-nav {
             flex: 1; margin-left: var(--sidebar-w);
             padding: 30px 36px;
             transition: margin-left .32s cubic-bezier(.4,0,.2,1);
-            opacity: 0; min-width: 0;
+            min-width: 0;
+            animation: contentIn .22s ease-out both;
         }
         body.collapsed .main-content { margin-left: var(--sidebar-w-collapsed); }
 
@@ -642,6 +648,14 @@ const NAV_ITEMS = [
             document.querySelectorAll('#sidebarNav a').forEach(l => l.classList.remove('active'));
             this.classList.add('active');
         });
+        // Prefetch on hover — parang SPA: preloaded na ang page bago pa i-click
+        a.addEventListener('pointerenter', function () {
+            if (this.dataset.prefetched) return;
+            this.dataset.prefetched = '1';
+            const l = document.createElement('link');
+            l.rel = 'prefetch'; l.href = this.href;
+            document.head.appendChild(l);
+        }, { passive: true });
         nav.appendChild(a);
     });
 
@@ -662,21 +676,7 @@ const NAV_ITEMS = [
     modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('open'); });
 
-    /* GSAP entrance */
-    window.addEventListener('load', () => {
-        if (typeof gsap === 'undefined') {
-            body.style.opacity = '1';
-            document.querySelector('.main-content').style.opacity = '1';
-            return;
-        }
-        gsap.timeline({ defaults: { ease: 'power3.out' } })
-            .to('body',            { opacity: 1,                          duration: .28 })
-            .from('.top-nav',      { y: -22, opacity: 0,                  duration: .38 }, '-=.14')
-            .from('.sidebar',      { x: -18, opacity: 0,                  duration: .38 }, '-=.3')
-            .to('.main-content',   { opacity: 1,                          duration: .42 }, '-=.26')
-            .from('#sidebarNav a', { x: -8, opacity: 0, stagger: .06,    duration: .28 }, '-=.32')
-            .from('.flash',        { opacity: 0, y: -6, stagger: .08,    duration: .22 }, '-=.18');
-    });
+    /* Entrance handled by pure CSS (instant — no waiting for CDN/window.load) */
 
 
     /* ── Notifications ── */
