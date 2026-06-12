@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Models\TeacherSubject;
+use App\Models\FaceRegistration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AttendanceController extends Controller
 {
@@ -81,5 +83,45 @@ class AttendanceController extends Controller
                 ->take(50)
                 ->get()
         );
+    }
+
+    // API — Raspberry Pi pulls all APPROVED student faces to train its model.
+    // GET /api/faces/approved   (optional X-Device-Key header)
+    public function approvedFaces(Request $request)
+    {
+        $deviceKey = config('attendance.device_key');
+        if (!empty($deviceKey)
+            && !hash_equals((string) $deviceKey, (string) $request->header('X-Device-Key', ''))) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $faces = FaceRegistration::with('user')
+            ->where('status', 'approved')
+            ->get()
+            ->filter(fn ($r) => $r->user
+                && $r->user->role === 'student'
+                && $r->user->status === 'approved')
+            ->map(function ($r) {
+                $dir   = "faces/{$r->user_id}";
+                $files = Storage::disk('public')->exists($dir)
+                    ? Storage::disk('public')->files($dir)
+                    : [];
+                $images = collect($files)
+                    ->filter(fn ($f) => preg_match('/\.(jpe?g|png)$/i', $f))
+                    ->map(fn ($f) => url(Storage::url($f)))
+                    ->values()
+                    ->all();
+
+                return [
+                    'user_id' => $r->user_id,
+                    'label'   => $r->user->email,
+                    'name'    => $r->user->name,
+                    'images'  => $images,
+                ];
+            })
+            ->filter(fn ($f) => count($f['images']) > 0)
+            ->values();
+
+        return response()->json(['faces' => $faces]);
     }
 }

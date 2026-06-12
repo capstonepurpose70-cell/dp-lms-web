@@ -302,3 +302,4 @@ Route::patch('/profile/update-password',
 // ═════════════════════════════════════════════════════════════════════════════
 Route::post('/api/attendance', [App\Http\Controllers\AttendanceController::class, 'store']);
 Route::get('/api/attendance',  [App\Http\Controllers\AttendanceController::class, 'index']);
+Route::get('/api/faces/approved', [App\Http\Controllers\AttendanceController::class, 'approvedFaces']);
