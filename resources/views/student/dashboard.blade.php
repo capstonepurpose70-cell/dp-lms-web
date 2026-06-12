@@ -398,6 +398,27 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
             </svg>
         </a>
+
+        <a href="{{ route('student.face.register') }}" class="nav-card fade-in fade-in-5">
+            <div class="nav-icon" style="background:#eff6ff;">
+                <svg width="20" height="20" fill="none" stroke="#2563eb"
+                    stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943
+                           9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="nav-title">Register Face</p>
+                <p class="nav-desc">For attendance camera</p>
+            </div>
+            <svg class="nav-arrow" width="18" height="18" fill="none"
+                stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
     </div>
 
     {{-- Announcements --}}

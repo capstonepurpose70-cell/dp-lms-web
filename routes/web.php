@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Student\StudentDashboardController;
+use App\Http\Controllers\Student\FaceRegistrationController;
 use App\Http\Controllers\Teacher\TeacherDashboardController;
 use App\Http\Controllers\Teacher\GradebookController;
 use App\Http\Controllers\Teacher\MaterialController;
@@ -108,12 +109,15 @@ Route::middleware(['auth', 'role:student', 'approved'])
         Route::get('/quizzes',   [StudentDashboardController::class, 'quizzes'])->name('quizzes');
         Route::get('/grades',    [StudentDashboardController::class, 'grades'])->name('grades');
         Route::get('/messages',  [StudentDashboardController::class, 'messages'])->name('messages');
-        Route::post('/messages', [StudentDashboardController::class, 'storeMessage'])->name('messages.store');
-        Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name('subjects');
+Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name('subjects');
         Route::get('/enroll',    [StudentDashboardController::class, 'enrollmentForm'])->name('enroll');
         Route::post('/enroll',   [StudentDashboardController::class, 'submitEnrollment'])->name('enroll.submit');
 
-                // Notifications
+        // Face registration (attendance camera)
+        Route::get('/face-register',  [FaceRegistrationController::class, 'show'])->name('face.register');
+        Route::post('/face-register', [FaceRegistrationController::class, 'store'])->name('face.store');
+
+        // Notifications
         Route::get('/notifications/data', fn() => response()->json([
             'unread' => auth()->user()->unreadNotifications->count(),
             'items'  => auth()->user()->unreadNotifications->take(10)->map(fn($n) => [
@@ -269,6 +273,10 @@ Route::patch('/profile/update-password',
             [UserManagementController::class, 'showAssignTeacher'])->name('users.assign-teacher');
         Route::post('/users/{user}/assign-teacher',
             [UserManagementController::class, 'assignTeacher'])->name('users.assign-teacher.submit');
+        Route::post('/users/{user}/link-child',
+            [UserManagementController::class, 'linkChild'])->name('users.link-child');
+        Route::delete('/users/{user}/unlink-child/{child}',
+            [UserManagementController::class, 'unlinkChild'])->name('users.unlink-child');
 
         // ── Enrollment management ─────────────────────────────────
         Route::get('/enrollment',
