@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\User;
 use App\Models\TeacherSubject;
+use App\Models\TeacherAssignment;
 use App\Models\FaceRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -63,15 +64,23 @@ class AttendanceController extends Controller
     {
         $teacher = auth()->user();
 
-        $sectionIds = TeacherSubject::where('user_id', $teacher->id)
-            ->pluck('section_id')
-            ->unique();
+        // All sections this teacher is linked to — as a SUBJECT teacher or as an ADVISER.
+        // A brand-new teacher with no assignments yet will have an empty list,
+        // so they correctly see NO attendance until faculty assigns them a section.
+        $sectionIds = TeacherSubject::where('user_id', $teacher->id)->pluck('section_id')
+            ->merge(TeacherAssignment::where('user_id', $teacher->id)->pluck('section_id'))
+            ->filter()
+            ->unique()
+            ->values();
 
-    $attendances = Attendance::with('user')
-    ->orderBy('attended_at', 'desc')
-    ->paginate(30);
+        $attendances = Attendance::with('user')
+            ->whereIn('section_id', $sectionIds)
+            ->orderBy('attended_at', 'desc')
+            ->paginate(30);
 
-        return view('teacher.attendance.index', compact('attendances'));
+        $hasSections = $sectionIds->isNotEmpty();
+
+        return view('teacher.attendance.index', compact('attendances', 'hasSections'));
     }
 
     // API — returns JSON list

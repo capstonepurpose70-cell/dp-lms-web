@@ -113,9 +113,18 @@
         </div>
         @empty
         <div style="padding:40px;text-align:center;">
-            <p style="font-size:13px;color:#9ca3af;">
-                No attendance records yet. Waiting for IoT device...
+            @if(!($hasSections ?? true))
+            <p style="font-size:14px;color:#6b7280;font-weight:600;">
+                You have no assigned sections yet.
             </p>
+            <p style="font-size:13px;color:#9ca3af;margin-top:6px;">
+                Once a faculty assigns you to a section, your students' attendance will appear here.
+            </p>
+            @else
+            <p style="font-size:13px;color:#9ca3af;">
+                No attendance records yet for your section. Waiting for the attendance device...
+            </p>
+            @endif
         </div>
         @endforelse
     </div>
