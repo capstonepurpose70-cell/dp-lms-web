@@ -19,6 +19,7 @@ class FaceRegistrationController extends Controller
             'registration' => $registration,
             'blocked'      => $user->face_warnings >= 3,
             'warnings'     => $user->face_warnings,
+            'enrolled'     => !is_null($user->section_id),
         ]);
     }
 
@@ -26,6 +27,14 @@ class FaceRegistrationController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
+
+        // Must be enrolled in a section first
+        if (is_null($user->section_id)) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'You must be enrolled in a section before registering your face.',
+            ], 403);
+        }
 
         // Banned from face registration after 3 warnings
         if ($user->face_warnings >= 3) {

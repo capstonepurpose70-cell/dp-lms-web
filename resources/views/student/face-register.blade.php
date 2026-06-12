@@ -18,6 +18,18 @@
                 register your face. Please visit the admin office to resolve this.
             </p>
         </div>
+    @elseif (!$enrolled)
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <p class="font-bold text-amber-800 text-sm mb-1">📋 Enrollment required</p>
+            <p class="text-sm text-amber-700">
+                You need to be <b>enrolled in a section</b> before you can register your face.
+                Please submit your enrollment and wait for faculty approval first. Once you have
+                a section and teacher, come back here to register your face for attendance.
+            </p>
+            <a href="{{ route('student.enroll') }}"
+               class="inline-block mt-3 px-4 py-2 rounded-lg text-white text-sm font-semibold"
+               style="background:#d97706;">Go to Enrollment</a>
+        </div>
     @else
         @if ($warnings > 0)
             <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
@@ -106,7 +118,7 @@
     @endif
 </div>
 
-@if (!$blocked)
+@if (!$blocked && $enrolled)
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 const CSRF      = '{{ csrf_token() }}';
