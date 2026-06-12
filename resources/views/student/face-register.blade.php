@@ -71,7 +71,7 @@
                 </div>
                 <div id="camMsg"
                      class="absolute bottom-0 left-0 right-0 text-center text-white text-sm py-2"
-                     style="background:rgba(0,0,0,.55);">Loading camera…</div>
+                     style="background:rgba(0,0,0,.55);">Naghahanda…</div>
             </div>
 
             {{-- progress --}}
@@ -88,7 +88,7 @@
             <div class="flex gap-3 mt-4">
                 <button id="startBtn"
                     class="flex-1 py-2.5 rounded-xl text-white font-semibold text-sm"
-                    style="background:#2563eb;">📸 Start Capture</button>
+                    style="background:#2563eb;">🎥 Enable Camera</button>
                 <button id="retryBtn" class="hidden flex-1 py-2.5 rounded-xl font-semibold text-sm border border-gray-200 text-gray-600">
                     🔄 Ulitin</button>
             </div>
@@ -117,26 +117,65 @@ const startBt = document.getElementById('startBtn');
 const retryBt = document.getElementById('retryBtn');
 const phase   = document.getElementById('phase');
 
-let captures = [], running = false, modelReady = false;
+let captures = [], running = false, modelReady = false, camReady = false;
 
-async function init() {
+// Initial checks (walang permission request pa dito)
+if (!window.isSecureContext) {
+    camMsg.textContent = '❌ Kailangan ng HTTPS (o localhost) para gumana ang camera.';
+} else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    camMsg.textContent = '❌ Hindi supported ng browser na ito ang camera. Gumamit ng Chrome/Brave/Edge.';
+} else {
+    camMsg.textContent = 'Pindutin ang "Enable Camera" sa ibaba 👇';
+}
+
+async function enableCamera() {
+    camMsg.textContent = 'Hinihingi ang camera permission… pindutin ang ALLOW sa taas.';
+    let stream;
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 640, height: 480, facingMode: 'user' }, audio: false
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+            audio: false
         });
-        video.srcObject = stream;
-        camMsg.textContent = 'Nilo-load ang face detector…';
+    } catch (e1) {
+        // Fallback: pinaka-simpleng constraints (para sa mga maarteng camera)
+        if (e1.name === 'OverconstrainedError' || e1.name === 'ConstraintNotSatisfiedError') {
+            try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
+            catch (e2) { return camFail(e2); }
+        } else {
+            return camFail(e1);
+        }
+    }
+
+    video.srcObject = stream;
+    camReady = true;
+    camMsg.textContent = 'Nilo-load ang face detector…';
+    try {
         await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
         modelReady = true;
+        startBt.textContent = '📸 Start Capture';
         camMsg.textContent = 'Handa na — pindutin ang Start Capture';
     } catch (e) {
-        camMsg.textContent = '❌ Hindi ma-access ang camera. I-allow ang camera permission.';
+        camMsg.textContent = '❌ Hindi ma-load ang face detector (internet issue). I-refresh at subukan ulit.';
     }
 }
-init();
 
-startBt.addEventListener('click', () => {
-    if (!modelReady || running) return;
+function camFail(e) {
+    camReady = false;
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        camMsg.innerHTML = '🔒 Naka-BLOCK ang camera. I-click ang <b>lock/camera icon sa address bar</b> '
+            + '→ piliin ang <b>Allow</b> sa Camera → i-refresh ang page.';
+    } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+        camMsg.textContent = '❌ Walang nakitang camera sa device na ito.';
+    } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+        camMsg.textContent = '❌ Ginagamit ng ibang app ang camera (Zoom/Teams/OBS?). Isara ito at subukan ulit.';
+    } else {
+        camMsg.textContent = '❌ Camera error: ' + (e.name || e.message || 'unknown') + ' — subukan ulit.';
+    }
+}
+
+startBt.addEventListener('click', async () => {
+    if (running) return;
+    if (!camReady || !modelReady) { await enableCamera(); return; }
     captures = []; running = true;
     startBt.disabled = true; startBt.style.opacity = .5;
     phase.textContent = 'Kumukuha… tumingin sa camera, bahagyang igalaw ang ulo.';
