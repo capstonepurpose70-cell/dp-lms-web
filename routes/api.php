@@ -21,7 +21,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/modules',       [App\Http\Controllers\Api\Student\DashboardController::class, 'modules']);
         Route::get('/grades',        [App\Http\Controllers\Api\Student\DashboardController::class, 'grades']);
         Route::get('/announcements', [App\Http\Controllers\Api\Student\DashboardController::class, 'announcements']);
-        Route::get('/assignments',   [App\Http\Controllers\Api\Student\DashboardController::class, 'assignments']);
+        Route::get('/assignments',              [App\Http\Controllers\Api\Student\AssignmentController::class, 'index']);
+        Route::get('/assignments/{id}',         [App\Http\Controllers\Api\Student\AssignmentController::class, 'show']);
+        Route::post('/assignments/{id}/submit', [App\Http\Controllers\Api\Student\AssignmentController::class, 'submit']);
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
 
         // Face registration (mobile camera)
@@ -40,6 +42,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/announcements',[App\Http\Controllers\Api\Teacher\DashboardController::class, 'storeAnnouncement']);
         Route::get('/attendance',    [App\Http\Controllers\Api\Teacher\DashboardController::class, 'attendance']);
         Route::get('/students',      [App\Http\Controllers\Api\Teacher\DashboardController::class, 'students']);
+
+        // Quizzes / assignments (file-based)
+        Route::get('/assignments',             [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'index']);
+        Route::post('/assignments',            [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'store']);
+        Route::get('/assignments/{id}',        [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'show']);
+        Route::delete('/assignments/{id}',     [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'destroy']);
+        Route::post('/submissions/{id}/grade', [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'grade']);
         Route::delete('/materials/{id}',     [App\Http\Controllers\Api\Teacher\DashboardController::class, 'deleteMaterial']);
 Route::delete('/announcements/{id}', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'deleteAnnouncement']);
     });
