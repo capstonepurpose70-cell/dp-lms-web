@@ -9,6 +9,7 @@ use App\Models\Grade;
 use App\Models\LearningMaterial;
 use App\Models\Section;
 use App\Models\Subject;
+use App\Models\TeacherAssignment;
 use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
@@ -22,16 +23,26 @@ class DashboardController extends Controller
     {
         $teacher = auth()->user();
 
+        // Subjects this teacher teaches (subject-level assignments)
         $assignments = TeacherSubject::with(['subject', 'section'])
             ->where('user_id', $teacher->id)
             ->get();
 
-        $sectionIds = $assignments->pluck('section_id')->unique();
+        // Sections come from BOTH subject assignments AND faculty section assignments
+        $sectionIds = TeacherSubject::where('user_id', $teacher->id)->pluck('section_id')
+            ->merge(TeacherAssignment::where('user_id', $teacher->id)->pluck('section_id'))
+            ->filter()
+            ->unique()
+            ->values();
 
+        // Count approved students inside this teacher's sections
         $studentCount = User::where('role', 'student')
             ->where('status', 'approved')
             ->whereIn('section_id', $sectionIds)
             ->count();
+
+        $subjectCount = $assignments->pluck('subject_id')->filter()->unique()->count();
+        $sectionCount = $sectionIds->count();
 
         // Sections with subject counts
         $sections = $assignments->groupBy('section_id')->map(function ($group) {
@@ -54,7 +65,27 @@ class DashboardController extends Controller
             'grade_level'  => $a->subject?->grade_level,
         ])->unique('subject_id')->values();
 
+        // Recent announcements made by this teacher
+        $announcements = Announcement::where('user_id', $teacher->id)
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn($a) => [
+                'id'       => $a->id,
+                'title'    => $a->title,
+                'body'     => $a->body,
+                'audience' => $a->audience,
+                'date'     => $a->created_at?->diffForHumans(),
+            ])->values();
+
         return response()->json([
+            // Flat keys the mobile app reads:
+            'total_students' => $studentCount,
+            'total_subjects' => $subjectCount,
+            'total_sections' => $sectionCount,
+            'announcements'  => $announcements,
+
+            // Extra detail (kept for compatibility):
             'teacher' => [
                 'id'          => $teacher->id,
                 'name'        => $teacher->name,
@@ -63,8 +94,8 @@ class DashboardController extends Controller
             ],
             'summary' => [
                 'student_count' => $studentCount,
-                'subject_count' => $assignments->unique('subject_id')->count(),
-                'section_count' => $sectionIds->count(),
+                'subject_count' => $subjectCount,
+                'section_count' => $sectionCount,
             ],
             'sections' => $sections,
             'subjects' => $subjects,
