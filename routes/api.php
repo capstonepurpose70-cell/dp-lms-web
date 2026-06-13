@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login',    [App\Http\Controllers\Api\AuthController::class, 'login']);
 Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 Route::post('/forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [App\Http\Controllers\Api\AuthController::class, 'resetPassword']);
 
 // ── Protected (Sanctum token)
 Route::middleware('auth:sanctum')->group(function () {
@@ -24,6 +23,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/announcements', [App\Http\Controllers\Api\Student\DashboardController::class, 'announcements']);
         Route::get('/assignments',   [App\Http\Controllers\Api\Student\DashboardController::class, 'assignments']);
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
+
+        // Face registration (mobile camera)
+        Route::get('/face',  [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'show']);
+        Route::post('/face', [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'store']);
     });
 
     // ── TEACHER ──────────────────────────────────────────────────────
