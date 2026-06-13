@@ -257,13 +257,12 @@ async function loop() {
     } else {
         const det = res[0];
         const b   = det.detection.box;
-        if (b.width < video.videoWidth * 0.20) {
+        if (b.width < video.videoWidth * 0.12) {
             setMsg('Move a little closer.');
-        } else if (wearingGlasses(det.landmarks)) {
-            setMsg('Please remove your eyeglasses to continue.');
         } else {
+            // Clear face visible -> capture (lenient; admin verifies later)
             const now = Date.now();
-            if (now - lastShot > 300) { grabFace(b); lastShot = now; }
+            if (now - lastShot > 250) { grabFace(b); lastShot = now; }
             // Guide the student through 3 poses: front -> left -> right
             let pose;
             if (captures.length < FRONT_END)      pose = 'Look straight at the camera';
