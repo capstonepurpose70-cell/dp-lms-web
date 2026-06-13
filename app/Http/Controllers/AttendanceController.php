@@ -73,8 +73,24 @@ class AttendanceController extends Controller
             ->unique()
             ->values();
 
-        $attendances = Attendance::with('user')
+        // The students currently in those sections (the teacher's roster).
+        $students = User::where('role', 'student')
             ->whereIn('section_id', $sectionIds)
+            ->get(['id', 'email']);
+        $studentIds    = $students->pluck('id')->filter()->values();
+        $studentEmails = $students->pluck('email')->filter()->values();
+
+        // Match an attendance row if ANY of these is true:
+        //   - its section_id is one of the teacher's sections, OR
+        //   - it is linked to one of the teacher's students (user_id), OR
+        //   - its student_id (email pushed by the device) is one of those students.
+        // This is robust even if the device row has a null/stale section_id.
+        $attendances = Attendance::with('user')
+            ->where(function ($q) use ($sectionIds, $studentIds, $studentEmails) {
+                $q->whereIn('section_id', $sectionIds);
+                if ($studentIds->isNotEmpty())    $q->orWhereIn('user_id', $studentIds);
+                if ($studentEmails->isNotEmpty()) $q->orWhereIn('student_id', $studentEmails);
+            })
             ->orderBy('attended_at', 'desc')
             ->paginate(30);
 
