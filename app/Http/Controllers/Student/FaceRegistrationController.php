@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Student;
+namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\FaceRegistration;
@@ -9,24 +9,26 @@ use Illuminate\Support\Facades\Storage;
 
 class FaceRegistrationController extends Controller
 {
-    /** Camera page + current status */
-    public function show()
+    /** GET /api/student/face — current status + whether the student may register */
+    public function show(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
         $registration = FaceRegistration::where('user_id', $user->id)->latest()->first();
 
-        return view('student.face-register', [
-            'registration' => $registration,
-            'blocked'      => $user->face_warnings >= 3,
-            'warnings'     => $user->face_warnings,
+        return response()->json([
             'enrolled'     => !is_null($user->section_id),
+            'blocked'      => $user->face_warnings >= 3,
+            'warnings'     => (int) $user->face_warnings,
+            'status'       => $registration->status ?? null,          // pending|approved|rejected|null
+            'images_count' => $registration->images_count ?? 0,
+            'reject_reason' => $registration->reject_reason ?? null,
         ]);
     }
 
-    /** Receive 15–30 face-cropped images from the browser */
+    /** POST /api/student/face — receive captured face images from the mobile app */
     public function store(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         // Must be enrolled in a section first
         if (is_null($user->section_id)) {
@@ -36,7 +38,7 @@ class FaceRegistrationController extends Controller
             ], 403);
         }
 
-        // Banned from face registration after 3 warnings
+        // Banned after 3 inappropriate-image warnings
         if ($user->face_warnings >= 3) {
             return response()->json([
                 'ok'      => false,
@@ -46,16 +48,20 @@ class FaceRegistrationController extends Controller
 
         $request->validate([
             'images'   => 'required|array|min:15|max:30',
-            'images.*' => 'required|image|mimes:jpeg,jpg,png|max:600', // max 600 KB each
+            'images.*' => 'required|image|mimes:jpeg,jpg,png|max:2048', // up to 2 MB each (phone photos)
         ]);
 
-        // Replace any previous attempt (only the latest set is kept)
+        // Replace any previous attempt (keep only the latest set)
         Storage::disk('public')->deleteDirectory("faces/{$user->id}");
         FaceRegistration::where('user_id', $user->id)->delete();
 
         $count = 0;
         foreach ($request->file('images') as $i => $file) {
-            $file->storeAs("faces/{$user->id}", 'img_' . str_pad($i + 1, 2, '0', STR_PAD_LEFT) . '.jpg', 'public');
+            $file->storeAs(
+                "faces/{$user->id}",
+                'img_' . str_pad($i + 1, 2, '0', STR_PAD_LEFT) . '.jpg',
+                'public'
+            );
             $count++;
         }
 
