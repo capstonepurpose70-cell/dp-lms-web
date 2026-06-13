@@ -141,6 +141,7 @@ class AttendanceController extends Controller
                     'user_id' => $r->user_id,
                     'label'   => $r->user->email,
                     'name'    => $r->user->name,
+                    'reviewed_at' => optional($r->reviewed_at ?? $r->updated_at)->toIso8601String(),
                     'images'  => $images,
                 ];
             })
