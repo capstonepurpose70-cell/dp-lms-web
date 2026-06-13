@@ -71,6 +71,7 @@
             <p class="text-sm font-semibold text-blue-800 mb-1">Before you start:</p>
             <ul class="text-sm text-blue-700 space-y-0.5" style="list-style:disc;padding-left:18px;">
                 <li><b>Remove your eyeglasses</b> (and hats / face masks).</li>
+                <li>Face a <b>light source</b> (window/lamp in <b>front</b>, not behind you).</li>
                 <li>Make sure your face is well-lit and clearly visible.</li>
                 <li>Only one person should be in front of the camera.</li>
                 <li>Look at the camera and slowly turn your head left / right / up.</li>
@@ -246,11 +247,11 @@ async function loop() {
     if (finished || !camReady || !modelsReady) return;
 
     const res = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
         .withFaceLandmarks();
 
     if (res.length === 0) {
-        setMsg('No face detected - face the camera.');
+        setMsg('No face detected - face a light source (avoid bright light behind you).');
     } else if (res.length > 1) {
         setMsg('Only one person should be in front of the camera.');
     } else {
