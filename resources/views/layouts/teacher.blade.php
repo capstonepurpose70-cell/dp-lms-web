@@ -111,24 +111,21 @@
         }
         body.collapsed .nav-brand-zone { width: var(--sidebar-w-collapsed); }
 
-        /* Collapse button — clean style (matches app.blade.php) */
+        /* Collapse button */
         .collapse-btn {
-            width: 36px; height: 36px; border-radius: var(--r-sm);
-            border: none; cursor: pointer; flex-shrink: 0;
-            background: transparent; color: #94A3B8;
+            width: 34px; height: 34px; border-radius: var(--r-sm);
+            border: 1px solid rgba(255,255,255,.10); cursor: pointer;
+            background: rgba(255,255,255,.06); color: #64748B; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            transition: background .2s ease, color .2s ease;
+            transition: background .2s, color .2s, transform .18s, box-shadow .2s;
         }
         .collapse-btn:hover {
-            background: rgba(255,255,255,.10);
-            color: #fff;
+            background: var(--sb-active); border-color: var(--sb-active);
+            color: #fff; box-shadow: 0 4px 14px var(--sb-active-glow);
+            transform: scale(1.07);
         }
-        .collapse-btn:active { background: rgba(255,255,255,.16); }
-        .collapse-btn:focus-visible {
-            outline: 2px solid var(--sb-active);
-            outline-offset: 2px;
-        }
-        .collapse-btn svg { transition: transform .3s cubic-bezier(.4,0,.2,1); }
+        .collapse-btn svg { transition: transform .36s cubic-bezier(.4,0,.2,1); }
+        body.collapsed .collapse-btn svg { transform: rotate(180deg); }
 
         /* Logo + school name */
         .nav-brand {
@@ -407,8 +404,8 @@ body.collapsed .sidebar-nav {
 <nav class="top-nav">
     <div class="nav-brand-zone">
         <button class="collapse-btn" id="collapseBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
-            <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/>
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M15 18l-6-6 6-6"/>
             </svg>
         </button>
 
@@ -579,6 +576,14 @@ const NAV_ITEMS = [
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1
                      1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>`
+    },
+    {
+        href : '/teacher/assignments',
+        label: 'Quizzes',
+        icon : `<path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+                     M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2
+                     m-3 7h3m-3 4h3m-5-4h.01M9 16h.01"/>`
     },
     {
         href : '/teacher/announcements',

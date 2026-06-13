@@ -107,7 +107,9 @@ Route::middleware(['auth', 'role:student', 'approved'])
     ->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
         Route::get('/modules',   [StudentDashboardController::class, 'modules'])->name('modules');
-        Route::get('/quizzes',   [StudentDashboardController::class, 'quizzes'])->name('quizzes');
+        Route::get('/quizzes',                    [App\Http\Controllers\Student\AssignmentController::class, 'index'])->name('quizzes');
+        Route::get('/quizzes/{assignment}',       [App\Http\Controllers\Student\AssignmentController::class, 'show'])->name('quizzes.show');
+        Route::post('/quizzes/{assignment}/submit',[App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('quizzes.submit');
         Route::get('/grades',    [StudentDashboardController::class, 'grades'])->name('grades');
         Route::get('/messages',  [StudentDashboardController::class, 'messages'])->name('messages');
 Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name('subjects');
@@ -153,6 +155,14 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::resource('gradebook',     GradebookController::class);
         Route::resource('materials',     MaterialController::class);
         Route::resource('announcements', AnnouncementController::class);
+
+        // Quizzes / assignments (file-based)
+        Route::get('/assignments',                       [App\Http\Controllers\Teacher\AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/create',                [App\Http\Controllers\Teacher\AssignmentController::class, 'create'])->name('assignments.create');
+        Route::post('/assignments',                      [App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('/assignments/{assignment}',          [App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('assignments.show');
+        Route::delete('/assignments/{assignment}',       [App\Http\Controllers\Teacher\AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::post('/submissions/{submission}/grade',   [App\Http\Controllers\Teacher\AssignmentController::class, 'grade'])->name('submissions.grade');
        Route::get('/notifications/data', fn() => response()->json([
             'unread' => auth()->user()->unreadNotifications->count(),
             'items'  => auth()->user()->unreadNotifications->take(10)->map(fn($n) => [
