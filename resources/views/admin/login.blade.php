@@ -3,18 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <title>Admin Login — DP-LMS</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
+    
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-
-    <!-- Distinctive type pairing (display + body), with strong system fallbacks -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -22,24 +15,13 @@
             --primary-hover: #15803d;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-
-            /* ── Brand system (unified emerald accent) ── */
-            --brand-500: #22c55e;
-            --brand-600: #16a34a;
-            --brand-700: #15803d;
-            --brand-800: #166534;
-            --brand-ring: rgba(22, 163, 74, 0.16);
-
-            /* ── Type ── */
-            --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-            --font-body:    'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             min-height: 100vh;
-            font-family: var(--font-body);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             color: var(--text-main);
             display: flex;
             align-items: center;
@@ -48,10 +30,8 @@
             position: relative;
             overflow: hidden;
             opacity: 0;
-            -webkit-font-smoothing: antialiased;
-            text-rendering: optimizeLegibility;
             /* Dark overlay to make text readable over any image */
-            background-color: rgba(2, 6, 23, 0.7);
+            background-color: rgba(2, 6, 23, 0.7); 
         }
 
         /* ── Background Image Layer (Blurred Only) ── */
@@ -62,28 +42,21 @@
             width: 100%;
             height: 100%;
             z-index: 0;
-
+            
             /* YOUR BACKGROUND IMAGE HERE */
             background-image: url('{{ asset("images/background.jpg") }}');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-
+            
             /* This blurs ONLY the background */
             filter: blur(5px);
             transform: scale(1.1); /* Scale up to hide blurry edges */
+            animation: kenburns 22s ease-in-out infinite alternate;
         }
-
-        /* ── Depth vignette (improves contrast for text over the photo) ── */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            background:
-                radial-gradient(120% 100% at 50% 0%, rgba(6, 78, 59, 0.32), transparent 55%),
-                linear-gradient(rgba(2, 6, 23, 0.30), rgba(2, 6, 23, 0.55));
+        @keyframes kenburns {
+            from { transform: scale(1.1); }
+            to   { transform: scale(1.2) translateY(-8px); }
         }
 
         /* ── Content Wrapper (Sharp & Clear) ── */
@@ -105,27 +78,27 @@
             transform: translateY(-20px);
         }
 
-        .logo-box {
-            width: 88px;
-            height: 88px;
-            border-radius: 22px;
-            background: #f0fdf4;
-            margin: 0 auto 14px;
-            box-shadow:
-                0 0 0 3px rgba(255, 255, 255, 0.85),
-                0 0 0 6px rgba(22, 163, 74, 0.16),
-                0 8px 20px rgba(0, 0, 0, 0.18);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.logo-box {
+    width: 88px;
+    height: 88px;
+    border-radius: 22px;
+    background: #f0fdf4;
+    margin: 0 auto 14px;
+    box-shadow:
+        0 0 0 3px rgba(22, 163, 74, 0.12),
+        0 6px 16px rgba(0, 0, 0, 0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        .card-logo-section {
-            text-align: center;
-            margin-bottom: 22px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e5e7eb;
-        }
+.card-logo-section {
+    text-align: center;
+    margin-bottom: 22px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
 
         .logo-box img {
             width: 70%;
@@ -133,140 +106,104 @@
             object-fit: contain;
         }
 
-        .logo-title {
-            font-family: var(--font-display);
-            font-size: 15px;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            color: var(--brand-800);
-            margin-bottom: 4px;
-        }
+.logo-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #166534;
+    margin-bottom: 3px;
+}
 
-        .logo-sub {
-            font-size: 11px;
-            color: #6b7280;
-            font-weight: 500;
-            text-shadow: none;
-        }
+.logo-sub {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+    text-shadow: none;
+}
 
         /* ── Card with Glass Effect ── */
-        .card {
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.97);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            padding: 32px;
-            box-shadow:
-                0 2px 4px rgba(0, 0, 0, 0.04),
-                0 20px 48px rgba(0, 0, 0, 0.30),
-                0 0 0 1px rgba(255, 255, 255, 0.6);
-            opacity: 0;
-            transform: translateY(30px);
-        }
+/* BAGO */
+.card {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 48px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.6);
+    opacity: 0;
+    transform: translateY(30px);
+}
 
-        /* Brand accent bar — quiet institutional signature */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--brand-500), var(--brand-700));
-        }
-
-        .card-heading {
-            font-family: var(--font-display);
-            font-size: 17px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 22px;
-            color: #111827;
-            letter-spacing: -0.01em;
-        }
-
+.card-heading {
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 22px;
+    color: #111827;
+    letter-spacing: -0.01em;
+}
         /* ── Form Elements ── */
-        .form-group {
-            margin-bottom: 20px;
-            opacity: 0;
-            transform: translateY(8px);
-        }
+        .form-group { margin-bottom: 20px; }
 
-        .field-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: #374151;
-            margin-bottom: 7px;
-            margin-left: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
+        
+.field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 7px;
+    margin-left: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
 
-        .field-input {
-            width: 100%;
-            background: #f9fafb;
-            border: 1.5px solid #e5e7eb;
-            color: #111827;
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-size: 14px;
-            font-weight: 500;
-            font-family: inherit;
-            transition:
-                border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
-                box-shadow   180ms cubic-bezier(0.23, 1, 0.32, 1),
-                background   180ms cubic-bezier(0.23, 1, 0.32, 1);
-        }
 
-        .field-input::placeholder {
-            color: #c9cdd6;
-            font-weight: 400;
-        }
+.field-input {
+    width: 100%;
+    background: #f9fafb;
+    border: 1.5px solid #e5e7eb;
+    color: #111827;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    transition:
+        border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+        box-shadow   180ms cubic-bezier(0.23, 1, 0.32, 1),
+        background   180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
 
-        .field-input:focus {
-            border-color: var(--brand-600);
-            background: #ffffff;
-            box-shadow: 0 0 0 3px var(--brand-ring);
-            outline: none;
-        }
 
-        .field-input.error {
-            border-color: #fca5a5;
-            background: #fff5f5;
-        }
+.field-input::placeholder {
+    color: #c9cdd6;
+    font-weight: 400;
+}
 
-        .field-input.error:focus {
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
-        }
+.field-input:focus {
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+    outline: none;
+}
 
-        .field-error {
-            font-size: 11px;
-            color: #ef4444;
-            margin-top: 5px;
-            margin-left: 2px;
-            font-weight: 500;
-        }
+.field-input.error {
+    border-color: #fca5a5;
+    background: #fff5f5;
+}
 
-        /* Client-side error placeholder (hidden until JS validation fires) */
-        .js-error[hidden] { display: none; }
-
-        /* ── Honeypot (bot trap — never shown to humans) ── */
-        .hp-field {
-            position: absolute !important;
-            left: -9999px !important;
-            top: auto;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
-            opacity: 0;
-            pointer-events: none;
-        }
-
+.field-error {
+    font-size: 11px;
+    color: #ef4444;
+    margin-top: 5px;
+    margin-left: 2px;
+    font-weight: 500;
+}
         /* Password Wrap */
         .pw-wrap { position: relative; }
         .pw-wrap .field-input { padding-right: 45px; }
@@ -285,58 +222,51 @@
             transition: color 0.2s;
         }
 
+        /* PALITAN */
+
         .pw-toggle svg { width: 18px; height: 18px; }
         .icon-eye-off { display: none; }
 
         /* ── Submit Button ── */
-        .btn-submit {
-            width: 100%;
-            background: linear-gradient(135deg, var(--brand-600), var(--brand-700));
-            color: white;
-            border: none;
-            border-radius: 11px;
-            padding: 14px;
-            font-size: 14px;
-            font-weight: 700;
-            font-family: inherit;
-            cursor: pointer;
-            margin-top: 4px;
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.02em;
-            transition:
-                background  200ms cubic-bezier(0.23, 1, 0.32, 1),
-                box-shadow  200ms cubic-bezier(0.23, 1, 0.32, 1);
-            box-shadow:
-                0 1px 3px rgba(0, 0, 0, 0.10),
-                0 6px 16px rgba(22, 163, 74, 0.28);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.btn-submit {
+    width: 100%;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: white;
+    border: none;
+    border-radius: 11px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.02em;
+    transition:
+        background  200ms cubic-bezier(0.23, 1, 0.32, 1),
+        box-shadow  200ms cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.10),
+        0 4px 12px rgba(22, 163, 74, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        @media (hover: hover) and (pointer: fine) {
-            .btn-submit:hover {
-                background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
-            }
-            .pw-toggle:hover {
-                color: var(--brand-600);
-            }
-        }
-        .btn-submit:active {
-            transform: scale(0.98);
-            box-shadow:
-                0 1px 2px rgba(0, 0, 0, 0.08),
-                0 2px 6px rgba(22, 163, 74, 0.18);
-        }
-
-        /* Keyboard focus rings (accessibility) */
-        .btn-submit:focus-visible,
-        .pw-toggle:focus-visible,
-        .field-input:focus-visible {
-            outline: 2px solid var(--brand-600);
-            outline-offset: 2px;
-        }
+@media (hover: hover) and (pointer: fine) {
+    .btn-submit:hover {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+    }
+    .pw-toggle:hover {
+        color: #3b82f6;
+    }
+}
+.btn-submit:active {
+    transform: scale(0.98);
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.08),
+        0 2px 6px rgba(22, 163, 74, 0.18);
+}
 
         /* Spinner */
         .btn-spinner {
@@ -365,202 +295,174 @@
             gap: 12px;
             margin: 24px 0;
             opacity: 0;
-            transform: translateY(8px);
+                transform: translateY(8px); /* ← DAGDAG */
         }
 
-        .divider-line {
-            flex: 1;
-            height: 1px;
-            background: #e5e7eb;
-        }
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
 
-        .divider-text {
-            font-size: 11px;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 600;
-        }
+.divider-text {
+    font-size: 11px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
 
-        .restricted-note {
-            text-align: center;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.78);
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            opacity: 0;
-            transform: translateY(8px);
-            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
-        }
+.restricted-note {
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.65);
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(8px); /* ← may ; na */
+}
         .copyright {
             text-align: center;
             font-size: 11px;
-            color: rgba(226, 232, 240, 0.78);
+            color: #cbd5e1;
             margin-top: 12px;
             opacity: 0;
-            transform: translateY(8px);
-            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+                transform: translateY(8px);
         }
 
         /* Alert */
-        .alert-error {
-            background: #fef2f2;
-            border: 1.5px solid #fecaca;
-            color: #b91c1c;
-            border-radius: 10px;
-            padding: 11px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0;
-            transform: translateY(-10px);
-        }
+.alert-error {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(-10px);
+}
 
-        /* ── Checkmark draw animation ── */
-        #btn-check path {
-            stroke-dasharray: 28;
-            stroke-dashoffset: 28;
-        }
 
-        @keyframes draw-check {
-            from { stroke-dashoffset: 28; opacity: 0; }
-            to   { stroke-dashoffset: 0;  opacity: 1; }
-        }
-        .btn-submit.success {
-            background: linear-gradient(135deg, var(--brand-600), var(--brand-700));
-            pointer-events: none;
-        }
+/* ── Checkmark draw animation ── */
 
-        .btn-submit.success #btn-check {
-            display: block !important;
-            animation: draw-check 350ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
-        }
+#btn-check path {
+    stroke-dasharray: 28;
+    stroke-dashoffset: 28;
+}
 
-        .btn-submit.loading #btn-icon,
-        .btn-submit.loading #btn-check {
-            opacity: 0 !important;
-        }
+@keyframes draw-check {
+    from { stroke-dashoffset: 28; opacity: 0; }
+    to   { stroke-dashoffset: 0;  opacity: 1; }
+}
+.btn-submit.success {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    pointer-events: none;
+}
 
-        /* ── Invalid field shake (inputs only — no GSAP conflict) ── */
-        @keyframes field-shake {
-            10%, 90% { transform: translateX(-1px); }
-            20%, 80% { transform: translateX(2px); }
-            30%, 50%, 70% { transform: translateX(-4px); }
-            40%, 60% { transform: translateX(4px); }
-        }
-        .shake { animation: field-shake 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+.btn-submit.success #btn-check {
+    display: block !important;
+    animation: draw-check 350ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
 
-        .lockout-box {
-            display: none;
-            text-align: center;
-            padding: 24px 16px;
-        }
+.btn-submit.loading #btn-icon,
+.btn-submit.loading #btn-check {
+    opacity: 0 !important;
+}
 
-        .lockout-icon {
-            width: 48px;
-            height: 48px;
-            background: #fef2f2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 14px;
-            border: 1.5px solid #fecaca;
-        }
+.lockout-box {
+    display: none;
+    text-align: center;
+    padding: 24px 16px;
+}
 
-        .lockout-icon svg {
-            width: 22px;
-            height: 22px;
-            color: #ef4444;
-            stroke: #ef4444;
-        }
+.lockout-icon {
+    width: 48px;
+    height: 48px;
+    background: #fef2f2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    border: 1.5px solid #fecaca;
+}
 
-        .lockout-title {
-            font-family: var(--font-display);
-            font-size: 15px;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 6px;
-        }
+.lockout-icon svg {
+    width: 22px;
+    height: 22px;
+    color: #ef4444;
+    stroke: #ef4444;
+}
 
-        .lockout-sub {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
+.lockout-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+}
 
-        .countdown-wrap {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #f9fafb;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 12px 20px;
-        }
+.lockout-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
 
-        .countdown-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
+.countdown-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f9fafb;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 20px;
+}
 
-        .countdown-timer {
-            font-size: 22px;
-            font-weight: 800;
-            color: #ef4444;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: -0.02em;
-            min-width: 52px;
-            text-align: center;
-        }
+.countdown-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
 
-        .countdown-progress {
-            width: 100%;
-            height: 3px;
-            background: #f3f4f6;
-            border-radius: 99px;
-            margin-top: 16px;
-            overflow: hidden;
-        }
+.countdown-timer {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ef4444;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    min-width: 52px;
+    text-align: center;
+}
 
-        .countdown-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #ef4444, #f97316);
-            border-radius: 99px;
-            width: 100%;
-            transition: width 1s linear;
-        }
+.countdown-progress {
+    width: 100%;
+    height: 3px;
+    background: #f3f4f6;
+    border-radius: 99px;
+    margin-top: 16px;
+    overflow: hidden;
+}
 
-        /* ── Reduced motion (accessibility; does not affect GSAP reveal) ── */
-        @media (prefers-reduced-motion: reduce) {
-            .shake { animation: none; }
-            .field-input, .btn-submit, .pw-toggle {
-                transition-duration: 120ms;
-            }
-        }
+.countdown-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444, #f97316);
+    border-radius: 99px;
+    width: 100%;
+    transition: width 1s linear;
+}
+
+
     </style>
-
-    <noscript>
-        <style>
-            /* This page reveals via JS — keep everything visible if JS is off */
-            body { opacity: 1 !important; }
-            .card, .logo-wrap, .form-group, .divider,
-            .restricted-note, .copyright, .alert-error {
-                opacity: 1 !important;
-                transform: none !important;
-            }
-        </style>
-    </noscript>
 </head>
 <body>
 
@@ -586,61 +488,44 @@
 
     <h2 class="card-heading">Administrator Access</h2>
 
-
+    
  @if(session('error'))
     <div class="alert-error gsap-alert" id="alert-box">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <span id="alert-msg">{{ session('error') }}</span>
     </div>
 @endif
 
-        <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm" novalidate>
+        <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm">
             @csrf
-
-            {{-- Honeypot bot trap. Real users never see or fill this.
-                 IMPORTANT: also reject server-side when this field is non-empty. --}}
-            <div class="hp-field" aria-hidden="true">
-                <label for="company">Company</label>
-                <input type="text" name="company" id="company"
-                       tabindex="-1" autocomplete="off">
-            </div>
 
             {{-- Email --}}
             <div class="form-group gsap-form-item">
-                <label class="field-label" for="admin-email">Admin Email</label>
+                <label class="field-label">Admin Email</label>
                 <input type="email" name="email"
-                    id="admin-email"
                     value="{{ old('email') }}"
                     placeholder="name@school.edu.ph"
-                    autocomplete="email"
-                    inputmode="email"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    maxlength="254"
                     required
                     class="field-input {{ $errors->has('email') ? 'error' : '' }}">
                 @error('email')
                     <p class="field-error">{{ $message }}</p>
                 @enderror
-                <p class="field-error js-error" data-error-for="email" hidden></p>
             </div>
 
             {{-- Password --}}
             <div class="form-group gsap-form-item">
-                <label class="field-label" for="admin-pw">Password</label>
+                <label class="field-label">Password</label>
                 <div class="pw-wrap">
                     <input type="password" name="password"
                         id="admin-pw"
                         placeholder="••••••••"
-                        autocomplete="current-password"
-                        maxlength="100"
                         required
                         class="field-input {{ $errors->has('password') ? 'error' : '' }}">
                     <button type="button" class="pw-toggle gsap-icon-toggle"
-                        onclick="toggleAdminPw()" tabindex="-1" aria-label="Toggle password visibility">
+                        onclick="toggleAdminPw()" tabindex="-1">
                         <svg class="icon-eye" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -653,7 +538,6 @@
                 @error('password')
                     <p class="field-error">{{ $message }}</p>
                 @enderror
-                <p class="field-error js-error" data-error-for="password" hidden></p>
             </div>
 
 <button type="submit" class="btn-submit gsap-btn-submit">
@@ -681,9 +565,9 @@
     <div class="lockout-icon">
         <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75
-                  11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25
-                  2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25
+                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 
+                  11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 
+                  2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 
                   2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
         </svg>
     </div>
@@ -737,14 +621,22 @@ function toggleAdminPw() {
 document.addEventListener("DOMContentLoaded", () => {
 
     // ── Entrance sequence ──────────────────────────────
+    // initial states for a richer pop-in
+    gsap.set(".gsap-card", { scale: 0.94 });
+    gsap.set(".logo-box",  { scale: 0.45, rotation: -14, transformOrigin: "50% 50%" });
+
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-    tl.to("body",            { opacity: 1, duration: 0.35 })
-      .to(".gsap-card",      { opacity: 1, y: 0, duration: 0.45 }, "-=0.2")
-      .to(".gsap-alert",     { opacity: 1, y: 0, duration: 0.3  }, "-=0.2")
-      .to(".gsap-form-item", { opacity: 1, y: 0, stagger: 0.07, duration: 0.35 }, "-=0.2")
-      .to(".gsap-divider",   { opacity: 1, y: 0, duration: 0.3  }, "-=0.15")
-      .to(".gsap-footer",    { opacity: 1, y: 0, stagger: 0.06, duration: 0.3  }, "-=0.15");
+    tl.to("body",            { opacity: 1, duration: 0.3 })
+      .to(".gsap-card",      { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power4.out" }, "-=0.1")
+      .to(".logo-box",       { scale: 1, rotation: 0, duration: 0.8, ease: "back.out(1.9)" }, "-=0.4")
+      .to(".gsap-alert",     { opacity: 1, y: 0, duration: 0.3  }, "-=0.45")
+      .to(".gsap-form-item", { opacity: 1, y: 0, stagger: 0.09, duration: 0.4 }, "-=0.3")
+      .to(".gsap-btn-submit",{ opacity: 1, y: 0, duration: 0.4 }, "-=0.15")
+      .to(".gsap-divider",   { opacity: 1, y: 0, duration: 0.3  }, "-=0.2")
+      .to(".gsap-footer",    { opacity: 1, y: 0, stagger: 0.06, duration: 0.3  }, "-=0.15")
+      // gentle continuous float on the logo
+      .to(".logo-box",       { y: -6, duration: 2.2, ease: "sine.inOut", yoyo: true, repeat: -1 }, "+=0.05");
 
 // ── Lockout detection ──────────────────────────────
 const alertMsg  = document.getElementById('alert-msg');
@@ -763,7 +655,7 @@ function activateLockout() {
     const submitBtn  = document.querySelector('.gsap-btn-submit');
     const lockoutBox = document.getElementById('lockout-box');
     const alertBox   = document.getElementById('alert-box');
-    const TOTAL_SECS = 45;
+    const TOTAL_SECS = 45; 
 
     // ── Check kung reload mid-lockout ──
     const storedEnd = sessionStorage.getItem('lockout_end');
@@ -885,87 +777,17 @@ function startCountdown(totalSecs) {
     btn.addEventListener("mouseup",    () => gsap.to(btn, { scale: 1,    duration: 0.12 }));
     btn.addEventListener("mouseleave", () => gsap.to(btn, { scale: 1,    duration: 0.12 }));
 
-    // ── Client-side validation (UX layer — the server is the real gate) ──
+    // ── Form submit ────────────────────────────────────
     const form     = document.getElementById('adminLoginForm');
     const btnIcon  = document.getElementById('btn-icon');
     const btnCheck = document.getElementById('btn-check');
     const btnText  = document.getElementById('btn-text');
 
-    const emailField = document.getElementById('admin-email');
-    const passField  = document.getElementById('admin-pw');
-    const honeypot   = document.getElementById('company');
-    const EMAIL_RE   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    function errorEl(name) {
-        return document.querySelector('.js-error[data-error-for="' + name + '"]');
-    }
-    function showError(field, name, message) {
-        field.classList.add('error');
-        field.setAttribute('aria-invalid', 'true');
-        const el = errorEl(name);
-        if (el) { el.textContent = message; el.hidden = false; }
-        if (!prefersReduced) {
-            field.classList.remove('shake');
-            void field.offsetWidth; // reflow so the animation can replay
-            field.classList.add('shake');
-        }
-    }
-    function clearError(field, name) {
-        field.classList.remove('error');
-        field.removeAttribute('aria-invalid');
-        const el = errorEl(name);
-        if (el) { el.hidden = true; el.textContent = ''; }
-    }
-    function validateForm() {
-        let valid = true, firstInvalid = null;
-
-        const emailVal = emailField.value.trim();
-        if (emailVal === '') {
-            showError(emailField, 'email', 'Admin email is required.');
-            valid = false; firstInvalid = firstInvalid || emailField;
-        } else if (!EMAIL_RE.test(emailVal)) {
-            showError(emailField, 'email', 'Please enter a valid email address.');
-            valid = false; firstInvalid = firstInvalid || emailField;
-        } else {
-            clearError(emailField, 'email');
-        }
-
-        if (passField.value === '') {
-            showError(passField, 'password', 'Password is required.');
-            valid = false; firstInvalid = firstInvalid || passField;
-        } else {
-            clearError(passField, 'password');
-        }
-
-        if (firstInvalid) firstInvalid.focus();
-        return valid;
-    }
-
-    // Clear a field's error as soon as the user starts correcting it
-    emailField.addEventListener('input', () => clearError(emailField, 'email'));
-    passField.addEventListener('input', () => clearError(passField, 'password'));
-    [emailField, passField].forEach(f => {
-        f.addEventListener('animationend', () => f.classList.remove('shake'));
-    });
-
-    // ── Form submit ────────────────────────────────────
     form.addEventListener('submit', function (e) {
         if (btn.classList.contains('loading') || btn.classList.contains('success')) {
             e.preventDefault();
             return;
         }
-        // Bot trap: silently block if the hidden field was filled
-        if (honeypot && honeypot.value.trim() !== '') {
-            e.preventDefault();
-            return;
-        }
-        // Stop the submit (and the loading state) when input is invalid
-        if (!validateForm()) {
-            e.preventDefault();
-            return;
-        }
-
         btn.classList.add('loading');
         btn.disabled = true;
         btnIcon.style.opacity = '0';
