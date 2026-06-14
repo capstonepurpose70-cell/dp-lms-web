@@ -150,12 +150,7 @@
     </div>
 
     {{-- Flash --}}
-    @if(session('success'))
-        <div class="en-flash en-flash-success">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
+    
     @if(session('error'))
         <div class="en-flash en-flash-error">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>

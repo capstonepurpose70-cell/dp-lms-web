@@ -726,16 +726,23 @@
 
         /* Success alert */
         .alert-success {
+            position: fixed;
+            top: 70px; left: 50%;
+            transform: translateX(-50%) translateY(-18px);
+            z-index: 9999;
             display: flex; align-items: center; gap: 0.75rem;
             background: var(--success-light);
-            border: 1px solid rgba(5, 150, 105, 0.2);
+            border: 1px solid rgba(5, 150, 105, 0.25);
             color: var(--success);
-            padding: 0.875rem 1.125rem;
+            padding: 0.85rem 1.25rem;
             border-radius: var(--r-lg);
-            margin-bottom: 1.5rem;
-            font-size: 13.5px; font-weight: 500;
-            animation: slideDown 0.35s var(--ease-out);
+            font-size: 13.5px; font-weight: 600;
+            box-shadow: 0 12px 32px rgba(0,0,0,.14);
+            max-width: 90vw;
+            opacity: 0; pointer-events: none;
+            transition: opacity .4s ease, transform .45s cubic-bezier(.16,1,.3,1);
         }
+        .alert-success.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .alert-success svg { width: 18px; height: 18px; flex-shrink: 0; }
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-8px); }
@@ -1142,7 +1149,7 @@
     ════════════════════════════════ --}}
     <main class="main-content" id="mainContent">
         @if(session('success'))
-            <div class="alert-success" role="alert">
+            <div class="alert-success" id="appToast" role="alert">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -2000,5 +2007,17 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
 
 </script>
 
+
+<script>
+(function () {
+    var t = document.getElementById('appToast');
+    if (!t) return;
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () {
+        t.classList.remove('show');
+        setTimeout(function () { if (t && t.parentNode) t.parentNode.removeChild(t); }, 480);
+    }, 3000);
+})();
+</script>
 </body>
 </html>

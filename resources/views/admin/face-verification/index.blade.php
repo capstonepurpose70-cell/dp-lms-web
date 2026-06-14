@@ -12,13 +12,6 @@
         </p>
     </div>
 
-    @if (session('success'))
-        <div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;
-                    padding:12px 16px;border-radius:12px;font-size:13px;margin-bottom:18px;">
-            {{ session('success') }}
-        </div>
-    @endif
-
     {{-- ── PENDING ─────────────────────────────────────────────── --}}
     <h2 style="font-size:14px;font-weight:700;color:#334155;margin:0 0 12px;">
         Pending ({{ $pending->count() }})
