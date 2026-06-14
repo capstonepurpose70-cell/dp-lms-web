@@ -341,6 +341,7 @@
                     @error('birthdate')
                         <p class="field-error">{{ $message }}</p>
                     @enderror
+                    <p id="birthHint" style="font-size:12px;color:#16a34a;margin-top:5px;font-weight:600;line-height:1.4;"></p>
                 </div>
                 <div>
                     <label class="field-label">Gender *</label>
@@ -438,5 +439,25 @@
     function blockLetters(input) {
         input.value = input.value.replace(/[a-zA-Z]/g, '');
     }
+
+    // Age -> auto-compute Birthdate (estimated birth year from age)
+    (function () {
+        var ageEl = document.querySelector('input[name="age"]');
+        var bdEl  = document.querySelector('input[name="birthdate"]');
+        var hint  = document.getElementById('birthHint');
+        if (!ageEl || !bdEl) return;
+        var MONTHS = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+        ageEl.addEventListener('input', function () {
+            var age = parseInt(ageEl.value, 10);
+            if (isNaN(age) || age < 1 || age > 120) { if (hint) hint.textContent = ''; return; }
+            var now = new Date();
+            var by  = now.getFullYear() - age;
+            var mm  = String(now.getMonth() + 1).padStart(2, '0');
+            var dd  = String(now.getDate()).padStart(2, '0');
+            bdEl.value = by + '-' + mm + '-' + dd;
+            if (hint) hint.textContent = 'Estimated: born around ' + MONTHS[now.getMonth()] + ' ' + by + '. I-adjust ang eksaktong araw kung kailangan.';
+        });
+    })();
 </script>
 @endsection

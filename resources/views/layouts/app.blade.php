@@ -642,6 +642,13 @@ const NAV_ITEMS = [
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14
                  a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>`
 },
+    {
+        href : '{{ route('student.face.register') }}',
+        label: 'Register Face',
+        icon : `<path stroke-linecap="round" stroke-linejoin="round"
+                  d="M7 4H5a1 1 0 00-1 1v2m13-3h2a1 1 0 011 1v2M7 20H5a1 1 0 01-1-1v-2m13 3h2a1 1 0 001-1v-2
+                     M9.5 14s1 1.2 2.5 1.2 2.5-1.2 2.5-1.2M9.5 9.5h.01M14.5 9.5h.01"/>`
+    },
 
     @if(!auth()->user()->studentEnrollment)
     {
