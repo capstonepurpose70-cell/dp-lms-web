@@ -1,6 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('admin-theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        /* ═══════════ DARK MODE ═══════════ */
+        [data-theme="dark"] {
+            --surface-page:    #0b1220;
+            --surface-card:    #131c2e;
+            --surface-nav:     #0f1827;
+            --surface-sidebar: #0a1422;
+            --white:           #131c2e;
+            --slate-50:        #0f1827;
+            --slate-200:       #2a3850;
+            --slate-400:       #6b788d;
+            --slate-500:       #93a0b4;
+            --slate-700:       #c2cbd9;
+            --slate-900:       #e8eef7;
+            --border-default:  #25324a;
+            --border-nav:      rgba(255,255,255,0.07);
+            --um-blue-50:      #14233c;
+            --um-blue-100:     #1b2f4d;
+            /* light surfaces used by hover states -> darken so text stays visible */
+            --slate-100:       #1b2740;
+            --blue-50:         #14233c;
+            --blue-100:        #1b2f4d;
+            --blue-700:        #85b8f7;  /* hover text -> light blue (readable on dark) */
+        }
+        /* Keep sidebar brand + nav hover/active text WHITE (they use var(--white) which is now dark) */
+        [data-theme="dark"] .sidebar-brand-name,
+        [data-theme="dark"] .nav-link:hover,
+        [data-theme="dark"] .nav-link.active { color: #ffffff !important; }
+        /* Inputs/search readable on dark */
+        [data-theme="dark"] input,
+        [data-theme="dark"] textarea,
+        [data-theme="dark"] select { color: var(--slate-900); }
+        [data-theme="dark"] ::placeholder { color: var(--slate-400); }
+        /* smooth, GPU-cheap transitions (targeted, NOT global * — avoids lag) */
+        html, body, .topbar, .main-content, .app-shell, .sidebar,
+        .notif-panel, .settings-panel, .user-chip, .nav-link, .icon-btn {
+            transition: background-color .28s ease, color .28s ease, border-color .28s ease;
+        }
+        /* dark-toggle icon swap */
+        #darkToggle .dt-moon { display: none; }
+        [data-theme="dark"] #darkToggle .dt-sun  { display: none; }
+        [data-theme="dark"] #darkToggle .dt-moon { display: block; }
+    </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -1006,9 +1058,9 @@
                data-tooltip="User Management"
                data-barba-prevent="self">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round"
-          d="M18 21a8 8 0 10-16 0M10 13a4 4 0 100-8 4 4 0 000 8zm8 1a3 3 0 100-6 3 3 0 000 6zm2 7a6 6 0 00-9.33-5"/>
-</svg>
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-12a3 3 0 11-6 0 3 3 0 016 0zM6 8a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
                 <span class="nav-link-label">User Management</span>
             </a>
 
@@ -1112,6 +1164,16 @@
 
         {{-- Right: notifications, settings, user chip --}}
         <div class="topbar-right">
+
+            {{-- Dark mode toggle --}}
+            <button class="icon-btn" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <svg class="dt-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <svg class="dt-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+            </button>
 
             {{-- Notifications --}}
             <button class="icon-btn" id="notifBtn" aria-label="Notifications">
@@ -1560,7 +1622,7 @@ function skeletonDashboard() {
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
             ${[0,1,2,3].map(() => `
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:1.25rem 1.375rem;position:relative;overflow:hidden;">
+            <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;padding:1.25rem 1.375rem;position:relative;overflow:hidden;">
                 <div class="sk" style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;"></div>
                 <div class="sk" style="width:40px;height:40px;border-radius:10px;margin-bottom:14px;"></div>
                 <div class="sk" style="height:9px;width:55%;margin-bottom:10px;"></div>
@@ -1568,12 +1630,12 @@ function skeletonDashboard() {
                 <div class="sk" style="height:9px;width:65%;"></div>
             </div>`).join('')}
         </div>
-        <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:1.25rem;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.125rem 1.5rem;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+        <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.125rem 1.5rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);">
                 <div class="sk" style="height:14px;width:180px;"></div>
                 <div class="sk" style="height:30px;width:150px;border-radius:8px;"></div>
             </div>
-            <div style="display:flex;gap:1.25rem;padding:0.75rem 1.5rem;border-bottom:1px solid #f1f5f9;">
+            <div style="display:flex;gap:1.25rem;padding:0.75rem 1.5rem;border-bottom:1px solid var(--border-default);">
                 <div class="sk" style="height:10px;width:90px;"></div>
                 <div class="sk" style="height:10px;width:75px;"></div>
                 <div class="sk" style="height:10px;width:60px;"></div>
@@ -1583,14 +1645,14 @@ function skeletonDashboard() {
             </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.375rem;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+            <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.375rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);">
                     <div class="sk" style="height:13px;width:160px;"></div>
                     <div class="sk" style="height:12px;width:55px;"></div>
                 </div>
                 <div style="padding:0 1.375rem;">
                     ${[0,1,2,3].map(() => `
-                    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.875rem 0;border-bottom:1px solid #f8fafc;">
+                    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.875rem 0;border-bottom:1px solid var(--border-default);">
                         <div class="sk" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;"></div>
                         <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
                             <div class="sk" style="height:11px;width:65%;"></div>
@@ -1600,14 +1662,14 @@ function skeletonDashboard() {
                     </div>`).join('')}
                 </div>
             </div>
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.375rem;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+            <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.375rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);">
                     <div class="sk" style="height:13px;width:130px;"></div>
                     <div class="sk" style="height:12px;width:55px;"></div>
                 </div>
                 <div style="padding:0 1.375rem;">
                     ${[0,1,2,3,4].map(() => `
-                    <div style="display:flex;align-items:flex-start;gap:0.75rem;padding:0.875rem 0;border-bottom:1px solid #f8fafc;">
+                    <div style="display:flex;align-items:flex-start;gap:0.75rem;padding:0.875rem 0;border-bottom:1px solid var(--border-default);">
                         <div class="sk" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;"></div>
                         <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
                             <div class="sk" style="height:11px;width:75%;"></div>
@@ -1629,7 +1691,7 @@ function skeletonUsers() {
                 <div class="sk" style="height:13px;width:280px;"></div>
             </div>
         </div>
-        <div style="display:flex;gap:4px;border-bottom:1px solid #e2e8f0;margin-bottom:1.25rem;">
+        <div style="display:flex;gap:4px;border-bottom:1px solid var(--border-default);margin-bottom:1.25rem;">
             ${['120px','100px','90px','90px'].map(w => `
             <div style="padding:8px 14px;border-radius:8px 8px 0 0;">
                 <div class="sk" style="height:12px;width:${w};"></div>
@@ -1645,13 +1707,13 @@ function skeletonUsers() {
             ${[0,1,2,3,4,5,6].map(() => `
             <div class="sk" style="height:30px;width:52px;border-radius:8px;"></div>`).join('')}
         </div>
-        <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:12px 20px;gap:16px;align-items:center;">
+        <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;background:var(--slate-50);border-bottom:1px solid var(--border-default);padding:12px 20px;gap:16px;align-items:center;">
                 ${['140px','80px','100px','80px','80px','40px'].map(w => `
                 <div class="sk" style="height:10px;width:${w};"></div>`).join('')}
             </div>
             ${[0,1,2,3,4,5,6].map(i => `
-            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;padding:14px 20px;border-bottom:1px solid #f8fafc;align-items:center;gap:16px;">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;padding:14px 20px;border-bottom:1px solid var(--border-default);align-items:center;gap:16px;">
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div class="sk" style="width:34px;height:34px;border-radius:8px;flex-shrink:0;"></div>
                     <div>
@@ -1670,7 +1732,7 @@ function skeletonUsers() {
                     <div class="sk" style="width:30px;height:30px;border-radius:6px;"></div>
                 </div>
             </div>`).join('')}
-            <div style="padding:12px 20px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;gap:6px;">
+            <div style="padding:12px 20px;border-top:1px solid var(--border-default);background:var(--slate-50);display:flex;gap:6px;">
                 ${[0,1,2,3,4].map(() => `
                 <div class="sk" style="height:28px;width:32px;border-radius:6px;"></div>`).join('')}
             </div>
@@ -1684,13 +1746,13 @@ function skeletonDefault() {
             <div class="sk" style="height:22px;width:150px;margin-bottom:8px;border-radius:8px;"></div>
             <div class="sk" style="height:13px;width:220px;"></div>
         </div>
-        <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-            <div style="padding:1rem 1.5rem;border-bottom:1px solid #f1f5f9;background:#f8fafc;display:flex;justify-content:space-between;">
+        <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;">
+            <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);display:flex;justify-content:space-between;">
                 <div class="sk" style="height:14px;width:160px;"></div>
                 <div class="sk" style="height:30px;width:100px;border-radius:8px;"></div>
             </div>
             ${[0,1,2,3,4,5].map(() => `
-            <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #f8fafc;">
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--border-default);">
                 <div class="sk" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;"></div>
                 <div class="sk" style="height:11px;flex:2;"></div>
                 <div class="sk" style="height:11px;flex:1;"></div>
@@ -1710,7 +1772,7 @@ function skeletonAuditLogs() {
         </div>
         <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
             ${[0,1,2,3].map(() => `
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:0.875rem 1.25rem;display:flex;align-items:center;gap:0.75rem;flex:1;min-width:140px;">
+            <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;padding:0.875rem 1.25rem;display:flex;align-items:center;gap:0.75rem;flex:1;min-width:140px;">
                 <div class="sk" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;"></div>
                 <div>
                     <div class="sk" style="height:22px;width:45px;margin-bottom:6px;border-radius:6px;"></div>
@@ -1718,27 +1780,27 @@ function skeletonAuditLogs() {
                 </div>
             </div>`).join('')}
         </div>
-        <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;padding:0.875rem 1.25rem;display:flex;align-items:center;gap:0.65rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;padding:0.875rem 1.25rem;display:flex;align-items:center;gap:0.65rem;margin-bottom:1.25rem;flex-wrap:wrap;">
             <div class="sk" style="height:34px;width:220px;border-radius:999px;"></div>
             <div class="sk" style="height:34px;width:120px;border-radius:10px;"></div>
             <div class="sk" style="height:34px;width:130px;border-radius:10px;"></div>
             <div class="sk" style="height:34px;width:140px;border-radius:10px;"></div>
             <div class="sk" style="height:34px;width:80px;border-radius:10px;"></div>
         </div>
-        <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+        <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);">
                 <div style="display:flex;align-items:center;gap:0.5rem;">
                     <div class="sk" style="width:15px;height:15px;border-radius:4px;"></div>
                     <div class="sk" style="height:13px;width:130px;"></div>
                 </div>
                 <div class="sk" style="height:24px;width:90px;border-radius:999px;"></div>
             </div>
-            <div style="display:grid;grid-template-columns:1.2fr 1.4fr 0.8fr 0.9fr 2fr 1fr;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:10px 20px;gap:16px;align-items:center;">
+            <div style="display:grid;grid-template-columns:1.2fr 1.4fr 0.8fr 0.9fr 2fr 1fr;background:var(--slate-50);border-bottom:1px solid var(--border-default);padding:10px 20px;gap:16px;align-items:center;">
                 ${['80px','90px','60px','70px','120px','80px'].map(w => `
                 <div class="sk" style="height:10px;width:${w};"></div>`).join('')}
             </div>
             ${[0,1,2,3,4,5,6,7].map(i => `
-            <div style="display:grid;grid-template-columns:1.2fr 1.4fr 0.8fr 0.9fr 2fr 1fr;padding:14px 20px;border-bottom:1px solid #f8fafc;align-items:center;gap:16px;">
+            <div style="display:grid;grid-template-columns:1.2fr 1.4fr 0.8fr 0.9fr 2fr 1fr;padding:14px 20px;border-bottom:1px solid var(--border-default);align-items:center;gap:16px;">
                 <div>
                     <div class="sk" style="height:11px;width:85px;margin-bottom:5px;"></div>
                     <div class="sk" style="height:9px;width:60px;"></div>
@@ -1752,7 +1814,7 @@ function skeletonAuditLogs() {
                 <div><div class="sk" style="height:11px;width:${120+(i*23)%80}px;"></div></div>
                 <div><div class="sk" style="height:22px;width:90px;border-radius:6px;"></div></div>
             </div>`).join('')}
-            <div style="padding:12px 20px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;gap:6px;">
+            <div style="padding:12px 20px;border-top:1px solid var(--border-default);background:var(--slate-50);display:flex;gap:6px;">
                 ${[0,1,2,3,4].map(() => `
                 <div class="sk" style="height:28px;width:32px;border-radius:6px;"></div>`).join('')}
             </div>
@@ -1770,8 +1832,8 @@ function skeletonForm() {
             </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;">
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-                <div style="display:flex;align-items:center;gap:0.75rem;padding:1.1rem 1.5rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+            <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;">
+                <div style="display:flex;align-items:center;gap:0.75rem;padding:1.1rem 1.5rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);">
                     <div class="sk" style="width:32px;height:32px;border-radius:10px;flex-shrink:0;"></div>
                     <div class="sk" style="height:14px;width:160px;"></div>
                 </div>
@@ -1788,7 +1850,7 @@ function skeletonForm() {
                         <div class="sk" style="height:10px;width:80px;margin-bottom:8px;border-radius:4px;"></div>
                         <div class="sk" style="height:40px;width:100%;border-radius:10px;"></div>
                     </div>`).join('')}
-                    <div style="height:1px;background:#e2e8f0;margin:1.25rem 0;"></div>
+                    <div style="height:1px;background:var(--border-default);margin:1.25rem 0;"></div>
                     <div class="sk" style="height:10px;width:60px;margin-bottom:1rem;border-radius:4px;"></div>
                     ${[0,1].map(() => `
                     <div style="margin-bottom:1.25rem;">
@@ -1801,14 +1863,14 @@ function skeletonForm() {
                 </div>
             </div>
             <div>
-                <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:1rem;">
+                <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
                     <div style="padding:1.5rem;">
                         <div class="sk" style="height:42px;width:100%;border-radius:10px;margin-bottom:0.6rem;"></div>
                         <div class="sk" style="height:40px;width:100%;border-radius:10px;"></div>
                     </div>
                 </div>
-                <div style="background:white;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-                    <div style="padding:1rem 1.25rem 0.75rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+                <div style="background:var(--surface-card);border:1px solid var(--border-default);border-radius:14px;overflow:hidden;">
+                    <div style="padding:1rem 1.25rem 0.75rem;border-bottom:1px solid var(--border-default);background:var(--slate-50);">
                         <div class="sk" style="height:10px;width:140px;border-radius:4px;"></div>
                     </div>
                     <div style="padding:1.25rem;">
@@ -2017,6 +2079,23 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
         t.classList.remove('show');
         setTimeout(function () { if (t && t.parentNode) t.parentNode.removeChild(t); }, 480);
     }, 3000);
+})();
+</script>
+
+<script>
+(function () {
+    var btn = document.getElementById('darkToggle');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            try { localStorage.setItem('admin-theme', 'light'); } catch (e) {}
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            try { localStorage.setItem('admin-theme', 'dark'); } catch (e) {}
+        }
+    });
 })();
 </script>
 </body>
