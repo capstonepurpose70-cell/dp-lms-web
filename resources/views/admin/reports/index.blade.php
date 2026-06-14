@@ -382,7 +382,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
+    function startReports() {
 
     var FONT = "'Plus Jakarta Sans', sans-serif";
 
@@ -553,6 +554,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     });
-});
+
+    } /* end startReports */
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startReports);
+    } else {
+        startReports();   /* DOM already parsed (cached/normal refresh) */
+    }
+})();
 </script>
 @endsection

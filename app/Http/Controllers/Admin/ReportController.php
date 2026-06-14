@@ -44,7 +44,7 @@ class ReportController extends Controller
             ->with(['teacherSubjects.subject', 'teacherSubjects.section'])
             ->get();
 
-        return view('admin.reports.index', compact(
+        return response()->view('admin.reports.index', compact(
             'totalStudents',
             'approvedStudents',
             'pendingStudents',
@@ -57,6 +57,6 @@ class ReportController extends Controller
             'enrollmentsByGrade',
             'approvedByGrade',
             'teacherStats',
-        ));
+        ))->header('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
 }
