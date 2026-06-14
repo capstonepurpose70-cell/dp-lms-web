@@ -112,6 +112,7 @@ Route::middleware(['auth', 'role:student', 'approved'])
         Route::post('/quizzes/{assignment}/submit',[App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('quizzes.submit');
         Route::get('/grades',    [StudentDashboardController::class, 'grades'])->name('grades');
         Route::get('/messages',  [StudentDashboardController::class, 'messages'])->name('messages');
+        Route::post('/messages', [StudentDashboardController::class, 'storeMessage'])->name('messages.store');
 Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name('subjects');
         Route::get('/enroll',    [StudentDashboardController::class, 'enrollmentForm'])->name('enroll');
         Route::post('/enroll',   [StudentDashboardController::class, 'submitEnrollment'])->name('enroll.submit');
