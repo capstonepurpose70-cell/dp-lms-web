@@ -31,6 +31,14 @@ class ReportController extends Controller
             ->orderBy('grade_level')
             ->get();
 
+        // Approved students per grade (pre-computed so the view stays simple/reliable)
+        $approvedByGrade = $enrollmentsByGrade->map(fn ($row) =>
+            User::where('role', 'student')
+                ->where('status', 'approved')
+                ->whereHas('studentEnrollment', fn ($q) => $q->where('grade_level', $row->grade_level))
+                ->count()
+        )->values();
+
         $teacherStats = User::where('role', 'teacher')
             ->where('status', 'approved')
             ->with(['teacherSubjects.subject', 'teacherSubjects.section'])
@@ -47,6 +55,7 @@ class ReportController extends Controller
             'totalUsers',
             'registrationsByRole',
             'enrollmentsByGrade',
+            'approvedByGrade',
             'teacherStats',
         ));
     }
