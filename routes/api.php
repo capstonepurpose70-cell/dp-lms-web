@@ -66,4 +66,13 @@ Route::delete('/announcements/{id}', [App\Http\Controllers\Api\Teacher\Dashboard
         Route::get('/dashboard',     [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'index']);
         Route::get('/child-records', [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'childRecords']);
     });
+
+    // Messaging (shared: student <-> teacher)
+    Route::prefix('messages')->group(function () {
+        Route::get('/',               [App\Http\Controllers\Api\MessageController::class, 'conversations']);
+        Route::get('/contacts',       [App\Http\Controllers\Api\MessageController::class, 'contacts']);
+        Route::get('/thread/{user}',  [App\Http\Controllers\Api\MessageController::class, 'thread']);
+        Route::post('/thread/{user}', [App\Http\Controllers\Api\MessageController::class, 'send']);
+    });
+
 });
