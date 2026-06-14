@@ -98,7 +98,6 @@
                 </p>
                 <p style="font-size:11px;color:#9ca3af;">
                     {{ $record->user->section->name ?? '—' }}
-                    · LRN: {{ $record->student_id }}
                 </p>
             </div>
             <div class="text-right flex-shrink-0">
@@ -107,7 +106,6 @@
                 </p>
                 <div class="flex gap-1 justify-end mt-1">
                     <span class="badge-present">{{ strtoupper($record->status) }}</span>
-                    <span class="badge-iot">{{ strtoupper($record->source) }}</span>
                 </div>
             </div>
         </div>
