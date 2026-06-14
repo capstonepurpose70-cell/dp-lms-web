@@ -287,6 +287,7 @@
         flex-shrink: 0;
         box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
+    .um-avatar svg { width: 19px; height: 19px; }
 
     .um-badge {
         display: inline-flex;
@@ -868,8 +869,11 @@
     {{-- ── Page header ─────────────────────────────────── --}}
 <div class="um-header">
     <div class="um-header-icon" aria-hidden="true">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.9">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M18 21a8 8 0 10-16 0M10 13a4 4 0 100-8 4 4 0 000 8zm8 1a3 3 0 100-6 3 3 0 000 6zm2 7a6 6 0 00-9.33-5"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
     </div>
     <div class="um-header-meta">
@@ -1035,7 +1039,7 @@
                         <td>
                             <div style="display:flex; align-items:center; gap:0.75rem;">
                                 <div class="um-avatar" style="background:#0d9488;">
-                                    {{ strtoupper(substr($student->name, 0, 1)) }}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 </div>
                                 <div>
                                     <p style="font-weight:600; font-size:13px; color:var(--slate-900); margin:0;">{{ $student->name }}</p>
@@ -1155,7 +1159,7 @@
                         <td>
                             <div style="display:flex; align-items:center; gap:0.75rem;">
                                 <div class="um-avatar" style="background:#2563eb;">
-                                    {{ strtoupper(substr($teacher->name, 0, 1)) }}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 </div>
                                 <div>
                                     <p style="font-weight:600; font-size:13px; color:var(--slate-900); margin:0;">{{ $teacher->name }}</p>
@@ -1248,7 +1252,7 @@
                         <td>
                             <div style="display:flex; align-items:center; gap:0.75rem;">
                                 <div class="um-avatar" style="background:#7c3aed;">
-                                    {{ strtoupper(substr($member->name, 0, 1)) }}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 </div>
                                 <div>
                                     <p style="font-weight:600; font-size:13px; color:var(--slate-900); margin:0;">{{ $member->name }}</p>
@@ -1320,7 +1324,7 @@
                         <td>
                             <div style="display:flex; align-items:center; gap:0.75rem;">
                                 <div class="um-avatar" style="background:#d97706;">
-                                    {{ strtoupper(substr($parent->name, 0, 1)) }}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 </div>
                                 <div>
                                     <p style="font-weight:600; font-size:13px; color:var(--slate-900); margin:0;">{{ $parent->name }}</p>
