@@ -424,6 +424,40 @@
                 transition-duration: 0.01ms !important;
             }
         }
+
+        /* ═══════════ MOBILE RESPONSIVE ═══════════ */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform .3s cubic-bezier(.4,0,.2,1);
+                width: 250px !important;
+                box-shadow: 4px 0 24px rgba(0,0,0,.18);
+            }
+            body.mobile-open .sidebar { transform: translateX(0); }
+            body.collapsed .sidebar { width: 250px !important; }
+            body.collapsed .sidebar-nav a { justify-content: flex-start; padding: 10px 14px; }
+            body.collapsed .nav-label { opacity: 1 !important; max-width: none !important; }
+            body.collapsed .sidebar-section-label { opacity: 1 !important; }
+
+            .main-content,
+            body.collapsed .main-content {
+                margin-left: 0 !important;
+                padding: 18px 16px;
+            }
+            .nav-brand-zone,
+            body.collapsed .nav-brand-zone { width: auto !important; }
+            body.collapsed .nav-brand { opacity: 1 !important; max-width: 190px !important; pointer-events: auto !important; }
+
+            .sidebar-backdrop {
+                position: fixed; inset: var(--nav-h) 0 0 0; z-index: 85;
+                background: rgba(15,23,42,.45); opacity: 0; pointer-events: none;
+                transition: opacity .3s;
+            }
+            body.mobile-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+        }
+        @media (min-width: 769px) {
+            .sidebar-backdrop { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -506,6 +540,7 @@
             </button>
         </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <main class="main-content">
         @yield('content')
@@ -605,9 +640,20 @@
     const body = document.body;
     const CKEY = 'dp-lms-faculty-collapsed';
     if (localStorage.getItem(CKEY) === '1') body.classList.add('collapsed');
+    const IS_MOBILE = () => window.matchMedia('(max-width: 768px)').matches;
     document.getElementById('collapseBtn').addEventListener('click', () => {
-        body.classList.toggle('collapsed');
-        localStorage.setItem(CKEY, body.classList.contains('collapsed') ? '1' : '0');
+        if (IS_MOBILE()) {
+            body.classList.toggle('mobile-open');
+        } else {
+            body.classList.toggle('collapsed');
+            localStorage.setItem(CKEY, body.classList.contains('collapsed') ? '1' : '0');
+        }
+    });
+    const _backdrop = document.getElementById('sidebarBackdrop');
+    if (_backdrop) _backdrop.addEventListener('click', () => body.classList.remove('mobile-open'));
+    const _snav = document.getElementById('sidebarNav');
+    if (_snav) _snav.addEventListener('click', (e) => {
+        if (IS_MOBILE() && e.target.closest('a')) body.classList.remove('mobile-open');
     });
 
     /* Logout modal */
