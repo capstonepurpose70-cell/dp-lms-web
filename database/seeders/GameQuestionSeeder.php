@@ -9,87 +9,87 @@ class GameQuestionSeeder extends Seeder
 {
     public function run(): void
     {
+        // Replace the curated set cleanly (removes any older/non-English rows).
+        GameQuestion::query()->delete();
+
         $questions = [
 
             // ───────────── GRADE 11 — Physical Science (Formula Clash) ─────────────
-            ['11', 'Chemistry', 'easy', 'Ano ang pinakamaliit na unit ng isang element na nagtataglay pa rin ng properties nito?',
+            ['11', 'Chemistry', 'easy', 'What is the smallest unit of an element that still keeps its properties?',
                 ['Molecule', 'Atom', 'Compound', 'Ion'], 1],
-            ['11', 'Chemistry', 'easy', 'Aling subatomic particle ang may negatibong charge?',
+            ['11', 'Chemistry', 'easy', 'Which subatomic particle carries a negative charge?',
                 ['Proton', 'Neutron', 'Electron', 'Nucleus'], 2],
-            ['11', 'Physics', 'easy', 'Ano ang SI unit ng force?',
+            ['11', 'Physics', 'easy', 'What is the SI unit of force?',
                 ['Joule', 'Watt', 'Newton', 'Pascal'], 2],
-            ['11', 'Physics', 'medium', 'Ayon sa Newton\'s Second Law, F = ma. Kung m = 2 kg at a = 3 m/s², ano ang F?',
+            ['11', 'Physics', 'medium', 'By Newton\'s Second Law, F = ma. If m = 2 kg and a = 3 m/s², what is F?',
                 ['5 N', '6 N', '1.5 N', '8 N'], 1],
-            ['11', 'Chemistry', 'medium', 'Anong uri ng bond ang nabubuo kapag ang mga atomo ay NAGBABAHAGI ng electrons?',
+            ['11', 'Chemistry', 'medium', 'Which type of bond forms when atoms SHARE electrons?',
                 ['Ionic bond', 'Covalent bond', 'Metallic bond', 'Hydrogen bond'], 1],
-            ['11', 'Chemistry', 'medium', 'Ilan ang protons sa isang atom ng Carbon (atomic number 6)?',
+            ['11', 'Chemistry', 'medium', 'How many protons are in a Carbon atom (atomic number 6)?',
                 ['12', '6', '8', '14'], 1],
-            ['11', 'Physics', 'medium', 'Ano ang tawag sa enerhiya dahil sa galaw (motion) ng isang bagay?',
+            ['11', 'Physics', 'medium', 'What is the energy an object has due to its motion?',
                 ['Potential energy', 'Kinetic energy', 'Thermal energy', 'Chemical energy'], 1],
-            ['11', 'Physics', 'hard', 'Isang bagay na 10 kg ay tumataas sa 5 m. Ano ang potential energy nito? (g = 9.8 m/s²)',
+            ['11', 'Physics', 'hard', 'A 10 kg object is raised to 5 m. What is its potential energy? (g = 9.8 m/s²)',
                 ['49 J', '490 J', '50 J', '98 J'], 1],
-            ['11', 'Chemistry', 'hard', 'Sa chemical equation na 2H₂ + O₂ → 2H₂O, ilan ang water molecules na nabubuo mula sa 2 hydrogen molecules?',
+            ['11', 'Chemistry', 'hard', 'In 2H₂ + O₂ → 2H₂O, how many water molecules form from 2 hydrogen molecules?',
                 ['1', '2', '3', '4'], 1],
-            ['11', 'Physics', 'hard', 'Kung ang isang sasakyan ay tumakbo ng 100 m sa loob ng 20 s, ano ang average speed nito?',
+            ['11', 'Physics', 'hard', 'A car travels 100 m in 20 s. What is its average speed?',
                 ['2 m/s', '5 m/s', '20 m/s', '120 m/s'], 1],
 
             // ───────────── GRADE 12 — Earth Science / Biology (Field Researcher) ─────────────
-            ['12', 'Earth Science', 'easy', 'Ano ang tawag sa mga buhay na bagay na nag-iiwan ng bakas (remains) sa mga bato?',
+            ['12', 'Earth Science', 'easy', 'What do we call the preserved remains or traces of living things in rock?',
                 ['Minerals', 'Fossils', 'Crystals', 'Sediments'], 1],
-            ['12', 'Biology', 'easy', 'Ano ang tawag sa "powerhouse of the cell"?',
+            ['12', 'Biology', 'easy', 'Which organelle is known as the "powerhouse of the cell"?',
                 ['Nucleus', 'Ribosome', 'Mitochondria', 'Vacuole'], 2],
-            ['12', 'Earth Science', 'easy', 'Aling layer ng Earth ang ating tinitirhan?',
+            ['12', 'Earth Science', 'easy', 'Which layer of the Earth do we live on?',
                 ['Mantle', 'Outer core', 'Crust', 'Inner core'], 2],
-            ['12', 'Earth Science', 'medium', 'Anong uri ng bato ang nabubuo mula sa cooling at solidification ng magma o lava?',
+            ['12', 'Earth Science', 'medium', 'Which rock type forms from the cooling and solidification of magma or lava?',
                 ['Sedimentary', 'Metamorphic', 'Igneous', 'Fossil'], 2],
-            ['12', 'Biology', 'medium', 'Ano ang proseso kung saan ang halaman ay gumagawa ng pagkain gamit ang sunlight?',
+            ['12', 'Biology', 'medium', 'What is the process by which plants make food using sunlight?',
                 ['Respiration', 'Photosynthesis', 'Digestion', 'Fermentation'], 1],
-            ['12', 'Earth Science', 'medium', 'Ano ang tawag sa theory na nagsasabing ang mga continents ay gumagalaw?',
+            ['12', 'Earth Science', 'medium', 'Which theory states that the Earth\'s continents move over time?',
                 ['Big Bang Theory', 'Plate Tectonics', 'Evolution', 'Gravity Theory'], 1],
-            ['12', 'Biology', 'medium', 'Aling molecule ang nagdadala ng genetic information sa mga buhay na organismo?',
+            ['12', 'Biology', 'medium', 'Which molecule carries genetic information in living organisms?',
                 ['Protein', 'DNA', 'Lipid', 'Carbohydrate'], 1],
-            ['12', 'Earth Science', 'hard', 'Anong scale ang ginagamit upang sukatin ang lakas (magnitude) ng lindol?',
+            ['12', 'Earth Science', 'hard', 'Which scale is used to measure the magnitude of an earthquake?',
                 ['Beaufort Scale', 'Richter Scale', 'pH Scale', 'Kelvin Scale'], 1],
-            ['12', 'Biology', 'hard', 'Ilang chromosomes mayroon ang normal na human body cell?',
+            ['12', 'Biology', 'hard', 'How many chromosomes does a normal human body cell have?',
                 ['23', '46', '48', '24'], 1],
-            ['12', 'Earth Science', 'hard', 'Anong layer ng atmosphere ang naglalaman ng ozone layer na sumasala sa UV rays?',
+            ['12', 'Earth Science', 'hard', 'Which atmospheric layer contains the ozone layer that filters UV rays?',
                 ['Troposphere', 'Stratosphere', 'Mesosphere', 'Thermosphere'], 1],
 
-            // ───────────── SPACE / ASTRONOMY (para sa solar-system theme) ─────────────
-            // Grade 11 (space-physics crossover)
-            ['11', 'Physics',   'easy',   'Anong puwersa ang humahatak sa mga planeta paikot sa Araw?',
+            // ───────────── SPACE / ASTRONOMY crossover ─────────────
+            ['11', 'Physics',   'easy',   'Which force pulls the planets in their orbits around the Sun?',
                 ['Friction', 'Gravity', 'Magnetism', 'Tension'], 1],
-            ['11', 'Astronomy', 'easy',   'Aling planeta ang pinakamalapit sa Araw?',
+            ['11', 'Astronomy', 'easy',   'Which planet is closest to the Sun?',
                 ['Venus', 'Mercury', 'Earth', 'Mars'], 1],
-            ['11', 'Astronomy', 'medium', 'Aling planeta ang kilala sa malalaking ring system?',
+            ['11', 'Astronomy', 'medium', 'Which planet is known for its large ring system?',
                 ['Jupiter', 'Saturn', 'Uranus', 'Neptune'], 1],
-            ['11', 'Physics',   'medium', 'Gaano kabilis ang liwanag (approximate)?',
+            ['11', 'Physics',   'medium', 'Approximately how fast does light travel?',
                 ['300 km/s', '3,000 km/s', '300,000 km/s', '30 km/s'], 2],
-            // Grade 12 (astronomy / earth & space)
-            ['12', 'Astronomy', 'easy',   'Ano ang tawag sa pag-ikot ng Earth sa sarili nitong axis?',
+            ['12', 'Astronomy', 'easy',   'What is the spinning of the Earth on its own axis called?',
                 ['Revolution', 'Rotation', 'Orbit', 'Tilt'], 1],
-            ['12', 'Astronomy', 'easy',   'Aling planeta ang tinatawag na "Red Planet"?',
+            ['12', 'Astronomy', 'easy',   'Which planet is called the "Red Planet"?',
                 ['Venus', 'Mars', 'Jupiter', 'Mercury'], 1],
-            ['12', 'Astronomy', 'easy',   'Ano ang natural na satellite ng Earth?',
+            ['12', 'Astronomy', 'easy',   'What is the natural satellite of the Earth?',
                 ['Sun', 'Moon', 'Mars', 'Venus'], 1],
-            ['12', 'Astronomy', 'medium', 'Ano ang sanhi ng pagkakaroon ng mga season sa Earth?',
-                ['Layo sa Araw', 'Tilt ng axis', 'Bilis ng rotation', 'Laki ng Buwan'], 1],
-            ['12', 'Astronomy', 'medium', 'Aling planeta ang pinakamalaki sa solar system?',
+            ['12', 'Astronomy', 'medium', 'What causes the seasons on Earth?',
+                ['Distance from the Sun', 'Tilt of the axis', 'Speed of rotation', 'Size of the Moon'], 1],
+            ['12', 'Astronomy', 'medium', 'Which is the largest planet in the solar system?',
                 ['Saturn', 'Jupiter', 'Neptune', 'Earth'], 1],
-            ['12', 'Astronomy', 'hard',   'Ilang planeta ang nasa ating solar system?',
+            ['12', 'Astronomy', 'hard',   'How many planets are in our solar system?',
                 ['7', '8', '9', '10'], 1],
         ];
 
         foreach ($questions as $q) {
-            GameQuestion::updateOrCreate(
-                ['grade_level' => $q[0], 'question' => $q[2 + 1]],
-                [
-                    'topic'         => $q[1],
-                    'difficulty'    => $q[2],
-                    'options'       => $q[4],
-                    'correct_index' => $q[5],
-                ]
-            );
+            GameQuestion::create([
+                'grade_level'   => $q[0],
+                'topic'         => $q[1],
+                'difficulty'    => $q[2],
+                'question'      => $q[3],
+                'options'       => $q[4],
+                'correct_index' => $q[5],
+            ]);
         }
     }
 }
