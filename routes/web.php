@@ -121,6 +121,12 @@ Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name(
         Route::get('/face-register',  [FaceRegistrationController::class, 'show'])->name('face.register');
         Route::post('/face-register', [FaceRegistrationController::class, 'store'])->name('face.store');
 
+        // Strata Rush — 3D Science Game (Grade 11 & 12 only)
+        Route::get('/science-game',             [App\Http\Controllers\Student\ScienceGameController::class, 'index'])->name('science-game');
+        Route::get('/science-game/questions',   [App\Http\Controllers\Student\ScienceGameController::class, 'questions'])->name('science-game.questions');
+        Route::post('/science-game/score',      [App\Http\Controllers\Student\ScienceGameController::class, 'submitScore'])->name('science-game.score');
+        Route::get('/science-game/leaderboard', [App\Http\Controllers\Student\ScienceGameController::class, 'leaderboard'])->name('science-game.leaderboard');
+
         // Notifications
         Route::get('/notifications/data', fn() => response()->json([
             'unread' => auth()->user()->unreadNotifications->count(),
