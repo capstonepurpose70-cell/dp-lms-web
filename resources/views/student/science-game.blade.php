@@ -81,6 +81,19 @@
     .sr-sumgrid .v { font-size: 22px; font-weight: 800; font-family: 'Outfit', sans-serif; color: #fff; }
     .sr-sumgrid .k { font-size: 10.5px; color: #93a7cc; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
     @media (max-width: 820px) { .sr-progress { display:none; } .sr-stats { top:auto; bottom:80px; right:16px; } }
+
+    /* --- Step 5: gameplay systems UI --- */
+    .sr-extra { display:flex; align-items:center; gap:10px; margin-top:10px; min-height:22px; }
+    .sr-lives { font-size:16px; letter-spacing:2px; }
+    .sr-combo-pill { background:linear-gradient(135deg,#f59e0b,#ef4444); color:#fff; font-weight:800;
+        font-size:12.5px; padding:3px 11px; border-radius:999px; box-shadow:0 2px 10px rgba(245,158,11,.4); }
+    .sr-diff { font-size:10px; font-weight:800; letter-spacing:.06em; padding:3px 9px; border-radius:999px;
+        background:rgba(124,176,255,.18); color:#9ec5ff; text-transform:uppercase; }
+    .sr-hint-btn { width:100%; margin-top:10px; background:rgba(124,176,255,.12); color:#bcd6ff;
+        border:1px solid rgba(124,176,255,.3); border-radius:12px; padding:10px; font-weight:800; font-size:13px; cursor:pointer; transition:all .15s; }
+    .sr-hint-btn:hover:not(:disabled) { background:rgba(124,176,255,.22); }
+    .sr-hint-btn:disabled { opacity:.4; cursor:not-allowed; }
+    .sr-opt.dim { opacity:.32; text-decoration:line-through; }
 </style>
 
 <div id="sr-shell">
@@ -97,6 +110,10 @@
         <div class="sr-progress sr-glass" id="srProgress">
             <div class="pt" id="srProgLabel">Progress</div>
             <div class="sr-bar"><i id="srBar"></i></div>
+            <div class="sr-extra">
+                <span class="sr-lives" id="srLives"></span>
+                <span class="sr-combo-pill" id="srComboPill" style="display:none;">🔥 x<span id="srCombo">1</span></span>
+            </div>
             <div class="sr-prow">
                 <div>Score<b id="srScore">0</b></div>
                 <div style="text-align:right;">Time<b id="srTime">05:00</b></div>
@@ -104,9 +121,10 @@
         </div>
 
         <div class="sr-quiz sr-glass" id="srQuiz">
-            <div class="qtop"><h3 id="srQuizTitle">Quiz</h3><span class="qtopic" id="srQTopic">SCIENCE</span></div>
+            <div class="qtop"><h3 id="srQuizTitle">Quiz</h3><div style="display:flex;gap:6px;align-items:center;"><span class="sr-diff" id="srDiff">EASY</span><span class="qtopic" id="srQTopic">SCIENCE</span></div></div>
             <div class="qtext" id="srQuizText">—</div>
             <div class="sr-opts" id="srQuizOpts"></div>
+            <button class="sr-hint-btn" id="srHintBtn">💡 Hint (<span id="srHints">3</span>)</button>
         </div>
 
         <div class="sr-controls">
@@ -167,22 +185,40 @@
     const isG11 = CFG.grade === '11';   // Formula Clash (battle) vs Field Researcher (collect)
 
     // ---------------- questions ----------------
-    let QBANK = [], questionsReady = false, qPtr = 0;
+    let QBANK = [], QBUCK = {easy:[],medium:[],hard:[]}, questionsReady = false, qPtr = 0;
     const FALLBACK = isG11 ? [
-        {topic:'Physics', question:'Ano ang SI unit ng force?', options:['Joule','Watt','Newton','Pascal'], correct_index:2},
-        {topic:'Chemistry', question:'Aling particle ang may negatibong charge?', options:['Proton','Neutron','Electron','Nucleus'], correct_index:2},
-        {topic:'Physics', question:'F = ma. Kung m=2kg, a=3m/s², ano ang F?', options:['5 N','6 N','1.5 N','8 N'], correct_index:1},
+        {topic:'Physics', difficulty:'easy', question:'What is the SI unit of force?', options:['Joule','Watt','Newton','Pascal'], correct_index:2},
+        {topic:'Chemistry', difficulty:'easy', question:'Which particle carries a negative charge?', options:['Proton','Neutron','Electron','Nucleus'], correct_index:2},
+        {topic:'Physics', difficulty:'medium', question:'F = ma. If m = 2 kg and a = 3 m/s², what is F?', options:['5 N','6 N','1.5 N','8 N'], correct_index:1},
+        {topic:'Chemistry', difficulty:'medium', question:'What is the chemical formula of water?', options:['CO2','H2O','O2','NaCl'], correct_index:1},
+        {topic:'Physics', difficulty:'hard', question:'Which quantity is measured in watts?', options:['Energy','Power','Momentum','Force'], correct_index:1},
     ] : [
-        {topic:'Earth Science', question:'Anong uri ng bato ang nabubuo mula sa magma/lava?', options:['Sedimentary','Metamorphic','Igneous','Fossil'], correct_index:2},
-        {topic:'Biology', question:'Ano ang "powerhouse of the cell"?', options:['Nucleus','Ribosome','Mitochondria','Vacuole'], correct_index:2},
-        {topic:'Earth Science', question:'Aling layer ng Earth ang tinitirhan natin?', options:['Mantle','Outer core','Crust','Inner core'], correct_index:2},
+        {topic:'Earth Science', difficulty:'easy', question:'Which rock type forms from cooled magma or lava?', options:['Sedimentary','Metamorphic','Igneous','Fossil'], correct_index:2},
+        {topic:'Biology', difficulty:'easy', question:'Which organelle is the "powerhouse of the cell"?', options:['Nucleus','Ribosome','Mitochondria','Vacuole'], correct_index:2},
+        {topic:'Earth Science', difficulty:'medium', question:'Which layer of the Earth do we live on?', options:['Mantle','Outer core','Crust','Inner core'], correct_index:2},
+        {topic:'Biology', difficulty:'medium', question:'Which process do plants use to make food?', options:['Respiration','Photosynthesis','Digestion','Fermentation'], correct_index:1},
+        {topic:'Earth Science', difficulty:'hard', question:'What is the primary gas driving the greenhouse effect?', options:['Oxygen','Nitrogen','Carbon dioxide','Hydrogen'], correct_index:2},
     ];
-    function nextQ() { if (!QBANK.length) QBANK = FALLBACK.slice(); const q = Object.assign({}, QBANK[qPtr % QBANK.length]); qPtr++; return q; }
+    function bucketize() {
+        QBUCK = { easy:[], medium:[], hard:[] };
+        QBANK.forEach(q=>{ const d=(q.difficulty||'easy').toLowerCase(); (QBUCK[d]||QBUCK.easy).push(q); });
+        ['easy','medium','hard'].forEach(d=>{ if(!QBUCK[d].length) QBUCK[d]=QBANK.slice(); });
+    }
+    function pickDifficulty() {
+        const r=G.recentAcc.slice(-4); const a=r.length?r.reduce((x,y)=>x+y,0)/r.length:0.5;
+        return a>=0.75?'hard':(a>=0.45?'medium':'easy');
+    }
+    function comboMult(){ return 1 + Math.min(Math.max(G.combo-1,0),5)*0.2; }   // up to 2x at a 6-streak
+    function nextQ() {
+        if (!QBANK.length){ QBANK=FALLBACK.slice(); bucketize(); }
+        const d=pickDifficulty(); const pool=(QBUCK[d]&&QBUCK[d].length)?QBUCK[d]:QBANK;
+        const q=Object.assign({}, pool[Math.floor(Math.random()*pool.length)]); q._diff=d; return q;
+    }
     fetch(CFG.urlQuestions, { headers:{Accept:'application/json'} }).then(r=>r.json()).then(d=>{
         const qs = (d.questions && d.questions.length) ? d.questions : FALLBACK;
-        QBANK = qs.map(q=>Object.assign({}, q)).sort(()=>Math.random()-0.5);
+        QBANK = qs.map(q=>Object.assign({}, q)).sort(()=>Math.random()-0.5); bucketize();
         questionsReady = true; document.getElementById('srLoadMsg').textContent = QBANK.length + ' questions loaded ✓';
-    }).catch(()=>{ QBANK = FALLBACK.slice(); questionsReady = true; document.getElementById('srLoadMsg').textContent = 'Offline mode'; });
+    }).catch(()=>{ QBANK = FALLBACK.slice(); bucketize(); questionsReady = true; document.getElementById('srLoadMsg').textContent = 'Offline mode'; });
 
     // ================= THREE.JS =================
     const canvas = document.getElementById('sr-canvas'), shell = document.getElementById('sr-shell');
@@ -283,47 +319,122 @@
         bindControls(); applyCamera(); animate();
     }
 
-    // ---------------- G11: FORMULA CLASH (lab battle) ----------------
+    // ---- shared helpers: fake contact shadow + lab screen texture ----
+    let _shadowTex=null;
+    function shadowTexture(){ if(_shadowTex) return _shadowTex;
+        const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
+        const g=x.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,'rgba(0,0,0,0.4)'); g.addColorStop(1,'rgba(0,0,0,0)');
+        x.fillStyle=g; x.fillRect(0,0,64,64); _shadowTex=new THREE.CanvasTexture(c); return _shadowTex; }
+    function addShadow(x,z,r){ const sh=new THREE.Mesh(new THREE.PlaneGeometry(r*3.4,r*3.4),
+        new THREE.MeshBasicMaterial({map:shadowTexture(),transparent:true,depthWrite:false}));
+        sh.rotation.x=-Math.PI/2; sh.position.set(x,0.02,z); scene.add(sh); }
+    function labScreenTexture(){
+        const c=document.createElement('canvas'); c.width=256; c.height=192; const x=c.getContext('2d');
+        x.fillStyle='#0a1838'; x.fillRect(0,0,256,192);
+        x.strokeStyle='rgba(57,208,255,.18)'; for(let i=0;i<192;i+=14){ x.beginPath(); x.moveTo(0,i); x.lineTo(256,i); x.stroke(); }
+        x.fillStyle='#46d3ff'; x.font='bold 26px monospace';
+        const L=['H2O','E=mc^2','PV=nRT','F = m a','CO2','1/2mv^2']; 
+        L.forEach((t,i)=>{ x.globalAlpha=0.55+Math.random()*0.45; x.fillText(t, 16, 34+i*28); });
+        x.globalAlpha=1; return new THREE.CanvasTexture(c);
+    }
+
+    // ---------------- G11: FORMULA CLASH (realistic science lab) ----------------
     function buildArena() {
-        scene.background = new THREE.Color(0x070b1c);
-        scene.fog = new THREE.Fog(0x070b1c, 22, 48);
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(60,60), M(0x0d1430,{metalness:0.3,roughness:0.7}));
-        floor.rotation.x = -Math.PI/2; scene.add(floor);
-        const grid = new THREE.GridHelper(60, 30, 0x2a3a7a, 0x1b2750); scene.add(grid);
-        const pl = new THREE.PointLight(0x22d3ee, 1.4, 40); pl.position.set(0,8,4); scene.add(pl);
-        // back lab consoles
-        for (let i=-2;i<=2;i++){ const c=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.6,0.6), M(0x16204a,{emissive:0x12306a,emissiveIntensity:0.4})); c.position.set(i*3.2,1.3,-9); scene.add(c); }
-        // beakers
-        [-5,-3.5,4,5.5].forEach(x=>{ const b=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.3,0.7,12), M(0x7cf,{transparent:true,opacity:0.6,emissive:0x2266aa,emissiveIntensity:0.5})); b.position.set(x,0.6,-6.5); scene.add(b); });
+        scene.background = new THREE.Color(0x060a18);
+        scene.fog = new THREE.Fog(0x060a18, 28, 64);
+        scene.add(new THREE.HemisphereLight(0x2a4684, 0x05070f, 0.75));
+        // reflective lab floor + grid + battle rings
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(90,90), M(0x0c1228,{metalness:0.55,roughness:0.4}));
+        floor.rotation.x=-Math.PI/2; scene.add(floor);
+        const grid = new THREE.GridHelper(90, 45, 0x1f3a7a, 0x12224e); grid.position.y=0.01; scene.add(grid);
+        [[-3.4,0x22d3ee],[3.4,0xef4444]].forEach(([x,col])=>{
+            const ring=new THREE.Mesh(new THREE.RingGeometry(1.3,1.62,40), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.75,side:THREE.DoubleSide}));
+            ring.rotation.x=-Math.PI/2; ring.position.set(x,0.03,2.5); scene.add(ring);
+            const sp=new THREE.PointLight(col,0.9,16); sp.position.set(x,7,2.5); scene.add(sp);
+        });
+        const pl=new THREE.PointLight(0x22d3ee,1.0,60); pl.position.set(0,11,8); scene.add(pl);
+        // back wall + glowing formula screens + periodic-style panels
+        const wall=new THREE.Mesh(new THREE.BoxGeometry(54,18,0.6), M(0x0b1230,{roughness:0.85})); wall.position.set(0,8,-15); scene.add(wall);
+        const screenTex=labScreenTexture();
+        for(let i=-2;i<=2;i++){
+            const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.2,3.1), new THREE.MeshBasicMaterial({map:screenTex})); sc.position.set(i*5.6,6,-14.6); scene.add(sc);
+            const fr=new THREE.Mesh(new THREE.BoxGeometry(4.5,3.4,0.2), M(0x18285a,{emissive:0x12306a,emissiveIntensity:0.35})); fr.position.set(i*5.6,6,-14.78); scene.add(fr);
+        }
+        // overhead light panels
+        for(let i=-1;i<=1;i++){ const lp=new THREE.Mesh(new THREE.BoxGeometry(6,0.18,1.4), new THREE.MeshBasicMaterial({color:0xcfeeff})); lp.position.set(i*8,10,-1); scene.add(lp); }
+        // lab benches w/ beakers + monitor (both sides)
+        function bench(bx){
+            const top=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.25,1.5), M(0x223052,{metalness:0.4,roughness:0.5})); top.position.set(bx,1.1,-9.5); scene.add(top);
+            [-1.9,1.9].forEach(lx=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(0.2,1.1,0.2),M(0x172340)); l.position.set(bx+lx,0.55,-9.5); scene.add(l); });
+            [-1.3,-0.5,0.4,1.3].forEach((ox,i)=>{ const col=[0x6ee7ff,0x86efac,0xfca5a5,0xfde68a][i];
+                const bk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.23,0.55,12), new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:0.55,emissive:col,emissiveIntensity:0.45})); bk.position.set(bx+ox,1.5,-9.5); scene.add(bk); });
+            const mon=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.78), new THREE.MeshBasicMaterial({map:screenTex})); mon.position.set(bx+1.7,1.85,-9.7); scene.add(mon);
+        }
+        bench(-8); bench(8);
+        // floating holographic formula panels
+        [[-6,4.2],[6,4.8],[0,6.4]].forEach(([hx,hy])=>{ const holo=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.5),
+            new THREE.MeshBasicMaterial({map:screenTex,transparent:true,opacity:0.45,side:THREE.DoubleSide})); holo.position.set(hx,hy,-7); scene.add(holo); });
 
         player = buildCharacter({ skin:'#f0c08a', hair:'#3a2a18', shirt:'#dfe8f5', pants:'#33406a', accent:'#2563eb', acc:'goggles', outfit:'labcoat', coat:'#f4f6fa', mood:'happy' });
-        player.position.set(-3.4, 0, 2.5); player.rotation.y = Math.PI*0.5; scene.add(player);
+        player.position.set(-3.4, 0, 2.5); player.rotation.y = Math.PI*0.5; scene.add(player); addShadow(-3.4,2.5,0.6);
         rival = buildCharacter({ skin:'#e6b27e', hair:'#3a1414', shirt:'#241c2e', pants:'#2a2230', accent:'#ef4444', acc:'goggles', outfit:'labcoat', coat:'#3a2330', facialHair:true, mood:'smirk' });
-        rival.position.set(3.4, 0, 2.5); rival.rotation.y = -Math.PI*0.5; scene.add(rival);
+        rival.position.set(3.4, 0, 2.5); rival.rotation.y = -Math.PI*0.5; scene.add(rival); addShadow(3.4,2.5,0.6);
+        // lab supervisor NPC (watching the clash)
+        const npc = buildCharacter({ skin:'#e8c4a0', hair:'#2a2a2a', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
+        npc.position.set(0,0,-7.5); npc.scale.setScalar(0.92); scene.add(npc); addShadow(0,-7.5,0.55);
 
-        // attack beam (reused)
         beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1,8), new THREE.MeshBasicMaterial({ color:0x6ee7ff, transparent:true, opacity:0 }));
         beam.rotation.z = Math.PI/2; scene.add(beam);
-
         cam.target.set(0,1.7,2.5); cam.rad = 11; cam.pol = 1.25; Object.assign(DEF, cam);
     }
 
-    // ---------------- G12: FIELD RESEARCHER (collect samples) ----------------
+    // ---------------- G12: FIELD RESEARCHER (realistic research field) ----------------
     function buildField() {
-        scene.background = new THREE.Color(0x9fc6e8);
-        scene.fog = new THREE.Fog(0xaecbe6, 36, 70);
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(120,120,1,1), M(0x4f7a3a,{roughness:1}));
-        ground.rotation.x = -Math.PI/2; scene.add(ground);
-        // hills
-        for (let i=0;i<10;i++){ const h=new THREE.Mesh(new THREE.SphereGeometry(4+Math.random()*4,16,12), M(0x3f6a30,{roughness:1})); h.position.set((Math.random()-0.5)*70,-2,(Math.random()-0.5)*70-10); h.scale.y=0.4; scene.add(h); }
-        // trees
-        for (let i=0;i<16;i++){ const t=new THREE.Group(); const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.24,1.2,8), M(0x6b4423)); tr.position.y=0.6; t.add(tr); const lv=new THREE.Mesh(new THREE.ConeGeometry(0.9,1.8,8), M(0x2f7d3f)); lv.position.y=1.8; t.add(lv); const a=Math.random()*Math.PI*2,r=10+Math.random()*22; t.position.set(Math.cos(a)*r,0,Math.sin(a)*r); scene.add(t); }
-        // rocks
-        for (let i=0;i<10;i++){ const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(0.5+Math.random()*0.8), M(0x8a8a90,{roughness:1})); const a=Math.random()*Math.PI*2,r=6+Math.random()*20; rk.position.set(Math.cos(a)*r,0.2,Math.sin(a)*r); scene.add(rk); }
-        const sun = new THREE.DirectionalLight(0xfff4d6, 0.6); sun.position.set(-8,12,6); scene.add(sun);
+        // gradient sky
+        const skyC=document.createElement('canvas'); skyC.width=16; skyC.height=256; const sc=skyC.getContext('2d');
+        const grd=sc.createLinearGradient(0,0,0,256); grd.addColorStop(0,'#3b7fd4'); grd.addColorStop(0.55,'#8cbbe8'); grd.addColorStop(1,'#dcecf6');
+        sc.fillStyle=grd; sc.fillRect(0,0,16,256); scene.background=new THREE.CanvasTexture(skyC);
+        scene.fog=new THREE.Fog(0xc6def0, 44, 96);
+        scene.add(new THREE.HemisphereLight(0xbfdcf6, 0x4a6b35, 0.95));
+        const sun=new THREE.DirectionalLight(0xfff2d0, 0.9); sun.position.set(-14,20,10); scene.add(sun);
+
+        const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220), M(0x5d8c40,{roughness:1})); ground.rotation.x=-Math.PI/2; scene.add(ground);
+        // rolling hills
+        for(let i=0;i<14;i++){ const h=new THREE.Mesh(new THREE.SphereGeometry(5+Math.random()*6,16,12), M(i%2?0x4f7d36:0x3f6a30,{roughness:1})); h.position.set((Math.random()-0.5)*130,-3,(Math.random()-0.5)*130-22); h.scale.y=0.32; scene.add(h); }
+        // distant mountains
+        for(let i=0;i<8;i++){ const a=Math.PI+(i/8)*Math.PI; const m=new THREE.Mesh(new THREE.ConeGeometry(8+Math.random()*6,13+Math.random()*8,6), M(0x6e89a3,{roughness:1})); m.position.set(Math.cos(a)*64,3,Math.sin(a)*64-22); scene.add(m); }
+        // trees (varied)
+        function tree(x,z,sc){ const t=new THREE.Group();
+            const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.2*sc,0.3*sc,1.4*sc,8), M(0x6b4423,{roughness:1})); tr.position.y=0.7*sc; t.add(tr);
+            const c1=new THREE.Mesh(new THREE.SphereGeometry(1.1*sc,10,8), M(0x2f7d3f,{roughness:1})); c1.position.y=2*sc; t.add(c1);
+            const c2=new THREE.Mesh(new THREE.SphereGeometry(0.8*sc,10,8), M(0x37913f,{roughness:1})); c2.position.set(0.5*sc,1.7*sc,0.3*sc); t.add(c2);
+            t.position.set(x,0,z); scene.add(t); addShadow(x,z,1.1*sc); }
+        for(let i=0;i<22;i++){ const a=Math.random()*Math.PI*2,r=12+Math.random()*32; tree(Math.cos(a)*r,Math.sin(a)*r,0.7+Math.random()*0.8); }
+        // bushes, flowers, rocks, grass
+        for(let i=0;i<18;i++){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.5+Math.random()*0.5,8,6), M(0x3f8a44,{roughness:1})); b.scale.y=0.7; const a=Math.random()*Math.PI*2,r=6+Math.random()*28; b.position.set(Math.cos(a)*r,0.3,Math.sin(a)*r); scene.add(b); }
+        for(let i=0;i<30;i++){ const col=[0xff6b9d,0xfde047,0xffffff,0xa78bfa][i%4]; const fl=new THREE.Mesh(new THREE.SphereGeometry(0.12,6,5), M(col)); const a=Math.random()*Math.PI*2,r=4+Math.random()*26; fl.position.set(Math.cos(a)*r,0.22,Math.sin(a)*r); scene.add(fl); }
+        for(let i=0;i<12;i++){ const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(0.4+Math.random()*0.9), M(0x8a8a90,{roughness:1})); const a=Math.random()*Math.PI*2,r=6+Math.random()*24; rk.position.set(Math.cos(a)*r,0.2,Math.sin(a)*r); rk.rotation.set(Math.random(),Math.random(),Math.random()); scene.add(rk); }
+        // pond
+        const pond=new THREE.Mesh(new THREE.CircleGeometry(4,32), new THREE.MeshStandardMaterial({color:0x3b82c4,transparent:true,opacity:0.82,roughness:0.2,metalness:0.3})); pond.rotation.x=-Math.PI/2; pond.position.set(-13,0.04,-9); scene.add(pond);
+        // research camp: tent, table, crates, flag
+        const tent=new THREE.Mesh(new THREE.ConeGeometry(2,2.3,4), M(0xd98c4a,{roughness:0.9})); tent.position.set(12,1.15,6); tent.rotation.y=Math.PI/4; scene.add(tent); addShadow(12,6,1.4);
+        const tbl=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.15,1), M(0x8a6a4a)); tbl.position.set(9,0.9,7.5); scene.add(tbl);
+        [-0.8,0.8].forEach(lx=>[-0.4,0.4].forEach(lz=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.9,0.1),M(0x6b4423)); l.position.set(9+lx,0.45,7.5+lz); scene.add(l); }));
+        for(let i=0;i<3;i++){ const cr=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.7), M(0xb08850,{roughness:0.9})); cr.position.set(10+i*0.85,0.35,9); scene.add(cr); }
+        const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,3,8),M(0xcccccc,{metalness:0.5})); pole.position.set(14,1.5,4); scene.add(pole);
+        const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.8), M(0x2848a8,{side:THREE.DoubleSide})); flag.position.set(14.6,2.5,4); scene.add(flag);
+        // crisis site (geological): scorched cracked ground + steam
+        const crisis=new THREE.Mesh(new THREE.CircleGeometry(5,24), M(0x4a3528,{roughness:1})); crisis.rotation.x=-Math.PI/2; crisis.position.set(15,0.03,-15); scene.add(crisis);
+        for(let i=0;i<6;i++){ const a=Math.random()*Math.PI*2; const ck=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.02,1.6+Math.random()*2), M(0x190d07)); ck.position.set(15+Math.cos(a)*1.4,0.05,-15+Math.sin(a)*1.4); ck.rotation.y=a; scene.add(ck); }
+        for(let i=0;i<4;i++){ const sm=new THREE.Mesh(new THREE.SphereGeometry(0.8+Math.random()*0.6,8,8), new THREE.MeshBasicMaterial({color:0x9a8a7a,transparent:true,opacity:0.22})); sm.position.set(15+(Math.random()-0.5)*2,1.4+i*0.85,-15+(Math.random()-0.5)*2); scene.add(sm); }
+        // clouds
+        for(let i=0;i<8;i++){ const cl=new THREE.Group(); for(let j=0;j<3;j++){ const pp=new THREE.Mesh(new THREE.SphereGeometry(1.5+Math.random(),8,6), new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.85})); pp.position.set(j*1.6-1.6,0,Math.random()); pp.scale.y=0.6; cl.add(pp); } cl.position.set((Math.random()-0.5)*90,17+Math.random()*7,(Math.random()-0.5)*90-22); scene.add(cl); }
 
         player = buildCharacter({ skin:'#f0c08a', hair:'#2a1a10', shirt:'#b89a5a', pants:'#566b39', accent:'#7a5a2a', acc:'hat' });
-        player.position.set(0,0,9); scene.add(player);
+        player.position.set(0,0,9); scene.add(player); addShadow(0,9,0.6);
+        // field guide NPC near the camp
+        const guide = buildCharacter({ skin:'#caa06f', hair:'#3a2a1a', shirt:'#3f7d4f', pants:'#4a5a35', accent:'#7a5a2a', acc:'hat', mood:'happy' });
+        guide.position.set(9.5,0,5.5); guide.rotation.y=-Math.PI*0.6; scene.add(guide); addShadow(9.5,5.5,0.6);
 
         // collectible samples (glowing specimens)
         const COLORS = [0x34d399,0xf59e0b,0x60a5fa,0xa78bfa,0xf472b6,0xfbbf24,0x22d3ee,0xef4444];
@@ -369,25 +480,29 @@
 
     // ================= GAME =================
     const G = { running:false, quizOpen:false, score:0, correct:0, wrong:0, timeLeft:300, responseTimes:[], qStart:0,
-        youHP:100, rivalHP:100, collected:0, total:8, curSample:null };
+        youHP:100, rivalHP:100, collected:0, total:8, curSample:null,
+        combo:0, maxCombo:0, hints:3, lives:3, recentAcc:[], curQ:null };
     let timerId=null;
     const el=id=>document.getElementById(id);
 
     function startGame() {
         if (!questionsReady) { el('srHint').textContent='Loading questions…'; return; }
         Object.assign(G,{ running:true, quizOpen:false, score:0, correct:0, wrong:0, timeLeft:300, responseTimes:[],
-            youHP:100, rivalHP:100, collected:0, total: isG11?5:samples.length, curSample:null });
+            youHP:100, rivalHP:100, collected:0, total: isG11?5:samples.length, curSample:null,
+            combo:0, maxCombo:0, hints:3, lives:3, recentAcc:[], curQ:null });
         qPtr=0;
         el('srStart').hidden=true; el('srSummary').hidden=true;
+        el('srLives').style.display = isG11 ? 'none' : '';
+        el('srHintBtn').disabled=false; el('srHints').textContent=G.hints; el('srComboPill').style.display='none';
         if (isG11) {
             el('srHpWrap').classList.add('show');
             el('srProgLabel').textContent='Battle';
-            el('srHint').textContent='⚔️ Formula Clash! Sagutin nang tama at mabilis para atakihin ang kalaban!';
+            el('srHint').textContent='Formula Clash! Answer correctly and quickly to strike your rival.';
             updateHUD(); askBattleQuestion();
         } else {
             samples.forEach(s=>{ s.userData.collected=false; s.visible=true; });
             el('srProgLabel').textContent='Samples Collected';
-            el('srHint').textContent='🔬 Mag-click ng glowing SAMPLE para mag-research at i-collect!';
+            el('srHint').textContent='Click a glowing SAMPLE to research and collect it.';
             updateHUD();
         }
         clearInterval(timerId);
@@ -398,12 +513,17 @@
         el('srScore').textContent=G.score;
         const m=Math.floor(G.timeLeft/60), s=G.timeLeft%60; el('srTime').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
         el('srTotalPts').textContent=CFG.myBest+G.score; el('srBadges').textContent=Math.min(12,Math.floor((CFG.myBest+G.score)/100));
+        const cp=el('srComboPill'); if(G.combo>=2){ cp.style.display=''; el('srCombo').textContent=G.combo; } else cp.style.display='none';
+        el('srHints').textContent=G.hints;
+        if(!isG11) el('srLives').textContent = G.lives>0 ? '\u2764\ufe0f'.repeat(G.lives) : '\ud83d\udc94';
         if (isG11){ el('srHpYou').style.width=Math.max(0,G.youHP)+'%'; el('srHpRival').style.width=Math.max(0,G.rivalHP)+'%'; el('srBar').style.width=(100-Math.max(0,G.rivalHP))+'%'; }
         else { el('srBar').style.width=Math.round(G.collected/G.total*100)+'%'; }
     }
 
     function renderQuiz(q, onAnswer) {
-        G.qStart=performance.now(); q._answered=false;
+        G.qStart=performance.now(); q._answered=false; q._hintUsed=false; G.curQ=q;
+        el('srHintBtn').disabled = (G.hints<=0);
+        el('srDiff').textContent = (q._diff||q.difficulty||'easy').toUpperCase();
         el('srQTopic').textContent=q.topic||'Science';
         el('srQuizText').textContent=q.question;
         const wrap=el('srQuizOpts'); wrap.innerHTML=''; const L=['A','B','C','D','E']; q._btns=[];
@@ -417,8 +537,9 @@
         el('srQuizTitle').textContent='Formula Clash';
         const q=nextQ();
         renderQuiz(q, (ok)=>{
-            if (ok){ G.correct++; G.score+=80; flashBeam(player,rival,0x6ee7ff); G.rivalHP-=20; }
-            else  { G.wrong++; flashBeam(rival,player,0xff6b6b); G.youHP-=20; }
+            if (ok){ G.correct++; G.combo++; G.maxCombo=Math.max(G.maxCombo,G.combo); G.recentAcc.push(1);
+                     G.score += Math.round(80*comboMult()); flashBeam(player,rival,0x6ee7ff); G.rivalHP-=20; }
+            else  { G.wrong++; G.combo=0; G.recentAcc.push(0); flashBeam(rival,player,0xff6b6b); G.youHP-=20; }
             updateHUD();
             setTimeout(()=>{
                 el('srQuiz').classList.remove('show');
@@ -445,14 +566,15 @@
         el('srQuizTitle').textContent='Field Sample';
         const q=nextQ();
         renderQuiz(q, (ok)=>{
-            if (ok){ G.correct++; G.score+=70; }
-            else { G.wrong++; }
+            if (ok){ G.correct++; G.combo++; G.maxCombo=Math.max(G.maxCombo,G.combo); G.recentAcc.push(1); G.score += Math.round(70*comboMult()); }
+            else { G.wrong++; G.combo=0; G.recentAcc.push(0); G.lives--; }
             updateHUD();
             setTimeout(()=>{
                 el('srQuiz').classList.remove('show'); G.quizOpen=false;
-                if (ok){ sample.userData.collected=true; sample.visible=false; G.collected++; el('srHint').textContent='✓ Sample collected! ('+G.collected+'/'+G.total+')'; }
-                else { el('srHint').textContent='❌ Mali — subukan ulit ang ibang sample.'; }
+                if (ok){ sample.userData.collected=true; sample.visible=false; G.collected++; el('srHint').textContent='Sample collected! ('+G.collected+'/'+G.total+')'; }
+                else { el('srHint').textContent='Wrong! You lost a life. Pick another sample.'; }
                 cam.target.set(0,1.6,0); applyCamera(); updateHUD();
+                if (G.lives<=0){ endGame(); return; }
                 if (G.collected>=G.total){ G.fieldWon=true; endGame(); }
             }, ok?700:1000);
         });
@@ -464,23 +586,29 @@
         const avg=G.responseTimes.length?Math.round(G.responseTimes.reduce((a,b)=>a+b,0)/G.responseTimes.length):0;
         let won, goalVal, goalK;
         if (isG11){ won=G.rivalHP<=0; goalVal=won?'WIN':'LOSE'; goalK='Battle'; el('srSumTitle').textContent=won?'🏆 Rival Defeated!':'💥 You Lost the Clash'; }
-        else { won=G.collected>=G.total; goalVal=G.collected+'/'+G.total; goalK='Samples'; el('srSumTitle').textContent=won?'🏆 Crisis Solved!':'⏱ Time\'s Up!'; }
+        else { won=G.collected>=G.total; goalVal=G.collected+'/'+G.total; goalK='Samples'; el('srSumTitle').textContent = won?'🏆 Crisis Solved!':(G.lives<=0?'💔 Out of Lives!':'⏱ Time\'s Up!'); }
         el('srSumScore').textContent=G.score; el('srSumAcc').textContent=acc+'%';
         el('srSumGoal').textContent=goalVal; el('srSumGoalK').textContent=goalK;
         el('srSumCorrect').textContent=G.correct; el('srSumWrong').textContent=G.wrong;
         el('srSummary').hidden=false; el('srSaveMsg').textContent='Saving to leaderboard…';
         fetch(CFG.urlScore,{ method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CFG.csrf,'Accept':'application/json'},
-            body: JSON.stringify({ score:G.score, accuracy:acc, correct:G.correct, incorrect:G.wrong, max_combo:G.correct, avg_response_ms:avg }) })
+            body: JSON.stringify({ score:G.score, accuracy:acc, correct:G.correct, incorrect:G.wrong, max_combo:G.maxCombo, avg_response_ms:avg }) })
           .then(r=>r.json()).then(d=>{ el('srSaveMsg').textContent=d.ok?'✓ Saved! Personal best: '+(d.personalBest ?? G.score):'Saved locally.'; })
           .catch(()=>{ el('srSaveMsg').textContent='Could not save (check connection).'; });
     }
 
     el('srStartBtn').onclick=startGame; el('srReplayBtn').onclick=startGame;
+    el('srHintBtn').onclick = ()=>{
+        const q=G.curQ; if(!q || G.hints<=0 || q._hintUsed || q._answered) return;
+        q._hintUsed=true; G.hints--; let dimmed=0;
+        q._btns.forEach((b,i)=>{ if(i!==q.correct_index && dimmed<2 && !b.disabled){ b.classList.add('dim'); b.disabled=true; dimmed++; } });
+        updateHUD();
+    };
 
     // start overlay description
     el('srStartDesc').innerHTML = isG11
-        ? '<b>Grade 11 — Formula Clash ⚔️</b><br>Labanan ang kalabang scientist! Sagutin ang Physics at Chemistry nang tama at mabilis para atakihin siya. Ubusin ang HP niya para manalo!'
-        : '<b>Grade 12 — Field Researcher 🔬</b><br>Galugarin ang field at mag-click ng mga glowing SAMPLE. Sagutin ang Earth Science / Biology nang tama para i-collect ang bawat sample at lutasin ang crisis!';
+        ? '<b>Grade 11 — Formula Clash ⚔️</b><br>Face the rival scientist! Answer Physics and Chemistry questions correctly and quickly to strike. Drain the rival\'s HP to win!'
+        : '<b>Grade 12 — Field Researcher 🔬</b><br>Explore the field and click the glowing SAMPLES. Answer Earth Science / Biology questions correctly to collect each sample and solve the crisis!';
 
     function animate() {
         requestAnimationFrame(animate);
@@ -491,7 +619,7 @@
         renderer.render(scene, camera);
     }
 
-    function boot(){ if(typeof THREE==='undefined'){ setTimeout(boot,120); return; } try{ initScene(); el('srHint').textContent = isG11?'⚔️ Formula Clash — handa ka na ba?':'🔬 Field Researcher — handa ka na ba?'; }catch(e){ console.error('Strata Rush',e); } }
+    function boot(){ if(typeof THREE==='undefined'){ setTimeout(boot,120); return; } try{ initScene(); el('srHint').textContent = isG11?'Formula Clash — ready to begin?':'Field Researcher — ready to begin?'; }catch(e){ console.error('Strata Rush',e); } }
     if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
