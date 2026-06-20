@@ -164,3 +164,46 @@ Route::get('/fcm-debug/{secret}', function ($secret) {
         'fcm_response' => $res->json(),
     ]);
 });
+
+// ── TEMPORARY ANNOUNCEMENT-TARGET DEBUG (alisin pagkatapos) ────────────────
+// Open: /api/ann-debug/dplms123?teacher=TEACHER_EMAIL&student=STUDENT_EMAIL
+Route::get('/ann-debug/{secret}', function (\Illuminate\Http\Request $request, $secret) {
+    if ($secret !== 'dplms123') abort(403);
+
+    $teacher = \App\Models\User::where('email', $request->query('teacher'))->first();
+    if (!$teacher) {
+        return response()->json(['error' => 'teacher email not found — gamitin ?teacher=email&student=email']);
+    }
+
+    // Sections this teacher handles (BOTH sources, same as dashboard).
+    $sectionIds = \App\Models\TeacherSubject::where('user_id', $teacher->id)->pluck('section_id')
+        ->merge(\App\Models\TeacherAssignment::where('user_id', $teacher->id)->pluck('section_id'))
+        ->filter()->unique()->values();
+
+    $studentIds = \App\Models\User::where('role', 'student')->where('status', 'approved')
+        ->whereIn('section_id', $sectionIds)->pluck('id');
+
+    $student = \App\Models\User::where('email', $request->query('student'))->first();
+
+    // Try an actual push to the targeted students (so makikita mo kung dumating).
+    app(\App\Services\PushNotificationService::class)->sendToUsers(
+        $studentIds->all(),
+        'Ann-debug test',
+        'Kung nakita mo to, tama ang announcement targeting!',
+        ['type' => 'announcement']
+    );
+
+    return response()->json([
+        'teacher'                => ['id' => $teacher->id, 'email' => $teacher->email],
+        'teacher_section_ids'    => $sectionIds,
+        'targeted_student_count' => $studentIds->count(),
+        'targeted_with_tokens'   => \App\Models\FcmToken::whereIn('user_id', $studentIds)->count(),
+        'test_student'           => $student ? [
+            'id'                  => $student->id,
+            'status'              => $student->status,
+            'section_id'          => $student->section_id,
+            'in_teacher_sections' => $sectionIds->contains($student->section_id),
+            'has_token'           => \App\Models\FcmToken::where('user_id', $student->id)->exists(),
+        ] : 'student email not found (idagdag ?student=email)',
+    ]);
+});
