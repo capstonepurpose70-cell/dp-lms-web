@@ -430,6 +430,61 @@ body.collapsed .sidebar-nav {
         @media (min-width: 769px) {
             .sidebar-backdrop { display: none; }
         }
+
+        /* ═══════════════════════════════════════════
+           ✦ DESIGN ENHANCEMENTS  (smoother motion & polish)
+           Appended last so these rules win the cascade —
+           nothing above is modified, so existing logic is safe.
+        ═══════════════════════════════════════════ */
+        @keyframes notifDropIn {
+            from { opacity: 0; transform: translateY(-10px) scale(.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes notifItemIn {
+            from { opacity: 0; transform: translateX(8px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.45); }
+            50%      { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+        }
+
+        /* Notification dropdown — entrance origin + subtle badge pulse */
+        #notifDropdown { transform-origin: top right; }
+        #notifBadge    { animation: badgePulse 2s ease-in-out infinite; }
+
+        /* Active nav item — animated left accent bar */
+        .sidebar-nav a.active::before {
+            content: '';
+            position: absolute; left: -3px; top: 50%;
+            width: 3px; height: 0; border-radius: 3px;
+            background: #fff; transform: translateY(-50%);
+            animation: navBarIn .32s cubic-bezier(.34,1.56,.64,1) forwards;
+        }
+        @keyframes navBarIn { to { height: 22px; } }
+        body.collapsed .sidebar-nav a.active::before { display: none; }
+
+        /* Tactile press feedback on every interactive control */
+        .collapse-btn:active,
+        .nav-icon-btn:active,
+        .user-chip:active { transform: scale(.94); }
+        .modal-cancel:active,
+        .modal-confirm:active { transform: scale(.97); }
+
+        /* Nav icon micro-interaction on hover */
+        .nav-icon { transition: background .22s, transform .22s cubic-bezier(.34,1.56,.64,1); }
+        .sidebar-nav a:hover .nav-icon { transform: scale(1.06); }
+
+        /* Springy nav-right buttons */
+        .nav-icon-btn {
+            transition: background .2s, border-color .2s, color .2s,
+                        transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+        }
+
+        /* Honor reduced-motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+        }
     </style>
 </head>
 <body>
@@ -845,7 +900,7 @@ function loadNotifs() {
             }
             notifEmpty.style.display = 'none';
 
-            items.forEach(n => {
+            items.forEach((n, i) => {
                 const ic = TYPE_ICONS[n.type] || TYPE_ICONS.assignment;
                 const el = document.createElement('a');
                 el.href  = n.url;
@@ -855,6 +910,9 @@ function loadNotifs() {
                     border-bottom:1px solid var(--border);
                     transition:background .18s;
                 `;
+                // ✦ stagger each item in for a smoother reveal
+                el.style.animation = 'notifItemIn .26s ease both';
+                el.style.animationDelay = (i * 0.035) + 's';
                 el.onmouseenter = () => el.style.background = 'var(--accent-lt)';
                 el.onmouseleave = () => el.style.background = '';
                 el.innerHTML = `
@@ -888,12 +946,17 @@ function loadNotifs() {
         });
 }
 
-// Toggle dropdown
+// Toggle dropdown (with smooth entrance animation)
 notifBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = notifDropdown.style.display === 'block';
-    notifDropdown.style.display = open ? 'none' : 'block';
-    if (!open) loadNotifs();
+    if (open) {
+        notifDropdown.style.display = 'none';
+    } else {
+        notifDropdown.style.display = 'block';
+        notifDropdown.style.animation = 'notifDropIn .24s cubic-bezier(.34,1.56,.64,1) both';
+        loadNotifs();
+    }
 });
 
 // Close on outside click
