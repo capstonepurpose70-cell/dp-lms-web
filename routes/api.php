@@ -14,6 +14,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/user',    fn(Request $r) => $r->user());
 
+    // ── FCM push tokens (kahit anong naka-login na user) ──────────────
+    Route::post('/fcm-token',   [App\Http\Controllers\Api\FcmTokenController::class, 'store']);
+    Route::delete('/fcm-token', [App\Http\Controllers\Api\FcmTokenController::class, 'destroy']);
+
     // ── STUDENT ──────────────────────────────────────────────────────
     Route::middleware('role:student')->prefix('student')->group(function () {
         Route::get('/dashboard',     [App\Http\Controllers\Api\Student\DashboardController::class, 'index']);

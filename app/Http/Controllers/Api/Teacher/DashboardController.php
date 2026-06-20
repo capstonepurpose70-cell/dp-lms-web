@@ -13,6 +13,7 @@ use App\Models\TeacherAssignment;
 use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -330,6 +331,14 @@ class DashboardController extends Controller
             ]));
         }
 
+        // 🔔 Push notification (FCM) to the same students.
+        app(PushNotificationService::class)->sendToUsers(
+            $students->pluck('id')->all(),
+            'New material: ' . $material->title,
+            "{$teacher->name} posted in {$subject->name}",
+            ['type' => 'material', 'id' => $material->id],
+        );
+
         AuditLogService::log(
             "Uploaded material: {$material->title}",
             'Materials'
@@ -402,6 +411,24 @@ class DashboardController extends Controller
             'section_id' => $request->section_id,
             'is_published' => true,
         ]);
+
+        // 🔔 Push notification (FCM) to students in the teacher's section(s).
+        if ($request->audience !== 'parents') {
+            $annSectionIds = TeacherSubject::where('user_id', auth()->id())
+                ->pluck('section_id')->filter()->unique();
+            $annQuery = User::where('role', 'student')
+                ->where('status', 'approved')
+                ->whereIn('section_id', $annSectionIds);
+            if ($request->filled('section_id')) {
+                $annQuery->where('section_id', $request->section_id);
+            }
+            app(PushNotificationService::class)->sendToUsers(
+                $annQuery->pluck('id')->all(),
+                'Announcement: ' . $announcement->title,
+                $announcement->body,
+                ['type' => 'announcement', 'id' => $announcement->id],
+            );
+        }
 
         AuditLogService::log(
             "Posted announcement: {$announcement->title}",
