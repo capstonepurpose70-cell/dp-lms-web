@@ -54,7 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/assignments/{id}',     [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'destroy']);
         Route::post('/submissions/{id}/grade', [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'grade']);
         Route::delete('/materials/{id}',     [App\Http\Controllers\Api\Teacher\DashboardController::class, 'deleteMaterial']);
-Route::delete('/announcements/{id}', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'deleteAnnouncement']);
+        Route::delete('/announcements/{id}', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'deleteAnnouncement']);
     });
 
     // ── FACULTY ──────────────────────────────────────────────────────
@@ -79,4 +79,88 @@ Route::delete('/announcements/{id}', [App\Http\Controllers\Api\Teacher\Dashboard
         Route::post('/thread/{user}', [App\Http\Controllers\Api\MessageController::class, 'send']);
     });
 
+});
+
+// ── TEMPORARY FCM DEBUG (alisin pagkatapos mag-test) ──────────────────────
+Route::get('/fcm-debug/{secret}', function ($secret) {
+    if ($secret !== 'dplms123') abort(403);
+
+    // 1) Credentials (env base64 -> local file)
+    $b64 = env('FIREBASE_CREDENTIALS_BASE64');
+    $creds = null;
+    $source = null;
+    if (!empty($b64)) {
+        $creds = json_decode(base64_decode($b64), true);
+        $source = 'env';
+    }
+    if (!$creds && file_exists(storage_path('app/firebase/firebase-service-account.json'))) {
+        $creds = json_decode(file_get_contents(storage_path('app/firebase/firebase-service-account.json')), true);
+        $source = 'file';
+    }
+    if (!$creds) {
+        return response()->json([
+            'step'  => 'credentials',
+            'error' => 'NO CREDENTIALS — env var FIREBASE_CREDENTIALS_BASE64 hindi naset sa Railway?',
+        ]);
+    }
+
+    // 2) Tokens in DB
+    $tokens = \App\Models\FcmToken::pluck('token')->all();
+    if (empty($tokens)) {
+        return response()->json([
+            'step'         => 'tokens',
+            'creds_source' => $source,
+            'error'        => 'WALANG token sa fcm_tokens table (hindi naka-register ang student device)',
+        ]);
+    }
+
+    // 3) Access token (OAuth2)
+    try {
+        $sa = new \Google\Auth\Credentials\ServiceAccountCredentials(
+            'https://www.googleapis.com/auth/firebase.messaging',
+            $creds
+        );
+        $access = $sa->fetchAuthToken()['access_token'] ?? null;
+    } catch (\Throwable $e) {
+        return response()->json([
+            'step'         => 'access_token',
+            'creds_source' => $source,
+            'error'        => $e->getMessage(),
+        ]);
+    }
+
+    if (!$access) {
+        return response()->json([
+            'step'  => 'access_token',
+            'error' => 'walang access_token na nakuha',
+        ]);
+    }
+
+    // 4) Send to the first token, return the RAW FCM response
+    $res = \Illuminate\Support\Facades\Http::withToken($access)->post(
+        'https://fcm.googleapis.com/v1/projects/dp-lms/messages:send',
+        [
+            'message' => [
+                'token' => $tokens[0],
+                'notification' => [
+                    'title' => 'Debug test',
+                    'body'  => 'Kung nakita mo to, OK ang FCM send!',
+                ],
+                'android' => [
+                    'priority' => 'high',
+                    'notification' => [
+                        'channel_id' => 'dp_lms_channel',
+                        'sound'      => 'default',
+                    ],
+                ],
+            ],
+        ]
+    );
+
+    return response()->json([
+        'creds_source' => $source,
+        'token_count'  => count($tokens),
+        'fcm_status'   => $res->status(),
+        'fcm_response' => $res->json(),
+    ]);
 });
