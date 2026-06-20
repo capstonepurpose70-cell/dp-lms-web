@@ -414,8 +414,11 @@ class DashboardController extends Controller
 
         // 🔔 Push notification (FCM) to students in the teacher's section(s).
         if ($request->audience !== 'parents') {
-            $annSectionIds = TeacherSubject::where('user_id', auth()->id())
-                ->pluck('section_id')->filter()->unique();
+            // Sections this teacher handles — BOTH subject AND faculty assignments
+            // (same sources as the dashboard, so we never miss a section).
+            $annSectionIds = TeacherSubject::where('user_id', auth()->id())->pluck('section_id')
+                ->merge(TeacherAssignment::where('user_id', auth()->id())->pluck('section_id'))
+                ->filter()->unique();
             $annQuery = User::where('role', 'student')
                 ->where('status', 'approved')
                 ->whereIn('section_id', $annSectionIds);
