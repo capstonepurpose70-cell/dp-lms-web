@@ -108,6 +108,27 @@
 
     .announce-item:last-child { border-bottom: none; }
     .announce-item:hover { background: #f8faff; }
+
+    .delete-btn {
+        background: #fef2f2;
+        color: #dc2626;
+        border: none;
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .delete-btn:hover {
+        background: #fee2e2;
+        transform: scale(1.08);
+    }
+
+    .delete-btn:active { transform: scale(0.92); }
 </style>
 
 <div class="max-w-4xl mx-auto">
@@ -186,6 +207,24 @@
                     <span class="text-xs text-gray-400">
                         {{ $announcement->created_at->diffForHumans() }}
                     </span>
+
+                    {{-- Delete button (hard delete — mawawala rin sa students) --}}
+                    <form method="POST"
+                        action="{{ route('teacher.announcements.destroy', $announcement->id) }}"
+                        onsubmit="return confirm('Delete this announcement? Mawawala rin ito sa mga students.');"
+                        class="flex-shrink-0">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="delete-btn" title="Delete announcement">
+                            <svg width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0
+                                       01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0
+                                       00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
