@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\TeacherSubject;
+use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -79,6 +81,21 @@ class AssignmentController extends Controller
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store("assignments/{$assignment->id}", 'public');
             $assignment->update(['file_path' => $path]);
+        }
+
+        // 🔔 Push notification (FCM) to students in this section.
+        if ($assignment->is_published) {
+            $quizStudentIds = User::where('role', 'student')
+                ->where('status', 'approved')
+                ->where('section_id', $data['section_id'])
+                ->pluck('id')->all();
+
+            app(PushNotificationService::class)->sendToUsers(
+                $quizStudentIds,
+                'New quiz: ' . $assignment->title,
+                auth()->user()->name . ' posted a new quiz',
+                ['type' => 'quiz', 'id' => $assignment->id],
+            );
         }
 
         return redirect()->route('teacher.assignments.index')

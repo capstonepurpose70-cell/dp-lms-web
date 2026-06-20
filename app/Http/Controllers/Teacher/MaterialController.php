@@ -7,6 +7,7 @@ use App\Models\LearningMaterial;
 use App\Models\Subject;
 use App\Models\TeacherSubject;
 use App\Services\AuditLogService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\ActivityAssigned;
@@ -130,6 +131,14 @@ class MaterialController extends Controller
                     url:        '/student/modules',
                 ));
             }
+
+            // 🔔 Push notification (FCM) to the same students.
+            app(PushNotificationService::class)->sendToUsers(
+                $students->pluck('id')->all(),
+                'New material: ' . $material->title,
+                auth()->user()->name . ' posted in ' . $subject->name,
+                ['type' => 'material', 'id' => $material->id],
+            );
         }
 
         return redirect()->route('teacher.materials.index')
