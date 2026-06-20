@@ -33,6 +33,19 @@ class FaceVerificationController extends Controller
     /** Approve a face set */
     public function approve(FaceRegistration $registration)
     {
+        // Guard: never approve an empty image set — the Raspberry Pi would have
+        // nothing to recognize. Ask the student to re-register instead.
+        $dir = "faces/{$registration->user_id}";
+        $hasImages = Storage::disk('public')->exists($dir)
+            && count(Storage::disk('public')->files($dir)) > 0;
+
+        if (! $hasImages) {
+            return back()->with(
+                'error',
+                "No face images found for {$registration->user->name}. Please ask them to register again."
+            );
+        }
+
         $registration->update([
             'status'      => 'approved',
             'reviewed_at' => now(),
