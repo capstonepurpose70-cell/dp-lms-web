@@ -425,11 +425,12 @@ class DashboardController extends Controller
             if ($request->filled('section_id')) {
                 $annQuery->where('section_id', $request->section_id);
             }
+            $teacherName = auth()->user()->name;
             app(PushNotificationService::class)->sendToUsers(
                 $annQuery->pluck('id')->all(),
-                'Announcement: ' . $announcement->title,
-                $announcement->body,
-                ['type' => 'announcement', 'id' => $announcement->id],
+                '📢 ' . $announcement->title,
+                'Mula kay ' . $teacherName . ': ' . $announcement->body,
+                ['type' => 'announcement', 'id' => $announcement->id, 'teacher' => $teacherName],
             );
         }
 
