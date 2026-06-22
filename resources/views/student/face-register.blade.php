@@ -4,20 +4,25 @@
 @section('content')
 <style>
     .ring { transition: border-color .15s ease, box-shadow .15s ease; }
-    .ring-idle { border-color: rgba(255,255,255,.65); box-shadow: 0 0 0 2000px rgba(0,0,0,.25); }
-    .ring-warn { border-color: #f59e0b; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 18px rgba(245,158,11,.6); }
-    .ring-ok   { border-color: #22c55e; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 22px rgba(34,197,94,.85); }
+    .ring-idle  { border-color: rgba(255,255,255,.65); box-shadow: 0 0 0 2000px rgba(0,0,0,.25); }
+    .ring-warn  { border-color: #f59e0b; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 18px rgba(245,158,11,.6); }
+    .ring-ready { border-color: #3b82f6; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 18px rgba(59,130,246,.7);
+                  animation: pulse 1s ease-in-out infinite; }
+    .ring-ok    { border-color: #22c55e; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 22px rgba(34,197,94,.85); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+    .btn { width:100%; padding:.75rem; border-radius:.75rem; font-weight:600; font-size:.875rem; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
 </style>
 
 <div class="max-w-2xl mx-auto px-4 py-8">
 
     <h1 class="text-xl font-bold text-gray-800 mb-1">Face Registration</h1>
     <p class="text-sm text-gray-500 mb-6">
-        Keep your face inside the circle. It captures automatically and only keeps the
-        <span class="text-green-600 font-semibold">clear</span> shots.
+        Enable the camera, choose which camera to use, then tap <b>Start</b>.
+        Blink when asked &mdash; the circle turns
+        <span class="text-green-600 font-semibold">green</span> once verified and captures automatically.
     </p>
 
-    {{-- ── STATUS BANNERS ───────────────────────────────────────────── --}}
     @if ($blocked)
         <div class="rounded-xl border border-red-200 bg-red-50 p-4 mb-6">
             <p class="font-bold text-red-700 text-sm">⛔ Face registration blocked</p>
@@ -30,12 +35,10 @@
         @if ($warnings > 0)
             <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
                 <p class="text-sm text-orange-700">
-                    ⚠️ <b>Warning {{ $warnings }}/3:</b> An inappropriate image was rejected.
-                    Capture your face only.
+                    ⚠️ <b>Warning {{ $warnings }}/3:</b> An inappropriate image was rejected. Capture your face only.
                 </p>
             </div>
         @endif
-
         @if ($registration && $registration->status === 'pending')
             <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 mb-4">
                 <p class="font-bold text-yellow-800 text-sm">⏳ Submitted — waiting for admin verification</p>
@@ -53,27 +56,25 @@
             </div>
         @endif
 
-        {{-- camera picker (shown only when 2+ cameras) --}}
+        {{-- camera picker --}}
         <div id="camRow" class="hidden mb-3">
             <label class="block text-xs font-medium text-gray-500 mb-1">Choose camera</label>
-            <select id="camSelect"
-                    class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"></select>
+            <select id="camSelect" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"></select>
         </div>
 
-        {{-- ── CAMERA CARD ──────────────────────────────────────────── --}}
+        {{-- detection status --}}
+        <p id="status" class="hidden text-xs mb-3"></p>
+
         <div class="relative rounded-2xl overflow-hidden bg-black shadow-lg" style="aspect-ratio: 4 / 3;">
-            <video id="cam" autoplay playsinline muted
-                   class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
+            <video id="cam" autoplay playsinline muted class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div id="oval" class="ring ring-idle rounded-full border-4" style="width:55%; height:78%;"></div>
             </div>
-            <div id="phase"
-                 class="absolute top-3 left-0 right-0 text-center text-white text-xs font-semibold drop-shadow">
+            <div id="phase" class="absolute top-3 left-0 right-0 text-center text-white text-xs font-semibold drop-shadow">
                 Tap “Enable Camera” to begin
             </div>
         </div>
 
-        {{-- progress --}}
         <div class="mt-4">
             <div class="flex justify-between text-xs text-gray-600 mb-1">
                 <span id="msg">Position your face inside the circle.</span>
@@ -84,31 +85,41 @@
             </div>
         </div>
 
-        <button id="enableBtn"
-                class="w-full mt-5 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm">
-            📷 Enable Camera
-        </button>
-        <button id="retryBtn"
-                class="hidden w-full mt-3 py-2.5 rounded-xl font-semibold text-sm border border-gray-200 text-gray-600">
-            🔄 Try again
-        </button>
+        <button id="enableBtn" class="btn bg-blue-600 text-white mt-5">📷 Enable Camera</button>
+        <button id="startBtn"  class="btn bg-green-600 text-white mt-3 hidden" disabled>▶️ Start</button>
+        <button id="retryBtn"  class="btn border border-gray-200 text-gray-600 mt-3 hidden">🔄 Try again</button>
 
         <p class="text-[11px] text-gray-400 mt-4 text-center leading-relaxed">
-            Tips: face the light, hold the phone steady, keep only your face in the circle.
+            Tips: face the light, keep only your face inside the circle, then blink naturally when asked.
         </p>
     @endif
 </div>
 
 @unless ($blocked)
+<script src="{{ asset('face/face-api.min.js') }}" onerror="window.__localFaceFailed=true"></script>
 <script>
 (function () {
     'use strict';
 
-    const CSRF     = '{{ csrf_token() }}';
-    const POST_URL = '{{ route('student.face.store') }}';
-    const TARGET   = 20;        // best (sharpest) photos to keep
-    const DURATION = 6000;      // capture window in ms
-    const STEP     = 150;       // ms between samples
+    const CSRF       = '{{ csrf_token() }}';
+    const POST_URL   = '{{ route('student.face.store') }}';
+    const LOCAL_LIB  = '{{ asset('face/face-api.min.js') }}';
+    const LOCAL_MODELS = '{{ asset('face/models') }}';
+    const TARGET     = 20;
+
+    // fallback sources (used only if self-hosted files are missing)
+    const LIB_FALLBACKS = [
+        'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js',
+        'https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js'
+    ];
+    const MODEL_FALLBACKS = [
+        'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights',
+        'https://justadudewhohacks.github.io/face-api.js/models'
+    ];
+
+    // tuning
+    const EAR_CLOSED = 0.21, EAR_OPEN = 0.26, BLINKS_REQUIRED = 1;
+    const MIN_FACE_RATIO = 0.30, CENTER_TOL = 0.22, MIN_SCORE = 0.50;
 
     const video    = document.getElementById('cam');
     const oval     = document.getElementById('oval');
@@ -116,104 +127,192 @@
     const msgEl    = document.getElementById('msg');
     const countTx  = document.getElementById('countTxt');
     const bar      = document.getElementById('bar');
+    const statusEl = document.getElementById('status');
     const enableBt = document.getElementById('enableBtn');
+    const startBt  = document.getElementById('startBtn');
     const retryBt  = document.getElementById('retryBtn');
     const camRow   = document.getElementById('camRow');
     const camSel   = document.getElementById('camSelect');
-    const shCanvas = document.createElement('canvas');  // reused for sharpness
 
-    let stream  = null;
-    let running = false;
-    let samples = [];   // { sh, blob }
-    let peak    = 1;
-    let startT  = 0;
+    let stream = null, modelsReady = false;
+    let running = false, finished = false, liveness = false, eyeClosed = false;
+    let blinkCount = 0, captures = [];
 
     function msg(t)   { msgEl.textContent = t; }
     function phase(t) { phaseEl.textContent = t; }
     function ring(s)  { oval.className = 'ring ring-' + s + ' rounded-full border-4'; }
+    function status(t, color) {
+        statusEl.textContent = t;
+        statusEl.style.color = color;
+        statusEl.classList.remove('hidden');
+    }
 
-    function dataURLtoBlob(dataurl) {
-        const parts = dataurl.split(',');
-        const mime  = parts[0].match(/:(.*?);/)[1];
-        const bin   = atob(parts[1]);
-        let n = bin.length;
-        const u8 = new Uint8Array(n);
+    function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+    function ear(e) { return (dist(e[1], e[5]) + dist(e[2], e[4])) / (2 * dist(e[0], e[3])); }
+
+    function dataURLtoBlob(d) {
+        const p = d.split(','), mime = p[0].match(/:(.*?);/)[1], bin = atob(p[1]);
+        let n = bin.length; const u8 = new Uint8Array(n);
         while (n--) u8[n] = bin.charCodeAt(n);
         return new Blob([u8], { type: mime });
     }
 
-    // crop geometry: centered square (~80%) = the oval area
-    function geom() {
-        const vw = video.videoWidth, vh = video.videoHeight;
-        const side = Math.min(vw, vh) * 0.8;
-        return { vw: vw, vh: vh, side: side, sx: (vw - side) / 2, sy: (vh - side) / 2 };
+    function loadScript(src) {
+        return new Promise(function (res, rej) {
+            const s = document.createElement('script');
+            s.src = src; s.onload = res; s.onerror = function () { rej(new Error('fail ' + src)); };
+            document.head.appendChild(s);
+        });
     }
 
-    // sharpness = variance of Laplacian (higher = clearer; low = blurry)
-    function sharpnessOf(g) {
-        const w = 120, h = 120;
-        shCanvas.width = w; shCanvas.height = h;
-        const ctx = shCanvas.getContext('2d');
-        ctx.drawImage(video, g.sx, g.sy, g.side, g.side, 0, 0, w, h);
-        const d = ctx.getImageData(0, 0, w, h).data;
-        function lum(i) { return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; }
-        let sum = 0, sum2 = 0, cnt = 0;
-        const row = w * 4;
-        for (let y = 1; y < h - 1; y++) {
-            for (let x = 1; x < w - 1; x++) {
-                const i = (y * w + x) * 4;
-                const lap = -4 * lum(i) + lum(i - 4) + lum(i + 4) + lum(i - row) + lum(i + row);
-                sum += lap; sum2 += lap * lap; cnt++;
-            }
+    async function ensureLib() {
+        if (typeof faceapi !== 'undefined') return;
+        const tries = (window.__localFaceFailed ? [] : [LOCAL_LIB]).concat(LIB_FALLBACKS);
+        for (let i = 0; i < tries.length; i++) {
+            try { await loadScript(tries[i]); if (typeof faceapi !== 'undefined') return; } catch (e) {}
         }
-        const mean = sum / cnt;
-        return (sum2 / cnt) - (mean * mean);
+        throw new Error('lib unavailable');
     }
 
-    function tick() {
-        if (!running) return;
-        const g = geom();
-        if (g.vw && g.vh) {
-            const sh   = sharpnessOf(g);
-            peak = Math.max(peak, sh);
-            const good = sh >= peak * 0.55;
-
-            ring(good ? 'ok' : 'warn');
-            msg(good ? 'Looking good — hold steady' : 'Hold steady / move to better light');
-
-            const c = document.createElement('canvas');
-            c.width = 250; c.height = 250;
-            c.getContext('2d').drawImage(video, g.sx, g.sy, g.side, g.side, 0, 0, 250, 250);
-            samples.push({ sh: sh, blob: dataURLtoBlob(c.toDataURL('image/jpeg', 0.9)) });
-
-            const elapsed = Date.now() - startT;
-            bar.style.width = Math.min(100, elapsed / DURATION * 100) + '%';
-            countTx.textContent = Math.min(samples.length, TARGET) + ' / ' + TARGET;
-
-            if (elapsed >= DURATION) { running = false; finalize(); return; }
+    async function loadModels() {
+        const sources = [LOCAL_MODELS].concat(MODEL_FALLBACKS);
+        for (let i = 0; i < sources.length; i++) {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri(sources[i]);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(sources[i]);
+                modelsReady = true; return;
+            } catch (e) {}
         }
-        setTimeout(tick, STEP);
+        throw new Error('models unavailable');
     }
 
-    function finalize() {
-        phase('Selecting your clearest photos…');
-        samples.sort(function (a, b) { return b.sh - a.sh; });   // sharpest first
-        const best = samples.slice(0, TARGET).map(function (s) { return s.blob; });
-        if (best.length < 5) {
-            ring('warn');
-            msg('Too blurry — please try again in better light.');
-            retryBt.classList.remove('hidden');
+    function grabFrame(b, vw, vh) {
+        if (captures.length >= TARGET) return;
+        const side = Math.min(Math.max(b.width, b.height) * 1.8, vw, vh);
+        let sx = (b.x + b.width / 2) - side / 2;
+        let sy = (b.y + b.height / 2) - side / 2;
+        sx = Math.max(0, Math.min(sx, vw - side));
+        sy = Math.max(0, Math.min(sy, vh - side));
+        const c = document.createElement('canvas');
+        c.width = 250; c.height = 250;
+        c.getContext('2d').drawImage(video, sx, sy, side, side, 0, 0, 250, 250);
+        captures.push(dataURLtoBlob(c.toDataURL('image/jpeg', 0.9)));
+    }
+
+    function process(det) {
+        if (finished) return;
+
+        // HARD GATE: no face -> never capture
+        if (!det) {
+            ring('idle'); msg('Position your face inside the circle');
+            if (!liveness) { blinkCount = 0; eyeClosed = false; }
             return;
         }
-        upload(best);
+
+        const b = det.detection.box, vw = video.videoWidth, vh = video.videoHeight;
+        if (!vw || !vh) return;
+
+        const ratio = b.width / vw;
+        const cx = (b.x + b.width / 2) / vw, cy = (b.y + b.height / 2) / vh;
+        const centered = Math.abs(cx - 0.5) < CENTER_TOL && Math.abs(cy - 0.5) < CENTER_TOL;
+        const good = ratio >= MIN_FACE_RATIO && centered && det.detection.score >= MIN_SCORE;
+
+        if (!good) {
+            ring('warn');
+            if (ratio < MIN_FACE_RATIO)  msg('Move a bit closer to the camera');
+            else if (!centered)          msg('Center your face inside the circle');
+            else                         msg('Hold still so your face is clear');
+            if (!liveness) { blinkCount = 0; eyeClosed = false; }
+            return;
+        }
+
+        if (!liveness) {
+            const lm = det.landmarks;
+            const e = (ear(lm.getLeftEye()) + ear(lm.getRightEye())) / 2;
+            if (e < EAR_CLOSED) eyeClosed = true;
+            else if (eyeClosed && e > EAR_OPEN) { eyeClosed = false; blinkCount++; }
+            if (blinkCount >= BLINKS_REQUIRED) { liveness = true; }
+            else { ring('ready'); msg('Face detected — please BLINK to verify'); return; }
+        }
+
+        ring('ok');
+        grabFrame(b, vw, vh);
+        countTx.textContent = captures.length + ' / ' + TARGET;
+        bar.style.width = (captures.length / TARGET * 100) + '%';
+        msg('Verified! Capturing… keep looking (' + captures.length + '/' + TARGET + ')');
+        if (captures.length >= TARGET) { finished = true; running = false; upload(); }
     }
 
-    async function upload(blobs) {
+    async function tick() {
+        if (!running) return;
+        try {
+            const det = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+                .withFaceLandmarks();
+            process(det);
+        } catch (e) {}
+        if (running) setTimeout(tick, 100);
+    }
+
+    function startDetect() {
+        if (!modelsReady) { msg('Face detection is not ready.'); return; }
+        finished = false; liveness = false; eyeClosed = false; blinkCount = 0; captures = [];
+        countTx.textContent = '0 / ' + TARGET; bar.style.width = '0%';
+        retryBt.classList.add('hidden'); startBt.classList.add('hidden');
+        ring('idle'); phase('Look at the camera and blink');
+        running = true; tick();
+    }
+
+    async function startStream(deviceId) {
+        if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+        const constraints = {
+            video: deviceId ? { deviceId: { exact: deviceId } }
+                            : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+            audio: false
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream; await video.play();
+    }
+
+    async function populateCams() {
+        try {
+            const devs = await navigator.mediaDevices.enumerateDevices();
+            const cams = devs.filter(function (d) { return d.kind === 'videoinput'; });
+            camSel.innerHTML = '';
+            cams.forEach(function (c, i) {
+                const o = document.createElement('option');
+                o.value = c.deviceId; o.textContent = c.label || ('Camera ' + (i + 1));
+                camSel.appendChild(o);
+            });
+            if (cams.length > 0) camRow.classList.remove('hidden');
+        } catch (e) {}
+    }
+
+    async function enable() {
+        enableBt.disabled = true;
+        phase('Starting…'); status('Loading face detection…', '#6b7280');
+        try { await ensureLib(); }
+        catch (e) { enableBt.disabled = false; status('✗ Face detection unavailable — capture disabled.', '#dc2626'); phase('Load failed'); return; }
+        try { await loadModels(); }
+        catch (e) { enableBt.disabled = false; status('✗ Could not load face models — capture disabled.', '#dc2626'); phase('Load failed'); return; }
+        try { await startStream(null); }
+        catch (e) { enableBt.disabled = false; status('✗ Camera blocked. Allow permission and retry.', '#dc2626'); phase('Camera blocked'); return; }
+
+        await populateCams();
+        status('✓ Face detection ready. Choose your camera, then tap Start.', '#16a34a');
+        phase('Choose camera, then tap Start');
+        msg('Pick your camera below, then tap Start.');
+        enableBt.classList.add('hidden');
+        startBt.classList.remove('hidden');
+        startBt.disabled = false;     // only enabled because models truly loaded
+    }
+
+    async function upload() {
         phase('Uploading your photos…'); msg('Please wait…'); ring('ok');
         const fd = new FormData();
-        blobs.forEach(function (b, i) { fd.append('images[]', b, 'img_' + (i + 1) + '.jpg'); });
+        captures.forEach(function (blob, i) { fd.append('images[]', blob, 'img_' + (i + 1) + '.jpg'); });
         try {
-            const res  = await fetch(POST_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF }, body: fd });
+            const res = await fetch(POST_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF }, body: fd });
             const data = await res.json();
             if (data.ok) {
                 phase('Done! Waiting for admin verification.');
@@ -230,61 +329,13 @@
         }
     }
 
-    function startCapture() {
-        samples = []; peak = 1; startT = Date.now();
-        retryBt.classList.add('hidden');
-        bar.style.width = '0%'; countTx.textContent = '0 / ' + TARGET;
-        ring('idle'); phase('Keep your face in the circle');
-        running = true;
-        tick();
-    }
-
-    async function startStream(deviceId) {
-        if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
-        const constraints = {
-            video: deviceId ? { deviceId: { exact: deviceId } }
-                            : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: false,
-        };
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-        await video.play();
-    }
-
-    async function populateCams() {
-        try {
-            const devs = await navigator.mediaDevices.enumerateDevices();
-            const cams = devs.filter(function (d) { return d.kind === 'videoinput'; });
-            camSel.innerHTML = '';
-            cams.forEach(function (c, i) {
-                const o = document.createElement('option');
-                o.value = c.deviceId;
-                o.textContent = c.label || ('Camera ' + (i + 1));
-                camSel.appendChild(o);
-            });
-            camRow.classList.toggle('hidden', cams.length < 2);
-        } catch (e) { /* ignore */ }
-    }
-
-    async function enable() {
-        enableBt.disabled = true;
-        phase('Starting camera…'); msg('Please wait…');
-        try { await startStream(null); }
-        catch (e) {
-            enableBt.disabled = false; phase('Camera blocked');
-            msg('Allow camera permission, then tap Enable Camera again.');
-            return;
-        }
-        await populateCams();
-        enableBt.classList.add('hidden');
-        startCapture();
-    }
-
     enableBt.addEventListener('click', enable);
-    retryBt.addEventListener('click', function () { if (stream) startCapture(); else enable(); });
+    startBt.addEventListener('click', startDetect);
+    retryBt.addEventListener('click', function () {
+        if (modelsReady && stream) startDetect(); else enable();
+    });
     camSel.addEventListener('change', async function () {
-        running = false;
-        try { await startStream(camSel.value); startCapture(); } catch (e) {}
+        try { await startStream(camSel.value); } catch (e) {}
     });
 })();
 </script>
