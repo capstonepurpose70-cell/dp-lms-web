@@ -22,6 +22,7 @@ use App\Http\Controllers\ParentPortal\ParentDashboardController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Teacher\TeacherStudentController;
 use App\Http\Controllers\Admin\AdminProfileController;
+use App\Http\Controllers\Teacher\TeacherMessageController;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // ROOT — redirect based on role
@@ -170,6 +171,11 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::get('/assignments/{assignment}',          [App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('assignments.show');
         Route::delete('/assignments/{assignment}',       [App\Http\Controllers\Teacher\AssignmentController::class, 'destroy'])->name('assignments.destroy');
         Route::post('/submissions/{submission}/grade',   [App\Http\Controllers\Teacher\AssignmentController::class, 'grade'])->name('submissions.grade');
+
+        // Messaging — chat with students in the teacher's sections
+        Route::get('/messages',  [TeacherMessageController::class, 'index'])->name('messages');
+        Route::post('/messages', [TeacherMessageController::class, 'store'])->name('messages.store');
+
        Route::get('/notifications/data', fn() => response()->json([
             'unread' => auth()->user()->unreadNotifications->count(),
             'items'  => auth()->user()->unreadNotifications->take(10)->map(fn($n) => [
