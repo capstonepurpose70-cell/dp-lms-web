@@ -113,6 +113,14 @@ class AssignmentController extends Controller
             'user_id'       => $user->id,
         ]);
 
+        // 🔒 Locked once graded — no re-submission allowed.
+        if ($submission->exists && $submission->status === 'graded') {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'This activity has already been graded. Submissions are locked.',
+            ], 422);
+        }
+
         if ($request->hasFile('file')) {
             if ($submission->file_path) {
                 Storage::disk('public')->delete($submission->file_path);

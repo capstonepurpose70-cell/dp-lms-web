@@ -89,18 +89,36 @@ class AssignmentController extends Controller
             $assignment->update(['file_path' => $path]);
         }
 
-        // 🔔 Push notification (FCM) to students in this section.
+        // 🔔 Notify section students (in-app + FCM). Never breaks the upload.
         if ($assignment->is_published) {
-            $quizStudentIds = User::where('role', 'student')
-                ->where('status', 'approved')
-                ->where('section_id', $validated['section_id'])
-                ->pluck('id')->all();
-            app(PushNotificationService::class)->sendToUsers(
-                $quizStudentIds,
-                'New quiz: ' . $assignment->title,
-                "{$teacher->name} posted a new quiz",
-                ['type' => 'quiz', 'id' => $assignment->id],
-            );
+            try {
+                $assignment->loadMissing('subject');
+                $subjectName = $assignment->subject?->name ?? 'Subject';
+
+                $students = User::where('role', 'student')
+                    ->where('status', 'approved')
+                    ->where('section_id', $validated['section_id'])
+                    ->get();
+
+                foreach ($students as $student) {
+                    $student->notify(new \App\Notifications\ActivityAssigned(
+                        title:      $assignment->title,
+                        subject:    $subjectName,
+                        instructor: $teacher->name,
+                        type:       'quiz',
+                        url:        '/student/quizzes',
+                    ));
+                }
+
+                app(PushNotificationService::class)->sendToUsers(
+                    $students->pluck('id')->all(),
+                    'New quiz: ' . $assignment->title,
+                    "{$teacher->name} posted a new quiz",
+                    ['type' => 'quiz', 'id' => (string) $assignment->id],
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Quiz notify failed (upload still succeeded): '.$e->getMessage());
+            }
         }
 
         return response()->json([
@@ -170,6 +188,30 @@ class AssignmentController extends Controller
             'remarks' => $validated['remarks'] ?? $submission->remarks,
             'status'  => 'graded',
         ]);
+
+        // 🔔 Notify the graded student (in-app + FCM). Never breaks grading.
+        try {
+            $submission->loadMissing(['assignment.subject', 'student']);
+            $student = $submission->student;
+            if ($student) {
+                $student->notify(new \App\Notifications\ActivityAssigned(
+                    title:      $submission->assignment?->title ?? 'Activity',
+                    subject:    $submission->assignment?->subject?->name ?? 'Subject',
+                    instructor: $teacher->name,
+                    type:       'grade',
+                    url:        '/student/quizzes',
+                ));
+
+                app(PushNotificationService::class)->sendToUsers(
+                    [$student->id],
+                    'Your work was graded: ' . ($submission->assignment?->title ?? 'Activity'),
+                    'Score: ' . $submission->score . '/' . ($submission->assignment?->max_score ?? '-'),
+                    ['type' => 'grade', 'id' => (string) ($submission->assignment_id ?? '')],
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Grade notify failed (grade still saved): '.$e->getMessage());
+        }
 
         return response()->json(['ok' => true, 'message' => 'Submission graded.']);
     }
