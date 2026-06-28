@@ -38,27 +38,33 @@ class AnnouncementController extends Controller
         ]);
 
         // 🔔 Push notification (FCM) to students in the teacher's section(s).
+        // Wrapped so a notification failure can NEVER break posting.
         if ($request->audience !== 'parents') {
-            // Sections this teacher handles — BOTH subject AND faculty assignments.
-            $annSectionIds = TeacherSubject::where('user_id', auth()->id())->pluck('section_id')
-                ->merge(TeacherAssignment::where('user_id', auth()->id())->pluck('section_id'))
-                ->filter()->unique();
+            try {
+                // Sections this teacher handles — BOTH subject AND faculty assignments.
+                $annSectionIds = TeacherSubject::where('user_id', auth()->id())->pluck('section_id')
+                    ->merge(TeacherAssignment::where('user_id', auth()->id())->pluck('section_id'))
+                    ->filter()->unique();
 
-            $annQuery = User::where('role', 'student')
-                ->where('status', 'approved')
-                ->whereIn('section_id', $annSectionIds);
+                $annQuery = User::where('role', 'student')
+                    ->where('status', 'approved')
+                    ->whereIn('section_id', $annSectionIds);
 
-            if ($request->filled('section_id')) {
-                $annQuery->where('section_id', $request->section_id);
+                if ($request->filled('section_id')) {
+                    $annQuery->where('section_id', $request->section_id);
+                }
+
+                $teacherName = auth()->user()->name;
+                // FCM v1 requires ALL data values to be strings (int id silently fails).
+                app(PushNotificationService::class)->sendToUsers(
+                    $annQuery->pluck('id')->all(),
+                    '📢 ' . $announcement->title,
+                    'Mula kay ' . $teacherName . ': ' . $announcement->body,
+                    ['type' => 'announcement', 'id' => (string) $announcement->id, 'teacher' => (string) $teacherName],
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Announcement notify failed (post still succeeded): '.$e->getMessage());
             }
-
-            $teacherName = auth()->user()->name;
-            app(PushNotificationService::class)->sendToUsers(
-                $annQuery->pluck('id')->all(),
-                '📢 ' . $announcement->title,
-                'Mula kay ' . $teacherName . ': ' . $announcement->body,
-                ['type' => 'announcement', 'id' => $announcement->id, 'teacher' => $teacherName],
-            );
         }
 
         AuditLogService::log(
