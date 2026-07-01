@@ -108,7 +108,42 @@
     .dpnav-feat { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
     .dpnav-feat svg { width: 18px; height: 18px; color: #16a34a; flex-shrink: 0; margin-top: 1px; }
     .dpnav-feat span { font-size: 13px; color: #374151; line-height: 1.5; }
-    .dpnav-modal-close {
+    /* Org chart inside About modal */
+    .dpnav-org { margin-top: 16px; border-top: 1px solid #eef2f7; padding-top: 14px; }
+    .dpnav-org h4 { font-size: 13px; font-weight: 700; color: #12203a; margin: 0 0 8px; }
+    .dpnav-org-thumb {
+        display: block; width: 100%; padding: 0;
+        border: 1px solid #e5e7eb; border-radius: 12px;
+        cursor: zoom-in; overflow: hidden; background: #f8fafc;
+    }
+    .dpnav-org-thumb img { display: block; width: 100%; height: auto; }
+    .dpnav-org-hint { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 6px; }
+
+    /* Fullscreen lightbox for the org chart */
+    .dpnav-lightbox {
+        position: fixed; inset: 0; z-index: 5000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
+        background: rgba(6, 12, 26, 0.92);
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+    .dpnav-lightbox.show { opacity: 1; pointer-events: all; }
+    .dpnav-lightbox img {
+        max-width: 96vw; max-height: 90vh;
+        border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        cursor: zoom-out;
+    }
+    .dpnav-lightbox-close {
+        position: absolute; top: 18px; right: 22px;
+        width: 42px; height: 42px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #fff; font-size: 24px; line-height: 1; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+        .dpnav-modal-close {
         margin-top: 8px; width: 100%;
         padding: 12px; border: none; border-radius: 13px;
         background: linear-gradient(135deg, #16a34a, #15803d);
@@ -212,11 +247,25 @@
                 <span>Instant notifications for announcements, activities, and results.</span>
             </div>
 
-            <p style="margin-top:14px;font-size:12px;color:#9ca3af;">
+            <div class="dpnav-org">
+                <h4>Organizational Chart</h4>
+                <button type="button" class="dpnav-org-thumb" id="dpnavOrgOpen" aria-label="Open organizational chart">
+                    <img src="{{ asset('images/org-chart.png') }}" alt="Organizational Chart">
+                </button>
+                <p class="dpnav-org-hint">Tap the chart to enlarge</p>
+            </div>
+
+                        <p style="margin-top:14px;font-size:12px;color:#9ca3af;">
                 &copy; {{ date('Y') }} Sto. Domingo National High School. All rights reserved.
             </p>
         </div>
         <button type="button" class="dpnav-modal-close" id="dpnavModalClose">Got it</button>
+
+{{-- Fullscreen org-chart viewer --}}
+<div class="dpnav-lightbox" id="dpnavLightbox">
+    <button type="button" class="dpnav-lightbox-close" id="dpnavLightboxClose" aria-label="Close">&times;</button>
+    <img src="{{ asset('images/org-chart.png') }}" alt="Organizational Chart (enlarged)">
+</div>
     </div>
 </div>
 
@@ -231,6 +280,24 @@
     function closeModal() { modal.classList.remove('show'); }
 
     if (openBtn)  openBtn.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+    // ── Org-chart lightbox open / close ────────────────────────────────────
+    var lb      = document.getElementById('dpnavLightbox');
+    var lbOpen  = document.getElementById('dpnavOrgOpen');
+    var lbClose = document.getElementById('dpnavLightboxClose');
+    function openLb()  { if (lb) lb.classList.add('show'); }
+    function closeLb() { if (lb) lb.classList.remove('show'); }
+    if (lbOpen)  lbOpen.addEventListener('click', openLb);
+    if (lbClose) lbClose.addEventListener('click', closeLb);
+    if (lb) lb.addEventListener('click', function (e) {
+        if (e.target === lb || e.target.tagName === 'IMG') closeLb();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { closeModal(); closeLb(); }
+    });    if (openBtn)  openBtn.addEventListener('click', openModal);
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
