@@ -73,15 +73,6 @@
     }
     .dpnav-link.is-active:hover { background: linear-gradient(135deg, #16a34a, #15803d); }
 
-    /* Fade overlay used for smooth page transitions */
-    .dpnav-fade {
-        position: fixed; inset: 0; z-index: 3000;
-        background: #0D1B33;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.32s ease;
-    }
-    .dpnav-fade.show { opacity: 1; pointer-events: all; }
-
     /* About modal */
     .dpnav-modal {
         position: fixed; inset: 0; z-index: 4000;
@@ -142,7 +133,7 @@
 
     @media (prefers-reduced-motion: reduce) {
         .dpnav { animation: none; opacity: 1; transform: none; }
-        .dpnav-fade, .dpnav-modal, .dpnav-modal-card { transition: none; }
+        .dpnav-modal, .dpnav-modal-card { transition: none; }
     }
 </style>
 
@@ -191,9 +182,6 @@
     </div>
 </nav>
 
-{{-- Smooth page-transition overlay --}}
-<div class="dpnav-fade" id="dpnavFade"></div>
-
 {{-- About modal --}}
 <div class="dpnav-modal" id="dpnavModal" role="dialog" aria-modal="true" aria-labelledby="dpnavAboutTitle">
     <div class="dpnav-modal-card">
@@ -234,22 +222,6 @@
 
 <script>
 (function () {
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var fade   = document.getElementById('dpnavFade');
-
-    // ── Smooth fade before navigating to Login / Register ──────────────────
-    document.querySelectorAll('.dpnav-nav').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            var href = link.getAttribute('href');
-            // If already on this page, do nothing special.
-            if (!href || link.classList.contains('is-active')) return;
-            if (reduce) return; // let the browser navigate normally
-            e.preventDefault();
-            fade.classList.add('show');
-            setTimeout(function () { window.location.href = href; }, 300);
-        });
-    });
-
     // ── About modal open / close ───────────────────────────────────────────
     var modal = document.getElementById('dpnavModal');
     var openBtn = document.getElementById('dpnavAboutBtn');
