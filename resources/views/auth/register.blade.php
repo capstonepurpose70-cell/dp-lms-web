@@ -230,7 +230,8 @@
             background: #fff;
             display: flex;
             flex-direction: column;
-            padding: 36px 52px 36px 52px;
+            /* top bumped from 36px → 92px so the fixed top navbar never covers the form */
+            padding: 92px 52px 36px 52px;
         }
 
         /* Progress steps */
@@ -711,7 +712,8 @@
         /* Responsive */
         @media (max-width: 960px) {
             .left-panel { display: none; }
-            .right-panel { width: 100%; padding: 28px 24px; }
+            /* top bumped so the fixed navbar clears the form on mobile too */
+            .right-panel { width: 100%; padding: 84px 24px 28px; }
             .form-row { grid-template-columns: 1fr; gap: 0; }
         }
 
@@ -719,6 +721,7 @@
     </style>
 </head>
 <body>
+@include('partials.auth-navbar')
 
     {{-- ── LEFT PANEL ── --}}
     <div class="left-panel">

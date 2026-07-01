@@ -612,6 +612,8 @@
     </noscript>
 </head>
 <body>
+@include('partials.auth-navbar')
+
 <div class="wrapper">
 
     <div class="logo-wrap gsap-logo">
