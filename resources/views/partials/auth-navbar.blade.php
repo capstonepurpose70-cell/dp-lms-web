@@ -15,7 +15,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 12px 22px;
+        padding: 7px 22px;
         background: #ffffff;
         border-bottom: 1px solid #e5e7eb;
         box-shadow: 0 3px 14px rgba(0, 0, 0, 0.10);
@@ -29,13 +29,13 @@
     /* Brand (logo + school name) */
     .dpnav-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
     .dpnav-brand img {
-        width: 54px; height: 54px; object-fit: contain;
+        width: 44px; height: 44px; object-fit: contain;
         background: transparent; padding: 0;
         flex-shrink: 0;
     }
     .dpnav-brand .dpnav-txt { line-height: 1.15; min-width: 0; }
     .dpnav-brand .dpnav-name {
-        font-size: 21px; font-weight: 800; color: #14532d;
+        font-size: 18px; font-weight: 800; color: #14532d;
         letter-spacing: 0.2px;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
@@ -48,8 +48,8 @@
     .dpnav-links { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .dpnav-link {
         display: inline-flex; align-items: center; gap: 7px;
-        padding: 9px 15px; border-radius: 12px;
-        font-size: 13.5px; font-weight: 700; letter-spacing: 0.2px;
+        padding: 7px 13px; border-radius: 11px;
+        font-size: 13px; font-weight: 700; letter-spacing: 0.2px;
         color: #15803d; text-decoration: none; cursor: pointer;
         background: #f0fdf4;
         border: 1px solid #dcfce7;
