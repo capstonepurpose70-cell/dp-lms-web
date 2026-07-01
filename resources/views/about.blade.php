@@ -107,6 +107,32 @@
         .org-thumb img { display: block; width: 100%; height: auto; }
         .org-hint { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; }
 
+        /* Contact */
+        .contact-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .contact-row .cico {
+            width: 40px; height: 40px; border-radius: 11px;
+            background: var(--green-50); color: var(--green-600);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .contact-row .cico svg { width: 19px; height: 19px; }
+        .contact-row .cbody { min-width: 0; }
+        .contact-row .clabel {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 600; margin-bottom: 1px;
+        }
+        .contact-row .cval { font-size: 14.5px; color: var(--text-dark); font-weight: 500; }
+        .contact-row a.cval { color: var(--green-700); text-decoration: none; }
+        .contact-row a.cval:hover { text-decoration: underline; }
+
+        .contact-map {
+            margin-top: 20px;
+            height: 300px;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .contact-map iframe { width: 100%; height: 100%; display: block; border: 0; }
+
         /* Footer */
         .about-foot { text-align: center; margin-top: 8px; }
         .about-foot a {
@@ -194,6 +220,51 @@
                 <img src="{{ asset('images/org-chart.png') }}" alt="Organizational Chart">
             </button>
             <p class="org-hint">Tap the chart to enlarge</p>
+        </div>
+
+        {{-- Contact --}}
+        <div class="about-card">
+            <h2>Contact Us</h2>
+            <p>Reach Sto. Domingo National High School through any of the following.</p>
+
+            <div class="contact-row">
+                <span class="cico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </span>
+                <div class="cbody">
+                    <div class="clabel">Phone</div>
+                    <a class="cval" href="tel:+63756002016">(075) 600 2016</a>
+                </div>
+            </div>
+
+            <div class="contact-row">
+                <span class="cico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </span>
+                <div class="cbody">
+                    <div class="clabel">Email</div>
+                    <a class="cval" href="mailto:300360@deped.gov.ph">300360@deped.gov.ph</a>
+                </div>
+            </div>
+
+            <div class="contact-row">
+                <span class="cico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </span>
+                <div class="cbody">
+                    <div class="clabel">Address</div>
+                    <div class="cval">San Manuel, Pangasinan, Philippines 2438</div>
+                </div>
+            </div>
+
+            <div class="contact-map">
+                <iframe
+                    src="https://maps.google.com/maps?q=Sto.%20Domingo%20National%20High%20School%2C%20San%20Manuel%2C%20Pangasinan%2C%20Philippines&z=15&output=embed"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    allowfullscreen
+                    title="School location map"></iframe>
+            </div>
         </div>
 
         {{-- Footer --}}
