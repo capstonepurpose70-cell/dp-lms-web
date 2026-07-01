@@ -8,7 +8,7 @@
     <title>Login — DP-LMS</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Google Fonts (same pairing as Register) -->
+    <!-- Google Fonts (same family as Register, for a consistent brand) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
             --text-mid:  #334155;
             --text-muted:#64748b;
             --border:    #e2e8f0;
-            --surface:   #f8fafc;
+            --surface:   #f4f7f9;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,180 +39,70 @@
         body {
             min-height: 100vh;
             font-family: 'DM Sans', system-ui, sans-serif;
-            display: flex;
-            background: #f8fafc;
+            display: flex;                 /* form panel is FIRST → sits on the LEFT */
+            background: var(--surface);
             overflow-x: hidden;
             opacity: 0;
         }
 
         /* ══════════════════════════════════════
-           LEFT PANEL
+           FORM PANEL (LEFT)  — distinct card look
         ══════════════════════════════════════ */
-        .left-panel {
-            position: relative;
-            width: 48%;
-            height: 100vh;
-            flex-shrink: 0;
-            overflow: hidden;
-            background-size: cover;
-            background-position: center;
-            will-change: transform;
-            transform: translateZ(0);
-        }
-        @keyframes bgPan {
-            0%   { transform: scale(1.08) translate(0px, 0px); }
-            50%  { transform: scale(1.1) translate(-15px, -8px); }
-            100% { transform: scale(1.08) translate(8px, 10px); }
-        }
-
-        .left-panel::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                160deg,
-                rgba(0,0,0,0.18) 0%,
-                rgba(0,0,0,0.45) 50%,
-                rgba(0,0,0,0.88) 100%
-            );
-            z-index: 1;
-        }
-
-        .left-panel::after {
-            content: '';
-            position: absolute;
-            inset: -20px;
-            background-image: url('{{ asset("images/bg.jpg") }}');
-            background-size: cover;
-            background-position: center;
-            z-index: 0;
-            animation: bgPan 20s ease-in-out infinite alternate;
-            will-change: transform;
-        }
-
-        #particles-canvas {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .lp-center {
-            position: absolute;
-            top: 50%;
-            left: 0; right: 0;
-            transform: translateY(-50%);
-            z-index: 3;
-            padding: 0 44px;
-            text-align: center;
-            opacity: 0;
-        }
-
-        .lp-logo {
-            width: 150px;
-            height: 150px;
-            object-fit: contain;
-            background: white;
-            border-radius: 50%;
-            padding: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.35);
-        }
-
-        .lp-verse {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 18px;
-            font-weight: 400;
-            font-style: italic;
-            color: #ffffff;
-            line-height: 1.7;
-            max-width: 360px;
-            margin: 0 auto 10px;
-        }
-
-        .lp-verse-ref {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #ffffff;
-        }
-
-        .lp-bottom {
-            position: absolute;
-            bottom: 48px;
-            left: 0; right: 0;
-            z-index: 3;
-            padding: 0 44px;
-            opacity: 0;
-        }
-
-        .lp-welcome {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: var(--green-500);
-            margin-bottom: 10px;
-        }
-
-        .lp-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 52px;
-            font-weight: 700;
-            line-height: 1.05;
-            color: #fff;
-            text-shadow: 0 4px 32px rgba(0,0,0,0.6);
-            margin-bottom: 12px;
-        }
-
-        .lp-subtitle {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 400;
-            color: rgba(255,255,255,0.65);
-            line-height: 1.6;
-        }
-
-        .lp-bar {
-            width: 40px;
-            height: 3px;
-            background: var(--green-500);
-            border-radius: 2px;
-            margin-bottom: 18px;
-        }
-
-        /* ══════════════════════════════════════
-           RIGHT PANEL
-        ══════════════════════════════════════ */
-        .right-panel {
+        .form-panel {
             flex: 1;
             height: 100vh;
             overflow-y: auto;
-            background: #fff;
+            background: var(--surface);
             display: flex;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
-            /* top clearance so the fixed navbar never covers the form */
-            padding: 92px 52px 36px 52px;
+            /* top clearance so the fixed navbar never covers the card */
+            padding: 96px 40px 40px 40px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+            padding: 34px 32px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Slim brand accent bar on top of the card */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--green-500), var(--green-700));
         }
 
         .form-header {
-            margin-bottom: 28px;
+            margin-bottom: 24px;
             opacity: 0;
             transform: translateY(12px);
         }
-
+        .form-header .eyebrow {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--green-600);
+            margin-bottom: 8px;
+        }
         .form-header h2 {
             font-family: 'Cormorant Garamond', serif;
             font-size: 30px;
             font-weight: 700;
             color: var(--text-dark);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             line-height: 1.1;
         }
-
         .form-header p {
             font-size: 13px;
             color: var(--text-muted);
@@ -223,7 +113,7 @@
         .server-alert {
             padding: 10px 14px;
             border-radius: 8px;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             font-size: 13px;
             display: flex;
             align-items: center;
@@ -282,12 +172,10 @@
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-
         input:focus {
             border-color: var(--green-500);
             box-shadow: 0 0 0 3px rgba(22,163,74,0.1);
         }
-
         input.is-error {
             border-color: var(--red-500);
             box-shadow: 0 0 0 3px rgba(239,68,68,0.08);
@@ -312,7 +200,6 @@
         /* Password */
         .password-wrapper { position: relative; }
         .password-wrapper input { padding-right: 42px; }
-
         .toggle-pw {
             position: absolute;
             right: 12px; top: 50%;
@@ -402,25 +289,159 @@
             text-align: center;
             font-size: 11px;
             color: #94a3b8;
-            margin-top: 16px;
+            margin-top: 18px;
             opacity: 0;
         }
 
-        /* Responsive */
+        /* ══════════════════════════════════════
+           IMAGE PANEL (RIGHT)
+        ══════════════════════════════════════ */
+        .image-panel {
+            position: relative;
+            width: 46%;
+            height: 100vh;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        @keyframes bgPan {
+            0%   { transform: scale(1.08) translate(0px, 0px); }
+            50%  { transform: scale(1.1) translate(15px, -8px); }
+            100% { transform: scale(1.08) translate(-8px, 10px); }
+        }
+        /* gradient flipped (200deg) so it mirrors register's 160deg */
+        .image-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                200deg,
+                rgba(0,0,0,0.18) 0%,
+                rgba(0,0,0,0.45) 50%,
+                rgba(6,78,59,0.88) 100%
+            );
+            z-index: 1;
+        }
+        .image-panel::after {
+            content: '';
+            position: absolute;
+            inset: -20px;
+            background-image: url('{{ asset("images/bg.jpg") }}');
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            animation: bgPan 22s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        #particles-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .ip-center {
+            position: absolute;
+            top: 50%;
+            left: 0; right: 0;
+            transform: translateY(-50%);
+            z-index: 3;
+            padding: 0 44px;
+            text-align: center;
+            opacity: 0;
+        }
+        .ip-logo {
+            width: 140px;
+            height: 140px;
+            object-fit: contain;
+            background: white;
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+        }
+        .ip-verse {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 400;
+            font-style: italic;
+            color: #ffffff;
+            line-height: 1.7;
+            max-width: 360px;
+            margin: 0 auto 10px;
+        }
+        .ip-verse-ref {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ffffff;
+        }
+        .ip-bottom {
+            position: absolute;
+            bottom: 48px;
+            left: 0; right: 0;
+            z-index: 3;
+            padding: 0 44px;
+            text-align: right;               /* mirrored: text aligned right */
+            opacity: 0;
+        }
+        .ip-welcome {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--green-500);
+            margin-bottom: 10px;
+        }
+        .ip-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 50px;
+            font-weight: 700;
+            line-height: 1.05;
+            color: #fff;
+            text-shadow: 0 4px 32px rgba(0,0,0,0.6);
+            margin-bottom: 12px;
+        }
+        .ip-subtitle {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.65);
+            line-height: 1.6;
+        }
+        .ip-bar {
+            width: 40px;
+            height: 3px;
+            background: var(--green-500);
+            border-radius: 2px;
+            margin: 0 0 18px auto;           /* mirrored: bar on the right */
+        }
+
+        /* Responsive — image hidden, form card full width */
         @media (max-width: 960px) {
-            .left-panel { display: none; }
-            .right-panel { width: 100%; padding: 84px 24px 28px; }
+            .image-panel { display: none; }
+            .form-panel { width: 100%; padding: 84px 20px 28px; }
+            .login-card {
+                border: none;
+                box-shadow: none;
+                background: transparent;
+                padding: 0;
+                max-width: 440px;
+            }
+            .login-card::before { display: none; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .left-panel::after { animation: none; }
+            .image-panel::after { animation: none; }
         }
     </style>
 
     <noscript>
         <style>
             body { opacity: 1 !important; }
-            .lp-center, .lp-bottom, .form-header, .form-group,
+            .ip-center, .ip-bottom, .form-header, .form-group,
             .forgot-wrap, .btn-submit, .card-footer, .copyright,
             .server-alert { opacity: 1 !important; transform: none !important; }
         </style>
@@ -429,122 +450,122 @@
 <body>
 @include('partials.auth-navbar')
 
-    {{-- ── LEFT PANEL ── --}}
-    <div class="left-panel">
-        <canvas id="particles-canvas"></canvas>
+    {{-- ── FORM PANEL (LEFT) ── --}}
+    <div class="form-panel">
+        <div class="login-card gsap-card">
 
-        {{-- Center: Logo + Verse --}}
-        <div class="lp-center gsap-lp-center">
-            <img src="{{ asset('images/logo.png') }}" alt="DP-LMS Logo" class="lp-logo" style="margin: 0 auto 20px; display: block;">
-            <p class="lp-verse">
-                "Apply your heart to instruction<br>
-                and your ears to words of knowledge."
-            </p>
-            <p class="lp-verse-ref">— Proverbs 23:12</p>
-        </div>
+            <div class="form-header gsap-form-header">
+                <p class="eyebrow">Sto. Domingo NHS</p>
+                <h2>Welcome back</h2>
+                <p>Sign in to continue to your portal.</p>
+            </div>
 
-        {{-- Bottom: Welcome + School --}}
-        <div class="lp-bottom gsap-lp-bottom">
-            <div class="lp-bar"></div>
-            <p class="lp-welcome">Welcome back to</p>
-            <h1 class="lp-title">DP-LMS</h1>
-            <p class="lp-subtitle">
-                Sto. Domingo National High School<br>
-                Digital Learning Management System
+            @if(session('success'))
+                <div class="server-alert success gsap-alert">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="server-alert error gsap-alert">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate>
+                @csrf
+
+                {{-- Honeypot bot trap. Real users never see or fill this.
+                     IMPORTANT: also reject server-side when this field is non-empty. --}}
+                <div class="hp-field" aria-hidden="true">
+                    <label for="company">Company</label>
+                    <input type="text" name="company" id="company" tabindex="-1" autocomplete="off">
+                </div>
+
+                {{-- Email --}}
+                <div class="form-group gsap-field">
+                    <label>Email Address</label>
+                    <input type="email" name="email" id="emailInput"
+                        value="{{ old('email') }}"
+                        placeholder="you@gmail.com"
+                        autocomplete="email"
+                        inputmode="email"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        maxlength="254"
+                        class="{{ $errors->has('email') ? 'is-error' : '' }}"
+                        required>
+                    <p class="email-status" id="emailStatus"></p>
+                    @error('email')<p class="error-msg">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Password --}}
+                <div class="form-group gsap-field">
+                    <label>Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="password" id="passwordInput"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            maxlength="100"
+                            class="{{ $errors->has('password') ? 'is-error' : '' }}"
+                            required>
+                        <button type="button" class="toggle-pw" onclick="togglePw('passwordInput', this)" tabindex="-1" aria-label="Toggle password visibility">
+                            <svg class="pw-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg class="pw-hide" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                        </button>
+                    </div>
+                    @error('password')<p class="error-msg">{{ $message }}</p>@enderror
+                    <p class="error-msg" id="passwordError" style="display:none;"></p>
+                </div>
+
+                {{-- Forgot --}}
+                <div class="forgot-wrap gsap-field">
+                    <a href="{{ route('password.request') }}">Forgot your password?</a>
+                </div>
+
+                {{-- Submit --}}
+                <button type="submit" class="btn-submit gsap-btn" id="submitBtn">
+                    <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                    <span class="btn-text">Sign in</span>
+                    <div class="btn-spinner"></div>
+                </button>
+            </form>
+
+            <div class="card-footer gsap-footer">
+                Don't have an account? <a href="{{ route('register') }}" onclick="slideTo(this, event)">Register here</a>
+            </div>
+
+            <p class="copyright gsap-footer">
+                &copy; {{ date('Y') }} Sto. Domingo National High School
             </p>
         </div>
     </div>
 
-    {{-- ── RIGHT PANEL ── --}}
-    <div class="right-panel">
+    {{-- ── IMAGE PANEL (RIGHT) ── --}}
+    <div class="image-panel">
+        <canvas id="particles-canvas"></canvas>
 
-        <div class="form-header gsap-form-header">
-            <h2>Sign in to your account</h2>
-            <p>Welcome back! Please enter your details to continue.</p>
+        <div class="ip-center gsap-ip-center">
+            <img src="{{ asset('images/logo.png') }}" alt="DP-LMS Logo" class="ip-logo" style="margin: 0 auto 20px; display: block;">
+            <p class="ip-verse">
+                "The fear of the LORD is the beginning of knowledge."
+            </p>
+            <p class="ip-verse-ref">— Proverbs 1:7</p>
         </div>
 
-        @if(session('success'))
-            <div class="server-alert success gsap-alert">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="server-alert error gsap-alert">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate>
-            @csrf
-
-            {{-- Honeypot bot trap. Real users never see or fill this.
-                 IMPORTANT: also reject server-side when this field is non-empty. --}}
-            <div class="hp-field" aria-hidden="true">
-                <label for="company">Company</label>
-                <input type="text" name="company" id="company" tabindex="-1" autocomplete="off">
-            </div>
-
-            {{-- Email --}}
-            <div class="form-group gsap-field">
-                <label>Email Address</label>
-                <input type="email" name="email" id="emailInput"
-                    value="{{ old('email') }}"
-                    placeholder="you@gmail.com"
-                    autocomplete="email"
-                    inputmode="email"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    maxlength="254"
-                    class="{{ $errors->has('email') ? 'is-error' : '' }}"
-                    required>
-                <p class="email-status" id="emailStatus"></p>
-                @error('email')<p class="error-msg">{{ $message }}</p>@enderror
-            </div>
-
-            {{-- Password --}}
-            <div class="form-group gsap-field">
-                <label>Password</label>
-                <div class="password-wrapper">
-                    <input type="password" name="password" id="passwordInput"
-                        placeholder="Enter your password"
-                        autocomplete="current-password"
-                        maxlength="100"
-                        class="{{ $errors->has('password') ? 'is-error' : '' }}"
-                        required>
-                    <button type="button" class="toggle-pw" onclick="togglePw('passwordInput', this)" tabindex="-1" aria-label="Toggle password visibility">
-                        <svg class="pw-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        <svg class="pw-hide" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                    </button>
-                </div>
-                @error('password')<p class="error-msg">{{ $message }}</p>@enderror
-                <p class="error-msg" id="passwordError" style="display:none;"></p>
-            </div>
-
-            {{-- Forgot --}}
-            <div class="forgot-wrap gsap-field">
-                <a href="{{ route('password.request') }}">Forgot your password?</a>
-            </div>
-
-            {{-- Submit --}}
-            <button type="submit" class="btn-submit gsap-btn" id="submitBtn">
-                <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-                </svg>
-                <span class="btn-text">Sign in</span>
-                <div class="btn-spinner"></div>
-            </button>
-        </form>
-
-        <div class="card-footer gsap-footer">
-            Don't have an account? <a href="{{ route('register') }}" onclick="slideTo(this, event)">Register here</a>
+        <div class="ip-bottom gsap-ip-bottom">
+            <div class="ip-bar"></div>
+            <p class="ip-welcome">Digital Portal</p>
+            <h1 class="ip-title">DP-LMS</h1>
+            <p class="ip-subtitle">
+                Sto. Domingo National High School<br>
+                Learning Management System
+            </p>
         </div>
-
-        <p class="copyright gsap-footer">
-            &copy; {{ date('Y') }} Sto. Domingo National High School · All rights reserved.
-        </p>
     </div>
 
 <script>
@@ -639,7 +660,6 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     let valid = true;
     let firstInvalid = null;
 
-    // Email
     const emailVal = email.value.trim();
     if (emailVal === '') {
         email.classList.add('is-error'); email.classList.remove('is-valid');
@@ -653,7 +673,6 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         valid = false; firstInvalid = firstInvalid || email;
     }
 
-    // Password
     if (password.value === '') {
         password.classList.add('is-error');
         passError.textContent = 'Password is required.';
@@ -673,13 +692,11 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         return;
     }
 
-    // Valid → loading state, allow submit
     const btn = document.getElementById('submitBtn');
     btn.classList.add('loading');
     btn.disabled = true;
 });
 
-// Clear password error as the user types
 document.getElementById('passwordInput').addEventListener('input', function() {
     const passError = document.getElementById('passwordError');
     this.classList.remove('is-error');
@@ -687,35 +704,37 @@ document.getElementById('passwordInput').addEventListener('input', function() {
 });
 
 /* ─────────────────────────────────────────────
-   GSAP PAGE ENTRANCE ANIMATION
+   GSAP PAGE ENTRANCE (mirrored: form ← left, image → right)
 ───────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function() {
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
     tl.to('body', { opacity: 1, duration: 0.01 })
-      .fromTo('.left-panel',
-        { x: -60, opacity: 0 },
+      .fromTo('.image-panel',
+        { x: 60, opacity: 0 },
         { x: 0, opacity: 1, duration: 0.9 }, 0)
-      .to('.gsap-lp-center',
+      .fromTo('.form-panel',
+        { x: -40, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.8 }, 0.15)
+      .fromTo('.gsap-card',
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6 }, 0.35)
+      .to('.gsap-ip-center',
         { opacity: 1, duration: 0.8 }, 0.5)
-      .fromTo('.gsap-lp-bottom',
+      .fromTo('.gsap-ip-bottom',
         { opacity: 0, y: 30 },
         { opacity: 1, y: 0, duration: 0.8 }, 0.6)
-      .fromTo('.right-panel',
-        { x: 40, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.8 }, 0.2)
       .to('.gsap-form-header',
-        { opacity: 1, y: 0, duration: 0.5 }, 0.7)
+        { opacity: 1, y: 0, duration: 0.5 }, 0.55)
       .to('.gsap-alert',
-        { opacity: 1, duration: 0.4 }, 0.8)
+        { opacity: 1, duration: 0.4 }, 0.65)
       .to('.gsap-field',
-        { opacity: 1, y: 0, stagger: 0.08, duration: 0.4 }, 0.85)
+        { opacity: 1, y: 0, stagger: 0.08, duration: 0.4 }, 0.7)
       .to('.gsap-btn',
-        { opacity: 1, duration: 0.4 }, 1.15)
+        { opacity: 1, duration: 0.4 }, 1.0)
       .to('.gsap-footer',
-        { opacity: 1, stagger: 0.08, duration: 0.4 }, 1.25);
+        { opacity: 1, stagger: 0.08, duration: 0.4 }, 1.1);
 
-    // Button hover
     const btn = document.getElementById('submitBtn');
     btn.addEventListener('mouseenter', () => {
         if (!btn.classList.contains('loading')) gsap.to(btn, { y: -2, scale: 1.01, duration: 0.2 });
@@ -731,8 +750,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function slideTo(anchor, e) {
     e.preventDefault();
     const url = anchor.href;
-    gsap.to(['.left-panel', '.right-panel'], {
-        x: 60,
+    gsap.to(['.form-panel', '.image-panel'], {
+        x: -60,
         opacity: 0,
         duration: 0.4,
         ease: 'power3.in',
