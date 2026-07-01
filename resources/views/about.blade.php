@@ -41,25 +41,32 @@
             padding: 104px 24px 56px;   /* top clearance for the fixed navbar */
         }
 
-        /* Hero */
-        .about-hero { text-align: center; margin-bottom: 34px; }
-        .about-hero img {
-            width: 96px; height: 96px; object-fit: contain;
-            border-radius: 50%; background: #fff; padding: 10px;
-            box-shadow: 0 6px 22px rgba(0,0,0,0.10);
-            margin-bottom: 16px;
+        /* Hero — logo on the SIDE (left), text beside it */
+        .about-hero {
+            display: flex;
+            align-items: center;
+            gap: 26px;
+            text-align: left;
+            margin-bottom: 34px;
         }
+        .about-hero img {
+            width: 108px; height: 108px; object-fit: contain;
+            border-radius: 50%; background: #fff; padding: 12px;
+            box-shadow: 0 6px 22px rgba(0,0,0,0.10);
+            flex-shrink: 0;
+        }
+        .about-hero-text { min-width: 0; }
         .about-hero .eyebrow {
             font-size: 11px; font-weight: 600; letter-spacing: 3px;
             text-transform: uppercase; color: var(--green-600); margin-bottom: 8px;
         }
         .about-hero h1 {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 42px; font-weight: 700; line-height: 1.1;
+            font-size: 40px; font-weight: 700; line-height: 1.1;
             color: var(--text-dark); margin-bottom: 8px;
         }
         .about-hero p {
-            font-size: 14px; color: var(--text-muted); max-width: 560px; margin: 0 auto;
+            font-size: 14px; color: var(--text-muted); margin: 0;
             line-height: 1.7;
         }
 
@@ -134,6 +141,8 @@
 
         @media (max-width: 560px) {
             .about-wrap { padding: 92px 16px 40px; }
+            .about-hero { flex-direction: column; text-align: center; gap: 14px; }
+            .about-hero img { width: 88px; height: 88px; }
             .about-hero h1 { font-size: 32px; }
             .about-card { padding: 24px 20px; }
         }
@@ -147,10 +156,12 @@
         {{-- Hero --}}
         <div class="about-hero">
             <img src="{{ asset('images/logo.png') }}" alt="School logo">
-            <p class="eyebrow">Sto. Domingo National High School</p>
-            <h1>About DP-LMS</h1>
-            <p>The official Digital Portal &amp; Learning Management System — connecting
-               students, teachers, and parents in one secure place.</p>
+            <div class="about-hero-text">
+                <p class="eyebrow">Sto. Domingo National High School</p>
+                <h1>About DP-LMS</h1>
+                <p>The official Digital Portal &amp; Learning Management System — connecting
+                   students, teachers, and parents in one secure place.</p>
+            </div>
         </div>
 
         {{-- What is DP-LMS --}}
