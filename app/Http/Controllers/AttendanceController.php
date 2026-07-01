@@ -42,14 +42,30 @@ class AttendanceController extends Controller
                     })
                     ->first();
 
+        // Determine PRESENT vs LATE from the scan time.
+        // Cutoff is configurable in config/attendance.php ('late_after' => '07:30', 24h).
+        // Falls back to 07:30 if not set, so NO config change is required to work.
+        $attendedAt = now();
+        $status = 'present';
+        try {
+            $cutoff = (string) config('attendance.late_after', '07:30');
+            [$ch, $cm] = array_pad(explode(':', $cutoff), 2, '00');
+            $cutoffToday = now()->copy()->setTime((int) $ch, (int) $cm, 0);
+            if ($attendedAt->greaterThan($cutoffToday)) {
+                $status = 'late';
+            }
+        } catch (\Throwable $e) {
+            $status = 'present';
+        }
+
         $attendance = Attendance::create([
             'user_id'      => $user?->id,
             'student_id'   => $validated['student_id'],
             'student_name' => $validated['student_name'] ?? $user?->name,
             'section_id'   => $validated['section_id'] ?? $user?->section_id,
-            'status'       => 'present',
+            'status'       => $status,
             'source'       => 'iot',
-            'attended_at'  => now(),
+            'attended_at'  => $attendedAt,
         ]);
 
         return response()->json([

@@ -474,24 +474,36 @@ class DashboardController extends Controller
     {
         $teacher = auth()->user();
 
-        $sectionIds = TeacherSubject::where('user_id', $teacher->id)
-            ->pluck('section_id')
-            ->unique();
+        // Teacher's sections — as a SUBJECT teacher OR as an ADVISER.
+        $sectionIds = TeacherSubject::where('user_id', $teacher->id)->pluck('section_id')
+            ->merge(\App\Models\TeacherAssignment::where('user_id', $teacher->id)->pluck('section_id'))
+            ->filter()->unique()->values();
 
-        $query = Attendance::with('user')
+        // The teacher's roster (students in those sections).
+        $roster = User::where('role', 'student')
+            ->whereIn('section_id', $sectionIds)
+            ->with('section')
+            ->get(['id', 'name', 'email', 'section_id']);
+        $rosterIds    = $roster->pluck('id')->filter()->values();
+        $rosterEmails = $roster->pluck('email')->filter()->values();
+
+        // Actual scans (present / late) that belong to THIS teacher's students.
+        $query = Attendance::with('user.section')
+            ->where(function ($q) use ($sectionIds, $rosterIds, $rosterEmails) {
+                $q->whereIn('section_id', $sectionIds);
+                if ($rosterIds->isNotEmpty())    $q->orWhereIn('user_id', $rosterIds);
+                if ($rosterEmails->isNotEmpty()) $q->orWhereIn('student_id', $rosterEmails);
+            })
             ->orderBy('attended_at', 'desc');
 
         if ($request->filled('date')) {
             $query->whereDate('attended_at', $request->date);
         }
-
         if ($request->filled('section_id')) {
-            $query->whereHas('user', fn($q) =>
-                $q->where('section_id', $request->section_id)
-            );
+            $query->whereHas('user', fn($q) => $q->where('section_id', $request->section_id));
         }
 
-        $records = $query->take(100)->get()->map(fn($a) => [
+        $records = $query->take(200)->get()->map(fn($a) => [
             'id'           => $a->id,
             'student_name' => $a->student_name ?? $a->user?->name,
             'student_id'   => $a->student_id,
@@ -501,8 +513,42 @@ class DashboardController extends Controller
             'attended_at'  => $a->attended_at?->toDateTimeString(),
             'time'         => $a->attended_at?->format('h:i A'),
             'date'         => $a->attended_at?->toDateString(),
-        ]);
+        ])->values()->all();
 
-        return response()->json($records);
+        // ── ABSENT (computed) for the target day ─────────────────────────────
+        // Absent = a roster student who has NO scan on that day.
+        $targetDate = $request->filled('date') ? $request->date : now()->toDateString();
+
+        $scanned = Attendance::whereDate('attended_at', $targetDate)
+            ->where(function ($q) use ($rosterIds, $rosterEmails) {
+                if ($rosterIds->isNotEmpty())    $q->orWhereIn('user_id', $rosterIds);
+                if ($rosterEmails->isNotEmpty()) $q->orWhereIn('student_id', $rosterEmails);
+            })
+            ->get(['user_id', 'student_id']);
+
+        $presentIds    = $scanned->pluck('user_id')->filter()->map(fn($v) => (string) $v)->all();
+        $presentEmails = $scanned->pluck('student_id')->filter()->map(fn($v) => (string) $v)->all();
+
+        $absent = [];
+        foreach ($roster as $s) {
+            $has = in_array((string) $s->id, $presentIds, true)
+                || ($s->email && in_array((string) $s->email, $presentEmails, true));
+            if (! $has) {
+                $absent[] = [
+                    'id'           => 'absent-' . $s->id . '-' . $targetDate,
+                    'student_name' => $s->name,
+                    'student_id'   => $s->email,
+                    'section'      => $s->section?->name,
+                    'status'       => 'absent',
+                    'source'       => 'system',
+                    'attended_at'  => null,
+                    'time'         => null,
+                    'date'         => $targetDate,
+                ];
+            }
+        }
+
+        // Actual scans first (newest), then today's absent list.
+        return response()->json(array_merge($records, $absent));
     }
 }
