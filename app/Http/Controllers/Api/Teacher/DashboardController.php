@@ -313,31 +313,38 @@ class DashboardController extends Controller
             'is_published' => true,
         ]);
 
-        // Notify enrolled students
-        $subject  = Subject::find($request->subject_id);
-        $students = User::where('role', 'student')
-            ->where('status', 'approved')
-            ->where('grade_level', $subject->grade_level)
-            ->whereHas('studentEnrollment')
-            ->get();
+        // 🔔 Notify enrolled students (in-app + FCM).
+        // The material is already saved above, so ANY notification failure is
+        // caught and logged — the upload still returns 201 success (no more 500).
+        try {
+            $subject = Subject::find($request->subject_id);
+            if ($subject) {
+                $students = User::where('role', 'student')
+                    ->where('status', 'approved')
+                    ->where('grade_level', $subject->grade_level)
+                    ->whereHas('studentEnrollment')
+                    ->get();
 
-        foreach ($students as $student) {
-            $student->notify(new \App\Notifications\ActivityAssigned([
-                'title'      => $material->title,
-                'subject'    => $subject->name,
-                'instructor' => $teacher->name,
-                'type'       => 'module',
-                'url'        => route('student.modules'),
-            ]));
+                foreach ($students as $student) {
+                    $student->notify(new \App\Notifications\ActivityAssigned(
+                        title:      $material->title,
+                        subject:    $subject->name,
+                        instructor: $teacher->name,
+                        type:       'module',
+                        url:        '/student/modules',
+                    ));
+                }
+
+                app(PushNotificationService::class)->sendToUsers(
+                    $students->pluck('id')->all(),
+                    'New material: ' . $material->title,
+                    "{$teacher->name} posted in {$subject->name}",
+                    ['type' => 'material', 'id' => (string) $material->id],
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Material notify failed (upload still succeeded): '.$e->getMessage());
         }
-
-        // 🔔 Push notification (FCM) to the same students.
-        app(PushNotificationService::class)->sendToUsers(
-            $students->pluck('id')->all(),
-            'New material: ' . $material->title,
-            "{$teacher->name} posted in {$subject->name}",
-            ['type' => 'material', 'id' => $material->id],
-        );
 
         AuditLogService::log(
             "Uploaded material: {$material->title}",
