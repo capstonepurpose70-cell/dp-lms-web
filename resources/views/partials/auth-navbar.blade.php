@@ -16,11 +16,9 @@
         justify-content: space-between;
         gap: 16px;
         padding: 12px 22px;
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(14px) saturate(140%);
-        -webkit-backdrop-filter: blur(14px) saturate(140%);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.22);
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+        background: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
+        box-shadow: 0 3px 14px rgba(0, 0, 0, 0.10);
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         opacity: 0;
         transform: translateY(-14px);
@@ -31,20 +29,18 @@
     /* Brand (logo + school name) */
     .dpnav-brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
     .dpnav-brand img {
-        width: 40px; height: 40px; object-fit: contain;
-        border-radius: 10px; background: #fff; padding: 4px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+        width: 54px; height: 54px; object-fit: contain;
+        background: transparent; padding: 0;
         flex-shrink: 0;
     }
     .dpnav-brand .dpnav-txt { line-height: 1.15; min-width: 0; }
     .dpnav-brand .dpnav-name {
-        font-size: 15px; font-weight: 800; color: #fff;
-        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+        font-size: 21px; font-weight: 800; color: #14532d;
+        letter-spacing: 0.2px;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .dpnav-brand .dpnav-sub {
-        font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.82);
-        text-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+        font-size: 11.5px; font-weight: 500; color: #6b7280;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
@@ -54,18 +50,17 @@
         display: inline-flex; align-items: center; gap: 7px;
         padding: 9px 15px; border-radius: 12px;
         font-size: 13.5px; font-weight: 700; letter-spacing: 0.2px;
-        color: #fff; text-decoration: none; cursor: pointer;
-        background: rgba(255, 255, 255, 0.10);
-        border: 1px solid rgba(255, 255, 255, 0.20);
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+        color: #15803d; text-decoration: none; cursor: pointer;
+        background: #f0fdf4;
+        border: 1px solid #dcfce7;
         transition: transform 0.18s cubic-bezier(0.23,1,0.32,1),
                     background 0.18s ease, box-shadow 0.18s ease;
     }
     .dpnav-link svg { width: 17px; height: 17px; flex-shrink: 0; }
     .dpnav-link:hover {
         transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.22);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+        background: #dcfce7;
+        box-shadow: 0 6px 16px rgba(22, 163, 74, 0.18);
     }
     .dpnav-link:active { transform: translateY(0) scale(0.97); }
 
@@ -73,6 +68,7 @@
     .dpnav-link.is-active {
         background: linear-gradient(135deg, #16a34a, #15803d);
         border-color: transparent;
+        color: #ffffff;
         box-shadow: 0 6px 16px rgba(22, 163, 74, 0.45);
     }
     .dpnav-link.is-active:hover { background: linear-gradient(135deg, #16a34a, #15803d); }
@@ -137,8 +133,8 @@
     @media (max-width: 560px) {
         .dpnav { padding: 10px 14px; }
         .dpnav-brand .dpnav-sub { display: none; }
-        .dpnav-brand img { width: 34px; height: 34px; }
-        .dpnav-brand .dpnav-name { font-size: 13px; }
+        .dpnav-brand img { width: 46px; height: 46px; }
+        .dpnav-brand .dpnav-name { font-size: 16px; }
         .dpnav-link { padding: 8px 11px; font-size: 12px; }
         .dpnav-link .dpnav-label { display: none; }   /* icons only on small screens */
         .dpnav-link svg { width: 18px; height: 18px; }
@@ -154,8 +150,8 @@
     <div class="dpnav-brand">
         <img src="{{ asset('images/logo.png') }}" alt="School logo">
         <div class="dpnav-txt">
-            <div class="dpnav-name">Sto. Domingo NHS</div>
-            <div class="dpnav-sub">DP-LMS Portal</div>
+            <div class="dpnav-name">SDNHS Portal</div>
+            <div class="dpnav-sub">Sto. Domingo National High School</div>
         </div>
     </div>
 
