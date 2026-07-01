@@ -63,12 +63,12 @@
 
         .login-card {
             width: 100%;
-            max-width: 400px;
+            max-width: 468px;
             background: #ffffff;
             border: 1px solid var(--border);
-            border-radius: 18px;
-            box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
-            padding: 34px 32px 30px;
+            border-radius: 20px;
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+            padding: 42px 44px 36px;
             position: relative;
             overflow: hidden;
         }
@@ -97,7 +97,7 @@
         }
         .form-header h2 {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 30px;
+            font-size: 33px;
             font-weight: 700;
             color: var(--text-dark);
             margin-bottom: 4px;
@@ -428,7 +428,7 @@
                 box-shadow: none;
                 background: transparent;
                 padding: 0;
-                max-width: 440px;
+                max-width: 468px;
             }
             .login-card::before { display: none; }
         }
