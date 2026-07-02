@@ -31,9 +31,14 @@
         width: 44px; height: 44px; object-fit: contain;
         flex-shrink: 0;
     }
+    .dpnav-txt { min-width: 0; line-height: 1.15; }
     .dpnav-name {
-        font-size: 18px; font-weight: 800; color: #14532d;
+        font-size: 17px; font-weight: 800; color: #14532d;
         letter-spacing: 0.2px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dpnav-sub {
+        font-size: 11px; font-weight: 500; color: #64748b;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
@@ -73,7 +78,8 @@
     @media (max-width: 560px) {
         .dpnav { padding: 7px 14px; }
         .dpnav-brand img { width: 40px; height: 40px; }
-        .dpnav-name { font-size: 16px; }
+        .dpnav-name { font-size: 15px; }
+        .dpnav-sub { display: none; }
         .dpnav-link { padding: 7px 10px; font-size: 12px; }
         .dpnav-link .dpnav-label { display: none; }   /* icons only on small screens */
         .dpnav-link svg { width: 18px; height: 18px; }
@@ -87,7 +93,10 @@
 <nav class="dpnav">
     <div class="dpnav-brand">
         <img src="{{ asset('images/logo.png') }}" alt="School logo">
-        <div class="dpnav-name">SDNHS Portal</div>
+        <div class="dpnav-txt">
+            <div class="dpnav-name">SDNHS Portal</div>
+            <div class="dpnav-sub">Sto. Domingo National High School</div>
+        </div>
     </div>
 
     <div class="dpnav-links">

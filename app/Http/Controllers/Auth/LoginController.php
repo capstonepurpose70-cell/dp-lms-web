@@ -51,8 +51,9 @@ class LoginController extends Controller
 
         // Store user temporarily in session — require OTP before full login
         session([
-            'otp_user_id' => $user->id,
-            'otp_email'   => $user->email,
+            'otp_user_id'  => $user->id,
+            'otp_email'    => $user->email,
+            'otp_remember' => $request->boolean('remember'),
         ]);
 
         // Send OTP

@@ -52,7 +52,7 @@
             flex: 1;
             height: 100vh;
             overflow-y: auto;
-            background: var(--surface);
+            background: linear-gradient(165deg, #e6f4ec 0%, #eef3f6 55%, #eaf2ee 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -215,20 +215,35 @@
         .toggle-pw svg { width: 17px; height: 17px; }
         .pw-hide { display: none; }
 
-        /* Forgot */
-        .forgot-wrap {
-            text-align: right;
-            margin: -6px 0 6px;
+        /* Remember + Forgot row */
+        .login-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: -2px 0 6px;
             opacity: 0;
         }
-        .forgot-wrap a {
-            font-size: 12.5px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
+        .remember {
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer;
+            margin: 0;
+            font-size: 12.5px; font-weight: 500;
+            color: var(--text-mid);
+            text-transform: none; letter-spacing: 0;
         }
-        .forgot-wrap a:hover { color: var(--green-600); text-decoration: underline; }
+        .remember input {
+            width: 15px; height: 15px;
+            accent-color: var(--green-500);
+            cursor: pointer;
+        }
+        .login-row a {
+            font-size: 12.5px; color: var(--text-muted);
+            text-decoration: none; font-weight: 500;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+        .login-row a:hover { color: var(--green-600); text-decoration: underline; }
 
         /* Submit */
         .btn-submit {
@@ -520,8 +535,12 @@
                     <p class="error-msg" id="passwordError" style="display:none;"></p>
                 </div>
 
-                {{-- Forgot --}}
-                <div class="forgot-wrap gsap-field">
+                {{-- Remember me + Forgot --}}
+                <div class="login-row gsap-field">
+                    <label class="remember">
+                        <input type="checkbox" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
+                        <span>Remember me</span>
+                    </label>
                     <a href="{{ route('password.request') }}">Forgot your password?</a>
                 </div>
 

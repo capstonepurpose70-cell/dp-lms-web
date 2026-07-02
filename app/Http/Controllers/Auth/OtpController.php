@@ -48,11 +48,14 @@ RateLimiter::hit($key, 300);
             return back()->with('error', 'Invalid or expired OTP. Please try again.');
         }
 
-        // Clear OTP session
-        session()->forget(['otp_user_id', 'otp_email']);
+        // Remember-me flag captured back at the login step (before OTP).
+        $remember = (bool) session('otp_remember', false);
 
-        // Full login
-        auth()->login($user);
+        // Clear OTP session
+        session()->forget(['otp_user_id', 'otp_email', 'otp_remember']);
+
+        // Full login (honor "Remember me")
+        auth()->login($user, $remember);
         RateLimiter::clear($key);
 
         AuditLogService::log('Login successful', 'Auth', "Role: {$user->role}");
