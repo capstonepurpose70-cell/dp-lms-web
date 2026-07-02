@@ -23,6 +23,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard',     [App\Http\Controllers\Api\Student\DashboardController::class, 'index']);
         Route::get('/subjects',      [App\Http\Controllers\Api\Student\DashboardController::class, 'subjects']);
         Route::get('/modules',       [App\Http\Controllers\Api\Student\DashboardController::class, 'modules']);
+
+        // ── Learning material interactions (view / like / comment / detail) ──
+        // These map to MaterialInteractionController (methods already existed;
+        // only the routes were missing, which caused 404 on like & comment).
+        Route::get('/materials/{id}',           [App\Http\Controllers\Api\MaterialInteractionController::class, 'studentDetail']);
+        Route::post('/materials/{id}/view',     [App\Http\Controllers\Api\MaterialInteractionController::class, 'studentView']);
+        Route::post('/materials/{id}/like',     [App\Http\Controllers\Api\MaterialInteractionController::class, 'studentToggleLike']);
+        Route::post('/materials/{id}/comments', [App\Http\Controllers\Api\MaterialInteractionController::class, 'studentAddComment']);
         Route::get('/grades',        [App\Http\Controllers\Api\Student\DashboardController::class, 'grades']);
         Route::get('/announcements', [App\Http\Controllers\Api\Student\DashboardController::class, 'announcements']);
         Route::get('/assignments',              [App\Http\Controllers\Api\Student\AssignmentController::class, 'index']);
