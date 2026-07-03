@@ -871,8 +871,7 @@ a.addEventListener('click', function (e) {
             .from('.top-nav',      { y: -22, opacity: 0,                  duration: .38 }, '-=.14')
             .from('.sidebar',      { x: -18, opacity: 0,                  duration: .38 }, '-=.3')
             .to('.main-content',   { opacity: 1,                          duration: .42 }, '-=.26')
-            .from('#sidebarNav a', { x: -8, opacity: 0, stagger: .06,    duration: .28 }, '-=.32')
-            .from('.flash',        { opacity: 0, y: -6, stagger: .08,    duration: .22 }, '-=.18');
+            .from('#sidebarNav a', { x: -8, opacity: 0, stagger: .06,    duration: .28 }, '-=.32');
     });
 
 
@@ -988,5 +987,6 @@ loadNotifs();
 setInterval(loadNotifs, 30000);
 })();
 </script>
+@include('partials.flash-toast')
 </body>
 </html>

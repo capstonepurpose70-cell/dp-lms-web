@@ -2098,5 +2098,6 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
     });
 })();
 </script>
+@include('partials.flash-toast')
 </body>
 </html>

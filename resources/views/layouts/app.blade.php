@@ -847,5 +847,6 @@ loadNotifs();
 setInterval(loadNotifs, 30000);
 })();
 </script>
+@include('partials.flash-toast')
 </body>
 </html>
