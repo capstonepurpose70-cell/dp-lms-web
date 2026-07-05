@@ -1270,13 +1270,13 @@
     <div class="settings-divider"></div>
     <div class="settings-section">
         <div class="settings-label">System</div>
-        <div class="settings-item" role="button" tabindex="0">
+        <div class="settings-item" role="button" tabindex="0" id="notifPrefBtn">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
             Notification Preferences
         </div>
-        <div class="settings-item" role="button" tabindex="0">
+        <div class="settings-item" role="button" tabindex="0" id="exportDataBtn">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
             </svg>
@@ -2098,6 +2098,136 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
     });
 })();
 </script>
+
+{{-- ════════ EXPORT DATA MODAL ════════ --}}
+<div class="modal-backdrop" id="exportModal" role="dialog" aria-modal="true">
+    <div class="modal-box">
+        <div class="modal-icon" style="background:var(--blue-50);color:var(--blue-600);">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+        </div>
+        <div class="modal-title">Export Data</div>
+        <p class="modal-desc">Download system records as CSV files (opens in Excel / Sheets).</p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin:6px 0 4px;">
+            <a href="{{ route('admin.export.users') }}" class="af-export-opt">
+                <span>Users</span><span class="af-export-go">Download CSV ↓</span>
+            </a>
+            <a href="{{ route('admin.export.enrollments') }}" class="af-export-opt">
+                <span>Enrollment Requests</span><span class="af-export-go">Download CSV ↓</span>
+            </a>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" id="exportClose" style="width:100%;">Close</button>
+        </div>
+    </div>
+</div>
+
+{{-- ════════ NOTIFICATION PREFERENCES MODAL ════════ --}}
+<div class="modal-backdrop" id="notifPrefModal" role="dialog" aria-modal="true">
+    <div class="modal-box">
+        <div class="modal-icon" style="background:var(--blue-50);color:var(--blue-600);">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+        </div>
+        <div class="modal-title">Notification Preferences</div>
+        <p class="modal-desc">Choose which alerts you want to receive in the admin panel.</p>
+        <div class="np-list">
+            <label class="np-row"><span>New enrollment requests</span><input type="checkbox" class="np-toggle" data-pref="enroll"></label>
+            <label class="np-row"><span>Face verification requests</span><input type="checkbox" class="np-toggle" data-pref="face"></label>
+            <label class="np-row"><span>New user registrations</span><input type="checkbox" class="np-toggle" data-pref="users"></label>
+            <label class="np-row"><span>System updates</span><input type="checkbox" class="np-toggle" data-pref="system"></label>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" id="notifPrefClose">Cancel</button>
+            <button class="btn btn-danger" id="notifPrefSave" style="background:var(--blue-600);box-shadow:none;">Save</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .af-export-opt {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:13px 15px; border:1px solid var(--border-default); border-radius:12px;
+        text-decoration:none; color:var(--slate-800); font-weight:600; font-size:13.5px;
+        background:var(--surface-card); transition:border-color .15s, background .15s;
+    }
+    .af-export-opt:hover { border-color:var(--blue-500); background:var(--blue-50); }
+    .af-export-go { font-size:12px; font-weight:600; color:var(--blue-600); }
+    .np-list { display:flex; flex-direction:column; margin:4px 0; text-align:left; }
+    .np-row {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:11px 2px; border-bottom:1px solid var(--border-default);
+        font-size:13.5px; color:var(--slate-700); cursor:pointer;
+    }
+    .np-row:last-child { border-bottom:none; }
+    .np-toggle {
+        appearance:none; -webkit-appearance:none; width:40px; height:22px; border-radius:22px;
+        background:var(--slate-300); position:relative; cursor:pointer; transition:background .2s; flex-shrink:0;
+    }
+    .np-toggle::after {
+        content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+        background:#fff; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.25);
+    }
+    .np-toggle:checked { background:var(--blue-500); }
+    .np-toggle:checked::after { transform:translateX(18px); }
+</style>
+
+<script>
+(function () {
+    function bindModal(btnId, modalId, closeId) {
+        var btn = document.getElementById(btnId);
+        var modal = document.getElementById(modalId);
+        var close = document.getElementById(closeId);
+        if (!btn || !modal) return null;
+        btn.addEventListener('click', function () { modal.classList.add('open'); });
+        if (close) close.addEventListener('click', function () { modal.classList.remove('open'); });
+        modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('open'); });
+        return modal;
+    }
+
+    // Export modal
+    bindModal('exportDataBtn', 'exportModal', 'exportClose');
+    var em = document.getElementById('exportModal');
+    if (em) em.querySelectorAll('.af-export-opt').forEach(function (a) {
+        a.addEventListener('click', function () { setTimeout(function(){ em.classList.remove('open'); }, 300); });
+    });
+
+    // Notification preferences modal (persisted in localStorage)
+    var npModal = bindModal('notifPrefBtn', 'notifPrefModal', 'notifPrefClose');
+    if (npModal) {
+        var KEY = 'admin-notif-prefs';
+        var npBtn = document.getElementById('notifPrefBtn');
+        var save = document.getElementById('notifPrefSave');
+        function load() {
+            var prefs = {};
+            try { prefs = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+            document.querySelectorAll('.np-toggle').forEach(function (t) {
+                var k = t.getAttribute('data-pref');
+                t.checked = (k in prefs) ? !!prefs[k] : true; // default: ON
+            });
+        }
+        npBtn.addEventListener('click', load);
+        if (save) save.addEventListener('click', function () {
+            var prefs = {};
+            document.querySelectorAll('.np-toggle').forEach(function (t) { prefs[t.getAttribute('data-pref')] = t.checked; });
+            try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {}
+            var orig = save.textContent; save.textContent = 'Saved \u2713';
+            setTimeout(function () { npModal.classList.remove('open'); save.textContent = orig; }, 650);
+        });
+    }
+
+    // Close on Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            var m1 = document.getElementById('exportModal'); if (m1) m1.classList.remove('open');
+            var m2 = document.getElementById('notifPrefModal'); if (m2) m2.classList.remove('open');
+        }
+    });
+})();
+</script>
+
 @include('partials.flash-toast')
 </body>
 </html>

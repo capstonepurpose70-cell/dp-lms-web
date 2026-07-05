@@ -22,6 +22,7 @@ use App\Http\Controllers\ParentPortal\ParentDashboardController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Teacher\TeacherStudentController;
 use App\Http\Controllers\Admin\AdminProfileController;
+use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Teacher\TeacherMessageController;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -270,6 +271,10 @@ Route::get('/profile/change-password',
     [AdminProfileController::class, 'changePassword'])->name('profile.change-password');
 Route::patch('/profile/update-password',
     [AdminProfileController::class, 'updatePassword'])->name('profile.update-password');
+
+        // ── Data export (CSV downloads) ───────────────────────
+        Route::get('/export/users',       [ExportController::class, 'users'])->name('export.users');
+        Route::get('/export/enrollments', [ExportController::class, 'enrollments'])->name('export.enrollments');
 
         // Core pages
         Route::get('/dashboard',  [DashboardController::class, 'index'])->name('dashboard');
