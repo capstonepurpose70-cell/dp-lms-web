@@ -757,6 +757,18 @@
     html[data-theme="dark"] .um-btn-approve:hover { background: rgba(5,150,105,0.22); }
     html[data-theme="dark"] .um-btn-reject:hover  { background: rgba(220,38,38,0.22); }
     html[data-theme="dark"] .um-confirm-cancel:hover { background: var(--slate-200); }
+
+    /* ── Dark mode: confirm modal + remaining light badges/panels ── */
+    html[data-theme="dark"] .um-confirm-box   { background: var(--surface-card); }
+    html[data-theme="dark"] .um-confirm-title { color: var(--slate-900); }
+    html[data-theme="dark"] .um-confirm-desc  { color: var(--slate-500); }
+    html[data-theme="dark"] .um-confirm-cancel { background: var(--slate-100); border-color: var(--border-default); color: var(--slate-700); }
+    html[data-theme="dark"] .um-confirm-icon.approve { background: rgba(5,150,105,0.18); }
+    html[data-theme="dark"] .um-confirm-icon.reject  { background: rgba(220,38,38,0.18); }
+    html[data-theme="dark"] .up-pill-role-student { background: rgba(13,148,136,0.18);  color: #5eead4;         border-color: rgba(13,148,136,0.40); }
+    html[data-theme="dark"] .up-pill-role-teacher { background: rgba(36,120,228,0.18);  color: var(--blue-300); border-color: rgba(36,120,228,0.40); }
+    html[data-theme="dark"] .up-pill-role-parent  { background: rgba(186,117,23,0.20);  color: #f0b357;         border-color: rgba(186,117,23,0.40); }
+    html[data-theme="dark"] .up-log-module        { background: rgba(36,120,228,0.18);  color: var(--blue-300); }
     .up-section-divider { border: none; border-top: 1px solid var(--border-default); margin: 1.25rem 0; }
     .up-section-sub {
         font-size: 11px; font-weight: 700;

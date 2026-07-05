@@ -185,6 +185,20 @@
     .log-meta { font-size: 11.5px; color: var(--slate-400); margin-top: 2px; }
     .log-module { display: inline-flex; align-items: center; background: var(--blue-50); color: var(--blue-700); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: var(--r-sm); margin-left: 4px; }
     .log-time { font-size: 11px; color: var(--slate-400); white-space: nowrap; flex-shrink: 0; }
+
+    /* ── Dark-mode polish: darken the pastel badges/pills to match theme ── */
+    [data-theme="dark"] .stat-icon.teal   { background: rgba(29,158,117,0.16); color: #4ade9f; }
+    [data-theme="dark"] .stat-icon.amber  { background: rgba(186,117,23,0.20); color: #f0b357; }
+    [data-theme="dark"] .stat-icon.purple { background: rgba(83,74,183,0.24);  color: #a89ee0; }
+    [data-theme="dark"] .stat-meta.teal   { color: #4ade9f; }
+    [data-theme="dark"] .stat-meta.amber  { color: #f0b357; }
+    [data-theme="dark"] .stat-meta.purple { color: #a89ee0; }
+    [data-theme="dark"] .role-pill.student { background: rgba(29,158,117,0.16); color: #4ade9f; }
+    [data-theme="dark"] .role-pill.parent  { background: rgba(186,117,23,0.20); color: #f0b357; }
+    [data-theme="dark"] .action-btn.approve { background: rgba(59,109,17,0.24); color: #9fd35f; }
+    [data-theme="dark"] .action-btn.approve:hover { background: rgba(59,109,17,0.38); }
+    [data-theme="dark"] .action-btn.reject  { background: rgba(163,45,45,0.24); color: #f0a0a0; }
+    [data-theme="dark"] .action-btn.reject:hover  { background: rgba(163,45,45,0.40); }
 </style>
 
 <div class="db-page">
@@ -437,6 +451,9 @@
     })();
 
     const C = { blue:'#2478e4', teal:'#1D9E75', purple:'#534AB7' };
+    const _dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const _grid = _dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9';
+    const _tick = _dark ? '#93a0b4' : '#94a3b8';
 
     function gradient(ctx, hex) {
         const g = ctx.createLinearGradient(0, 0, 0, 260);
@@ -516,15 +533,15 @@
             },
             scales: {
                 x: {
-                    grid: { color:'#f1f5f9' },
+                    grid: { color: _grid },
                     border: { display:false },
-                    ticks: { color:'#94a3b8', font:{ family:"'Plus Jakarta Sans',sans-serif", size:11.5, weight:'600' }, padding:8 },
+                    ticks: { color: _tick, font:{ family:"'Plus Jakarta Sans',sans-serif", size:11.5, weight:'600' }, padding:8 },
                 },
                 y: {
                     position: 'left',
-                    grid: { color:'#f1f5f9' },
+                    grid: { color: _grid },
                     border: { display:false },
-                    ticks: { color:'#94a3b8', font:{ family:"'Plus Jakarta Sans',sans-serif", size:11, weight:'500' }, padding:10, maxTicksLimit:6, callback: v => v.toLocaleString() },
+                    ticks: { color: _tick, font:{ family:"'Plus Jakarta Sans',sans-serif", size:11, weight:'500' }, padding:10, maxTicksLimit:6, callback: v => v.toLocaleString() },
                 },
                 y2: {
                     position: 'right',
