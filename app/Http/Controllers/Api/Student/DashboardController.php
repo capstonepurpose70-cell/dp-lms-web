@@ -133,4 +133,20 @@ class DashboardController extends Controller
 
         return response()->json(['message' => 'Enrollment submitted!']);
     }
+
+    /**
+     * School years for the mobile enrollment dropdown (active first, newest first).
+     * Guarantees the student picks a real, existing school year.
+     */
+    public function schoolYears()
+    {
+        $years = \App\Models\SchoolYear::orderByDesc('is_active')
+            ->orderByDesc('starts_at')
+            ->pluck('label')
+            ->filter()
+            ->unique()
+            ->values();
+
+        return response()->json(['school_years' => $years]);
+    }
 }

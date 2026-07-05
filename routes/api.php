@@ -37,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/assignments/{id}',         [App\Http\Controllers\Api\Student\AssignmentController::class, 'show']);
         Route::post('/assignments/{id}/submit', [App\Http\Controllers\Api\Student\AssignmentController::class, 'submit']);
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
+        Route::get('/school-years',  [App\Http\Controllers\Api\Student\DashboardController::class, 'schoolYears']);
 
         // Face registration (mobile camera)
         Route::get('/face',  [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'show']);
