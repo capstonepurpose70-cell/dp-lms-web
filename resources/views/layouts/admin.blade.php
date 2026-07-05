@@ -12,7 +12,7 @@
     </script>
     <style>
         /* ═══════════ DARK MODE ═══════════ */
-        [data-theme="dark"] {
+        html[data-theme="dark"] {
             --surface-page:    #0b1220;
             --surface-card:    #131c2e;
             --surface-nav:     #0f1827;
@@ -508,11 +508,11 @@
 
         /* Logo bigger as requested */
         .sidebar-logo {
-            width: 38px; height: 38px;
+            width: 46px; height: 46px;
             border-radius: var(--r-md);
             overflow: hidden;
             flex-shrink: 0;
-            background: rgba(255,255,255,0.10);
+            background: transparent;
             display: flex; align-items: center; justify-content: center;
             transition: width var(--sidebar-dur) var(--ease-out),
                         height var(--sidebar-dur) var(--ease-out);
@@ -520,7 +520,7 @@
 
         /* Slightly bigger logo in collapsed mode — centered nicely */
         .app-shell.collapsed .sidebar-logo {
-            width: 40px; height: 40px;
+            width: 48px; height: 48px;
         }
 
         .sidebar-logo img {
