@@ -148,6 +148,8 @@
             <div class="sr-ctrl sr-glass" id="srCtrlZoomIn"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m-3-3h6"/></svg>Zoom+</div>
             <div class="sr-ctrl sr-glass" id="srCtrlZoomOut"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6"/></svg>Zoom−</div>
             <div class="sr-ctrl sr-glass" id="srCtrlReset"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9"/></svg>Reset</div>
+            <div class="sr-ctrl sr-glass" id="srCtrlFull"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 16v4h4M20 8V4h-4M20 16v4h-4"/></svg>Full</div>
+            <div class="sr-ctrl sr-glass" id="srCtrlMusic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l11-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM20 17a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Music</div>
         </div>
 
         <div class="sr-stats sr-glass">
@@ -239,6 +241,58 @@
 
     // ================= THREE.JS =================
     const canvas = document.getElementById('sr-canvas'), shell = document.getElementById('sr-shell');
+
+    // ══════════ AUDIO ENGINE (Web Audio — synthesized, no files) ══════════
+    let AC=null, musicNodes=null, musicOn=true;
+    function audioCtx(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+    function unlockAudio(){ const ac=audioCtx(); if(ac && ac.state==='suspended') ac.resume(); }
+    function sfx(type){
+        const ac=audioCtx(); if(!ac) return; const now=ac.currentTime;
+        if(type==='attack'){
+            const o=ac.createOscillator(), g=ac.createGain();
+            o.type='sawtooth'; o.frequency.setValueAtTime(210,now); o.frequency.exponentialRampToValueAtTime(900,now+0.12);
+            g.gain.setValueAtTime(0.0001,now); g.gain.exponentialRampToValueAtTime(0.22,now+0.02); g.gain.exponentialRampToValueAtTime(0.0001,now+0.19);
+            o.connect(g).connect(ac.destination); o.start(now); o.stop(now+0.2);
+        } else if(type==='hit'){
+            const len=Math.floor(ac.sampleRate*0.22), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
+            for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
+            const n=ac.createBufferSource(); n.buffer=buf; const nf=ac.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=2000;
+            const ng=ac.createGain(); ng.gain.value=0.4; n.connect(nf).connect(ng).connect(ac.destination); n.start(now);
+            const o=ac.createOscillator(), g=ac.createGain(); o.type='sine'; o.frequency.setValueAtTime(170,now); o.frequency.exponentialRampToValueAtTime(48,now+0.18);
+            g.gain.setValueAtTime(0.45,now); g.gain.exponentialRampToValueAtTime(0.0001,now+0.2); o.connect(g).connect(ac.destination); o.start(now); o.stop(now+0.22);
+        } else if(type==='correct'){
+            [523.25,659.25,783.99].forEach((f,i)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type='triangle'; o.frequency.value=f;
+                const st=now+i*0.06; g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.18,st+0.02); g.gain.exponentialRampToValueAtTime(0.0001,st+0.26);
+                o.connect(g).connect(ac.destination); o.start(st); o.stop(st+0.3); });
+        } else if(type==='wrong'){
+            const o=ac.createOscillator(), g=ac.createGain(); o.type='square'; o.frequency.setValueAtTime(300,now); o.frequency.exponentialRampToValueAtTime(85,now+0.3);
+            g.gain.setValueAtTime(0.16,now); g.gain.exponentialRampToValueAtTime(0.0001,now+0.32); o.connect(g).connect(ac.destination); o.start(now); o.stop(now+0.34);
+        }
+    }
+    function startMusic(){
+        const ac=audioCtx(); if(!ac||musicNodes) return;
+        const master=ac.createGain(); master.gain.value=0.07; master.connect(ac.destination);
+        const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=950; const pad=ac.createGain(); pad.gain.value=0.5; pad.connect(lp).connect(master);
+        const oscs=[]; [146.83,174.61,220.00].forEach(f=>{ [-3,3].forEach(det=>{ const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.detune.value=det; o.connect(pad); o.start(); oscs.push(o); }); });
+        const arpG=ac.createGain(); arpG.gain.value=0.35; arpG.connect(master);
+        const arp=[293.66,349.23,440.00,587.33,440.00,349.23]; let ai=0;
+        const timer=setInterval(()=>{ if(!AC) return; const t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain(); o.type='triangle'; o.frequency.value=arp[ai++%arp.length];
+            g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.28,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.5); o.connect(g).connect(arpG); o.start(t); o.stop(t+0.55); }, 440);
+        musicNodes={oscs,timer,master};
+    }
+    function stopMusic(){ if(!musicNodes) return; try{ clearInterval(musicNodes.timer); musicNodes.oscs.forEach(o=>{try{o.stop();}catch(e){}}); musicNodes.master.disconnect(); }catch(e){} musicNodes=null; }
+
+    // ══════════ JUICE: screen shake + hit flash ══════════
+    let shake=0; function addShake(a){ shake=Math.min(shake+a,0.8); }
+    let flashEl=null;
+    function screenFlash(hexColor){
+        const css = (typeof hexColor==='number') ? '#'+hexColor.toString(16).padStart(6,'0') : (hexColor||'#ffffff');
+        if(!flashEl){ flashEl=document.createElement('div');
+            flashEl.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;mix-blend-mode:screen;'; shell.appendChild(flashEl); }
+        flashEl.style.background='radial-gradient(circle at 50% 55%, '+css+'66, transparent 68%)';
+        flashEl.style.transition='none'; flashEl.style.opacity='0.85';
+        requestAnimationFrame(()=>{ flashEl.style.transition='opacity .32s ease'; flashEl.style.opacity='0'; });
+    }
     let renderer, scene, camera, raycaster, mouseNDC = new THREE.Vector2(), clock;
     const samples = [];   // G12 collectibles
     let player, rival, beam;
@@ -254,10 +308,11 @@
         ch.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
         actors.push(ch);
     }
-    function playAttack(ch){ if(ch&&ch.userData) ch.userData.atk={t:0}; }
+    function playAttack(ch){ if(ch&&ch.userData) ch.userData.atk={t:0}; sfx('attack'); }
     function playHurt(ch){ if(ch&&ch.userData) ch.userData.hurt={t:0}; }
     function hitSpark(x,y,z,color){
         if(!scene) return;
+        sfx('hit'); addShake(0.5); screenFlash(color);
         const ring=new THREE.Mesh(new THREE.RingGeometry(0.1,0.2,20), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.9,side:THREE.DoubleSide}));
         ring.position.set(x,y,z); if(camera) ring.lookAt(camera.position); scene.add(ring); sparks.push({m:ring,t:0,dur:0.4,ring:true});
         for(let i=0;i<7;i++){ const pc=new THREE.Mesh(new THREE.SphereGeometry(0.05,6,6), new THREE.MeshBasicMaterial({color,transparent:true}));
@@ -339,6 +394,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
         resize();
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(55, shell.clientWidth/shell.clientHeight, 0.1, 400);
@@ -518,6 +574,7 @@
         scene.background = new THREE.Color(0x8fc0ea);
         scene.fog = new THREE.Fog(0xcfe3f5, 42, 108);
         scene.add(new THREE.HemisphereLight(0xdcecff, 0x4a7a38, 1.05));
+        const rim=new THREE.DirectionalLight(0xbcd4ff, 0.5); rim.position.set(-9,7,-11); scene.add(rim);
         // grassy ground + dirt clearing where they battle
         const grass = new THREE.Mesh(new THREE.PlaneGeometry(240,240), M(0x5c9440,{roughness:1}));
         grass.rotation.x=-Math.PI/2; grass.receiveShadow=true; scene.add(grass);
@@ -629,6 +686,9 @@
         document.getElementById('srCtrlZoomIn').onclick=()=>{ cam.rad=Math.max(7,cam.rad-3); applyCamera(); };
         document.getElementById('srCtrlZoomOut').onclick=()=>{ cam.rad=Math.min(40,cam.rad+3); applyCamera(); };
         document.getElementById('srCtrlReset').onclick=()=>{ Object.assign(cam,{az:DEF.az,pol:DEF.pol,rad:DEF.rad}); cam.target.copy(DEF.target); applyCamera(); };
+        document.getElementById('srCtrlFull').onclick=()=>{ if(!document.fullscreenElement){ (shell.requestFullscreen||shell.webkitRequestFullscreen||shell.msRequestFullscreen||function(){}).call(shell); } else { (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); } };
+        document.getElementById('srCtrlMusic').onclick=(ev)=>{ musicOn=!musicOn; unlockAudio(); if(musicOn){ if(G.running) startMusic(); } else { stopMusic(); } ev.currentTarget.style.opacity=musicOn?'1':'0.45'; };
+        document.addEventListener('fullscreenchange', ()=>{ setTimeout(resize, 60); });
     }
     function pickSample(cx, cy) {
         if (!G.running || G.quizOpen) return;
@@ -648,6 +708,7 @@
 
     function startGame() {
         if (!questionsReady) { el('srHint').textContent='Loading questions…'; return; }
+        unlockAudio(); if(musicOn) startMusic();
         Object.assign(G,{ running:true, quizOpen:false, score:0, correct:0, wrong:0, timeLeft:300, responseTimes:[],
             youHP:100, rivalHP:100, collected:0, total: isG11?5:samples.length, curSample:null,
             combo:0, maxCombo:0, hints:3, lives:3, recentAcc:[], curQ:null });
@@ -688,7 +749,7 @@
         el('srQTopic').textContent=q.topic||'Science';
         el('srQuizText').textContent=q.question;
         const wrap=el('srQuizOpts'); wrap.innerHTML=''; const L=['A','B','C','D','E']; q._btns=[];
-        q.options.forEach((opt,i)=>{ const b=document.createElement('button'); b.className='sr-opt'; b.innerHTML='<span class="lt">'+L[i]+'</span> '+opt; b.onclick=()=>{ if(q._answered) return; q._answered=true; G.responseTimes.push(performance.now()-G.qStart); q._btns.forEach(x=>x.disabled=true); const ok=(i===q.correct_index); if(ok){b.classList.add('correct');}else{b.classList.add('wrong'); q._btns[q.correct_index].classList.add('correct');} onAnswer(ok); }; wrap.appendChild(b); q._btns.push(b); });
+        q.options.forEach((opt,i)=>{ const b=document.createElement('button'); b.className='sr-opt'; b.innerHTML='<span class="lt">'+L[i]+'</span> '+opt; b.onclick=()=>{ if(q._answered) return; q._answered=true; G.responseTimes.push(performance.now()-G.qStart); q._btns.forEach(x=>x.disabled=true); const ok=(i===q.correct_index); sfx(ok?'correct':'wrong'); if(ok){b.classList.add('correct');}else{b.classList.add('wrong'); q._btns[q.correct_index].classList.add('correct');} onAnswer(ok); }; wrap.appendChild(b); q._btns.push(b); });
         el('srQuiz').classList.add('show');
     }
 
@@ -747,7 +808,7 @@
     }
 
     function endGame() {
-        G.running=false; clearInterval(timerId); el('srQuiz').classList.remove('show');
+        G.running=false; clearInterval(timerId); stopMusic(); el('srQuiz').classList.remove('show');
         const total=G.correct+G.wrong, acc=total?Math.round(G.correct/total*100):0;
         const avg=G.responseTimes.length?Math.round(G.responseTimes.reduce((a,b)=>a+b,0)/G.responseTimes.length):0;
         let won, goalVal, goalK;
@@ -821,6 +882,8 @@
         }
         // gentle wind sway on the trees
         for(const tr of swayTrees){ tr.rotation.z = Math.sin(t*0.8 + (tr.userData.ph||0))*0.02; }
+        // screen shake
+        if(shake>0.003){ const q=shake*10; canvas.style.transform='translate('+((Math.random()-0.5)*q).toFixed(1)+'px,'+((Math.random()-0.5)*q).toFixed(1)+'px)'; shake*=0.85; } else { canvas.style.transform='none'; }
         // birds circling the sky, wings flapping
         for(const b of birds){
             b.userData.a += b.userData.sp*dt;
