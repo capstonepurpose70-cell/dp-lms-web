@@ -4,7 +4,7 @@
 @section('content')
 <style>
     #sr-shell { position: relative; width: 100%; height: calc(100vh - 110px); min-height: 560px;
-        border-radius: 18px; overflow: hidden; background: #04060f; box-shadow: 0 12px 44px rgba(0,0,0,.35); font-family: 'Plus Jakarta Sans', sans-serif; }
+        border-radius: 18px; overflow: hidden; background: radial-gradient(120% 90% at 50% 0%, #0a1836 0%, #05070f 55%, #03050c 100%); box-shadow: 0 12px 44px rgba(0,0,0,.35); font-family: 'Plus Jakarta Sans', sans-serif; }
     #sr-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
     #sr-canvas:active { cursor: grabbing; }
     .sr-ui { position: absolute; inset: 0; pointer-events: none; }
@@ -23,7 +23,7 @@
     .sr-hpbar.you  .bar > i { background: linear-gradient(90deg,#34d399,#22c55e); }
     .sr-hpbar.rival { text-align: right; } .sr-hpbar.rival .bar { transform: scaleX(-1); }
     .sr-hpbar.rival .bar > i { background: linear-gradient(90deg,#f87171,#ef4444); }
-    .sr-vs { font-family:'Outfit',sans-serif; font-weight:800; font-size:20px; color:# facc15; color:#fbbf24; }
+    .sr-vs { font-family:'Outfit',sans-serif; font-weight:800; font-size:20px; color:#fbbf24; }
 
     /* score/time/progress (lower right) */
     .sr-progress { position: absolute; bottom: 86px; right: 16px; width: 280px; max-width: 42%; border-radius: 16px; padding: 14px 16px; color: #fff; pointer-events: auto; }
@@ -66,16 +66,25 @@
     .sr-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
         background: rgba(3,5,15,.86); backdrop-filter: blur(5px); pointer-events: auto; padding: 18px; z-index: 10; }
     .sr-overlay[hidden] { display: none; }
-    .sr-panel { width: 100%; max-width: 440px; border-radius: 22px; padding: 28px 26px; color: #e7edf7; text-align: center;
-        background: linear-gradient(180deg,#101a36,#0a1124); border: 1px solid rgba(91,141,239,.4); box-shadow: 0 24px 70px rgba(0,0,0,.6); }
-    .sr-panel h2 { font-family: 'Outfit', sans-serif; font-size: 25px; font-weight: 800; margin: 0 0 6px; letter-spacing: -.02em; }
-    .sr-panel .accent { color: #7cb0ff; }
+    .sr-panel { position: relative; overflow: hidden; width: 100%; max-width: 440px; border-radius: 22px; padding: 30px 26px; color: #e7edf7; text-align: center;
+        background: linear-gradient(180deg,#131f42,#0a1124); border: 1px solid rgba(91,141,239,.45);
+        box-shadow: 0 24px 70px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06); }
+    .sr-panel::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
+        width:62%; height:3px; border-radius:0 0 6px 6px;
+        background:linear-gradient(90deg,transparent,#5b8def,#7cb0ff,#5b8def,transparent);
+        box-shadow:0 0 18px rgba(124,176,255,.7); }
+    .sr-panel h2 { font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 800; margin: 2px 0 6px; letter-spacing: -.02em; text-shadow: 0 2px 20px rgba(124,176,255,.25); }
+    .sr-panel .accent { color: #7cb0ff; text-shadow: 0 0 22px rgba(124,176,255,.85), 0 0 8px rgba(124,176,255,.6); }
     .sr-panel p { color: #9fb3d4; font-size: 13.5px; line-height: 1.6; margin: 0 0 16px; }
-    .sr-btn { display: inline-block; background: linear-gradient(135deg,#2563eb,#1d4ed8); color: #fff; border: none; border-radius: 14px;
-        padding: 13px 26px; font-weight: 800; font-size: 14.5px; cursor: pointer; text-decoration: none; box-shadow: 0 8px 24px rgba(37,99,235,.45); }
+    .sr-btn { display: inline-block; background: linear-gradient(135deg,#3b82f6,#1d4ed8); color: #fff; border: none; border-radius: 14px;
+        padding: 13px 26px; font-weight: 800; font-size: 14.5px; cursor: pointer; text-decoration: none; box-shadow: 0 8px 24px rgba(37,99,235,.45);
+        transition: transform .16s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, filter .2s; }
+    .sr-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 32px rgba(37,99,235,.62); filter: brightness(1.08); }
+    .sr-btn:active { transform: translateY(0) scale(.98); }
+    .sr-btn.ghost:hover { background: rgba(124,176,255,.10); border-color: rgba(124,176,255,.5); box-shadow: none; filter: none; }
     .sr-btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,.2); box-shadow: none; }
     .sr-btnrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
-    .sr-final { font-family: 'Outfit', sans-serif; font-size: 44px; font-weight: 800; color: #7cb0ff; line-height: 1; }
+    .sr-final { font-family: 'Outfit', sans-serif; font-size: 48px; font-weight: 800; color: #7cb0ff; line-height: 1; text-shadow: 0 0 30px rgba(124,176,255,.6); }
     .sr-sumgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
     .sr-sumgrid div { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 11px; }
     .sr-sumgrid .v { font-size: 22px; font-weight: 800; font-family: 'Outfit', sans-serif; color: #fff; }
@@ -94,6 +103,14 @@
     .sr-hint-btn:hover:not(:disabled) { background:rgba(124,176,255,.22); }
     .sr-hint-btn:disabled { opacity:.4; cursor:not-allowed; }
     .sr-opt.dim { opacity:.32; text-decoration:line-through; }
+
+    /* --- Premium polish: attention pulse on the start button --- */
+    #srStartBtn { animation: srPulse 2.2s ease-in-out infinite; }
+    @keyframes srPulse {
+        0%, 100% { box-shadow: 0 8px 24px rgba(37,99,235,.45); }
+        50%      { box-shadow: 0 8px 34px rgba(37,99,235,.75), 0 0 0 4px rgba(37,99,235,.14); }
+    }
+    @media (prefers-reduced-motion: reduce) { #srStartBtn { animation: none; } }
 </style>
 
 <div id="sr-shell">
@@ -226,6 +243,8 @@
     const samples = [];   // G12 collectibles
     let player, rival, beam;
     const actors = [];    // animated characters (idle breathing + attack/hurt)
+    const birds = [];     // flying birds (ambient life)
+    const clouds = [];    const butterflies = [];    const swayTrees = [];
     const sparks = [];    // transient hit effects (rings + particles)
 
     function registerActor(ch, lungeX){
@@ -358,45 +377,164 @@
     }
 
     // ---------------- G11: FORMULA CLASH (realistic science lab) ----------------
-    function buildArena() {
-        scene.background = new THREE.Color(0x060a18);
-        scene.fog = new THREE.Fog(0x060a18, 28, 64);
-        scene.add(new THREE.HemisphereLight(0x2a4684, 0x05070f, 0.75));
-        // reflective lab floor + grid + battle rings
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(90,90), M(0x0c1228,{metalness:0.5,roughness:0.45}));
-        floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
-        // enclosing lab room (side walls + ceiling) so it reads as a real room, not floating void
-        const wallMat=M(0x0e1834,{roughness:0.92});
-        const ceil=new THREE.Mesh(new THREE.PlaneGeometry(60,42), M(0x0a1228,{roughness:1})); ceil.rotation.x=Math.PI/2; ceil.position.set(0,12,-2); scene.add(ceil);
-        [-22,22].forEach(wx=>{ const sw=new THREE.Mesh(new THREE.BoxGeometry(0.6,18,46), wallMat); sw.position.set(wx,8,-2); scene.add(sw); });
-        const grid = new THREE.GridHelper(90, 45, 0x1f3a7a, 0x12224e); grid.position.y=0.01; scene.add(grid);
-        [[-3.4,0x22d3ee],[3.4,0xef4444]].forEach(([x,col])=>{
-            const ring=new THREE.Mesh(new THREE.RingGeometry(1.3,1.62,40), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.75,side:THREE.DoubleSide}));
-            ring.rotation.x=-Math.PI/2; ring.position.set(x,0.03,2.5); scene.add(ring);
-            const sp=new THREE.PointLight(col,0.9,16); sp.position.set(x,7,2.5); scene.add(sp);
+    // ── Rich world: sky, sun, clouds, hills, flora, butterflies ───────────
+    function skyTex() {
+        const c=document.createElement('canvas'); c.width=16; c.height=256; const g=c.getContext('2d');
+        const grd=g.createLinearGradient(0,0,0,256);
+        grd.addColorStop(0,'#3f83c9'); grd.addColorStop(0.55,'#8fc0ea'); grd.addColorStop(1,'#e4f2ff');
+        g.fillStyle=grd; g.fillRect(0,0,16,256);
+        return new THREE.CanvasTexture(c);
+    }
+    function buildSky() {
+        const sky=new THREE.Mesh(new THREE.SphereGeometry(170,32,20),
+            new THREE.MeshBasicMaterial({map:skyTex(), side:THREE.BackSide, fog:false}));
+        scene.add(sky);
+        const sun=new THREE.Mesh(new THREE.SphereGeometry(5,20,20), new THREE.MeshBasicMaterial({color:0xfff6cf, fog:false}));
+        sun.position.set(-48,66,-88); scene.add(sun);
+        [10,16].forEach((r,i)=>{ const gl=new THREE.Mesh(new THREE.SphereGeometry(r,20,20),
+            new THREE.MeshBasicMaterial({color:0xfff0b0, transparent:true, opacity:i?0.10:0.26, fog:false}));
+            gl.position.copy(sun.position); scene.add(gl); });
+    }
+    function makeCloud() {
+        const g=new THREE.Group();
+        const m=new THREE.MeshStandardMaterial({color:0xffffff, roughness:1, transparent:true, opacity:0.92, fog:true});
+        const n=3+Math.floor(Math.random()*3);
+        for(let i=0;i<n;i++){ const s=2+Math.random()*3.2;
+            const puff=new THREE.Mesh(new THREE.SphereGeometry(s,8,7), m);
+            puff.position.set((Math.random()-0.5)*9,(Math.random()-0.5)*1.6,(Math.random()-0.5)*4.5); puff.scale.y=0.68; g.add(puff); }
+        return g;
+    }
+    function buildClouds() {
+        for(let i=0;i<8;i++){ const c=makeCloud();
+            c.position.set((Math.random()-0.5)*150, 30+Math.random()*22, (Math.random()-0.5)*150);
+            c.userData.sp=0.5+Math.random()*0.9; scene.add(c); clouds.push(c); }
+    }
+    function buildScenery() {
+        // distant rolling hills (depth)
+        for(let i=0;i<11;i++){ const a=(i/11)*Math.PI*2, r=98;
+            const h=new THREE.Mesh(new THREE.ConeGeometry(26+Math.random()*12, 15+Math.random()*12, 6),
+                M(i%2?0x4a7742:0x56824c,{roughness:1}));
+            h.position.set(Math.cos(a)*r, 1, Math.sin(a)*r); h.rotation.y=Math.random(); scene.add(h); }
+        // rocks
+        for(let i=0;i<12;i++){ const a=Math.random()*Math.PI*2, r=8+Math.random()*20;
+            const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(0.4+Math.random()*0.8), M(0x8a8f96,{roughness:1}));
+            rk.position.set(Math.cos(a)*r,0.2,Math.sin(a)*r-2); rk.rotation.set(Math.random(),Math.random(),Math.random()); rk.castShadow=true; scene.add(rk); }
+        // bushes
+        for(let i=0;i<14;i++){ const a=Math.random()*Math.PI*2, r=9+Math.random()*18;
+            const bg=new THREE.Group(), bm=M(i%2?0x3f7d34:0x4c8f3e,{roughness:1});
+            for(let j=0;j<3;j++){ const b=new THREE.Mesh(new THREE.SphereGeometry(0.5+Math.random()*0.3,8,8), bm);
+                b.position.set((Math.random()-0.5)*0.8,0.4,(Math.random()-0.5)*0.8); b.castShadow=true; bg.add(b); }
+            bg.position.set(Math.cos(a)*r,0,Math.sin(a)*r-2); scene.add(bg); }
+        // flowers
+        const fcols=[0xff6b8a,0xffd24c,0xa78bfa,0xffffff,0xff9f4c];
+        for(let i=0;i<28;i++){ const a=Math.random()*Math.PI*2, r=6+Math.random()*16;
+            const fg=new THREE.Group();
+            const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.4,5), M(0x3f7d34)); stem.position.y=0.2; fg.add(stem);
+            const head=new THREE.Mesh(new THREE.SphereGeometry(0.09,7,7),
+                new THREE.MeshStandardMaterial({color:fcols[i%fcols.length], roughness:0.85})); head.position.y=0.42; fg.add(head);
+            fg.position.set(Math.cos(a)*r,0,Math.sin(a)*r-2); scene.add(fg); }
+        // grass tufts
+        const gm=M(0x4c8f3e,{roughness:1});
+        for(let i=0;i<55;i++){ const a=Math.random()*Math.PI*2, r=5+Math.random()*20;
+            const tuft=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.5,4), gm);
+            tuft.position.set(Math.cos(a)*r,0.25,Math.sin(a)*r-2); scene.add(tuft); }
+        // small pond
+        const pond=new THREE.Mesh(new THREE.CircleGeometry(4,32),
+            new THREE.MeshStandardMaterial({color:0x3b82c4, roughness:0.15, metalness:0.35, transparent:true, opacity:0.86}));
+        pond.rotation.x=-Math.PI/2; pond.position.set(-16,0.02,11); scene.add(pond);
+    }
+    function makeButterfly() {
+        const g=new THREE.Group(); const col=[0xff6b8a,0xffd24c,0xa78bfa,0x6ee7ff][Math.floor(Math.random()*4)];
+        const wm=new THREE.MeshStandardMaterial({color:col, roughness:0.6, side:THREE.DoubleSide, transparent:true, opacity:0.95});
+        const wL=new THREE.Mesh(new THREE.CircleGeometry(0.14,8), wm); wL.position.x=-0.1; g.add(wL);
+        const wR=new THREE.Mesh(new THREE.CircleGeometry(0.14,8), wm); wR.position.x=0.1; g.add(wR);
+        g.userData={wL,wR}; return g;
+    }
+    function buildButterflies() {
+        for(let i=0;i<6;i++){ const b=makeButterfly();
+            b.userData.cx=(Math.random()-0.5)*18; b.userData.cz=(Math.random()-0.5)*18-2;
+            b.userData.r=1.5+Math.random()*3; b.userData.y=0.8+Math.random()*1.3;
+            b.userData.a=Math.random()*6.28; b.userData.sp=0.8+Math.random()*0.8; b.userData.ph=Math.random()*6.28;
+            scene.add(b); butterflies.push(b); }
+    }
+
+    // ── Nature: trees + birds (outdoor world) ──────────────────────────────
+    function buildTree(x, z, sc) {
+        const g = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16*sc,0.28*sc,1.7*sc,8), M(0x6d4a28,{roughness:1}));
+        trunk.position.y=0.85*sc; trunk.castShadow=true; g.add(trunk);
+        const greens=[0x3f7d34,0x4c8f3e,0x357029];
+        [[0,2.1,0,1.15],[0.55,2.55,0.2,0.85],[-0.5,2.45,-0.2,0.8],[0,2.95,0,0.7]].forEach((b,i)=>{
+            const f=new THREE.Mesh(new THREE.SphereGeometry(b[3]*sc,9,9), M(greens[i%3],{roughness:1}));
+            f.position.set(b[0]*sc,b[1]*sc,b[2]*sc); f.castShadow=true; g.add(f);
         });
-        const pl=new THREE.PointLight(0x22d3ee,1.0,60); pl.position.set(0,11,8); scene.add(pl);
-        // back wall + glowing formula screens + periodic-style panels
-        const wall=new THREE.Mesh(new THREE.BoxGeometry(54,18,0.6), M(0x0b1230,{roughness:0.85})); wall.position.set(0,8,-15); scene.add(wall);
-        const screenTex=labScreenTexture();
-        for(let i=-2;i<=2;i++){
-            const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.2,3.1), new THREE.MeshBasicMaterial({map:screenTex})); sc.position.set(i*5.6,6,-14.6); scene.add(sc);
-            const fr=new THREE.Mesh(new THREE.BoxGeometry(4.5,3.4,0.2), M(0x18285a,{emissive:0x12306a,emissiveIntensity:0.35})); fr.position.set(i*5.6,6,-14.78); scene.add(fr);
+        g.position.set(x,0,z); g.rotation.y=Math.random()*Math.PI; return g;
+    }
+    function buildPine(x, z, sc) {
+        const g = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14*sc,0.2*sc,1.2*sc,8), M(0x6d4a28,{roughness:1}));
+        trunk.position.y=0.6*sc; trunk.castShadow=true; g.add(trunk);
+        [[1.5,1.3],[2.3,1.0],[3.0,0.68]].forEach(([y,r])=>{
+            const c=new THREE.Mesh(new THREE.ConeGeometry(r*sc,1.25*sc,9), M(0x2f6b2c,{roughness:1}));
+            c.position.y=y*sc; c.castShadow=true; g.add(c);
+        });
+        g.position.set(x,0,z); return g;
+    }
+    function buildTrees() {
+        const N=18;
+        for(let i=0;i<N;i++){
+            const a=(i/N)*Math.PI*2 + (Math.random()-0.5)*0.25;
+            const r=24 + Math.random()*14;
+            const x=Math.cos(a)*r, z=Math.sin(a)*r - 2;
+            const sc=1.3 + Math.random()*1.3;
+            const tr=(Math.random()<0.35 ? buildPine(x,z,sc) : buildTree(x,z,sc));
+            tr.userData.ph=Math.random()*6.28; swayTrees.push(tr); scene.add(tr);
         }
-        // overhead light panels
-        for(let i=-1;i<=1;i++){ const lp=new THREE.Mesh(new THREE.BoxGeometry(6,0.18,1.4), new THREE.MeshBasicMaterial({color:0xcfeeff})); lp.position.set(i*8,10,-1); scene.add(lp); }
-        // lab benches w/ beakers + monitor (both sides)
-        function bench(bx){
-            const top=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.25,1.5), M(0x223052,{metalness:0.4,roughness:0.5})); top.position.set(bx,1.1,-9.5); scene.add(top);
-            [-1.9,1.9].forEach(lx=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(0.2,1.1,0.2),M(0x172340)); l.position.set(bx+lx,0.55,-9.5); scene.add(l); });
-            [-1.3,-0.5,0.4,1.3].forEach((ox,i)=>{ const col=[0x6ee7ff,0x86efac,0xfca5a5,0xfde68a][i];
-                const bk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.23,0.55,12), new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:0.55,emissive:col,emissiveIntensity:0.45})); bk.position.set(bx+ox,1.5,-9.5); scene.add(bk); });
-            const mon=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.78), new THREE.MeshBasicMaterial({map:screenTex})); mon.position.set(bx+1.7,1.85,-9.7); scene.add(mon);
+        [[-14,-13,1.6],[15,-14,1.8],[-18,-6,1.5],[18,-4,1.5]].forEach(([x,z,sc])=>{ const tr=buildTree(x,z,sc); tr.userData.ph=Math.random()*6.28; swayTrees.push(tr); scene.add(tr); });
+    }
+    function buildBird() {
+        const g=new THREE.Group();
+        const body=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,8), M(0x2b3038)); body.scale.set(1.7,0.8,0.9); g.add(body);
+        const head=new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), M(0x2b3038)); head.position.set(0.2,0.05,0); g.add(head);
+        const wm=M(0x3a4049);
+        const wL=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.04,0.24), wm); wL.position.z=-0.28; g.add(wL);
+        const wR=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.04,0.24), wm); wR.position.z=0.28; g.add(wR);
+        g.userData={wL,wR}; return g;
+    }
+    function buildBirds() {
+        for(let i=0;i<7;i++){
+            const b=buildBird();
+            b.userData.r=14+Math.random()*16;
+            b.userData.y=10+Math.random()*7;
+            b.userData.a=Math.random()*Math.PI*2;
+            b.userData.sp=0.22+Math.random()*0.28;
+            b.userData.ph=Math.random()*Math.PI*2;
+            scene.add(b); birds.push(b);
         }
-        bench(-8); bench(8);
-        // floating holographic formula panels
-        [[-6,4.2],[6,4.8],[0,6.4]].forEach(([hx,hy])=>{ const holo=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.5),
-            new THREE.MeshBasicMaterial({map:screenTex,transparent:true,opacity:0.45,side:THREE.DoubleSide})); holo.position.set(hx,hy,-7); scene.add(holo); });
+    }
+
+    function buildArena() {
+        // ── Outdoor world: daytime sky + grassy clearing ──
+        scene.background = new THREE.Color(0x8fc0ea);
+        scene.fog = new THREE.Fog(0xcfe3f5, 42, 108);
+        scene.add(new THREE.HemisphereLight(0xdcecff, 0x4a7a38, 1.05));
+        // grassy ground + dirt clearing where they battle
+        const grass = new THREE.Mesh(new THREE.PlaneGeometry(240,240), M(0x5c9440,{roughness:1}));
+        grass.rotation.x=-Math.PI/2; grass.receiveShadow=true; scene.add(grass);
+        const patch = new THREE.Mesh(new THREE.CircleGeometry(12,48), M(0x836a44,{roughness:1}));
+        patch.rotation.x=-Math.PI/2; patch.position.y=0.01; patch.receiveShadow=true; scene.add(patch);
+        // battle rings (player / rival)
+        [[-3.4,0x22d3ee],[3.4,0xef4444]].forEach(([x,col])=>{
+            const ring=new THREE.Mesh(new THREE.RingGeometry(1.3,1.62,40), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.8,side:THREE.DoubleSide}));
+            ring.rotation.x=-Math.PI/2; ring.position.set(x,0.03,2.5); scene.add(ring);
+        });
+        // rich outdoor world
+        buildSky();
+        buildClouds();
+        buildScenery();
+        buildTrees();
+        buildBirds();
+        buildButterflies();
 
         player = buildCharacter({ skin:'#f0c08a', hair:'#3a2a18', shirt:'#dfe8f5', pants:'#33406a', accent:'#2563eb', acc:'goggles', outfit:'labcoat', coat:'#f4f6fa', mood:'happy' });
         player.position.set(-3.4, 0, 2.5); player.rotation.y = Math.PI*0.5; scene.add(player); registerActor(player, 1);
@@ -670,6 +808,28 @@
             if(p>=1){ scene.remove(s.m); sparks.splice(i,1); continue; }
             if(s.ring){ const sc=1+p*3.2; s.m.scale.set(sc,sc,sc); s.m.material.opacity=0.9*(1-p); }
             else { s.m.position.x+=s.vx*dt; s.m.position.z+=s.vz*dt; s.vy-=9*dt; s.m.position.y+=s.vy*dt; s.m.material.opacity=1-p; }
+        }
+        // clouds drift slowly across the sky
+        for(const c of clouds){ c.position.x += c.userData.sp*dt; if(c.position.x>95) c.position.x=-95; }
+        // butterflies flutter in little loops near the ground
+        for(const bf of butterflies){
+            bf.userData.a += bf.userData.sp*dt; const a=bf.userData.a, r=bf.userData.r;
+            bf.position.set(bf.userData.cx+Math.cos(a)*r, bf.userData.y+Math.sin(a*2+bf.userData.ph)*0.3, bf.userData.cz+Math.sin(a)*r);
+            bf.rotation.y=-a;
+            const fl=Math.sin(t*16+bf.userData.ph)*0.9;
+            if(bf.userData.wL) bf.userData.wL.rotation.y=fl; if(bf.userData.wR) bf.userData.wR.rotation.y=-fl;
+        }
+        // gentle wind sway on the trees
+        for(const tr of swayTrees){ tr.rotation.z = Math.sin(t*0.8 + (tr.userData.ph||0))*0.02; }
+        // birds circling the sky, wings flapping
+        for(const b of birds){
+            b.userData.a += b.userData.sp*dt;
+            const a=b.userData.a, r=b.userData.r;
+            b.position.set(Math.cos(a)*r, b.userData.y + Math.sin(t*0.8+b.userData.ph)*0.7, Math.sin(a)*r - 2);
+            b.rotation.y = -a;
+            const flap=Math.sin(t*11 + b.userData.ph)*0.7;
+            if(b.userData.wL) b.userData.wL.rotation.x=flap;
+            if(b.userData.wR) b.userData.wR.rotation.x=-flap;
         }
         renderer.render(scene, camera);
     }
