@@ -24,6 +24,24 @@
     .sr-hpbar.rival { text-align: right; } .sr-hpbar.rival .bar { transform: scaleX(-1); }
     .sr-hpbar.rival .bar > i { background: linear-gradient(90deg,#f87171,#ef4444); }
     .sr-vs { font-family:'Outfit',sans-serif; font-weight:800; font-size:20px; color:#fbbf24; }
+    /* Game-style nameplates floating above each character's head */
+    .sr-nameplate { position:absolute; left:0; top:0; z-index:4; width:134px; pointer-events:none; display:none;
+        padding:5px 9px 7px; border-radius:12px; background:rgba(9,15,30,.84); border:1px solid rgba(255,255,255,.15);
+        box-shadow:0 8px 22px rgba(0,0,0,.55); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); will-change:transform; }
+    .sr-nameplate.show { display:block; }
+    .sr-nameplate .np-row { display:flex; align-items:center; gap:5px; margin-bottom:5px; line-height:1; }
+    .sr-nameplate .np-ava { font-size:15px; }
+    .sr-nameplate .np-name { font-size:11px; font-weight:800; color:#fff; letter-spacing:.5px; flex:1; }
+    .sr-nameplate .np-num { font-size:11px; font-weight:800; color:#cfe3ff; font-variant-numeric:tabular-nums; }
+    .sr-nameplate.rival .np-num { color:#ffd4d4; }
+    .sr-nameplate .np-bar { height:8px; border-radius:999px; background:rgba(0,0,0,.5); overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.6); }
+    .sr-nameplate .np-bar > i { display:block; height:100%; width:100%; border-radius:999px; transition:width .35s ease; }
+    .sr-nameplate.you .np-bar > i   { background:linear-gradient(90deg,#34d399,#22c55e); box-shadow:0 0 8px rgba(52,211,153,.6); }
+    .sr-nameplate.rival .np-bar > i { background:linear-gradient(90deg,#fb7185,#ef4444); box-shadow:0 0 8px rgba(239,68,68,.6); }
+    .sr-nameplate::after { content:''; position:absolute; bottom:-6px; left:50%; margin-left:-6px; width:0; height:0;
+        border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid rgba(9,15,30,.84); }
+    @keyframes npHit { 0%{ box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 0 3px rgba(239,68,68,.75);} 100%{ box-shadow:0 8px 22px rgba(0,0,0,.55);} }
+    .sr-nameplate.hit { animation:npHit .4s ease; }
 
     /* score/time/progress (lower right) */
     .sr-progress { position: absolute; bottom: 86px; right: 16px; width: 280px; max-width: 42%; border-radius: 16px; padding: 14px 16px; color: #fff; pointer-events: auto; }
@@ -118,10 +136,13 @@
     <div class="sr-ui">
         <div class="sr-hint-bar sr-glass" id="srHint">Loading…</div>
 
-        <div class="sr-hp" id="srHpWrap">
-            <div class="sr-hpbar you sr-glass"><span id="srYouName">🧑‍🔬 YOU</span><div class="bar"><i id="srHpYou"></i></div></div>
-            <div class="sr-vs">VS</div>
-            <div class="sr-hpbar rival sr-glass"><span>RIVAL 🧪</span><div class="bar"><i id="srHpRival"></i></div></div>
+        <div class="sr-nameplate you" id="srHpFloatYou">
+            <div class="np-row"><span class="np-ava">🧑‍🔬</span><span class="np-name">YOU</span><span class="np-num" id="srHpYouTxt">100</span></div>
+            <div class="np-bar"><i id="srHpYou"></i></div>
+        </div>
+        <div class="sr-nameplate rival" id="srHpFloatRival">
+            <div class="np-row"><span class="np-ava">🧪</span><span class="np-name">RIVAL</span><span class="np-num" id="srHpRivalTxt">100</span></div>
+            <div class="np-bar"><i id="srHpRival"></i></div>
         </div>
 
         <div class="sr-progress sr-glass" id="srProgress">
@@ -717,7 +738,6 @@
         el('srLives').style.display = isG11 ? 'none' : '';
         el('srHintBtn').disabled=false; el('srHints').textContent=G.hints; el('srComboPill').style.display='none';
         if (isG11) {
-            el('srHpWrap').classList.add('show');
             el('srProgLabel').textContent='Battle';
             el('srHint').textContent='Formula Clash! Answer correctly and quickly to strike your rival.';
             updateHUD(); askBattleQuestion();
@@ -738,7 +758,7 @@
         const cp=el('srComboPill'); if(G.combo>=2){ cp.style.display=''; el('srCombo').textContent=G.combo; } else cp.style.display='none';
         el('srHints').textContent=G.hints;
         if(!isG11) el('srLives').textContent = G.lives>0 ? '\u2764\ufe0f'.repeat(G.lives) : '\ud83d\udc94';
-        if (isG11){ el('srHpYou').style.width=Math.max(0,G.youHP)+'%'; el('srHpRival').style.width=Math.max(0,G.rivalHP)+'%'; el('srBar').style.width=(100-Math.max(0,G.rivalHP))+'%'; }
+        if (isG11){ const y=Math.max(0,G.youHP), r=Math.max(0,G.rivalHP); el('srHpYou').style.width=y+'%'; el('srHpRival').style.width=r+'%'; el('srHpYouTxt').textContent=y; el('srHpRivalTxt').textContent=r; el('srBar').style.width=(100-r)+'%'; }
         else { el('srBar').style.width=Math.round(G.collected/G.total*100)+'%'; }
     }
 
@@ -763,11 +783,11 @@
                      G.score += Math.round(80*comboMult());
                      playAttack(player); flashBeam(player,rival,0x6ee7ff);
                      setTimeout(()=>{ playHurt(rival); hitSpark(rival.position.x,1.8,rival.position.z,0x6ee7ff); },180);
-                     G.rivalHP-=20; }
+                     G.rivalHP-=20; flashPlate('srHpFloatRival'); }
             else  { G.wrong++; G.combo=0; G.recentAcc.push(0);
                      playAttack(rival); flashBeam(rival,player,0xff6b6b);
                      setTimeout(()=>{ playHurt(player); hitSpark(player.position.x,1.8,player.position.z,0xff6b6b); },180);
-                     G.youHP-=20; }
+                     G.youHP-=20; flashPlate('srHpFloatYou'); }
             updateHUD();
             setTimeout(()=>{
                 el('srQuiz').classList.remove('show');
@@ -837,6 +857,17 @@
         ? '<b>Grade 11 — Formula Clash ⚔️</b><br>Face the rival scientist! Answer Physics and Chemistry questions correctly and quickly to strike. Drain the rival\'s HP to win!'
         : '<b>Grade 12 — Field Researcher 🔬</b><br>Explore the field and click the glowing SAMPLES. Answer Earth Science / Biology questions correctly to collect each sample and solve the crisis!';
 
+    // Project a character's head position to screen + place its HP bar there
+    function projectHP(ch, barEl, hy){
+        if(!barEl||!camera) return;
+        const v=new THREE.Vector3(ch.position.x, hy, ch.position.z); v.project(camera);
+        if(v.z>1){ barEl.classList.remove('show'); return; }
+        const x=(v.x*0.5+0.5)*shell.clientWidth, y=(-v.y*0.5+0.5)*shell.clientHeight;
+        barEl.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) translate(-50%,-125%)';
+        barEl.classList.add('show');
+    }
+    function flashPlate(id){ const e=el(id); if(!e) return; e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
+
     function animate() {
         requestAnimationFrame(animate);
         const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
@@ -882,6 +913,14 @@
         }
         // gentle wind sway on the trees
         for(const tr of swayTrees){ tr.rotation.z = Math.sin(t*0.8 + (tr.userData.ph||0))*0.02; }
+        // floating HP bars follow the characters' heads (battle only)
+        if(isG11 && G.running && player && rival){
+            projectHP(player, el('srHpFloatYou'), 2.5);
+            projectHP(rival,  el('srHpFloatRival'), 2.5);
+        } else {
+            const a=el('srHpFloatYou'), b=el('srHpFloatRival');
+            if(a) a.classList.remove('show'); if(b) b.classList.remove('show');
+        }
         // screen shake
         if(shake>0.003){ const q=shake*10; canvas.style.transform='translate('+((Math.random()-0.5)*q).toFixed(1)+'px,'+((Math.random()-0.5)*q).toFixed(1)+'px)'; shake*=0.85; } else { canvas.style.transform='none'; }
         // birds circling the sky, wings flapping
