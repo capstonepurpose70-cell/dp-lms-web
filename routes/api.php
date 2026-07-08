@@ -39,6 +39,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
         Route::get('/school-years',  [App\Http\Controllers\Api\Student\DashboardController::class, 'schoolYears']);
 
+        // ── Science Game (Grade 11 & 12) ──────────────────────
+        Route::get('/game/questions',   [App\Http\Controllers\Student\ScienceGameController::class, 'questions']);
+        Route::post('/game/score',      [App\Http\Controllers\Student\ScienceGameController::class, 'submitScore']);
+        Route::get('/game/leaderboard', [App\Http\Controllers\Student\ScienceGameController::class, 'leaderboardApi']);
+
         // Face registration (mobile camera)
         Route::get('/face',  [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'show']);
         Route::post('/face', [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'store']);

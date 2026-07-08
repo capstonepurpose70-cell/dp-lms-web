@@ -107,4 +107,32 @@ class ScienceGameController extends Controller
             'myBest'  => $myBest,
         ]);
     }
+
+    /** JSON leaderboard for the mobile app */
+    public function leaderboardApi()
+    {
+        $grade = $this->guardGrade();
+
+        $top = GameScore::with('user:id,name')
+            ->where('grade_level', $grade)
+            ->orderByDesc('score')
+            ->orderByDesc('accuracy')
+            ->limit(50)
+            ->get(['id', 'user_id', 'score', 'accuracy', 'max_combo'])
+            ->map(function ($r) {
+                return [
+                    'name'      => optional($r->user)->name ?? 'Student',
+                    'score'     => $r->score,
+                    'accuracy'  => $r->accuracy,
+                    'max_combo' => $r->max_combo,
+                ];
+            });
+
+        return response()->json([
+            'grade'  => $grade,
+            'world'  => $this->worldFor($grade),
+            'myBest' => GameScore::where('user_id', Auth::id())->max('score') ?? 0,
+            'top'    => $top,
+        ]);
+    }
 }
