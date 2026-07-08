@@ -138,16 +138,21 @@ class MessageController extends Controller
             ->orderBy('created_at')
             ->get()
             ->map(fn($m) => [
-                'id'       => $m->id,
-                'body'     => $m->body,
-                'mine'     => $m->sender_id === $me->id,
-                'at'       => $m->created_at?->toDateTimeString(),
-                'at_human' => $m->created_at?->diffForHumans(),
+                'id'        => $m->id,
+                'body'      => $m->body,
+                'file_url'  => $m->file_path ? asset('storage/' . $m->file_path) : null,
+                'file_name' => $m->file_name,
+                'mine'      => $m->sender_id === $me->id,
+                'at'        => $m->created_at?->toDateTimeString(),
+                'at_human'  => $m->created_at?->diffForHumans(),
             ]);
 
         return response()->json([
-            'contact'  => $this->userCard($other),
-            'messages' => $messages,
+            'contact'     => $this->userCard($other),
+            'messages'    => $messages,
+            // Is the OTHER person typing to ME right now? (short-lived cache)
+            'peer_typing' => (bool) \Illuminate\Support\Facades\Cache::get(
+                'chat_typing:' . $other->id . ':' . $me->id, false),
         ]);
     }
 
@@ -157,8 +162,16 @@ class MessageController extends Controller
         $me = $request->user();
 
         $data = $request->validate([
-            'body' => 'required|string|max:2000',
+            'body' => 'nullable|string|max:2000',
+            'file' => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,csv,jpg,jpeg,png,zip',
         ]);
+
+        if (blank($data['body'] ?? null) && ! $request->hasFile('file')) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Message cannot be empty.',
+            ], 422);
+        }
 
         $other = User::findOrFail($userId);
 
@@ -170,22 +183,46 @@ class MessageController extends Controller
             ], 403);
         }
 
+        $filePath = null;
+        $fileName = null;
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('chat_files', 'public');
+            $fileName = $request->file('file')->getClientOriginalName();
+        }
+
         $msg = Message::create([
             'sender_id'   => $me->id,
             'receiver_id' => $other->id,
-            'body'        => $data['body'],
+            'body'        => $data['body'] ?? '',
+            'file_path'   => $filePath,
+            'file_name'   => $fileName,
             'is_read'     => false,
         ]);
 
         return response()->json([
             'ok'      => true,
             'message' => [
-                'id'       => $msg->id,
-                'body'     => $msg->body,
-                'mine'     => true,
-                'at'       => $msg->created_at?->toDateTimeString(),
-                'at_human' => $msg->created_at?->diffForHumans(),
+                'id'        => $msg->id,
+                'body'      => $msg->body,
+                'file_url'  => $filePath ? asset('storage/' . $filePath) : null,
+                'file_name' => $fileName,
+                'mine'      => true,
+                'at'        => $msg->created_at?->toDateTimeString(),
+                'at_human'  => $msg->created_at?->diffForHumans(),
             ],
         ]);
+    }
+
+    /** POST /api/messages/typing/{user} — "I am typing to this user" ping */
+    public function typing(Request $request, $userId)
+    {
+        $me = $request->user();
+        \Illuminate\Support\Facades\Cache::put(
+            'chat_typing:' . $me->id . ':' . (int) $userId,
+            true,
+            now()->addSeconds(5)
+        );
+
+        return response()->json(['ok' => true]);
     }
 }

@@ -91,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/contacts',       [App\Http\Controllers\Api\MessageController::class, 'contacts']);
         Route::get('/thread/{user}',  [App\Http\Controllers\Api\MessageController::class, 'thread']);
         Route::post('/thread/{user}', [App\Http\Controllers\Api\MessageController::class, 'send']);
+        Route::post('/typing/{user}', [App\Http\Controllers\Api\MessageController::class, 'typing']);
     });
 
 });

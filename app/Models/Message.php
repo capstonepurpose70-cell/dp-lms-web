@@ -10,6 +10,8 @@ class Message extends Model
         'sender_id',
         'receiver_id',
         'body',
+        'file_path',
+        'file_name',
         'is_read',
         'read_at',
     ];
