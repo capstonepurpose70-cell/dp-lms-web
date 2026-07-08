@@ -325,6 +325,8 @@
     function registerActor(ch, lungeX){
         ch.userData.baseX=ch.position.x; ch.userData.baseY=ch.position.y; ch.userData.baseZ=ch.position.z;
         ch.userData.lungeX=lungeX||0; ch.userData.phase=Math.random()*Math.PI*2;
+        ch.userData.baseRY=ch.rotation.y;
+        ch.userData.blinkAt=1.5+Math.random()*3; ch.userData.blinkT=-1;
         ch.userData.atk=null; ch.userData.hurt=null;
         ch.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
         actors.push(ch);
@@ -350,8 +352,8 @@
         const p = Object.assign({ mood:'happy', outfit:'casual', coat:'#3b4356',
             glasses:false, facialHair:false, acc:'none' }, pal);
         const g = new THREE.Group();
-        const skinMat=M(p.skin,{roughness:0.62}), shirtMat=M(p.shirt,{roughness:0.82}),
-              pantsMat=M(p.pants,{roughness:0.9}), hairMat=M(p.hair,{roughness:0.92});
+        const skinMat=M(p.skin,{roughness:0.5}), shirtMat=M(p.shirt,{roughness:0.82}),
+              pantsMat=M(p.pants,{roughness:0.9}), hairMat=M(p.hair,{roughness:0.72,metalness:0.06});
         const foreMat = p.outfit==='labcoat'?M(p.coat,{roughness:0.85}):skinMat;
         // slim legs + shoes
         [-0.13,0.13].forEach(sx=>{
@@ -383,11 +385,20 @@
         const skull=new THREE.Mesh(new THREE.SphereGeometry(0.33,26,26), skinMat); skull.scale.set(1,1.12,1.02); head.add(skull);
         const FZ=0.31;
         [-1,1].forEach(side=>{ const ear=new THREE.Mesh(new THREE.SphereGeometry(0.065,10,10), skinMat); ear.position.set(side*0.32,0,0); ear.scale.set(0.6,1,0.7); head.add(ear); });
+        const eyes=[];
         [-0.12,0.12].forEach(sx=>{
-            const w=new THREE.Mesh(new THREE.SphereGeometry(0.062,14,14), M('#ffffff',{roughness:0.3})); w.position.set(sx,0.04,FZ-0.02); w.scale.set(1,0.72,0.5); head.add(w);
-            const iris=new THREE.Mesh(new THREE.SphereGeometry(0.032,12,12), M('#3a2f25')); iris.position.set(sx,0.04,FZ+0.01); iris.scale.set(1,1,0.5); head.add(iris);
-            const pup=new THREE.Mesh(new THREE.SphereGeometry(0.016,8,8), M('#0e0e16')); pup.position.set(sx,0.04,FZ+0.03); head.add(pup);
+            const w=new THREE.Mesh(new THREE.SphereGeometry(0.062,14,14), M('#ffffff',{roughness:0.18})); w.position.set(sx,0.04,FZ-0.02); w.scale.set(1,0.72,0.5); head.add(w);
+            const iris=new THREE.Mesh(new THREE.SphereGeometry(0.032,12,12), M(p.eye||'#3a2f25',{roughness:0.25})); iris.position.set(sx,0.04,FZ+0.01); iris.scale.set(1,1,0.5); head.add(iris);
+            const pup=new THREE.Mesh(new THREE.SphereGeometry(0.016,8,8), M('#0e0e16',{roughness:0.15})); pup.position.set(sx,0.04,FZ+0.03); head.add(pup);
+            // catchlight — the tiny sparkle that makes eyes look ALIVE
+            const shine=new THREE.Mesh(new THREE.SphereGeometry(0.007,6,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+            shine.position.set(sx+0.012,0.055,FZ+0.041); head.add(shine);
+            // upper eyelid (skin) — used for natural blinking
+            const lid=new THREE.Mesh(new THREE.SphereGeometry(0.066,12,12,0,Math.PI*2,0,Math.PI*0.5), skinMat);
+            lid.position.set(sx,0.045,FZ-0.021); lid.scale.set(1,0.15,0.55); head.add(lid);
+            eyes.push({w,iris,pup,shine,lid});
         });
+        g.userData.eyes = eyes;
         [-0.12,0.12].forEach((sx,i)=>{ const br=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.025,0.035), hairMat); br.position.set(sx,0.15,FZ);
             br.rotation.z = p.mood==='smirk' ? (i?0.3:-0.05) : (i?0.09:-0.09); head.add(br); });
         const nose=new THREE.Mesh(new THREE.ConeGeometry(0.045,0.13,8), skinMat); nose.position.set(0,-0.03,FZ+0.03); nose.rotation.x=Math.PI/2; head.add(nose);
@@ -614,12 +625,12 @@
         buildBirds();
         buildButterflies();
 
-        player = buildCharacter({ skin:'#f0c08a', hair:'#3a2a18', shirt:'#dfe8f5', pants:'#33406a', accent:'#2563eb', acc:'goggles', outfit:'labcoat', coat:'#f4f6fa', mood:'happy' });
+        player = buildCharacter({ skin:'#f0c08a', hair:'#3a2a18', eye:'#2f4a72', shirt:'#dfe8f5', pants:'#33406a', accent:'#2563eb', acc:'goggles', outfit:'labcoat', coat:'#f4f6fa', mood:'happy' });
         player.position.set(-3.4, 0, 2.5); player.rotation.y = Math.PI*0.5; scene.add(player); registerActor(player, 1);
-        rival = buildCharacter({ skin:'#e6b27e', hair:'#3a1414', shirt:'#241c2e', pants:'#2a2230', accent:'#ef4444', acc:'goggles', outfit:'labcoat', coat:'#3a2330', facialHair:true, mood:'smirk' });
+        rival = buildCharacter({ skin:'#e6b27e', hair:'#3a1414', eye:'#6b3220', shirt:'#241c2e', pants:'#2a2230', accent:'#ef4444', acc:'goggles', outfit:'labcoat', coat:'#3a2330', facialHair:true, mood:'smirk' });
         rival.position.set(3.4, 0, 2.5); rival.rotation.y = -Math.PI*0.5; scene.add(rival); registerActor(rival, -1);
         // lab supervisor NPC (watching the clash)
-        const npc = buildCharacter({ skin:'#e8c4a0', hair:'#2a2a2a', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
+        const npc = buildCharacter({ skin:'#e8c4a0', hair:'#2a2a2a', eye:'#3a3a30', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
         npc.position.set(0,0,-7.5); npc.scale.setScalar(0.92); scene.add(npc); registerActor(npc, 0);
 
         beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1,8), new THREE.MeshBasicMaterial({ color:0x6ee7ff, transparent:true, opacity:0 }));
@@ -669,10 +680,10 @@
         // clouds
         for(let i=0;i<8;i++){ const cl=new THREE.Group(); for(let j=0;j<3;j++){ const pp=new THREE.Mesh(new THREE.SphereGeometry(1.5+Math.random(),8,6), new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.85})); pp.position.set(j*1.6-1.6,0,Math.random()); pp.scale.y=0.6; cl.add(pp); } cl.position.set((Math.random()-0.5)*90,17+Math.random()*7,(Math.random()-0.5)*90-22); scene.add(cl); }
 
-        player = buildCharacter({ skin:'#f0c08a', hair:'#2a1a10', shirt:'#b89a5a', pants:'#566b39', accent:'#7a5a2a', acc:'hat' });
+        player = buildCharacter({ skin:'#f0c08a', hair:'#2a1a10', eye:'#2f4a72', shirt:'#b89a5a', pants:'#566b39', accent:'#7a5a2a', acc:'hat' });
         player.position.set(0,0,9); scene.add(player); registerActor(player, 0);
         // field guide NPC near the camp
-        const guide = buildCharacter({ skin:'#caa06f', hair:'#3a2a1a', shirt:'#3f7d4f', pants:'#4a5a35', accent:'#7a5a2a', acc:'hat', mood:'happy' });
+        const guide = buildCharacter({ skin:'#caa06f', hair:'#3a2a1a', eye:'#4a3520', shirt:'#3f7d4f', pants:'#4a5a35', accent:'#7a5a2a', acc:'hat', mood:'happy' });
         guide.position.set(9.5,0,5.5); guide.rotation.y=-Math.PI*0.6; scene.add(guide); registerActor(guide, 0);
 
         // collectible samples (glowing specimens)
@@ -881,17 +892,34 @@
             if (u.head) u.head.rotation.x = Math.sin(t*0.9 + u.phase)*0.04;
             if (u.armL) u.armL.rotation.x = sway;
             if (u.armR) u.armR.rotation.x = -sway;
-            let lunge=0, hop=0, knock=0, flinch=0;
-            if (u.atk){ u.atk.t+=dt; const p=Math.min(u.atk.t/0.45,1), k=Math.sin(p*Math.PI);
-                lunge=u.lungeX*k*0.95; hop=k*0.07;
-                if (u.armR) u.armR.rotation.x=-k*1.7;
-                if (u.armL) u.armL.rotation.x=-k*0.5;
+            // ── natural blinking (eyelids close briefly every few seconds) ──
+            if (ch.userData.eyes){
+                u.blinkAt-=dt; let lidK=0;
+                if (u.blinkAt<=0 && u.blinkT<0){ u.blinkT=0; u.blinkAt=2+Math.random()*3.5; }
+                if (u.blinkT>=0){ u.blinkT+=dt; const bp=u.blinkT/0.16;
+                    lidK=Math.sin(Math.min(bp,1)*Math.PI); if (bp>=1) u.blinkT=-1; }
+                for(const e of ch.userData.eyes){ e.lid.scale.y=0.15+lidK*0.62; e.shine.visible=lidK<0.6; }
+            }
+            let lunge=0, hop=0, knock=0, flinch=0, twist=0;
+            if (u.atk){ u.atk.t+=dt; const p=Math.min(u.atk.t/0.6,1);
+                // 3-phase: anticipation (windup) → explosive strike → recoil
+                let k;
+                if (p<0.28){ const q=p/0.28; k=-0.3*Math.sin(q*Math.PI*0.5); }               // lean back
+                else if (p<0.55){ const q=(p-0.28)/0.27; k=-0.3+1.3*(1-Math.pow(1-q,3)); }    // burst forward
+                else { const q=(p-0.55)/0.45; k=1.0*(1-q*q); }                                // settle back
+                lunge=u.lungeX*k*0.95; hop=Math.max(0,k)*0.09; twist=-k*0.16;
+                if (u.armR) u.armR.rotation.x=-k*1.9;
+                if (u.armL) u.armL.rotation.x=-k*0.45;
+                if (u.head) u.head.rotation.x=-Math.max(0,k)*0.14;
                 if (p>=1) u.atk=null;
             }
-            if (u.hurt){ u.hurt.t+=dt; const p=Math.min(u.hurt.t/0.4,1), k=Math.sin(p*Math.PI);
-                knock=-u.lungeX*k*0.55; flinch=-k*0.08;
-                if (p>=1) u.hurt=null;
+            if (u.hurt){ u.hurt.t+=dt; const p=Math.min(u.hurt.t/0.45,1), k=Math.sin(p*Math.PI);
+                knock=-u.lungeX*k*0.6; flinch=-k*0.09;
+                if (u.head){ u.head.rotation.z=k*0.2; u.head.rotation.x=k*0.12; }
+                if (ch.userData.eyes) for(const e of ch.userData.eyes){ e.lid.scale.y=0.15+k*0.55; } // squint in pain
+                if (p>=1){ u.hurt=null; if(u.head) u.head.rotation.z=0; }
             }
+            ch.rotation.y = u.baseRY + twist*Math.sign(u.lungeX||1);
             ch.position.x = u.baseX + lunge + knock;
             ch.position.y = u.baseY + breathe + hop + flinch;
         });
