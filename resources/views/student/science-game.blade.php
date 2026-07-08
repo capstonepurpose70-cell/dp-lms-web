@@ -42,6 +42,14 @@
         border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid rgba(9,15,30,.84); }
     @keyframes npHit { 0%{ box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 0 3px rgba(239,68,68,.75);} 100%{ box-shadow:0 8px 22px rgba(0,0,0,.55);} }
     .sr-nameplate.hit { animation:npHit .4s ease; }
+    /* Professor speech bubble */
+    .sr-speech { position:absolute; left:0; top:0; z-index:5; max-width:220px; padding:8px 12px; border-radius:14px;
+        background:rgba(255,255,255,.96); color:#16203a; font-size:12px; font-weight:700; line-height:1.35;
+        box-shadow:0 10px 24px rgba(0,0,0,.4); display:none; pointer-events:none; will-change:transform; text-align:center; }
+    .sr-speech.show { display:block; animation:spPop .25s ease; }
+    .sr-speech::after { content:''; position:absolute; bottom:-7px; left:50%; margin-left:-7px;
+        border-left:7px solid transparent; border-right:7px solid transparent; border-top:8px solid rgba(255,255,255,.96); }
+    @keyframes spPop { from{ transform:scale(.7); opacity:0; } }
 
     /* score/time/progress (lower right) */
     .sr-progress { position: absolute; bottom: 86px; right: 16px; width: 280px; max-width: 42%; border-radius: 16px; padding: 14px 16px; color: #fff; pointer-events: auto; }
@@ -144,6 +152,7 @@
             <div class="np-row"><span class="np-ava">🧪</span><span class="np-name">RIVAL</span><span class="np-num" id="srHpRivalTxt">100</span></div>
             <div class="np-bar"><i id="srHpRival"></i></div>
         </div>
+        <div class="sr-speech" id="srProfSpeech"></div>
 
         <div class="sr-progress sr-glass" id="srProgress">
             <div class="pt" id="srProgLabel">Progress</div>
@@ -288,6 +297,17 @@
         } else if(type==='wrong'){
             const o=ac.createOscillator(), g=ac.createGain(); o.type='square'; o.frequency.setValueAtTime(300,now); o.frequency.exponentialRampToValueAtTime(85,now+0.3);
             g.gain.setValueAtTime(0.16,now); g.gain.exponentialRampToValueAtTime(0.0001,now+0.32); o.connect(g).connect(ac.destination); o.start(now); o.stop(now+0.34);
+        } else if(type==='special'){
+            // charge riser…
+            const o=ac.createOscillator(), g=ac.createGain(); o.type='sawtooth';
+            o.frequency.setValueAtTime(160,now); o.frequency.exponentialRampToValueAtTime(1400,now+0.3);
+            g.gain.setValueAtTime(0.0001,now); g.gain.exponentialRampToValueAtTime(0.2,now+0.05); g.gain.exponentialRampToValueAtTime(0.0001,now+0.33);
+            o.connect(g).connect(ac.destination); o.start(now); o.stop(now+0.35);
+            // …then a deep boom on impact
+            const b=ac.createOscillator(), bg=ac.createGain(); b.type='sine';
+            b.frequency.setValueAtTime(120,now+0.62); b.frequency.exponentialRampToValueAtTime(38,now+0.95);
+            bg.gain.setValueAtTime(0.0001,now+0.6); bg.gain.exponentialRampToValueAtTime(0.5,now+0.66); bg.gain.exponentialRampToValueAtTime(0.0001,now+1.0);
+            b.connect(bg).connect(ac.destination); b.start(now+0.6); b.stop(now+1.05);
         }
     }
     function startMusic(){
@@ -320,6 +340,7 @@
     const actors = [];    // animated characters (idle breathing + attack/hurt)
     const birds = [];     // flying birds (ambient life)
     const clouds = [];    const butterflies = [];    const swayTrees = [];
+    let professor=null; const specials=[];
     const sparks = [];    // transient hit effects (rings + particles)
 
     function registerActor(ch, lungeX){
@@ -602,28 +623,67 @@
     }
 
     function buildArena() {
-        // ── Outdoor world: daytime sky + grassy clearing ──
-        scene.background = new THREE.Color(0x8fc0ea);
-        scene.fog = new THREE.Fog(0xcfe3f5, 42, 108);
-        scene.add(new THREE.HemisphereLight(0xdcecff, 0x4a7a38, 1.05));
-        const rim=new THREE.DirectionalLight(0xbcd4ff, 0.5); rim.position.set(-9,7,-11); scene.add(rim);
-        // grassy ground + dirt clearing where they battle
-        const grass = new THREE.Mesh(new THREE.PlaneGeometry(240,240), M(0x5c9440,{roughness:1}));
-        grass.rotation.x=-Math.PI/2; grass.receiveShadow=true; scene.add(grass);
-        const patch = new THREE.Mesh(new THREE.CircleGeometry(12,48), M(0x836a44,{roughness:1}));
-        patch.rotation.x=-Math.PI/2; patch.position.y=0.01; patch.receiveShadow=true; scene.add(patch);
-        // battle rings (player / rival)
+        // ── SCIENCE LABORATORY — fully equipped, cinematic ──
+        scene.background = new THREE.Color(0x0d1526);
+        scene.fog = new THREE.Fog(0x0d1526, 30, 72);
+        scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x1a2338, 0.85));
+        const rim=new THREE.DirectionalLight(0xbcd4ff, 0.55); rim.position.set(-9,7,-11); scene.add(rim);
+        // polished lab floor + grid
+        const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,44), M(0x1a2438,{metalness:0.45,roughness:0.35}));
+        floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+        const grid=new THREE.GridHelper(60,30,0x27406e,0x1c2c4e); grid.position.y=0.012; scene.add(grid);
+        // battle rings (player / rival) + spotlights
         [[-3.4,0x22d3ee],[3.4,0xef4444]].forEach(([x,col])=>{
             const ring=new THREE.Mesh(new THREE.RingGeometry(1.3,1.62,40), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.8,side:THREE.DoubleSide}));
             ring.rotation.x=-Math.PI/2; ring.position.set(x,0.03,2.5); scene.add(ring);
+            const sp=new THREE.PointLight(col,0.7,15); sp.position.set(x,6.5,2.5); scene.add(sp);
         });
-        // rich outdoor world
-        buildSky();
-        buildClouds();
-        buildScenery();
-        buildTrees();
-        buildBirds();
-        buildButterflies();
+        // walls + ceiling
+        const wallMat=M(0x141f38,{roughness:0.9});
+        const back=new THREE.Mesh(new THREE.BoxGeometry(60,16,0.6), wallMat); back.position.set(0,8,-13); scene.add(back);
+        [-24,24].forEach(wx=>{ const sw=new THREE.Mesh(new THREE.BoxGeometry(0.6,16,44), wallMat); sw.position.set(wx,8,0); scene.add(sw); });
+        const ceil=new THREE.Mesh(new THREE.PlaneGeometry(60,44), M(0x0f1830,{roughness:1})); ceil.rotation.x=Math.PI/2; ceil.position.y=11.5; scene.add(ceil);
+        // ceiling light panels
+        for(let i=-1;i<=1;i++){ const lp=new THREE.Mesh(new THREE.BoxGeometry(6,0.15,1.6), new THREE.MeshBasicMaterial({color:0xeaf6ff})); lp.position.set(i*9,11.3,0); scene.add(lp);
+            const pl=new THREE.PointLight(0xdfeeff,0.5,26); pl.position.set(i*9,10.5,0); scene.add(pl); }
+        // glowing formula screens on the back wall
+        function screenTex(lines){ const c=document.createElement('canvas'); c.width=256;c.height=180; const x=c.getContext('2d');
+            x.fillStyle='#07182e'; x.fillRect(0,0,256,180); x.fillStyle='#7cd7ff'; x.font='bold 22px monospace';
+            lines.forEach((L,i)=>x.fillText(L,14,42+i*40)); return new THREE.CanvasTexture(c); }
+        const texts=[['E = mc\u00b2','F = ma','PV = nRT'],['H\u2082O  CO\u2082','NaCl  CH\u2084','DNA \u2192 RNA'],['v = d/t','a = \u0394v/t','W = F\u00b7d'],['pH 0\u201314','Acid | Base','Titration'],['V = IR','P = VI','\u03bbf = c']];
+        for(let i=-2;i<=2;i++){ const scn=new THREE.Mesh(new THREE.PlaneGeometry(4.4,3.1), new THREE.MeshBasicMaterial({map:screenTex(texts[i+2])})); scn.position.set(i*6,6.2,-12.6); scene.add(scn);
+            const fr=new THREE.Mesh(new THREE.BoxGeometry(4.7,3.4,0.18), M(0x1c2c52,{emissive:0x14305e,emissiveIntensity:0.4})); fr.position.set(i*6,6.2,-12.78); scene.add(fr); }
+        // helpers: glowing beaker + microscope + flask
+        function beaker(x,y,z,col,h){ const bk=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,h,12),
+            new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:0.55,emissive:col,emissiveIntensity:0.5,roughness:0.2}));
+            bk.position.set(x,y,z); scene.add(bk); }
+        function microscope(x,z){ const m=new THREE.Group();
+            const mb=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.08,0.5), M(0x2c3444,{metalness:0.6,roughness:0.3})); m.add(mb);
+            const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.5,8), M(0x2c3444,{metalness:0.6})); arm.position.set(0,0.28,-0.12); arm.rotation.x=0.35; m.add(arm);
+            const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.34,10), M(0x3a4a66,{metalness:0.7,roughness:0.25})); tube.position.set(0,0.5,0.02); tube.rotation.x=0.35; m.add(tube);
+            m.position.set(x,1.23,z); scene.add(m); }
+        function bench(bx,bz,rot){ const gp=new THREE.Group();
+            const top=new THREE.Mesh(new THREE.BoxGeometry(4.6,0.22,1.5), M(0x2a3a5e,{metalness:0.35,roughness:0.45})); top.position.y=1.08; gp.add(top);
+            const base=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.0,1.3), M(0x1b2946,{roughness:0.8})); base.position.y=0.52; gp.add(base);
+            gp.position.set(bx,0,bz); gp.rotation.y=rot||0; scene.add(gp); }
+        // benches with equipment (back + sides)
+        bench(-8.5,-8,0); bench(8.5,-8,0); bench(-19,0,Math.PI/2); bench(19,0,Math.PI/2);
+        beaker(-9.6,1.48,-8,0x6ee7ff,0.55); beaker(-8.9,1.44,-8,0x86efac,0.48); beaker(-8.2,1.5,-8,0xfde68a,0.6);
+        microscope(-7.3,-8);
+        beaker(9.7,1.48,-8,0xfca5a5,0.55); beaker(9.0,1.44,-8,0xc4b5fd,0.48);
+        const flask=new THREE.Mesh(new THREE.ConeGeometry(0.26,0.5,14),
+            new THREE.MeshStandardMaterial({color:0x86efac,transparent:true,opacity:0.5,emissive:0x86efac,emissiveIntensity:0.4,roughness:0.2}));
+        flask.position.set(8.1,1.46,-8); scene.add(flask);
+        beaker(-19,1.48,0.4,0x6ee7ff,0.5); beaker(-19,1.44,-0.5,0xfde68a,0.44); microscope(19,0.3);
+        // shelves with reagent bottles
+        const shelfCols=[0x6ee7ff,0x86efac,0xfca5a5,0xfde68a,0xc4b5fd];
+        [[-15,-12.35],[15,-12.35]].forEach(([sx,sz])=>{
+            const sh=new THREE.Mesh(new THREE.BoxGeometry(8,0.12,0.7), M(0x223252)); sh.position.set(sx,4.4,sz); scene.add(sh);
+            for(let i=0;i<7;i++) beaker(sx-3+i*1.0,4.72,sz,shelfCols[i%5],0.5); });
+        // glass cabinets in the corners
+        [-21,21].forEach(cx=>{ const cab=new THREE.Mesh(new THREE.BoxGeometry(2.4,5,1.4), M(0x1e2c4e,{roughness:0.7})); cab.position.set(cx,2.5,-11.8); scene.add(cab);
+            const glass=new THREE.Mesh(new THREE.BoxGeometry(2.0,2.2,0.06),
+                new THREE.MeshStandardMaterial({color:0x9fd0ff,transparent:true,opacity:0.25,roughness:0.1})); glass.position.set(cx,3.4,-11.05); scene.add(glass); });
 
         player = buildCharacter({ skin:'#f0c08a', hair:'#3a2a18', eye:'#2f4a72', shirt:'#dfe8f5', pants:'#33406a', accent:'#2563eb', acc:'goggles', outfit:'labcoat', coat:'#f4f6fa', mood:'happy' });
         player.position.set(-3.4, 0, 2.5); player.rotation.y = Math.PI*0.5; scene.add(player); registerActor(player, 1);
@@ -631,7 +691,7 @@
         rival.position.set(3.4, 0, 2.5); rival.rotation.y = -Math.PI*0.5; scene.add(rival); registerActor(rival, -1);
         // lab supervisor NPC (watching the clash)
         const npc = buildCharacter({ skin:'#e8c4a0', hair:'#2a2a2a', eye:'#3a3a30', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
-        npc.position.set(0,0,-7.5); npc.scale.setScalar(0.92); scene.add(npc); registerActor(npc, 0);
+        npc.position.set(0,0,-7.5); npc.scale.setScalar(0.92); scene.add(npc); registerActor(npc, 0); professor=npc;
 
         beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1,8), new THREE.MeshBasicMaterial({ color:0x6ee7ff, transparent:true, opacity:0 }));
         beam.rotation.z = Math.PI/2; scene.add(beam);
@@ -749,6 +809,9 @@
         el('srLives').style.display = isG11 ? 'none' : '';
         el('srHintBtn').disabled=false; el('srHints').textContent=G.hints; el('srComboPill').style.display='none';
         if (isG11) {
+            [player,rival].forEach(c=>{ if(c){ c.rotation.x=0; c.userData.death=null;
+                if(c.userData.baseRY!==undefined) c.rotation.y=c.userData.baseRY; } });
+            profSay('Welcome to the Formula Clash! Do your best!',3);
             el('srProgLabel').textContent='Battle';
             el('srHint').textContent='Formula Clash! Answer correctly and quickly to strike your rival.';
             updateHUD(); askBattleQuestion();
@@ -792,18 +855,32 @@
         renderQuiz(q, (ok)=>{
             if (ok){ G.correct++; G.combo++; G.maxCombo=Math.max(G.maxCombo,G.combo); G.recentAcc.push(1);
                      G.score += Math.round(80*comboMult());
-                     playAttack(player); flashBeam(player,rival,0x6ee7ff);
-                     setTimeout(()=>{ playHurt(rival); hitSpark(rival.position.x,1.8,rival.position.z,0x6ee7ff); },180);
-                     G.rivalHP-=20; flashPlate('srHpFloatRival'); }
+                     const isSpecial = comboMult()>=2; // streak of 3+ = SPECIAL ATTACK
+                     playAttack(player);
+                     if (isSpecial){
+                         specialOrb(player, rival, 0x6ee7ff);
+                         setTimeout(()=>{ playHurt(rival); flashPlate('srHpFloatRival'); },660);
+                         if (Math.random()<0.6) profSay('A SPECIAL STRIKE! Brilliant!',2.2);
+                     } else {
+                         flashBeam(player,rival,0x6ee7ff);
+                         setTimeout(()=>{ playHurt(rival); hitSpark(rival.position.x,1.8,rival.position.z,0x6ee7ff); flashPlate('srHpFloatRival'); },180);
+                     }
+                     G.rivalHP-=20;
+                     if (G.rivalHP>0 && G.rivalHP<=40) profSay(CHEER_WIN[Math.floor(Math.random()*CHEER_WIN.length)],2.4); }
             else  { G.wrong++; G.combo=0; G.recentAcc.push(0);
                      playAttack(rival); flashBeam(rival,player,0xff6b6b);
                      setTimeout(()=>{ playHurt(player); hitSpark(player.position.x,1.8,player.position.z,0xff6b6b); },180);
-                     G.youHP-=20; flashPlate('srHpFloatYou'); }
+                     G.youHP-=20; flashPlate('srHpFloatYou');
+                     if (G.youHP>0 && G.youHP<=40) profSay(CHEER_LOW[Math.floor(Math.random()*CHEER_LOW.length)],2.8); }
             updateHUD();
             setTimeout(()=>{
                 el('srQuiz').classList.remove('show');
-                if (G.rivalHP<=0){ G.battleWon=true; endGame(); return; }
-                if (G.youHP<=0){ G.battleWon=false; endGame(); return; }
+                if (G.rivalHP<=0){ G.battleWon=true; playDeath(rival);
+                    profSay('INCREDIBLE! You mastered every formula!',3.2);
+                    setTimeout(endGame, 1900); return; }
+                if (G.youHP<=0){ G.battleWon=false; playDeath(player);
+                    profSay("It's okay — review the lesson and try again. I believe in you!",3.2);
+                    setTimeout(endGame, 1900); return; }
                 setTimeout(askBattleQuestion, 350);
             }, ok?700:1000);
         });
@@ -815,6 +892,34 @@
         beam.position.set((a.x+b.x)/2, 1.8, (a.z+b.z)/2);
         beam.scale.set(1, Math.max(0.2, Math.abs(b.x-a.x)), 1);
         setTimeout(()=>{ if(beam) beam.material.opacity=0; }, 240);
+    }
+
+    // ── Professor speech (cheers the student on) ──
+    let profBubbleUntil=0;
+    const CHEER_LOW=["Don't give up! Read each choice carefully!","Breathe. You know this — focus!","Eliminate the wrong options first!","Stay calm — you can still win this!"];
+    const CHEER_WIN=["Excellent! One more push!","Outstanding! Keep that streak going!","That's the spirit — almost there!"];
+    function profSay(text,dur){ const b=el('srProfSpeech'); if(!b||!professor) return;
+        b.textContent='👨‍🏫 '+text; profBubbleUntil=performance.now()+(dur||2.6)*1000; }
+
+    // ── Death / defeat animation (loser collapses) ──
+    function playDeath(ch){ if(ch&&ch.userData&&!ch.userData.death){ ch.userData.death={t:0,dust:false}; } }
+
+    // ── SPECIAL ATTACK: charge glow → energy orb → big impact ──
+    function specialOrb(from,to,color){
+        sfx('special');
+        const glow=new THREE.Mesh(new THREE.SphereGeometry(0.18,14,14), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.95}));
+        glow.position.set(from.position.x,1.75,from.position.z); scene.add(glow);
+        sparks.push({m:glow,t:0,dur:0.32,charge:true});
+        const sx=from.position.x, sz=from.position.z, tx=to.position.x, tz=to.position.z;
+        setTimeout(()=>{
+            const orb=new THREE.Mesh(new THREE.SphereGeometry(0.22,14,14), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.95}));
+            orb.position.set(sx,1.75,sz);
+            const halo=new THREE.PointLight(color,1.3,9); orb.add(halo);
+            scene.add(orb);
+            sparks.push({m:orb,t:0,dur:0.34,orb:true,sx,sz,tx,tz,onDone:function(){
+                hitSpark(tx,1.8,tz,color); hitSpark(tx,1.3,tz,0xffffff); addShake(0.75); screenFlash(color);
+            }});
+        },300);
     }
 
     // ---- G12 collect flow ----
@@ -887,6 +992,16 @@
         // characters: idle breathing/sway + attack lunge + hurt knockback
         actors.forEach(ch=>{
             const u=ch.userData; if(u.baseX===undefined) return;
+            // ── defeat: dramatic collapse (fall back, eyes close, dust) ──
+            if (u.death){
+                u.death.t+=dt; const p=Math.min(u.death.t/1.0,1), e=p*p*p;
+                ch.rotation.x = -e*Math.PI*0.485;
+                ch.position.y = u.baseY + Math.sin(Math.min(p*3,1)*Math.PI)*0.12;
+                if (u.eyes) for(const ey of u.eyes){ ey.lid.scale.y=0.15+Math.min(p*2,1)*0.62; ey.shine.visible=false; }
+                if (!u.death.dust && p>=0.72){ u.death.dust=true;
+                    hitSpark(ch.position.x, 0.4, ch.position.z, 0x9aa3ad); addShake(0.35); }
+                return; // dead characters skip idle/attack anims
+            }
             const breathe = Math.sin(t*1.8 + u.phase)*0.02;
             const sway = Math.sin(t*1.4 + u.phase)*0.09;
             if (u.head) u.head.rotation.x = Math.sin(t*0.9 + u.phase)*0.04;
@@ -925,8 +1040,12 @@
         });
         // hit sparks (rings expand+fade, particles fly+fall)
         for(let i=sparks.length-1;i>=0;i--){ const s=sparks[i]; s.t+=dt; const p=s.t/s.dur;
-            if(p>=1){ scene.remove(s.m); sparks.splice(i,1); continue; }
-            if(s.ring){ const sc=1+p*3.2; s.m.scale.set(sc,sc,sc); s.m.material.opacity=0.9*(1-p); }
+            if(p>=1){ if(s.onDone) s.onDone(); scene.remove(s.m); sparks.splice(i,1); continue; }
+            if(s.charge){ const sc=0.4+p*2.6; s.m.scale.set(sc,sc,sc); s.m.material.opacity=0.95*(1-p*0.45); }
+            else if(s.orb){ s.m.position.x=s.sx+(s.tx-s.sx)*p; s.m.position.z=s.sz+(s.tz-s.sz)*p;
+                s.m.position.y=1.75+Math.sin(p*Math.PI)*0.5;
+                const pu=1+Math.sin(p*24)*0.16; s.m.scale.set(pu,pu,pu); }
+            else if(s.ring){ const sc=1+p*3.2; s.m.scale.set(sc,sc,sc); s.m.material.opacity=0.9*(1-p); }
             else { s.m.position.x+=s.vx*dt; s.m.position.z+=s.vz*dt; s.vy-=9*dt; s.m.position.y+=s.vy*dt; s.m.material.opacity=1-p; }
         }
         // clouds drift slowly across the sky
@@ -941,6 +1060,17 @@
         }
         // gentle wind sway on the trees
         for(const tr of swayTrees){ tr.rotation.z = Math.sin(t*0.8 + (tr.userData.ph||0))*0.02; }
+        // professor speech bubble follows his head
+        const pb=el('srProfSpeech');
+        if (pb){
+            if (professor && performance.now()<profBubbleUntil){
+                const v=new THREE.Vector3(professor.position.x, 2.75, professor.position.z); v.project(camera);
+                if (v.z<=1){
+                    pb.style.transform='translate('+(((v.x*0.5+0.5)*shell.clientWidth)).toFixed(1)+'px,'+((((-v.y*0.5+0.5)*shell.clientHeight))-12).toFixed(1)+'px) translate(-50%,-130%)';
+                    pb.classList.add('show');
+                } else pb.classList.remove('show');
+            } else pb.classList.remove('show');
+        }
         // floating HP bars follow the characters' heads (battle only)
         if(isG11 && G.running && player && rival){
             projectHP(player, el('srHpFloatYou'), 2.5);
