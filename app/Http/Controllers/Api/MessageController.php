@@ -135,16 +135,27 @@ class MessageController extends Controller
             ->orWhere(function ($q) use ($me, $other) {
                 $q->where('sender_id', $other->id)->where('receiver_id', $me->id);
             })
+            ->with('replyTo:id,body,file_name,sender_id')
             ->orderBy('created_at')
             ->get()
             ->map(fn($m) => [
-                'id'        => $m->id,
-                'body'      => $m->body,
-                'file_url'  => $m->file_path ? asset('storage/' . $m->file_path) : null,
-                'file_name' => $m->file_name,
-                'mine'      => $m->sender_id === $me->id,
-                'at'        => $m->created_at?->toDateTimeString(),
-                'at_human'  => $m->created_at?->diffForHumans(),
+                'id'            => $m->id,
+                'body'          => $m->body,
+                'file_url'      => $m->file_path ? asset('storage/' . $m->file_path) : null,
+                'file_name'     => $m->file_name,
+                'mine'          => $m->sender_id === $me->id,
+                'at'            => $m->created_at?->toDateTimeString(),
+                'at_human'      => $m->created_at?->diffForHumans(),
+                'time'          => $m->created_at?->format('g:i A'),
+                'date'          => $m->created_at?->format('M j, Y'),
+                // Swipe-to-reply context (null when not a reply)
+                'reply_to_id'   => $m->reply_to_id,
+                'reply_snippet' => $m->replyTo
+                    ? ($m->replyTo->body !== '' && $m->replyTo->body !== null
+                        ? \Illuminate\Support\Str::limit($m->replyTo->body, 80)
+                        : ($m->replyTo->file_name ?? 'Attachment'))
+                    : null,
+                'reply_mine'    => $m->replyTo ? $m->replyTo->sender_id === $me->id : null,
             ]);
 
         return response()->json([
@@ -162,8 +173,9 @@ class MessageController extends Controller
         $me = $request->user();
 
         $data = $request->validate([
-            'body' => 'nullable|string|max:2000',
-            'file' => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,csv,jpg,jpeg,png,zip',
+            'body'        => 'nullable|string|max:2000',
+            'file'        => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,csv,jpg,jpeg,png,zip',
+            'reply_to_id' => 'nullable|integer',
         ]);
 
         if (blank($data['body'] ?? null) && ! $request->hasFile('file')) {
@@ -190,25 +202,51 @@ class MessageController extends Controller
             $fileName = $request->file('file')->getClientOriginalName();
         }
 
+        // Swipe-to-reply: only accept a reply target that belongs to THIS thread.
+        $replyToId = null;
+        $replyTo   = null;
+        if (!empty($data['reply_to_id'])) {
+            $replyTo = Message::where('id', (int) $data['reply_to_id'])
+                ->where(function ($q) use ($me, $other) {
+                    $q->where(function ($q2) use ($me, $other) {
+                        $q2->where('sender_id', $me->id)->where('receiver_id', $other->id);
+                    })->orWhere(function ($q2) use ($me, $other) {
+                        $q2->where('sender_id', $other->id)->where('receiver_id', $me->id);
+                    });
+                })
+                ->first();
+            $replyToId = $replyTo?->id;
+        }
+
         $msg = Message::create([
             'sender_id'   => $me->id,
             'receiver_id' => $other->id,
             'body'        => $data['body'] ?? '',
             'file_path'   => $filePath,
             'file_name'   => $fileName,
+            'reply_to_id' => $replyToId,
             'is_read'     => false,
         ]);
 
         return response()->json([
             'ok'      => true,
             'message' => [
-                'id'        => $msg->id,
-                'body'      => $msg->body,
-                'file_url'  => $filePath ? asset('storage/' . $filePath) : null,
-                'file_name' => $fileName,
-                'mine'      => true,
-                'at'        => $msg->created_at?->toDateTimeString(),
-                'at_human'  => $msg->created_at?->diffForHumans(),
+                'id'            => $msg->id,
+                'body'          => $msg->body,
+                'file_url'      => $filePath ? asset('storage/' . $filePath) : null,
+                'file_name'     => $fileName,
+                'mine'          => true,
+                'at'            => $msg->created_at?->toDateTimeString(),
+                'at_human'      => $msg->created_at?->diffForHumans(),
+                'time'          => $msg->created_at?->format('g:i A'),
+                'date'          => $msg->created_at?->format('M j, Y'),
+                'reply_to_id'   => $replyToId,
+                'reply_snippet' => $replyTo
+                    ? ($replyTo->body !== '' && $replyTo->body !== null
+                        ? \Illuminate\Support\Str::limit($replyTo->body, 80)
+                        : ($replyTo->file_name ?? 'Attachment'))
+                    : null,
+                'reply_mine'    => $replyTo ? $replyTo->sender_id === $me->id : null,
             ],
         ]);
     }

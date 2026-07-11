@@ -67,6 +67,7 @@ class DashboardController extends Controller
             ->latest()->get()
             ->map(fn($m) => [
                 'id'          => $m->id,
+                'subject_id'  => $m->subject_id,
                 'title'       => $m->title,
                 'description' => $m->description,
                 'file_type'   => $m->file_type,

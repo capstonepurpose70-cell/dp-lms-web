@@ -34,6 +34,7 @@ class AssignmentController extends Controller
                 $sub = $a->submissionByStudent($user->id);
                 return [
                     'id'           => $a->id,
+                    'subject_id'   => $a->subject_id,
                     'title'        => $a->title,
                     'instructions' => $a->instructions,
                     'file_url'     => $a->file_path ? Storage::disk('public')->url($a->file_path) : null,

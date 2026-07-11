@@ -12,6 +12,7 @@ class Message extends Model
         'body',
         'file_path',
         'file_name',
+        'reply_to_id',
         'is_read',
         'read_at',
     ];
@@ -22,6 +23,12 @@ class Message extends Model
     ];
 
     // ─── Relationships ────────────────────────────────────────────────────────
+
+    /** The message this one replies to (swipe-to-reply). */
+    public function replyTo()
+    {
+        return $this->belongsTo(Message::class, 'reply_to_id');
+    }
 
     public function sender()
     {
