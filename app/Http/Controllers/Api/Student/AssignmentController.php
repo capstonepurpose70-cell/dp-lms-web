@@ -96,6 +96,14 @@ class AssignmentController extends Controller
             ->where('is_published', true)
             ->findOrFail($id);
 
+        // 🔒 Auto-close: hindi na tumatanggap ng sagot pag lampas na ang deadline.
+        if ($a->isOverdue()) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'This quiz is already closed — the deadline has passed.',
+            ], 403);
+        }
+
         $request->validate([
             'remarks' => 'nullable|string',
             'file'    => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,ppt,pptx,xls,xlsx',

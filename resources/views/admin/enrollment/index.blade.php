@@ -127,6 +127,13 @@
     .en-page-btn { height: 34px; padding: 0 14px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border-default); border-radius: var(--r-sm); background: var(--white); color: var(--slate-700); font-size: 12.5px; font-weight: 600; text-decoration: none; transition: border-color .15s, color .15s; }
     .en-page-btn:hover { border-color: var(--blue-400); color: var(--blue-600); }
     .en-page-btn.disabled { opacity: 0.45; pointer-events: none; }
+
+    /* ── Dark mode: status badges + reject button (were light literals) ── */
+    html[data-theme="dark"] .en-badge-pending  { background: rgba(245,158,11,0.16); color: #fbbf24; border-color: rgba(245,158,11,0.40); }
+    html[data-theme="dark"] .en-badge-approved { background: rgba(16,185,129,0.16); color: #34d399; border-color: rgba(16,185,129,0.40); }
+    html[data-theme="dark"] .en-badge-rejected { background: rgba(239,68,68,0.16);  color: #f87171; border-color: rgba(239,68,68,0.40); }
+    html[data-theme="dark"] .en-btn-reject       { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.40); }
+    html[data-theme="dark"] .en-btn-reject:hover { background: rgba(239,68,68,0.24); }
 </style>
 
 <div class="en-page">
