@@ -156,6 +156,11 @@ class MessageController extends Controller
                         : ($m->replyTo->file_name ?? 'Attachment'))
                     : null,
                 'reply_mine'    => $m->replyTo ? $m->replyTo->sender_id === $me->id : null,
+                'edited'        => $m->edited_at !== null,
+                // Pwede pang i-edit: sariling message at wala pang 15 minuto.
+                'can_edit'      => $m->sender_id === $me->id
+                    && $m->created_at !== null
+                    && $m->created_at->gt(now()->subMinutes(15)),
             ]);
 
         return response()->json([
@@ -247,8 +252,61 @@ class MessageController extends Controller
                         : ($replyTo->file_name ?? 'Attachment'))
                     : null,
                 'reply_mine'    => $replyTo ? $replyTo->sender_id === $me->id : null,
+                'edited'        => false,
+                'can_edit'      => true,
             ],
         ]);
+    }
+
+    /** PATCH /api/messages/{message} — i-edit ang sariling message (15-min limit) */
+    public function update(Request $request, $messageId)
+    {
+        $me  = $request->user();
+        $msg = Message::where('id', (int) $messageId)
+            ->where('sender_id', $me->id)
+            ->firstOrFail();
+
+        // ⏱️ 15-minute edit window lang.
+        if ($msg->created_at === null || $msg->created_at->lte(now()->subMinutes(15))) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Messages can only be edited within 15 minutes.',
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'body' => 'required|string|max:2000',
+        ]);
+
+        $msg->update([
+            'body'      => $data['body'],
+            'edited_at' => now(),
+        ]);
+
+        return response()->json([
+            'ok'      => true,
+            'message' => [
+                'id'     => $msg->id,
+                'body'   => $msg->body,
+                'edited' => true,
+            ],
+        ]);
+    }
+
+    /** DELETE /api/messages/{message} — i-unsend ang sariling message */
+    public function destroy(Request $request, $messageId)
+    {
+        $me  = $request->user();
+        $msg = Message::where('id', (int) $messageId)
+            ->where('sender_id', $me->id)
+            ->firstOrFail();
+
+        if ($msg->file_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($msg->file_path);
+        }
+        $msg->delete();
+
+        return response()->json(['ok' => true]);
     }
 
     /** POST /api/messages/typing/{user} — "I am typing to this user" ping */

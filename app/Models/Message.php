@@ -13,11 +13,13 @@ class Message extends Model
         'file_path',
         'file_name',
         'reply_to_id',
+        'edited_at',
         'is_read',
         'read_at',
     ];
 
     protected $casts = [
+        'edited_at' => 'datetime',
         'is_read' => 'boolean',
         'read_at' => 'datetime',
     ];
