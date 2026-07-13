@@ -718,6 +718,32 @@
         }
 
 
+
+        /* ══ Extra responsive polish (mobile) ══ */
+        @media (max-width: 960px) {
+            .right-panel { height: auto; min-height: 100vh; min-height: 100svh; }
+        }
+        @media (max-width: 480px) {
+            .right-panel { padding: 78px 14px 24px; }
+            .form-header h2 { font-size: 25px; }
+            /* 16px = walang iOS auto-zoom; malaki ang tap targets */
+            .form-group input,
+            .form-group select,
+            input[type="text"], input[type="email"], input[type="password"],
+            input[type="date"], select {
+                font-size: 16px;
+                min-height: 46px;
+            }
+            .btn-submit { min-height: 48px; font-size: 15px; width: 100%; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 360px) {
+            .right-panel { padding: 74px 10px 20px; }
+            .form-header h2 { font-size: 22px; }
+        }
+        @media (max-height: 640px) and (max-width: 960px) {
+            .right-panel { justify-content: flex-start; }
+        }
     </style>
 </head>
 <body>

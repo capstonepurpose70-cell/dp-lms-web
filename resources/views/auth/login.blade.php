@@ -448,6 +448,31 @@
             .login-card::before { display: none; }
         }
 
+        /* ══ Extra responsive polish (mobile) ══ */
+        @media (max-width: 960px) {
+            /* tamang taas sa mobile browsers (address-bar safe) */
+            .form-panel { height: auto; min-height: 100vh; min-height: 100svh; }
+        }
+        @media (max-width: 480px) {
+            .form-panel { padding: 78px 16px 24px; }
+            .form-header h2 { font-size: 26px; }
+            .form-header .eyebrow { font-size: 10px; letter-spacing: 2px; }
+            /* 16px = hindi nagzu-zoom ang iOS pag nag-focus; 46px = touch-friendly */
+            input[type="text"], input[type="email"], input[type="password"] {
+                font-size: 16px;
+                min-height: 46px;
+            }
+            .btn-submit { min-height: 48px; font-size: 15px; }
+        }
+        @media (max-width: 360px) {
+            .form-panel { padding: 74px 12px 20px; }
+            .form-header h2 { font-size: 23px; }
+        }
+        /* maiksing screen (landscape phone): huwag i-center para di maputol ang taas */
+        @media (max-height: 640px) and (max-width: 960px) {
+            .form-panel { justify-content: flex-start; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .image-panel::after { animation: none; }
         }
