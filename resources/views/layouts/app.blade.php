@@ -422,6 +422,53 @@ body.collapsed .sidebar-nav {
             }
             body.mobile-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
         }
+        /* ══════════════════════════════════════════════════════
+           GLOBAL CONTENT RESPONSIVENESS — sakop LAHAT ng student/parent pages
+        ══════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* Tables: naka-horizontal scroll sa phone imbes na sumabog */
+            .main-content table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .main-content table th,
+            .main-content table td { white-space: nowrap; }
+
+            /* Inline 3/4-column grids (stat cards, form rows) -> 1 column */
+            .main-content [style*="repeat(3,1fr)"],
+            .main-content [style*="repeat(3, 1fr)"],
+            .main-content [style*="repeat(4,1fr)"],
+            .main-content [style*="repeat(4, 1fr)"] {
+                grid-template-columns: 1fr !important;
+            }
+            /* "sidebar + content" grids -> patong-patong */
+            .main-content [style*="320px 1fr"],
+            .main-content [style*="280px 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Headers / action rows: hayaang mag-wrap */
+            .main-content .panel-header,
+            .main-content .page-header {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .main-content { overflow-x: hidden; }
+            .main-content img, .main-content video { max-width: 100%; height: auto; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 14px 12px !important; }
+            /* 16px inputs = walang iOS auto-zoom; touch-friendly */
+            .main-content input,
+            .main-content select,
+            .main-content textarea { font-size: 16px !important; min-height: 44px; }
+            .main-content button,
+            .main-content .btn { min-height: 44px; }
+        }
+
         @media (min-width: 769px) {
             .sidebar-backdrop { display: none; }
         }
@@ -847,6 +894,5 @@ loadNotifs();
 setInterval(loadNotifs, 30000);
 })();
 </script>
-@include('partials.flash-toast')
 </body>
 </html>
