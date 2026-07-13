@@ -482,6 +482,54 @@ body.collapsed .sidebar-nav {
         }
 
         /* Honor reduced-motion preferences */
+        /* ══════════════════════════════════════════════════════
+           GLOBAL CONTENT RESPONSIVENESS — sakop LAHAT ng teacher pages
+        ══════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* Tables: naka-horizontal scroll sa phone imbes na sumabog */
+            .main-content table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .main-content table th,
+            .main-content table td { white-space: nowrap; }
+
+            /* Inline 3-column grids (stat cards, form rows) → 1 column */
+            .main-content [style*="repeat(3,1fr)"],
+            .main-content [style*="repeat(3, 1fr)"],
+            .main-content [style*="repeat(4,1fr)"],
+            .main-content [style*="repeat(4, 1fr)"] {
+                grid-template-columns: 1fr !important;
+            }
+            /* "sidebar + content" grids (hal. 320px 1fr) → patong-patong */
+            .main-content [style*="320px 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Panel headers / action rows: hayaang mag-wrap */
+            .main-content .panel-header,
+            .main-content .page-header,
+            .main-content .gb-actions {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            /* Mahahabang salita/links: huwag lumagpas */
+            .main-content { overflow-x: hidden; }
+            .main-content img, .main-content video { max-width: 100%; height: auto; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 14px 12px !important; }
+            /* 16px inputs = walang iOS auto-zoom; touch-friendly */
+            .main-content input,
+            .main-content select,
+            .main-content textarea { font-size: 16px !important; min-height: 44px; }
+            .main-content button,
+            .main-content .btn { min-height: 44px; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
         }
@@ -871,7 +919,8 @@ a.addEventListener('click', function (e) {
             .from('.top-nav',      { y: -22, opacity: 0,                  duration: .38 }, '-=.14')
             .from('.sidebar',      { x: -18, opacity: 0,                  duration: .38 }, '-=.3')
             .to('.main-content',   { opacity: 1,                          duration: .42 }, '-=.26')
-            .from('#sidebarNav a', { x: -8, opacity: 0, stagger: .06,    duration: .28 }, '-=.32');
+            .from('#sidebarNav a', { x: -8, opacity: 0, stagger: .06,    duration: .28 }, '-=.32')
+            .from('.flash',        { opacity: 0, y: -6, stagger: .08,    duration: .22 }, '-=.18');
     });
 
 
@@ -987,6 +1036,5 @@ loadNotifs();
 setInterval(loadNotifs, 30000);
 })();
 </script>
-@include('partials.flash-toast')
 </body>
 </html>
