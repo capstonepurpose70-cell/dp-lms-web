@@ -117,9 +117,10 @@
         'https://justadudewhohacks.github.io/face-api.js/models'
     ];
 
-    // tuning
-    const EAR_CLOSED = 0.21, EAR_OPEN = 0.26, BLINKS_REQUIRED = 1;
-    const MIN_FACE_RATIO = 0.30, CENTER_TOL = 0.22, MIN_SCORE = 0.50;
+    // tuning — pinaluwag: adaptive blink + auto-verify pag steady ang mukha
+    const EAR_CLOSED = 0.25, EAR_OPEN = 0.27, BLINKS_REQUIRED = 1;
+    const HOLD_VERIFY_MS = 3200;   // steady face for ~3.2s = verified (kahit di mahuli ang blink)
+    const MIN_FACE_RATIO = 0.26, CENTER_TOL = 0.24, MIN_SCORE = 0.45;
 
     const video    = document.getElementById('cam');
     const oval     = document.getElementById('oval');
@@ -137,6 +138,7 @@
     let stream = null, modelsReady = false;
     let running = false, finished = false, liveness = false, eyeClosed = false;
     let blinkCount = 0, captures = [];
+    let earBase = 0, goodSince = 0; // adaptive blink baseline + steady-face timer
 
     function msg(t)   { msgEl.textContent = t; }
     function phase(t) { phaseEl.textContent = t; }
@@ -205,7 +207,7 @@
         // HARD GATE: no face -> never capture
         if (!det) {
             ring('idle'); msg('Position your face inside the circle');
-            if (!liveness) { blinkCount = 0; eyeClosed = false; }
+            if (!liveness) { blinkCount = 0; eyeClosed = false; goodSince = 0; }
             return;
         }
 
@@ -222,17 +224,29 @@
             if (ratio < MIN_FACE_RATIO)  msg('Move a bit closer to the camera');
             else if (!centered)          msg('Center your face inside the circle');
             else                         msg('Hold still so your face is clear');
-            if (!liveness) { blinkCount = 0; eyeClosed = false; }
+            if (!liveness) { blinkCount = 0; eyeClosed = false; goodSince = 0; }
             return;
         }
 
         if (!liveness) {
             const lm = det.landmarks;
             const e = (ear(lm.getLeftEye()) + ear(lm.getRightEye())) / 2;
-            if (e < EAR_CLOSED) eyeClosed = true;
-            else if (eyeClosed && e > EAR_OPEN) { eyeClosed = false; blinkCount++; }
-            if (blinkCount >= BLINKS_REQUIRED) { liveness = true; }
-            else { ring('ready'); msg('Face detected — please BLINK to verify'); return; }
+            // Adaptive: baseline = pinakamataas na "open eyes" ng TAONG ITO —
+            // kaya gumagana kahit maliit ang mata, may salamin, o malayo.
+            if (e > earBase) earBase = e;
+            const closeTh = Math.max(earBase * 0.80, EAR_CLOSED);
+            if (e < closeTh) eyeClosed = true;
+            else if (eyeClosed && e > closeTh + 0.015) { eyeClosed = false; blinkCount++; }
+            // Fallback: kapag steady at malinaw ang mukha nang ~3s, tuloy na —
+            // hinding-hindi na maiipit sa "please blink".
+            if (!goodSince) goodSince = Date.now();
+            if (blinkCount >= BLINKS_REQUIRED || (Date.now() - goodSince) >= HOLD_VERIFY_MS) {
+                liveness = true;
+            } else {
+                ring('ready');
+                msg('Face detected — blink once, or hold steady to verify');
+                return;
+            }
         }
 
         ring('ok');
@@ -257,6 +271,7 @@
     function startDetect() {
         if (!modelsReady) { msg('Face detection is not ready.'); return; }
         finished = false; liveness = false; eyeClosed = false; blinkCount = 0; captures = [];
+        earBase = 0; goodSince = 0;
         countTx.textContent = '0 / ' + TARGET; bar.style.width = '0%';
         retryBt.classList.add('hidden'); startBt.classList.add('hidden');
         ring('idle'); phase('Look at the camera and blink');
