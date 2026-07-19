@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\FaceVerificationController;
+use App\Http\Controllers\Admin\LrnController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\ReportController;
@@ -22,7 +23,6 @@ use App\Http\Controllers\ParentPortal\ParentDashboardController;
 use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Teacher\TeacherStudentController;
 use App\Http\Controllers\Admin\AdminProfileController;
-use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Teacher\TeacherMessageController;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -272,10 +272,6 @@ Route::get('/profile/change-password',
 Route::patch('/profile/update-password',
     [AdminProfileController::class, 'updatePassword'])->name('profile.update-password');
 
-        // ── Data export (CSV downloads) ───────────────────────
-        Route::get('/export/users',       [ExportController::class, 'users'])->name('export.users');
-        Route::get('/export/enrollments', [ExportController::class, 'enrollments'])->name('export.enrollments');
-
         // Core pages
         Route::get('/dashboard',  [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/reports',    [ReportController::class,    'index'])->name('reports');
@@ -284,6 +280,12 @@ Route::patch('/profile/update-password',
         // ── Face Verification ─────────────────────────────────────
         Route::get('/face',                    [FaceVerificationController::class, 'index'])->name('face.index');
         Route::patch('/face/{registration}/approve', [FaceVerificationController::class, 'approve'])->name('face.approve');
+
+        // ── LRN Master List ─────────────────────────────
+        Route::get('/lrns',          [LrnController::class, 'index'])->name('lrns.index');
+        Route::post('/lrns',         [LrnController::class, 'store'])->name('lrns.store');
+        Route::post('/lrns/bulk',    [LrnController::class, 'bulkImport'])->name('lrns.bulk');
+        Route::delete('/lrns/{lrn}', [LrnController::class, 'destroy'])->name('lrns.destroy');
         Route::patch('/face/{registration}/reject',  [FaceVerificationController::class, 'reject'])->name('face.reject');
 
         // ── User Management ───────────────────────────────────────

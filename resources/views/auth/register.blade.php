@@ -893,6 +893,17 @@
                         <li>Your account requires admin approval before first login.</li>
                     </ul>
                 </div>
+                    <div class="child-input">
+                        <label>LRN — Learner Reference Number (12 digits) *</label>
+                        <input type="text" name="lrn" value="{{ old('lrn') }}"
+                               inputmode="numeric" maxlength="12" pattern="\d{12}"
+                               placeholder="e.g. 123456789012"
+                               oninput="this.value=this.value.replace(/\D/g,'')">
+                        @error('lrn')<p class="error-msg">{{ $message }}</p>@enderror
+                        <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">
+                            Makikita ang LRN sa iyong report card / Form 137. Kung sinabi ng system na wala sa listahan, makipag-ugnayan sa registrar.
+                        </p>
+                    </div>
             </div>
 
             {{-- Parent Info Box --}}
