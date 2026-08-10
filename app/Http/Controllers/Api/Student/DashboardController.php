@@ -102,7 +102,15 @@ class DashboardController extends Controller
     {
         $items = Announcement::published()->forAudience('student')
             ->with('author')->latest()->get()
-            ->map(fn($a) => ['id'=>$a->id,'title'=>$a->title,'body'=>$a->body,'date'=>$a->created_at->diffForHumans(),'author'=>$a->author?->name]);
+            ->map(fn($a) => [
+                'id'          => $a->id,
+                'title'       => $a->title,
+                'body'        => $a->body,
+                'date'        => $a->created_at->diffForHumans(),
+                'posted_date' => $a->created_at->format('M j, Y'),
+                'posted_time' => $a->created_at->format('g:i A'),
+                'author'      => $a->author?->name,
+            ]);
 
         return response()->json($items);
     }
@@ -116,8 +124,7 @@ class DashboardController extends Controller
     public function enroll(\Illuminate\Http\Request $request)
     {
         $request->validate([
-            'grade_level'  => 'required|string|in:7,8,9,10,11,12',
-            'school_year'  => 'required|string',
+            // grade_level & school_year: itinatakda ng SERVER, hindi ng app
             'student_type' => 'required|in:new,old,transfer',
             'full_name'    => 'required|string|max:255',
             'age'          => 'required|integer',
@@ -129,7 +136,11 @@ class DashboardController extends Controller
         $user = auth()->user();
         \App\Models\EnrollmentRequest::updateOrCreate(
             ['user_id' => $user->id, 'status' => 'pending'],
-            $request->only(['grade_level','school_year','student_type','full_name','age','birthdate','gender','address','mother_name','father_name','guardian_name','guardian_contact']) + ['status' => 'pending']
+            $request->only(['student_type','full_name','age','birthdate','gender','address','mother_name','father_name','guardian_name','guardian_contact']) + [
+                'grade_level' => $user->grade_level ?: 'To be assigned',
+                'school_year' => optional(\App\Models\SchoolYear::active()->first())->label ?? 'Current',
+                'status'      => 'pending',
+            ]
         );
 
         return response()->json(['message' => 'Enrollment submitted!']);

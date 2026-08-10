@@ -64,7 +64,6 @@ RateLimiter::hit($key, 300);
             'student' => redirect()->route('student.dashboard'),
             'teacher' => redirect()->route('teacher.dashboard'),
             'parent'  => redirect()->route('parent.dashboard'),
-               'faculty' => redirect()->route('faculty.dashboard'),  // ← idagdag ito
             default   => redirect()->route('login'),
         };
     }

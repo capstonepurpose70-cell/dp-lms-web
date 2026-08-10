@@ -196,7 +196,7 @@
         <h1 class="text-2xl font-bold text-gray-800">Enrollment Form</h1>
         <p class="text-sm text-gray-400 mt-1">
             Fill out all required fields accurately.
-            The faculty will review your enrollment.
+            Your enrollment will be reviewed by your adviser.
         </p>
     </div>
 
@@ -220,31 +220,18 @@
 
             <div class="form-grid-3">
                 <div>
-                    <label class="field-label">Grade Level *</label>
-                    <select name="grade_level" required class="field-input">
-                        <option value="">— Select —</option>
-                        @foreach(['7','8','9','10','11','12'] as $g)
-                            <option value="{{ $g }}"
-                                {{ old('grade_level') == $g ? 'selected' : '' }}>
-                                Grade {{ $g }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('grade_level')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
+                    <label class="field-label">Grade Level</label>
+                    <input type="text" class="field-input" readonly
+                           value="{{ $userGrade ? 'Grade ' . $userGrade : 'To be confirmed by the school' }}"
+                           style="background:#f3f4f6; cursor:not-allowed;">
+                    <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">Awtomatikong itinatakda mula sa iyong school records.</p>
                 </div>
                 <div>
-                    <label class="field-label">School Year *</label>
-                  <select name="school_year" class="field-input">
-    @foreach($schoolYears as $sy)
-        <option value="{{ $sy->label }}"
-            {{ $sy->is_active ? 'selected' : '' }}
-            {{ old('school_year') == $sy->label ? 'selected' : '' }}>
-            {{ $sy->label }}
-        </option>
-    @endforeach
-</select>
+                    <label class="field-label">School Year</label>
+                    <input type="text" class="field-input" readonly
+                           value="{{ $activeSy->label ?? 'Current School Year' }}"
+                           style="background:#f3f4f6; cursor:not-allowed;">
+                    <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">Kasalukuyang aktibong school year.</p>
                 </div>
             </div>
 

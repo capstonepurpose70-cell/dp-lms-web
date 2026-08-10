@@ -42,6 +42,29 @@ protected $fillable = [
         'otp_verified'      => 'boolean',
     ];
 
+    // ─── Login helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Hanapin ang user gamit ang EMAIL o LRN — kung ano ang inilagay sa
+     * login form. Puro digits (12) = LRN; kung hindi, email ang ituturing.
+     * Iisang lugar lang ang lohika para pareho ang web at mobile API.
+     */
+    public static function resolveByIdentifier(?string $identifier): ?self
+    {
+        $identifier = trim((string) $identifier);
+
+        if ($identifier === '') {
+            return null;
+        }
+
+        // LRN: eksaktong 12 digits (tugma sa masterlist at register rules)
+        if (preg_match('/^\d{12}$/', $identifier)) {
+            return static::where('lrn', $identifier)->first();
+        }
+
+        return static::where('email', $identifier)->first();
+    }
+
     // ─── Relationships ────────────────────────────────────────────────────────
 
     public function section()

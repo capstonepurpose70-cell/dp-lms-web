@@ -306,8 +306,6 @@
     .al-role-admin::before   { background: #7c3aed; }
     .al-role-parent  { background: #fffbeb; color: #b45309; border-color: #fcd34d; }
     .al-role-parent::before  { background: #d97706; }
-    .al-role-faculty { background: #fdf4ff; color: #86198f; border-color: #f0abfc; }
-    .al-role-faculty::before { background: #c026d3; }
 
     /* ── Module chip ── */
     .al-module {
@@ -451,7 +449,6 @@
             <option value="teacher" {{ request('role') == 'teacher' ? 'selected' : '' }}>Teacher</option>
             <option value="parent"  {{ request('role') == 'parent'  ? 'selected' : '' }}>Parent</option>
             <option value="admin"   {{ request('role') == 'admin'   ? 'selected' : '' }}>Admin</option>
-            <option value="faculty" {{ request('role') == 'faculty' ? 'selected' : '' }}>Faculty</option>
         </select>
 
         <select name="module" class="al-select">

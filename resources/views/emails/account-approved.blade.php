@@ -23,7 +23,7 @@
         </div>
         <p style="color:#9ca3af;font-size:12px;">
             After logging in, please complete your enrollment form so
-            the faculty can process your enrollment and assign your section.
+            your adviser can process your enrollment and assign your section.
         </p>
         <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0;">
         <p style="color:#d1d5db;font-size:11px;text-align:center;">

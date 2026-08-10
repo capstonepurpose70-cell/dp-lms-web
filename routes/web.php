@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\FaceVerificationController;
 use App\Http\Controllers\Admin\LrnController;
+use App\Http\Controllers\Teacher\EnrollmentController as TeacherEnrollmentController;
+use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\ReportController;
@@ -20,7 +22,6 @@ use App\Http\Controllers\Teacher\GradebookController;
 use App\Http\Controllers\Teacher\MaterialController;
 use App\Http\Controllers\Teacher\AnnouncementController;
 use App\Http\Controllers\ParentPortal\ParentDashboardController;
-use App\Http\Controllers\Faculty\FacultyDashboardController;
 use App\Http\Controllers\Teacher\TeacherStudentController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Teacher\TeacherMessageController;
@@ -34,7 +35,6 @@ Route::get('/', function () {
             'student' => redirect()->route('student.dashboard'),
             'teacher' => redirect()->route('teacher.dashboard'),
             'parent'  => redirect()->route('parent.dashboard'),
-            'faculty' => redirect()->route('faculty.dashboard'),
             default   => redirect()->route('login'),
         };
     }
@@ -166,6 +166,12 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::get('/dashboard',         [TeacherDashboardController::class, 'index'])->name('dashboard');
         Route::get('/attendance', [App\Http\Controllers\AttendanceController::class, 'teacherIndex'])->name('attendance.index');
         Route::get('/students', [TeacherStudentController::class, 'index'])->name('students.index');
+
+        // ── Enrollment review (adviser) ──
+        Route::get('/enrollments',                     [TeacherEnrollmentController::class, 'index'])->name('enrollments.index');
+        Route::get('/enrollments/{enrollment}',        [TeacherEnrollmentController::class, 'show'])->name('enrollments.show');
+        Route::post('/enrollments/{enrollment}/approve',[TeacherEnrollmentController::class, 'approve'])->name('enrollments.approve');
+        Route::post('/enrollments/{enrollment}/reject', [TeacherEnrollmentController::class, 'reject'])->name('enrollments.reject');
         Route::resource('gradebook',     GradebookController::class);
         Route::resource('materials',     MaterialController::class);
         Route::resource('announcements', AnnouncementController::class);
@@ -203,32 +209,6 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
             return response()->json(['ok' => true]);
         });
     });
-// ═════════════════════════════════════════════════════════════════════════════
-// FACULTY ROUTES
-// ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth', 'role:faculty', 'approved'])
-    ->prefix('faculty')
-    ->name('faculty.')
-    ->group(function () {
-        Route::get('/dashboard',
-            [FacultyDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/enrollments',
-            [FacultyDashboardController::class, 'enrollments'])->name('enrollments');
-        Route::get('/enrollments/{request}',
-            [FacultyDashboardController::class, 'showEnrollment'])->name('enrollments.show');
-        Route::post('/enrollments/{request}/approve',
-            [FacultyDashboardController::class, 'approveEnrollment'])->name('enrollments.approve');
-        Route::post('/enrollments/{request}/reject',
-            [FacultyDashboardController::class, 'rejectEnrollment'])->name('enrollments.reject');
-            // sa loob ng faculty routes group
-Route::get('/teachers',
-    [FacultyDashboardController::class, 'teachers'])->name('teachers.index');
-Route::get('/teachers/{teacher}/assign',
-    [FacultyDashboardController::class, 'assignTeacher'])->name('teachers.assign');
-Route::post('/teachers/{teacher}/assign',
-    [FacultyDashboardController::class, 'saveAssignment'])->name('teachers.assign.save');
-    });
-
 // ═════════════════════════════════════════════════════════════════════════════
 // PARENT ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
@@ -286,6 +266,12 @@ Route::patch('/profile/update-password',
         Route::post('/lrns',         [LrnController::class, 'store'])->name('lrns.store');
         Route::post('/lrns/bulk',    [LrnController::class, 'bulkImport'])->name('lrns.bulk');
         Route::delete('/lrns/{lrn}', [LrnController::class, 'destroy'])->name('lrns.destroy');
+
+        // ── Sections & Advisers ─────────────────────────
+        Route::get('/sections',            [SectionController::class, 'index'])->name('sections.index');
+        Route::post('/sections',           [SectionController::class, 'store'])->name('sections.store');
+        Route::put('/sections/{section}',  [SectionController::class, 'update'])->name('sections.update');
+        Route::delete('/sections/{section}',[SectionController::class, 'destroy'])->name('sections.destroy');
         Route::patch('/face/{registration}/reject',  [FaceVerificationController::class, 'reject'])->name('face.reject');
 
         // ── User Management ───────────────────────────────────────
@@ -298,10 +284,6 @@ Route::patch('/profile/update-password',
         Route::post('/users/store-teacher',
             [UserManagementController::class, 'storeTeacher'])->name('users.store-teacher');
 
-        Route::get('/users/create-faculty',
-            [UserManagementController::class, 'createFaculty'])->name('users.create-faculty');
-        Route::post('/users/store-faculty',
-            [UserManagementController::class, 'storeFaculty'])->name('users.store-faculty');
 
         // ── WILDCARD {user} routes — AFTER all static routes ─────
         Route::get('/users/{user}',

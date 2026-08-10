@@ -13,15 +13,21 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        // Tinatanggap ang EMAIL o LRN. Pinanatili ang field name na "email"
+        // para patuloy na gumana ang naka-deploy nang mobile app.
         $request->validate([
-            'email'    => 'required|email',
+            'email'    => 'required|string|max:254',
             'password' => 'required',
+        ], [
+            'email.required' => 'Email or LRN is required.',
         ]);
- 
-        $user = User::where('email', $request->email)->first();
+
+        $identifier = trim((string) $request->email);
+
+        $user = User::resolveByIdentifier($identifier);
  
         if (!$user || !Hash::check($request->password, $user->password)) {
-            AuditLogService::log('Failed login', 'Auth', $request->email);
+            AuditLogService::log('Failed login', 'Auth', $identifier);
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
  

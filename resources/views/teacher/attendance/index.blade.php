@@ -212,7 +212,7 @@
                 @if(!($hasSections ?? true))
                     <p style="font-size:15px;color:#334155;font-weight:700;">No sections assigned yet</p>
                     <p style="font-size:13px;color:#94a3b8;margin-top:6px;max-width:340px;margin-left:auto;margin-right:auto;">
-                        Once a faculty assigns you to a section, your students' attendance will appear here automatically.
+                        Once you are assigned to a section, your students' attendance will appear here automatically.
                     </p>
                 @else
                     <p style="font-size:15px;color:#334155;font-weight:700;">No records yet</p>

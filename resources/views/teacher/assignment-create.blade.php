@@ -50,7 +50,7 @@
             <input type="hidden" name="section_id" id="sectionId" value="{{ old('section_id') }}">
             @error('subject_id') <div class="cq-err">{{ $message }}</div> @enderror
             @if($pairs->isEmpty())
-                <div class="cq-hint" style="color:#DC2626">You have no assigned subjects/sections yet. Ask faculty to assign you first.</div>
+                <div class="cq-hint" style="color:#DC2626">You have no assigned subjects/sections yet. Ask the admin to assign you first.</div>
             @endif
         </div>
 

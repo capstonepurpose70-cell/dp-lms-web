@@ -19,24 +19,30 @@ class LoginController extends Controller
 
     public function submit(Request $request)
     {
+        // Tinatanggap ang EMAIL o LRN sa iisang field. Pinanatili ang field
+        // name na "email" para hindi masira ang mga existing na form/app.
         $request->validate([
-            'email'    => 'required|email',
+            'email'    => 'required|string|max:254',
             'password' => 'required',
+        ], [
+            'email.required' => 'Email or LRN is required.',
         ]);
+
+        $identifier = trim((string) $request->email);
 
         $key = 'login:' . $request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            AuditLogService::log('Login blocked — rate limit', 'Auth', $request->email);
+            AuditLogService::log('Login blocked — rate limit', 'Auth', $identifier);
             return back()->with('error', 'Too many login attempts. Please try again in 30 minutes.');
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::resolveByIdentifier($identifier);
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($key, 1800);
-            AuditLogService::log('Failed login attempt', 'Auth', $request->email);
-            return back()->with('error', 'Invalid email or password.')->withInput();
+            AuditLogService::log('Failed login attempt', 'Auth', $identifier);
+            return back()->with('error', 'Invalid email/LRN or password.')->withInput();
         }
 
         if ($user->status === 'pending') {

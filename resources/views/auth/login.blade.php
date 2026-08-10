@@ -524,14 +524,13 @@
                     <input type="text" name="company" id="company" tabindex="-1" autocomplete="off">
                 </div>
 
-                {{-- Email --}}
+                {{-- Email or LRN --}}
                 <div class="form-group gsap-field">
-                    <label>Email Address</label>
-                    <input type="email" name="email" id="emailInput"
+                    <label for="emailInput">Email Address or LRN</label>
+                    <input type="text" name="email" id="emailInput"
                         value="{{ old('email') }}"
-                        placeholder="you@gmail.com"
-                        autocomplete="email"
-                        inputmode="email"
+                        placeholder="you@gmail.com or 12-digit LRN"
+                        autocomplete="username"
                         autocapitalize="none"
                         spellcheck="false"
                         maxlength="254"
@@ -665,20 +664,27 @@ function togglePw(id, btn) {
 }
 
 /* ─────────────────────────────────────────────
-   EMAIL LIVE VALIDATION (UX only)
+   EMAIL / LRN LIVE VALIDATION (UX only)
 ───────────────────────────────────────────── */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LRN_RE   = /^\d{12}$/;
+/* Puro digits = sinusubukang mag-LRN; ipakita ang tulong para sa 12 digits. */
+const DIGITS_ONLY_RE = /^\d+$/;
+
 document.getElementById('emailInput').addEventListener('input', function() {
     const val = this.value.trim();
     const status = document.getElementById('emailStatus');
     if (!val) { status.textContent = ''; this.classList.remove('is-valid','is-error'); return; }
-    if (EMAIL_RE.test(val)) {
-        status.textContent = '✓ Valid email format';
+
+    if (EMAIL_RE.test(val) || LRN_RE.test(val)) {
+        status.textContent = LRN_RE.test(val) ? '✓ Valid LRN format' : '✓ Valid email format';
         status.style.color = '#16a34a';
         this.classList.remove('is-error');
         this.classList.add('is-valid');
     } else {
-        status.textContent = 'Please enter a valid email address';
+        status.textContent = DIGITS_ONLY_RE.test(val)
+            ? 'LRN must be exactly 12 digits'
+            : 'Enter a valid email address or 12-digit LRN';
         status.style.color = '#ef4444';
         this.classList.remove('is-valid');
     }
@@ -707,12 +713,14 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     const emailVal = email.value.trim();
     if (emailVal === '') {
         email.classList.add('is-error'); email.classList.remove('is-valid');
-        emailStatus.textContent = 'Email address is required.';
+        emailStatus.textContent = 'Email address or LRN is required.';
         emailStatus.style.color = '#ef4444';
         valid = false; firstInvalid = firstInvalid || email;
-    } else if (!EMAIL_RE.test(emailVal)) {
+    } else if (!EMAIL_RE.test(emailVal) && !LRN_RE.test(emailVal)) {
         email.classList.add('is-error'); email.classList.remove('is-valid');
-        emailStatus.textContent = 'Please enter a valid email address.';
+        emailStatus.textContent = DIGITS_ONLY_RE.test(emailVal)
+            ? 'LRN must be exactly 12 digits.'
+            : 'Please enter a valid email address or 12-digit LRN.';
         emailStatus.style.color = '#ef4444';
         valid = false; firstInvalid = firstInvalid || email;
     }

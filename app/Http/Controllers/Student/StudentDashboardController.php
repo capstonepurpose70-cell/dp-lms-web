@@ -178,9 +178,11 @@ public function enrollmentForm()
     }
 
     return view('student.enrollment-form', [
-    'user'        => $user,
-    'request'     => $request,
-    'schoolYears' => \App\Models\SchoolYear::orderByDesc('starts_at')->get(),
+    'user'      => $user,
+    'request'   => $request,
+    // Awtomatiko: aktibong school year + grade mula sa LRN masterlist
+    'activeSy'  => \App\Models\SchoolYear::active()->first(),
+    'userGrade' => $user->grade_level,
 ]);
 }
 
@@ -189,8 +191,8 @@ public function submitEnrollment(\Illuminate\Http\Request $request)
     $user = auth()->user();
 
     $request->validate([
-        'grade_level' => 'required|string|in:7,8,9,10,11,12',
-        'school_year'         => 'required|string',
+        // grade_level at school_year: HINDI na pinipili ng estudyante —
+        // server ang nagtatakda (aktibong SY + grade mula sa records/LRN list)
         'student_type'        => 'required|in:new,old,transfer',
         'full_name'           => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]+$/'],
         'age'                 => 'required|integer|min:10|max:25',
@@ -214,8 +216,8 @@ public function submitEnrollment(\Illuminate\Http\Request $request)
     \App\Models\EnrollmentRequest::updateOrCreate(
         ['user_id' => $user->id, 'status' => 'pending'],
         [
-            'grade_level'          => $request->grade_level,
-            'school_year'          => $request->school_year,
+            'grade_level'          => $user->grade_level ?: 'To be assigned',
+            'school_year'          => optional(\App\Models\SchoolYear::active()->first())->label ?? 'Current',
             'student_type'         => $request->student_type,
             'full_name'            => $request->full_name,
             'age'                  => $request->age,

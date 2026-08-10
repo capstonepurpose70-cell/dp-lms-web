@@ -37,12 +37,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/assignments/{id}',         [App\Http\Controllers\Api\Student\AssignmentController::class, 'show']);
         Route::post('/assignments/{id}/submit', [App\Http\Controllers\Api\Student\AssignmentController::class, 'submit']);
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
-        Route::get('/school-years',  [App\Http\Controllers\Api\Student\DashboardController::class, 'schoolYears']);
-
-        // ── Science Game (Grade 11 & 12) ──────────────────────
-        Route::get('/game/questions',   [App\Http\Controllers\Student\ScienceGameController::class, 'questions']);
-        Route::post('/game/score',      [App\Http\Controllers\Student\ScienceGameController::class, 'submitScore']);
-        Route::get('/game/leaderboard', [App\Http\Controllers\Student\ScienceGameController::class, 'leaderboardApi']);
 
         // Face registration (mobile camera)
         Route::get('/face',  [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'show']);
@@ -71,14 +65,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/announcements/{id}', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'deleteAnnouncement']);
     });
 
-    // ── FACULTY ──────────────────────────────────────────────────────
-    Route::middleware('role:faculty')->prefix('faculty')->group(function () {
-        Route::get('/dashboard',               [App\Http\Controllers\Api\Faculty\DashboardController::class, 'index']);
-        Route::get('/enrollments',             [App\Http\Controllers\Api\Faculty\DashboardController::class, 'enrollments']);
-        Route::post('/enrollments/{id}/approve',[App\Http\Controllers\Api\Faculty\DashboardController::class, 'approve']);
-        Route::post('/enrollments/{id}/reject', [App\Http\Controllers\Api\Faculty\DashboardController::class, 'reject']);
-    });
-
     // ── PARENT ───────────────────────────────────────────────────────
     Route::middleware('role:parent')->prefix('parent')->group(function () {
         Route::get('/dashboard',     [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'index']);
@@ -91,9 +77,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/contacts',       [App\Http\Controllers\Api\MessageController::class, 'contacts']);
         Route::get('/thread/{user}',  [App\Http\Controllers\Api\MessageController::class, 'thread']);
         Route::post('/thread/{user}', [App\Http\Controllers\Api\MessageController::class, 'send']);
-        Route::post('/typing/{user}', [App\Http\Controllers\Api\MessageController::class, 'typing']);
-        Route::patch('/{message}',    [App\Http\Controllers\Api\MessageController::class, 'update']);
-        Route::delete('/{message}',   [App\Http\Controllers\Api\MessageController::class, 'destroy']);
     });
 
 });

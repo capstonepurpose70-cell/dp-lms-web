@@ -28,14 +28,5 @@ class AppServiceProvider extends ServiceProvider
         Mail::extend('brevo', function (array $config) {
             return new BrevoTransport($config['key'] ?? env('BREVO_API_KEY', ''));
         });
-
-        // Auto-share pendingCount sa lahat ng faculty.* views
-        View::composer('faculty.*', function ($view) {
-            if (Auth::check()) {
-                $view->with('pendingCount',
-                    EnrollmentRequest::where('status', 'pending')->count()
-                );
-            }
-        });
     }
 }

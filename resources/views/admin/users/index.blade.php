@@ -613,7 +613,6 @@
     .up-avatar.student { background: linear-gradient(135deg, #0d9488, #0891b2); }
     .up-avatar.teacher { background: linear-gradient(135deg, var(--blue-500, #2478e4), #1e40af); }
     .up-avatar.parent  { background: linear-gradient(135deg, #d97706, #b45309); }
-    .up-avatar.faculty { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
     .up-hero-name {
         font-size: 1.3rem; font-weight: 700;
         color: var(--slate-900); letter-spacing: -0.02em;
@@ -635,8 +634,6 @@
     .up-pill-role-teacher::before { background: #2478e4; }
     .up-pill-role-parent  { background: #fffbeb; color: #b45309; border-color: #fcd34d; }
     .up-pill-role-parent::before  { background: #d97706; }
-    .up-pill-role-faculty { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
-    .up-pill-role-faculty::before { background: #7c3aed; }
     .up-pill-approved { background: #ecfdf5; color: #047857; border-color: #6ee7b7; }
     .up-pill-approved::before { background: #10b981; }
     .up-pill-pending  { background: #fffbeb; color: #b45309; border-color: #fcd34d; }
@@ -757,18 +754,6 @@
     html[data-theme="dark"] .um-btn-approve:hover { background: rgba(5,150,105,0.22); }
     html[data-theme="dark"] .um-btn-reject:hover  { background: rgba(220,38,38,0.22); }
     html[data-theme="dark"] .um-confirm-cancel:hover { background: var(--slate-200); }
-
-    /* ── Dark mode: confirm modal + remaining light badges/panels ── */
-    html[data-theme="dark"] .um-confirm-box   { background: var(--surface-card); }
-    html[data-theme="dark"] .um-confirm-title { color: var(--slate-900); }
-    html[data-theme="dark"] .um-confirm-desc  { color: var(--slate-500); }
-    html[data-theme="dark"] .um-confirm-cancel { background: var(--slate-100); border-color: var(--border-default); color: var(--slate-700); }
-    html[data-theme="dark"] .um-confirm-icon.approve { background: rgba(5,150,105,0.18); }
-    html[data-theme="dark"] .um-confirm-icon.reject  { background: rgba(220,38,38,0.18); }
-    html[data-theme="dark"] .up-pill-role-student { background: rgba(13,148,136,0.18);  color: #5eead4;         border-color: rgba(13,148,136,0.40); }
-    html[data-theme="dark"] .up-pill-role-teacher { background: rgba(36,120,228,0.18);  color: var(--blue-300); border-color: rgba(36,120,228,0.40); }
-    html[data-theme="dark"] .up-pill-role-parent  { background: rgba(186,117,23,0.20);  color: #f0b357;         border-color: rgba(186,117,23,0.40); }
-    html[data-theme="dark"] .up-log-module        { background: rgba(36,120,228,0.18);  color: var(--blue-300); }
     .up-section-divider { border: none; border-top: 1px solid var(--border-default); margin: 1.25rem 0; }
     .up-section-sub {
         font-size: 11px; font-weight: 700;
@@ -890,27 +875,12 @@
     </div>
     <div class="um-header-meta">
         <h1 class="um-header-title">User Management</h1>
-        <p class="um-header-sub">Manage students, teachers, faculty, and parents efficiently.</p>
+        <p class="um-header-sub">Manage students, teachers, and parents efficiently.</p>
     </div>
 </div>{{-- /um-header --}}
 
     {{-- ── Tab navigation ─────────────────────────────── --}}
     <div class="um-tabs" role="tablist">
-        <a href="{{ route('admin.users.index', array_merge(request()->except(['grade','section_id']), ['tab'=>'students'])) }}"
-           class="um-tab {{ $tab === 'students' ? 'active' : '' }}" role="tab">
-            Students
-            <span class="um-tab-badge">{{ $students->total() }}</span>
-        </a>
-        <a href="{{ route('admin.users.index', array_merge(request()->query(), ['tab'=>'teachers'])) }}"
-           class="um-tab {{ $tab === 'teachers' ? 'active' : '' }}" role="tab">
-            Teachers
-            <span class="um-tab-badge">{{ $teachers->total() }}</span>
-        </a>
-        <a href="{{ route('admin.users.index', array_merge(request()->query(), ['tab'=>'faculty'])) }}"
-           class="um-tab {{ $tab === 'faculty' ? 'active' : '' }}" role="tab">
-            Faculty
-            <span class="um-tab-badge">{{ $faculty->total() }}</span>
-        </a>
         <a href="{{ route('admin.users.index', array_merge(request()->query(), ['tab'=>'parents'])) }}"
            class="um-tab {{ $tab === 'parents' ? 'active' : '' }}" role="tab">
             Parents
@@ -1233,86 +1203,6 @@
         <div class="um-pagination">{{ $teachers->withQueryString()->links() }}</div>
     </div>
     @endif
-
-    {{-- ════════════════════════════════
-         FACULTY TAB
-    ════════════════════════════════ --}}
-    @if($tab === 'faculty')
-    <div style="margin-bottom:1rem;">
-        <a href="{{ route('admin.users.create-faculty') }}" class="um-btn-add">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.3">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            Add Faculty
-        </a>
-    </div>
-    <div class="um-card">
-        <div style="overflow-x:auto;">
-            <table class="um-table">
-                <thead>
-                    <tr>
-                        <th>Faculty</th>
-                        <th>Employee ID</th>
-                        <th>Status</th>
-                        <th>Joined</th>
-                        <th style="text-align:right; padding-right:1.5rem;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($faculty as $member)
-                    <tr>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:0.75rem;">
-                                <div class="um-avatar" style="background:#7c3aed;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                </div>
-                                <div>
-                                    <p style="font-weight:600; font-size:13px; color:var(--slate-900); margin:0;">{{ $member->name }}</p>
-                                    <p style="font-size:11.5px; color:var(--slate-500); margin:0;">{{ $member->email }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td style="font-size:12px; font-family:monospace; color:var(--slate-700);">
-                            {{ $member->employee_id ?? '—' }}
-                        </td>
-                        <td>
-                            <span class="um-badge um-badge-{{ $member->status }}">
-                                {{ ucfirst($member->status) }}
-                            </span>
-                        </td>
-                        <td style="font-size:12px; color:var(--slate-500); font-family:monospace;">
-                            {{ $member->created_at->format('M d, Y') }}
-                        </td>
-                        <td>
-                            <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.4rem; padding-right:0.5rem;">
-                                <a href="{{ route('admin.users.show', $member) }}" class="um-action-btn um-btn-view" title="View">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5">
-                            <div class="um-empty">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8z"/>
-                                </svg>
-                                No faculty members found.
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="um-pagination">{{ $faculty->withQueryString()->links() }}</div>
-    </div>
-    @endif
-
     {{-- ════════════════════════════════
          PARENTS TAB
     ════════════════════════════════ --}}

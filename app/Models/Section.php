@@ -10,6 +10,7 @@ class Section extends Model
     protected $fillable = [
         'name',
         'grade_level',
+        'adviser_id',
         'school_year',
         'is_active',
     ];
@@ -43,5 +44,11 @@ class Section extends Model
     public function announcements()
     {
         return $this->hasMany(Announcement::class);
+    }
+
+    /** Ang adviser (teacher) na hawak ng section na ito. */
+    public function adviser()
+    {
+        return $this->belongsTo(User::class, 'adviser_id');
     }
 }

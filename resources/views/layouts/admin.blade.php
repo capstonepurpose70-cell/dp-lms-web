@@ -8,7 +8,7 @@
                     document.documentElement.setAttribute('data-theme', 'dark');
                 }
             } catch (e) {}
-        })();
+        })();n
     </script>
     <style>
         /* ═══════════ DARK MODE ═══════════ */
@@ -1088,6 +1088,17 @@
                 <span class="nav-link-label">LRN Master List</span>
             </a>
 
+            <a href="{{ route('admin.sections.index') }}"
+               class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}"
+               data-tooltip="Sections & Advisers"
+               data-barba-prevent="self">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-8a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+                <span class="nav-link-label">Sections &amp; Advisers</span>
+            </a>
+
             <a href="{{ route('admin.enrollment.index') }}"
                class="nav-link {{ request()->routeIs('admin.enrollment.*') ? 'active' : '' }}"
                data-tooltip="Enrollment"
@@ -1907,7 +1918,7 @@ function showSkeleton(url) {
 
     if (url.includes('/dashboard')) {
         main.innerHTML = skeletonDashboard();
-    } else if (url.includes('create-faculty') || url.includes('create-teacher') || url.includes('profile/edit') || url.includes('profile/change-password')) {
+    } else if (url.includes('create-teacher') || url.includes('profile/edit') || url.includes('profile/change-password')) {
         main.innerHTML = skeletonForm();
     } else if (url.includes('/users')) {
         main.innerHTML = skeletonUsers();

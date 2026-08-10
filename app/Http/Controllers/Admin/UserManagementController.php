@@ -51,15 +51,6 @@ class UserManagementController extends Controller
             ->latest()
             ->paginate(15, ['*'], 'teacher_page');
 
-        $faculty = User::where('role', 'faculty')
-            ->when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%")
-            )
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->latest()
-            ->paginate(15, ['*'], 'faculty_page');
-
         $parents = User::where('role', 'parent')
             ->when($request->search, fn($q) =>
                 $q->where('name', 'like', "%{$request->search}%")
@@ -74,19 +65,18 @@ class UserManagementController extends Controller
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
             return response()->json([
                 'html' => view('admin.users._partials.table', compact(
-                    'students', 'teachers', 'faculty', 'parents', 'tab', 'sectionsByGrade'
+                    'students', 'teachers', 'parents', 'tab', 'sectionsByGrade'
                 ))->render(),
                 'counts' => [
                     'students' => $students->total(),
                     'teachers' => $teachers->total(),
-                    'faculty'  => $faculty->total(),
                     'parents'  => $parents->total(),
                 ],
             ]);
         }
 
         return view('admin.users.index', compact(
-            'students', 'teachers', 'faculty', 'parents', 'tab', 'sectionsByGrade'
+            'students', 'teachers', 'parents', 'tab', 'sectionsByGrade'
         ));
     }
 
@@ -358,31 +348,4 @@ class UserManagementController extends Controller
             ->with('success', "Teachers assigned to {$user->name} successfully.");
     }
 
-    // ── Create Faculty ────────────────────────────────────────────
-    public function createFaculty()
-    {
-        return view('admin.users.create-faculty');
-    }
-
-    public function storeFaculty(Request $request)
-    {
-        $request->validate([
-            'name'     => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]+$/'],
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-        ]);
-
-        $faculty = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => 'faculty',
-            'status'   => 'approved',
-        ]);
-
-        AuditLogService::log("Created faculty: {$faculty->name}", 'User Management');
-
-        return redirect()->route('admin.users.index')
-            ->with('success', "Faculty account for {$faculty->name} created.");
-    }
 }
