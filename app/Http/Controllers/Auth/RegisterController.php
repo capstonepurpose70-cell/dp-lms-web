@@ -72,6 +72,19 @@ class RegisterController extends Controller
                     'lrn' => 'This LRN is already registered. If this is your LRN, please contact the admin.',
                 ]);
             }
+
+            // Dapat tugma ang pangalan sa nakatala sa masterlist — pumipigil sa
+            // paggamit ng LRN ng kaklase (sinadya man o typo).
+            if (!$officialLrn->matchesName($request->name)) {
+                AuditLogService::log(
+                    'Blocked registration — name does not match LRN',
+                    'Auth',
+                    "LRN: {$request->lrn} | Entered: {$request->name}"
+                );
+                return back()->withInput()->withErrors([
+                    'lrn' => 'The name you entered does not match the record for this LRN. Please check your LRN and use your full name as written in your school records, or contact the registrar.',
+                ]);
+            }
         }
 
         // Extra backend guard — blocks teacher/admin even if form is manipulated
