@@ -337,7 +337,7 @@ class UserManagementController extends Controller
                 ],
                 [
                     'grade_level' => $user->grade_level,
-                   'school_year' => \App\Models\SchoolYear::current()?->name ?? '2025-2026',
+                   'school_year' => \App\Models\SchoolYear::current()?->label ?? '2025-2026',
                 ]
             );
         }

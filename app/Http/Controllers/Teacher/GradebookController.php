@@ -80,7 +80,7 @@ class GradebookController extends Controller
                 'quarterly_assessment' => $qa,
                 'final_grade'          => $finalGrade,
                 'remarks'              => $finalGrade >= 75 ? 'Passed' : 'Failed',
-                'school_year'          => SchoolYear::current()?->name
+                'school_year'          => SchoolYear::current()?->label
                                             ?? now()->year . '-' . (now()->year + 1),
             ]
         );

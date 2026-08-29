@@ -53,7 +53,7 @@ public function createTeacherWithAssignments(array $data): User
     // ── Subject assignments ──
     if (!empty($data['subjects']) && !empty($data['section_id'])) {
         $section = \App\Models\Section::find($data['section_id']);
-        $schoolYear = \App\Models\SchoolYear::current()?->name ?? '2025-2026';
+        $schoolYear = \App\Models\SchoolYear::current()?->label ?? '2025-2026';
 
         $rows = collect($data['subjects'])->map(fn($subjectId) => [
             'user_id'     => $teacher->id,

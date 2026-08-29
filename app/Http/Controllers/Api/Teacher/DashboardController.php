@@ -219,7 +219,7 @@ class DashboardController extends Controller
                 'quarterly_assessment' => $qa,
                 'final_grade'          => $finalGrade,
                 'remarks'              => $finalGrade >= 75 ? 'Passed' : 'Failed',
-                'school_year'          => \App\Models\SchoolYear::current()?->name ?? now()->year . '-' . (now()->year + 1),
+                'school_year'          => \App\Models\SchoolYear::current()?->label ?? now()->year . '-' . (now()->year + 1),
             ]
         );
 

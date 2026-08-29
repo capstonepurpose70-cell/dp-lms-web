@@ -42,7 +42,7 @@ class SectionController extends Controller
             'adviser_id'  => 'nullable|exists:users,id',
         ]);
 
-        $data['school_year'] = optional(SchoolYear::current())->name ?? '2025-2026';
+        $data['school_year'] = optional(SchoolYear::current())->label ?? '2025-2026';
         $data['is_active']   = true;
 
         $section = Section::create($data);
