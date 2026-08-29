@@ -892,7 +892,6 @@
                         <li>Do not register as "Parent" if you are a student.</li>
                         <li>Your account requires admin approval before first login.</li>
                     </ul>
-                </div>
                     <div class="child-input">
                         <label>LRN — Learner Reference Number (12 digits) *</label>
                         <input type="text" name="lrn" value="{{ old('lrn') }}"
@@ -904,6 +903,7 @@
                             Makikita ang LRN sa iyong report card / Form 137. Kung sinabi ng system na wala sa listahan, makipag-ugnayan sa registrar.
                         </p>
                     </div>
+                </div>
             </div>
 
             {{-- Parent Info Box --}}
