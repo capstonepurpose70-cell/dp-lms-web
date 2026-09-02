@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\ClassSchedule;
 use App\Models\LearningMaterial;
 use App\Models\TeacherSubject;
 use Illuminate\Http\Request;
@@ -79,6 +80,35 @@ class StudentDashboardController extends Controller
     {
         return response()->view('student.quizzes')
             ->header('Cache-Control', 'private, max-age=30');
+    }
+
+    /**
+     * Class schedule ng estudyante — Lunes hanggang Biyernes.
+     *
+     * Nakuha sa pamamagitan ng SECTION, kaya awtomatiko itong lumalabas
+     * kapag na-enroll na siya at may naitalagang section.
+     */
+    public function schedule()
+    {
+        $user       = auth()->user();
+        $enrollment = $user->studentEnrollment;
+        $section    = $enrollment?->section ?? $user->section;
+
+        $schedules = $section
+            ? ClassSchedule::with(['subject', 'teacher'])
+                ->where('section_id', $section->id)
+                ->orderBy('day_of_week')
+                ->orderBy('start_time')
+                ->get()
+                ->groupBy('day_of_week')
+            : collect();
+
+        return response()->view('student.schedule', [
+            'section'    => $section,
+            'enrollment' => $enrollment,
+            'schedules'  => $schedules,
+            'days'       => ClassSchedule::DAYS,
+        ])->header('Cache-Control', 'private, max-age=30');
     }
 
     public function grades()

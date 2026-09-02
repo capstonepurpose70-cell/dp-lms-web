@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\FaceVerificationController;
 use App\Http\Controllers\Admin\LrnController;
 use App\Http\Controllers\Teacher\EnrollmentController as TeacherEnrollmentController;
 use App\Http\Controllers\Admin\SectionController;
+use App\Http\Controllers\Admin\ClassScheduleController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\EnrollmentController;
 use App\Http\Controllers\Admin\ReportController;
@@ -118,6 +119,7 @@ Route::middleware(['auth', 'role:student', 'approved'])
         Route::get('/quizzes/{assignment}',       [App\Http\Controllers\Student\AssignmentController::class, 'show'])->name('quizzes.show');
         Route::post('/quizzes/{assignment}/submit',[App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('quizzes.submit');
         Route::get('/grades',    [StudentDashboardController::class, 'grades'])->name('grades');
+        Route::get('/schedule',  [StudentDashboardController::class, 'schedule'])->name('schedule');
         Route::get('/messages',  [StudentDashboardController::class, 'messages'])->name('messages');
         Route::post('/messages', [StudentDashboardController::class, 'storeMessage'])->name('messages.store');
 Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name('subjects');
@@ -272,6 +274,12 @@ Route::patch('/profile/update-password',
         Route::post('/sections',           [SectionController::class, 'store'])->name('sections.store');
         Route::put('/sections/{section}',  [SectionController::class, 'update'])->name('sections.update');
         Route::delete('/sections/{section}',[SectionController::class, 'destroy'])->name('sections.destroy');
+
+        // Class schedules (Lunes-Biyernes, per section)
+        Route::get('/schedules',              [ClassScheduleController::class, 'index'])->name('schedules.index');
+        Route::post('/schedules',             [ClassScheduleController::class, 'store'])->name('schedules.store');
+        Route::put('/schedules/{schedule}',   [ClassScheduleController::class, 'update'])->name('schedules.update');
+        Route::delete('/schedules/{schedule}',[ClassScheduleController::class, 'destroy'])->name('schedules.destroy');
         Route::patch('/face/{registration}/reject',  [FaceVerificationController::class, 'reject'])->name('face.reject');
 
         // ── User Management ───────────────────────────────────────
