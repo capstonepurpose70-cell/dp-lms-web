@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\OtpService;
+use App\Services\TrustedDeviceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -17,7 +18,7 @@ class OtpController extends Controller
         return view('auth.otp');
     }
 
-    public function verify(Request $request)
+    public function verify(Request $request, TrustedDeviceService $devices)
     {
         $request->validate([
             'otp' => 'required|digits:6',
@@ -56,16 +57,17 @@ RateLimiter::hit($key, 300);
 
         // Full login (honor "Remember me")
         auth()->login($user, $remember);
+        $request->session()->regenerate();
         RateLimiter::clear($key);
+
+        // "Tandaan ang device na ito" — hindi na hihingan ng OTP sa loob ng 30 araw
+        if ($request->boolean('trust_device')) {
+            $devices->trust($user, $request);
+        }
 
         AuditLogService::log('Login successful', 'Auth', "Role: {$user->role}");
 
-        return match($user->role) {
-            'student' => redirect()->route('student.dashboard'),
-            'teacher' => redirect()->route('teacher.dashboard'),
-            'parent'  => redirect()->route('parent.dashboard'),
-            default   => redirect()->route('login'),
-        };
+        return redirect()->route($user->homeRoute());
     }
 
     public function resend()

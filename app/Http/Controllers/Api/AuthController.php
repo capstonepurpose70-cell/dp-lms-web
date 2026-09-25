@@ -14,12 +14,14 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        // Field name "email" pa rin (HUWAG palitan — gamit ng naka-deploy na app),
+        // pero tumatanggap na ng email, LRN, o mobile number, kapareho ng web.
         $request->validate([
-            'email'    => 'required|email',
+            'email'    => 'required|string|max:254',
             'password' => 'required',
         ]);
- 
-        $user = User::where('email', $request->email)->first();
+
+        $user = User::resolveByIdentifier($request->email);
  
         if (!$user || !Hash::check($request->password, $user->password)) {
             AuditLogService::log('Failed login', 'Auth', $request->email);

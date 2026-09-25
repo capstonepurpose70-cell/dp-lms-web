@@ -169,6 +169,13 @@ class UserManagementController extends Controller
     public function reject(User $user)
     {
         $user->update(['status' => 'rejected']);
+
+        // Rejected na magulang — tanggalin ang link para makagawa ulit ng
+        // bagong parent code ang anak.
+        if ($user->role === 'parent') {
+            $user->children()->update(['parent_id' => null]);
+        }
+
         AuditLogService::log("Rejected user: {$user->name}", 'User Management');
         return back()->with('success', "{$user->name} has been rejected.");
     }

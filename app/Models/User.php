@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PhoneNumber;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -45,8 +46,9 @@ protected $fillable = [
     // ─── Login helpers ────────────────────────────────────────────────────────
 
     /**
-     * Hanapin ang user gamit ang EMAIL o LRN — kung ano ang inilagay sa
-     * login form. Puro digits (12) = LRN; kung hindi, email ang ituturing.
+     * Hanapin ang user gamit ang EMAIL, LRN, o MOBILE NUMBER — kung ano ang
+     * inilagay sa login form. Puro digits (12) = LRN; PH mobile (09…, +63…)
+     * = contact_number; kung hindi, email ang ituturing.
      * Iisang lugar lang ang lohika para pareho ang web at mobile API.
      */
     public static function resolveByIdentifier(?string $identifier): ?self
@@ -57,12 +59,28 @@ protected $fillable = [
             return null;
         }
 
-        // LRN: eksaktong 12 digits (tugma sa masterlist at register rules)
+        // LRN: eksaktong 12 digits (tugma sa masterlist at register rules).
+        // Nauuna ito sa mobile, kaya ang "639…" na walang "+" ay LRN ang turing.
         if (preg_match('/^\d{12}$/', $identifier)) {
             return static::where('lrn', $identifier)->first();
         }
 
+        if (($mobile = PhoneNumber::normalize($identifier)) !== null) {
+            return static::where('contact_number', $mobile)->first();
+        }
+
         return static::where('email', $identifier)->first();
+    }
+
+    /** Pangalan ng route ng dashboard ayon sa role. */
+    public function homeRoute(): string
+    {
+        return match ($this->role) {
+            'student' => 'student.dashboard',
+            'teacher' => 'teacher.dashboard',
+            'parent'  => 'parent.dashboard',
+            default   => 'login',
+        };
     }
 
     // ─── Relationships ────────────────────────────────────────────────────────

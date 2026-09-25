@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ParentActivationController;
+use App\Http\Controllers\Student\ParentLinkController as StudentParentLinkController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -79,7 +81,17 @@ Route::get('/invite/{token}',  [App\Http\Controllers\Auth\InviteController::clas
  
 Route::post('/invite/{token}', [App\Http\Controllers\Auth\InviteController::class, 'accept'])
     ->name('invite.accept');
- 
+
+    // ── PARENT ACTIVATION / RECOVERY (code mula sa account ng anak) ──
+    // Throttle kada IP. Maluwag (30/min) dahil maraming magulang ang puwedeng
+    // nasa iisang school Wi-Fi; sapat na ang 8-character code laban sa hula.
+    Route::get('/parent/activate',  [ParentActivationController::class, 'showActivate'])->name('parent.activate');
+    Route::post('/parent/activate', [ParentActivationController::class, 'activate'])
+        ->middleware('throttle:30,1')->name('parent.activate.submit');
+    Route::get('/parent/recover',   [ParentActivationController::class, 'showRecover'])->name('parent.recover');
+    Route::post('/parent/recover',  [ParentActivationController::class, 'recover'])
+        ->middleware('throttle:30,1')->name('parent.recover.submit');
+
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -125,6 +137,11 @@ Route::middleware(['auth', 'role:student', 'approved'])
 Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name('subjects');
         Route::get('/enroll',    [StudentDashboardController::class, 'enrollmentForm'])->name('enroll');
         Route::post('/enroll',   [StudentDashboardController::class, 'submitEnrollment'])->name('enroll.submit');
+
+        // Parent link — one-time code / QR para sa magulang
+        Route::get('/parent-link',  [StudentParentLinkController::class, 'show'])->name('parent-link');
+        Route::post('/parent-link', [StudentParentLinkController::class, 'store'])
+            ->middleware('throttle:10,10')->name('parent-link.store');
 
         // Face registration (attendance camera)
         Route::get('/face-register',  [FaceRegistrationController::class, 'show'])->name('face.register');

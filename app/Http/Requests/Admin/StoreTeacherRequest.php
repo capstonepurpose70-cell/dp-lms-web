@@ -15,7 +15,7 @@ class StoreTeacherRequest extends FormRequest
     {
         return [
             // Account
-            'name'          => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]+$/'],
+            'name'          => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'email'         => ['required', 'email', 'unique:users,email'],
            'employee_id' => 'nullable|string|max:50|unique:users,employee_id',
             'contact_number'=> ['nullable', 'string', 'max:11'],

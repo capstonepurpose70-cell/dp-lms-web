@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\NameMatcher;
 use Illuminate\Database\Eloquent\Model;
 
 class OfficialLrn extends Model
@@ -21,39 +22,10 @@ class OfficialLrn extends Model
 
     // ─── Name verification ────────────────────────────────────────────────────
 
-    /**
-     * Hatiin ang pangalan sa malilinis na tokens para maikumpara.
-     * Hindi apektado ng: laki ng letra, kuwit, tuldok, gitnang pangalan,
-     * pagkakasunod ("Dela Cruz, Juan" == "Juan Dela Cruz"), at suffix (Jr., III).
-     */
+    /** @see NameMatcher::tokens() */
     public static function nameTokens(?string $name): array
     {
-        $name = trim((string) $name);
-        if ($name === '') {
-            return [];
-        }
-
-        // Alisin ang accents kung available ang intl/iconv
-        if (function_exists('iconv')) {
-            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT', $name);
-            if ($converted !== false) {
-                $name = $converted;
-            }
-        }
-
-        $name = mb_strtoupper($name, 'UTF-8');
-        // Bantas -> espasyo (kasama ang kuwit at tuldok ng initial)
-        $name = preg_replace('/[^A-Z0-9\s]/', ' ', $name);
-
-        $tokens = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        // Alisin ang suffix at nag-iisang letra (middle initial)
-        $ignore = ['JR', 'SR', 'II', 'III', 'IV', 'V'];
-
-        return array_values(array_unique(array_filter(
-            $tokens,
-            fn($t) => mb_strlen($t) > 1 && !in_array($t, $ignore, true)
-        )));
+        return NameMatcher::tokens($name);
     }
 
     /**
@@ -66,16 +38,11 @@ class OfficialLrn extends Model
      */
     public function matchesName(?string $registrantName): bool
     {
-        $official = static::nameTokens($this->student_name);
-
         // Walang pangalan sa masterlist — hindi ito maaaring i-verify.
-        if (count($official) === 0) {
+        if (count(NameMatcher::tokens($this->student_name)) === 0) {
             return true;
         }
 
-        $given   = static::nameTokens($registrantName);
-        $overlap = count(array_intersect($official, $given));
-
-        return $overlap >= min(2, count($official));
+        return NameMatcher::matches($this->student_name, $registrantName);
     }
 }

@@ -224,14 +224,15 @@ public function submitEnrollment(\Illuminate\Http\Request $request)
         // grade_level at school_year: HINDI na pinipili ng estudyante —
         // server ang nagtatakda (aktibong SY + grade mula sa records/LRN list)
         'student_type'        => 'required|in:new,old,transfer',
-        'full_name'           => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]+$/'],
+        // \pL + /u: tinatanggap ang ñ at accent (Peña, Nuñez), gitling at apostrophe
+        'full_name'           => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
         'age'                 => 'required|integer|min:10|max:25',
         'birthdate'           => 'required|date',
         'gender'              => 'required|in:Male,Female',
         'address'             => 'required|string|max:500',
-        'mother_name'         => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]*$/'],
-        'father_name'         => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]*$/'],
-        'guardian_name'       => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z\s\.]*$/'],
+        'mother_name'         => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]*$/u'],
+        'father_name'         => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]*$/u'],
+        'guardian_name'       => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]*$/u'],
         'guardian_contact'    => ['nullable', 'string', 'max:20', 'regex:/^[0-9\+\-\s]*$/'],
         'last_school'         => 'nullable|string|max:255',
         'last_grade_completed'=> 'nullable|string|max:50',

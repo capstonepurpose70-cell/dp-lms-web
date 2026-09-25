@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\OtpService;
+use App\Services\TrustedDeviceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,7 +18,7 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function submit(Request $request)
+    public function submit(Request $request, TrustedDeviceService $devices)
     {
         // Tinatanggap ang EMAIL o LRN sa iisang field. Pinanatili ang field
         // name na "email" para hindi masira ang mga existing na form/app.
@@ -25,7 +26,7 @@ class LoginController extends Controller
             'email'    => 'required|string|max:254',
             'password' => 'required',
         ], [
-            'email.required' => 'Email or LRN is required.',
+            'email.required' => 'Email, LRN, or mobile number is required.',
         ]);
 
         $identifier = trim((string) $request->email);
@@ -42,7 +43,7 @@ class LoginController extends Controller
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($key, 1800);
             AuditLogService::log('Failed login attempt', 'Auth', $identifier);
-            return back()->with('error', 'Invalid email/LRN or password.')->withInput();
+            return back()->with('error', 'Invalid email/LRN/mobile or password.')->withInput();
         }
 
         if ($user->status === 'pending') {
@@ -54,6 +55,24 @@ class LoginController extends Controller
         }
 
         RateLimiter::clear($key);
+
+        // Trusted device — laktaw ang OTP
+        if ($devices->isTrusted($user, $request)) {
+            auth()->login($user, $request->boolean('remember'));
+            $request->session()->regenerate();
+            AuditLogService::log('Login successful (trusted device)', 'Auth', "Role: {$user->role}");
+
+            return redirect()->route($user->homeRoute());
+        }
+
+        // Walang email (hal. magulang) at bagong device — walang mapagpapadalhan
+        // ng OTP. Ang recovery code mula sa anak ang patunay.
+        if (empty($user->email)) {
+            AuditLogService::log('Login blocked — new device, no email', 'Auth', $identifier);
+            return back()->withInput()->with('error',
+                'Bagong device ito. Humingi ng recovery code sa iyong anak (sa kanyang DP-LMS account) '
+                . 'at gamitin ito sa "Nakalimutan ang password / bagong device".');
+        }
 
         // Store user temporarily in session — require OTP before full login
         session([

@@ -13,6 +13,12 @@ class OtpService
 {
     public function send(User $user, string $purpose): void
     {
+        // Walang email = walang mapagpapadalhan. Ang tumatawag (LoginController)
+        // ang dapat humawak nito — trusted device o parent recovery code.
+        if (empty($user->email)) {
+            throw new \RuntimeException('User has no email address for OTP delivery.');
+        }
+
         $key = 'otp:' . $user->id;
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
@@ -37,8 +43,8 @@ class OtpService
 
         RateLimiter::hit($key, 3600);
 
-        // Log the OTP so it can be read from server logs while email delivery is being set up
-        \Illuminate\Support\Facades\Log::info("OTP for {$user->email}: {$code}");
+        // HUWAG i-log ang OTP — makikita ito ng sinumang may access sa server logs.
+        // Sa local dev, gamitin ang MAIL_MAILER=log: nasa storage/logs ang buong email.
 
         // Try to email it, but don't crash if mail is unavailable (e.g. SMTP blocked on host)
         try {

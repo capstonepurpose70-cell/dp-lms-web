@@ -8,6 +8,12 @@ Route::post('/login',    [App\Http\Controllers\Api\AuthController::class, 'login
 Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 Route::post('/forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgotPassword']);
 
+// ── Public: Parent activation / recovery (code mula sa account ng anak) ──
+Route::middleware('throttle:30,1')->group(function () {
+    Route::post('/parent/activate', [App\Http\Controllers\Api\ParentLinkController::class, 'activate']);
+    Route::post('/parent/recover',  [App\Http\Controllers\Api\ParentLinkController::class, 'recover']);
+});
+
 // ── Protected (Sanctum token)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -37,6 +43,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/assignments/{id}',         [App\Http\Controllers\Api\Student\AssignmentController::class, 'show']);
         Route::post('/assignments/{id}/submit', [App\Http\Controllers\Api\Student\AssignmentController::class, 'submit']);
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
+
+        // Parent link — one-time code (ang app ang magre-render ng QR)
+        Route::post('/parent-link', [App\Http\Controllers\Api\ParentLinkController::class, 'generate'])
+            ->middleware('throttle:10,10');
 
         // Face registration (mobile camera)
         Route::get('/face',  [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'show']);
