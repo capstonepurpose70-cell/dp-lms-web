@@ -82,6 +82,17 @@ protected $fillable = [
         return $this->hasMany(User::class, 'parent_id');
     }
 
+    /** Aktibong parent-link code ng estudyante (isa lang kada estudyante). */
+    public function parentLinkCode()
+    {
+        return $this->hasOne(ParentLinkCode::class, 'student_id');
+    }
+
+    public function trustedDevices()
+    {
+        return $this->hasMany(TrustedDevice::class);
+    }
+
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
