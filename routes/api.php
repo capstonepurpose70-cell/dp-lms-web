@@ -4,8 +4,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ── Public: Login & Register ───────────────────────────────────────────
-Route::post('/login',    [App\Http\Controllers\Api\AuthController::class, 'login']);
+// Throttle kada IP — dati walang limit ang mobile login (bukas sa brute force)
+Route::post('/login',    [App\Http\Controllers\Api\AuthController::class, 'login'])->middleware('throttle:20,1');
+// 410 Gone — pinalitan ng /activate (estudyante) at /parent/activate (magulang)
 Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
+
+// ── Public: Student activation (LRN + pangalan + email code) ──
+Route::post('/activate',        [App\Http\Controllers\Api\StudentActivationController::class, 'start'])->middleware('throttle:20,1');
+Route::post('/activate/verify', [App\Http\Controllers\Api\StudentActivationController::class, 'verify'])->middleware('throttle:20,1');
+Route::post('/activate/resend', [App\Http\Controllers\Api\StudentActivationController::class, 'resend'])->middleware('throttle:5,10');
 Route::post('/forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgotPassword']);
 
 // ── Public: Parent activation / recovery (code mula sa account ng anak) ──

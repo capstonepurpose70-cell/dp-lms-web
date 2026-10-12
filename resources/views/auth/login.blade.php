@@ -524,12 +524,12 @@
                     <input type="text" name="company" id="company" tabindex="-1" autocomplete="off">
                 </div>
 
-                {{-- Email or LRN --}}
+                {{-- Email, LRN, or mobile --}}
                 <div class="form-group gsap-field">
-                    <label for="emailInput">Email Address or LRN</label>
+                    <label for="emailInput">Email, LRN, or Mobile Number</label>
                     <input type="text" name="email" id="emailInput"
                         value="{{ old('email') }}"
-                        placeholder="you@gmail.com or 12-digit LRN"
+                        placeholder="Email, 12-digit LRN, o 09XXXXXXXXX"
                         autocomplete="username"
                         autocapitalize="none"
                         spellcheck="false"
@@ -579,7 +579,8 @@
             </form>
 
             <div class="card-footer gsap-footer">
-                Don't have an account? <a href="{{ route('register') }}" onclick="slideTo(this, event)">Register here</a>
+                <div>Estudyante, unang beses? <a href="{{ route('activate') }}" onclick="slideTo(this, event)">I-activate ang account</a></div>
+                <div style="margin-top:6px;">Magulang? <a href="{{ route('parent.activate') }}">I-link gamit ang code ng anak</a></div>
             </div>
 
             <p class="copyright gsap-footer">
@@ -668,6 +669,8 @@ function togglePw(id, btn) {
 ───────────────────────────────────────────── */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LRN_RE   = /^\d{12}$/;
+/* PH mobile: 09XXXXXXXXX o +63 9XX… (puwedeng may espasyo/gitling) — kapareho ng App\Support\PhoneNumber */
+const isMobile = (v) => /^[\d\s\-+()]+$/.test(v) && /^(0|\+?63)9\d{9}$/.test(v.replace(/[\s\-()]/g, ''));
 /* Puro digits = sinusubukang mag-LRN; ipakita ang tulong para sa 12 digits. */
 const DIGITS_ONLY_RE = /^\d+$/;
 
@@ -676,15 +679,16 @@ document.getElementById('emailInput').addEventListener('input', function() {
     const status = document.getElementById('emailStatus');
     if (!val) { status.textContent = ''; this.classList.remove('is-valid','is-error'); return; }
 
-    if (EMAIL_RE.test(val) || LRN_RE.test(val)) {
-        status.textContent = LRN_RE.test(val) ? '✓ Valid LRN format' : '✓ Valid email format';
+    if (EMAIL_RE.test(val) || LRN_RE.test(val) || isMobile(val)) {
+        status.textContent = LRN_RE.test(val) ? '✓ Valid LRN format'
+            : (isMobile(val) ? '✓ Valid mobile number' : '✓ Valid email format');
         status.style.color = '#16a34a';
         this.classList.remove('is-error');
         this.classList.add('is-valid');
     } else {
         status.textContent = DIGITS_ONLY_RE.test(val)
-            ? 'LRN must be exactly 12 digits'
-            : 'Enter a valid email address or 12-digit LRN';
+            ? 'LRN = 12 digits; mobile = 09XXXXXXXXX'
+            : 'Enter a valid email, 12-digit LRN, or mobile number';
         status.style.color = '#ef4444';
         this.classList.remove('is-valid');
     }
@@ -713,14 +717,14 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     const emailVal = email.value.trim();
     if (emailVal === '') {
         email.classList.add('is-error'); email.classList.remove('is-valid');
-        emailStatus.textContent = 'Email address or LRN is required.';
+        emailStatus.textContent = 'Email, LRN, or mobile number is required.';
         emailStatus.style.color = '#ef4444';
         valid = false; firstInvalid = firstInvalid || email;
-    } else if (!EMAIL_RE.test(emailVal) && !LRN_RE.test(emailVal)) {
+    } else if (!EMAIL_RE.test(emailVal) && !LRN_RE.test(emailVal) && !isMobile(emailVal)) {
         email.classList.add('is-error'); email.classList.remove('is-valid');
         emailStatus.textContent = DIGITS_ONLY_RE.test(emailVal)
-            ? 'LRN must be exactly 12 digits.'
-            : 'Please enter a valid email address or 12-digit LRN.';
+            ? 'LRN = 12 digits; mobile = 09XXXXXXXXX.'
+            : 'Please enter a valid email, 12-digit LRN, or mobile number.';
         emailStatus.style.color = '#ef4444';
         valid = false; firstInvalid = firstInvalid || email;
     }

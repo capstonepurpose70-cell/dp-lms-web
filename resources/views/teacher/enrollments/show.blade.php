@@ -69,6 +69,20 @@
         <div class="rv-err">{{ $errors->first() }}</div>
     @endif
 
+    {{-- Birthdate cross-check: activation vs enrollment form. Magkaiba = posibleng impostor. --}}
+    @php
+        $declaredBday = $st->birthdate;
+        $formBday     = $enrollment->birthdate;
+    @endphp
+    @if ($declaredBday && $formBday && !$declaredBday->isSameDay($formBday))
+        <div class="rv-note warn" role="alert">
+            ⚠️ <strong>Hindi tugma ang birthdate.</strong>
+            Sa activation ng account: {{ $declaredBday->format('M j, Y') }} ·
+            Sa enrollment form: {{ $formBday->format('M j, Y') }}.
+            Posibleng ibang tao ang nag-activate ng account — kumpirmahin muna sa estudyante bago i-approve.
+        </div>
+    @endif
+
     {{-- Student Profile Sheet (read-only) --}}
     <div class="rv-card">
         <h2>Student Profile Sheet</h2>

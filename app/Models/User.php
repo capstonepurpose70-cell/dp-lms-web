@@ -23,6 +23,7 @@ protected $fillable = [
     'lrn',
     'employee_id',
     'grade_level',
+    'birthdate',
     'section_id',
     'parent_id',
     'child_name',
@@ -39,6 +40,7 @@ protected $fillable = [
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'birthdate'         => 'date',
         'password'          => 'hashed',
         'otp_verified'      => 'boolean',
     ];

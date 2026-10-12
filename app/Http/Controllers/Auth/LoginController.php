@@ -20,7 +20,7 @@ class LoginController extends Controller
 
     public function submit(Request $request, TrustedDeviceService $devices)
     {
-        // Tinatanggap ang EMAIL o LRN sa iisang field. Pinanatili ang field
+        // Tinatanggap ang EMAIL, LRN, o MOBILE sa iisang field. Pinanatili ang field
         // name na "email" para hindi masira ang mga existing na form/app.
         $request->validate([
             'email'    => 'required|string|max:254',
@@ -31,9 +31,14 @@ class LoginController extends Controller
 
         $identifier = trim((string) $request->email);
 
-        $key = 'login:' . $request->ip();
+        // Dalawang limit:
+        //  - kada ACCOUNT + IP (5 / 30 min) — panlaban sa paghula ng password
+        //  - kada IP (50 / 30 min) — panlaban sa bot; maluwag dahil iisang IP
+        //    ang buong school Wi-Fi (dati: 5 mali ng isang bata = lock ang klase)
+        $key   = 'login:' . sha1(mb_strtolower($identifier) . '|' . $request->ip());
+        $ipKey = 'login-ip:' . $request->ip();
 
-        if (RateLimiter::tooManyAttempts($key, 5)) {
+        if (RateLimiter::tooManyAttempts($key, 5) || RateLimiter::tooManyAttempts($ipKey, 50)) {
             AuditLogService::log('Login blocked — rate limit', 'Auth', $identifier);
             return back()->with('error', 'Too many login attempts. Please try again in 30 minutes.');
         }
@@ -42,6 +47,7 @@ class LoginController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($key, 1800);
+            RateLimiter::hit($ipKey, 1800);
             AuditLogService::log('Failed login attempt', 'Auth', $identifier);
             return back()->with('error', 'Invalid email/LRN/mobile or password.')->withInput();
         }

@@ -15,6 +15,7 @@ use App\Services\AuditLogService;
 use App\Services\SmsService;
 use App\Services\TeacherAssignmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserManagementController extends Controller
@@ -178,6 +179,31 @@ class UserManagementController extends Controller
 
         AuditLogService::log("Rejected user: {$user->name}", 'User Management');
         return back()->with('success', "{$user->name} has been rejected.");
+    }
+
+    // ── Reset student account (pekeng activation) ─────────────────
+    /**
+     * Kapag may nag-report na "hindi ako ang nag-activate": idi-disable ang
+     * account na ito at ibabalik ang LRN para ma-activate ng totoong may-ari.
+     * Hindi binubura ang account — nananatili para sa audit.
+     */
+    public function releaseLrn(User $user)
+    {
+        abort_unless($user->role === 'student' && $user->lrn, 404);
+
+        $lrn = $user->lrn;
+
+        DB::transaction(function () use ($user, $lrn) {
+            \App\Models\OfficialLrn::where('lrn', $lrn)->update(['claimed_by' => null]);
+
+            $user->update(['status' => 'rejected', 'lrn' => null]);
+            $user->tokens()->delete();
+            $user->trustedDevices()->delete();
+        });
+
+        AuditLogService::log("Released LRN (account reset): {$user->name}", 'User Management', "LRN: {$lrn}");
+
+        return back()->with('success', "Na-reset ang account. Puwede nang i-activate ulit ang LRN {$lrn} ng totoong may-ari.");
     }
 
     // ── Create Teacher ────────────────────────────────────────────
