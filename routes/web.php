@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\StudentActivationController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ParentActivationController;
@@ -57,8 +57,18 @@ Route::middleware('guest')->group(function () {
     // Auth
     Route::get('/login',     [LoginController::class,    'show'])->name('login');
     Route::post('/login',    [LoginController::class,    'submit'])->name('login.submit');
-    Route::get('/register',  [RegisterController::class, 'show'])->name('register');
-    Route::post('/register', [RegisterController::class, 'submit'])->name('register.submit');
+    // Wala nang public registration — lumang link → activation
+    Route::redirect('/register', '/activate', 301);
+
+    // Student activation (unang beses): LRN + pangalan + email code
+    Route::get('/activate',         [StudentActivationController::class, 'show'])->name('activate');
+    Route::post('/activate',        [StudentActivationController::class, 'start'])
+        ->middleware('throttle:20,1')->name('activate.start');
+    Route::get('/activate/verify',  [StudentActivationController::class, 'showVerify'])->name('activate.verify');
+    Route::post('/activate/verify', [StudentActivationController::class, 'verify'])
+        ->middleware('throttle:20,1')->name('activate.verify.submit');
+    Route::post('/activate/resend', [StudentActivationController::class, 'resend'])
+        ->middleware('throttle:5,10')->name('activate.resend');
 
     // Forgot Password
     Route::get('/forgot-password',
@@ -321,6 +331,8 @@ Route::patch('/profile/update-password',
             [UserManagementController::class, 'showAssignTeacher'])->name('users.assign-teacher');
         Route::post('/users/{user}/assign-teacher',
             [UserManagementController::class, 'assignTeacher'])->name('users.assign-teacher.submit');
+        Route::patch('/users/{user}/release-lrn',
+            [UserManagementController::class, 'releaseLrn'])->name('users.release-lrn');
         Route::post('/users/{user}/link-child',
             [UserManagementController::class, 'linkChild'])->name('users.link-child');
         Route::delete('/users/{user}/unlink-child/{child}',

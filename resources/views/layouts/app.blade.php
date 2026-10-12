@@ -696,6 +696,14 @@ const NAV_ITEMS = [
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14
                  a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>`
 },
+    @if(auth()->user()->studentProfile)
+    {
+        href : '{{ route('student.parent-link') }}',
+        label: 'Magulang',
+        icon : `<path stroke-linecap="round" stroke-linejoin="round"
+                  d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-4a3 3 0 11-6 0"/>`
+    },
+    @endif
     {
         href : '{{ route('student.face.register') }}',
         label: 'Register Face',

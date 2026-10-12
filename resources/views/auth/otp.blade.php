@@ -57,6 +57,13 @@
                     @enderror
                 </div>
 
+                {{-- Trusted device (inline style — walang bagong Tailwind class) --}}
+                <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#6b7280;margin:-8px 0 18px;cursor:pointer;line-height:1.5;">
+                    <input type="checkbox" name="trust_device" value="1"
+                           style="width:18px;height:18px;margin-top:1px;accent-color:#2563eb;flex-shrink:0;">
+                    <span>Remember this device for 30 days (no code needed on login). <strong>Don't check</strong> on shared or internet-café computers.</span>
+                </label>
+
                 <button type="submit"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium
                            rounded-lg py-2.5 text-sm transition duration-150">
