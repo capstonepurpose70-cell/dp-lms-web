@@ -58,12 +58,7 @@
         <div class="msg-sub">Chat with your teachers — send a question and view their replies.</div>
     </div>
 
-    @if(session('success'))
-        <div class="msg-flash">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
+    {{-- Success flash: ipinapakita na ng layouts/app.blade.php (dati dalawang beses lumalabas) --}}
 
     {{-- Compose --}}
     <div class="card">
