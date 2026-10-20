@@ -99,9 +99,7 @@
         <p>Create sections and assign each one an adviser. The adviser reviews and approves enrollment requests for their section.</p>
     </div>
 
-    @if (session('success'))
-        <div class="sec-alert ok" role="status">{{ session('success') }}</div>
-    @endif
+    {{-- Success message: shown by layouts/admin (toast) --}}
     @if ($errors->any())
         <div class="sec-alert err" role="alert">{{ $errors->first() }}</div>
     @endif

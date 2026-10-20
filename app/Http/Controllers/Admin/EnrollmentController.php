@@ -9,36 +9,52 @@ use App\Services\AuditLogService;
 use App\Services\EnrollmentService;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EnrollmentController extends Controller
 {
     public function index(Request $request)
     {
+        $status = in_array($request->status, ['pending', 'approved', 'rejected'], true) ? $request->status : null;
+        $search = trim((string) $request->search);
+
         $enrollments = EnrollmentRequest::with(['student.section'])
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->search, fn($q) =>
-                $q->whereHas('student', fn($sq) =>
-                    $sq->where('name', 'like', "%{$request->search}%")
+            ->when($status, fn($q) => $q->where('status', $status))
+            // Pangalan sa form, pangalan ng account, o LRN
+            ->when($search !== '', fn($q) =>
+                $q->where(fn($w) =>
+                    $w->where('full_name', 'like', "%{$search}%")
+                      ->orWhereHas('student', fn($sq) =>
+                          $sq->where('name', 'like', "%{$search}%")
+                             ->orWhere('lrn', 'like', "%{$search}%"))
                 )
             )
+            // Pending muna sa itaas — iyon ang kailangang aksyunan
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        $sections = Section::where('is_active', true)
-            ->orderBy('grade_level')
-            ->orderBy('name')
-            ->get();
+        $sections = Section::with('adviser:id,name')
+            ->where('is_active', true)
+            ->get()
+            ->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, mb_strtolower($s->name)))
+            ->values();
 
-        return view('admin.enrollment.index', compact('enrollments', 'sections'));
+        $counts = EnrollmentRequest::selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
+
+        return view('admin.enrollment.index', compact('enrollments', 'sections', 'counts', 'status', 'search'));
     }
 
     // ── Approve an enrollment request + place the student in a section ──
     public function approve(Request $httpRequest, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
+        // Active section lang — ang inactive ay hindi na dapat lagyan ng bagong student
         $httpRequest->validate([
-            'section_id' => 'required|exists:sections,id',
-        ]);
+            'section_id' => ['required', Rule::exists('sections', 'id')->where('is_active', true)],
+        ], ['section_id.exists' => 'Please choose an active section.']);
 
         $section = Section::findOrFail($httpRequest->section_id);
 
@@ -62,7 +78,7 @@ class EnrollmentController extends Controller
             "Section: {$section->name} | Grade: {$grade}"
         );
 
-        return redirect()->route('admin.enrollment.index')
+        return back() // keep the admin's filters/page
             ->with('success', "{$student->name} has been enrolled in {$section->name}.");
     }
 
@@ -77,7 +93,7 @@ class EnrollmentController extends Controller
 
         AuditLogService::log("Rejected enrollment: {$student->name}", 'Enrollment');
 
-        return redirect()->route('admin.enrollment.index')
+        return back() // keep the admin's filters/page
             ->with('success', 'Enrollment request has been rejected.');
     }
 }

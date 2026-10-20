@@ -132,9 +132,7 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="sch-alert sch-ok" role="status">{{ session('success') }}</div>
-    @endif
+    {{-- Success message: shown by layouts/admin (toast) --}}
 
     @if($errors->any())
         <div class="sch-alert sch-err" role="alert">
