@@ -41,11 +41,11 @@ class StudentActivationService
     private const LRN_PER_HOUR   = 5;
     private const LRN_PER_DAY    = 10;
 
-    private const NO_MATCH = 'Hindi tugma ang LRN at pangalan sa records ng paaralan. '
-        . 'Gamitin ang buong pangalan gaya ng nasa class list, o lumapit sa iyong adviser.';
-    private const ALREADY_ACTIVE = 'May account na para sa LRN na ito. Kung hindi ikaw ang '
-        . 'nag-activate, i-report agad sa iyong adviser o sa admin.';
-    private const EXPIRED = 'Nag-expire na ang activation. Magsimula ulit.';
+    private const NO_MATCH = 'The LRN and name do not match the school records. '
+        . 'Use your full name exactly as written in the class list, or ask your adviser.';
+    private const ALREADY_ACTIVE = 'An account already exists for this LRN. If you did not activate it, '
+        . 'report it to your adviser or the school admin right away.';
+    private const EXPIRED = 'This activation has expired. Please start again.';
 
     // ─── Validation rules (iisa para sa web at API) ───────────────────────────
 
@@ -63,11 +63,11 @@ class StudentActivationService
     public static function messages(): array
     {
         return [
-            'lrn.digits'       => 'Ang LRN ay dapat eksaktong 12 digits.',
-            'name.regex'       => 'Letra lang ang puwede sa pangalan.',
-            'birthdate.before' => 'Pakisuri ang iyong birthdate.',
-            'birthdate.after'  => 'Pakisuri ang iyong birthdate.',
-            'email.unique'     => 'Nakarehistro na ang email na ito. Gumamit ng ibang email.',
+            'lrn.digits'       => 'The LRN must be exactly 12 digits.',
+            'name.regex'       => 'Names may contain letters only.',
+            'birthdate.before' => 'Please check your birthdate.',
+            'birthdate.after'  => 'Please check your birthdate.',
+            'email.unique'     => 'This email is already registered. Please use a different email.',
         ];
     }
 
@@ -85,7 +85,7 @@ class StudentActivationService
         // hindi rin ito nagbubunyag kung umiiral ang LRN.
         if ($this->isLocked($lrn)) {
             throw ValidationException::withMessages([
-                'lrn' => 'Masyadong maraming subok para sa LRN na ito. Subukan ulit mamaya, o lumapit sa iyong adviser.',
+                'lrn' => 'Too many attempts for this LRN. Please try again later or ask your adviser.',
             ]);
         }
 
@@ -136,7 +136,7 @@ class StudentActivationService
 
         if ($payload['resends'] >= self::MAX_RESENDS) {
             $this->forget($token);
-            throw ValidationException::withMessages(['code' => 'Naubos na ang pagpapadala ulit ng code. Magsimula ulit.']);
+            throw ValidationException::withMessages(['code' => 'You have reached the resend limit. Please start again.']);
         }
 
         $code = $this->newCode();
@@ -157,13 +157,13 @@ class StudentActivationService
 
         if ($payload['tries'] >= self::MAX_CODE_TRIES) {
             $this->forget($token);
-            throw ValidationException::withMessages(['code' => 'Masyadong maraming maling code. Magsimula ulit.']);
+            throw ValidationException::withMessages(['code' => 'Too many incorrect codes. Please start again.']);
         }
 
         if (!Hash::check($code, $payload['code_hash'])) {
             $payload['tries']++;
             $this->save($token, $payload);
-            throw ValidationException::withMessages(['code' => 'Mali ang code. Subukan ulit.']);
+            throw ValidationException::withMessages(['code' => 'Incorrect code. Please try again.']);
         }
 
         $user = DB::transaction(function () use ($payload) {
@@ -176,7 +176,7 @@ class StudentActivationService
             }
 
             if (User::where('email', $payload['email'])->exists()) {
-                throw ValidationException::withMessages(['code' => 'Nakarehistro na ang email na ito. Magsimula ulit gamit ang ibang email.']);
+                throw ValidationException::withMessages(['code' => 'This email is already registered. Please start again with a different email.']);
             }
 
             $user = User::create([
@@ -246,7 +246,7 @@ class StudentActivationService
             $this->forget($token);
             report($e);
             throw ValidationException::withMessages([
-                'email' => 'Hindi maipadala ang code sa email na ito. Pakisuri kung tama ang email, o subukan ulit mamaya.',
+                'email' => 'We could not send a code to this email. Please check the address or try again later.',
             ]);
         }
     }

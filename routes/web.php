@@ -122,6 +122,17 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth');
 
 // ═════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS (bell) — student at parent (layouts/app.blade.php).
+// Dati: tinatawag ng layout ang /notifications/* pero /student/notifications/*
+// lang ang may route → 404, hindi gumagana ang bell; walang route ang parent.
+// ═════════════════════════════════════════════════════════════════════════════
+Route::middleware(['auth', 'approved'])->group(function () {
+    Route::get('/notifications/data',       [NotificationController::class, 'data']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'read']);
+    Route::post('/notifications/read-all',  [NotificationController::class, 'readAll']);
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 // FORCE PASSWORD CHANGE — for teachers after first login
 // ═════════════════════════════════════════════════════════════════════════════
 Route::middleware(['auth', 'approved'])->group(function () {

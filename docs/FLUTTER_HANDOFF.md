@@ -5,6 +5,12 @@ Backend repo: `dp-lms-web` (Laravel 12), branch `feature/parent-link`.
 
 > Ang flowcharts ay Mermaid — nire-render ng GitHub at ng VS Code
 > (extension: "Markdown Preview Mermaid Support").
+>
+> **Kasamang dokumento:** `IOT_ARRIVAL_NOTIFICATIONS.md` — Raspberry Pi scan → push sa magulang,
+> `GET /api/notifications`, `GET /api/parent/attendance`.
+>
+> **Lahat ng mensahe ng server ay English na.** Ipakita ang `message` / `errors.*` mula sa server
+> nang direkta — huwag mag-hardcode ng sariling bersyon.
 
 ---
 
@@ -52,6 +58,8 @@ Backend repo: `dp-lms-web` (Laravel 12), branch `feature/parent-link`.
 | `POST /api/parent/activate` · `/api/parent/recover` | Parent account gamit ang code mula sa anak |
 | `POST /api/student/parent-link` | Estudyante: gumawa ng code/QR para sa magulang |
 | `POST /api/messages/typing/{user}` · `PATCH /api/messages/{id}` · `DELETE /api/messages/{id}` | Typing, edit, unsend — **dati may method pero walang route (404)** |
+| `GET /api/notifications` · `POST /api/notifications/{id}/read` · `/read-all` | Notification inbox (lahat ng role) — tingnan ang IoT doc |
+| `GET /api/parent/attendance?days=30` | Arrival history ng anak (Raspberry Pi scans) |
 
 ### ➕ Additive (hindi masisira ang dating code)
 
@@ -321,7 +329,7 @@ flowchart LR
 ### Bad-word filter (bago)
 
 Ang **send**, **edit** ng chat at ang **material comment** ay tinatanggihan kapag may mura:
-`422 { "message": "...", "errors": { "body": ["Pakiusap, iwasan ang masasamang salita."] } }`
+`422 { "message": "...", "errors": { "body": ["Please avoid inappropriate language."] } }`
 
 - Buong salita ang tsine-check — hindi nahaharang ang "gagawin", "computation", "leche flan".
 - Nahuhuli: `g@g0`, `p.u.t.a`, `p u t a`, `putaaa`, `gagong`, `fucking`.

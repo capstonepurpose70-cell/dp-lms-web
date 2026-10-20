@@ -76,10 +76,10 @@
     @endphp
     @if ($declaredBday && $formBday && !$declaredBday->isSameDay($formBday))
         <div class="rv-note warn" role="alert">
-            ⚠️ <strong>Hindi tugma ang birthdate.</strong>
-            Sa activation ng account: {{ $declaredBday->format('M j, Y') }} ·
-            Sa enrollment form: {{ $formBday->format('M j, Y') }}.
-            Posibleng ibang tao ang nag-activate ng account — kumpirmahin muna sa estudyante bago i-approve.
+            ⚠️ <strong>Birthdate mismatch.</strong>
+            At account activation: {{ $declaredBday->format('M j, Y') }} ·
+            On enrollment form: {{ $formBday->format('M j, Y') }}.
+            Someone else may have activated this account — confirm with the student before approving.
         </div>
     @endif
 

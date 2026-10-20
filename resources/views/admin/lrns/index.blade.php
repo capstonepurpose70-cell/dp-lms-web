@@ -91,7 +91,7 @@
                     <input type="text" name="grade_level" value="{{ old('grade_level') }}" placeholder="7 – 12" inputmode="numeric">
                     <button class="lrn-btn" type="submit">Add LRN</button>
                 </form>
-                <p class="lrn-hint">Kapag naidagdag, puwede nang mag-activate ang estudyante gamit ang LRN at pangalang ito.</p>
+                <p class="lrn-hint">Once added, the student can activate their account using this LRN and name.</p>
             </div>
 
             <div class="lrn-card">
@@ -103,8 +103,8 @@
                     <button class="lrn-btn gold" type="submit">Import All</button>
                 </form>
                 <p class="lrn-hint">
-                    Formats: <b>LRN,Name</b> · <b>LRN,Name,Grade</b>. Kailangan ang pangalan (ginagamit sa activation).
-                    Walang kuwit sa loob ng pangalan. Awtomatikong nilalaktawan ang duplicate at invalid.
+                    Formats: <b>LRN,Name</b> · <b>LRN,Name,Grade</b>. Name is required (used for activation).
+                    No commas inside the name. Duplicates and invalid lines are skipped automatically.
                     (Pwedeng i-copy-paste diretso mula sa Excel column.)
                 </p>
             </div>

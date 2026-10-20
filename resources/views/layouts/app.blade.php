@@ -699,7 +699,7 @@ const NAV_ITEMS = [
     @if(auth()->user()->studentProfile)
     {
         href : '{{ route('student.parent-link') }}',
-        label: 'Magulang',
+        label: 'Parent',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-4a3 3 0 11-6 0"/>`
     },
@@ -811,7 +811,12 @@ const notifBadge    = document.getElementById('notifBadge');
 const notifList     = document.getElementById('notifList');
 const notifEmpty    = document.getElementById('notifEmpty');
 
+// I-escape ang text bago ilagay sa innerHTML — galing sa teacher ang mga
+// title (material/quiz); dati puwedeng tumakbo ang naka-embed na <script>/onerror.
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
 const TYPE_ICONS = {
+    arrival:    { bg:'#f0fdf4', stroke:'#16a34a', path:'M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z' },
     quiz:       { bg:'#faf5ff', stroke:'#a855f7', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
     module:     { bg:'#eff6ff', stroke:'#3b82f6', path:'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
     assignment: { bg:'#fff7ed', stroke:'#f97316', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
@@ -861,12 +866,12 @@ function loadNotifs() {
                     <div style="flex:1;min-width:0;">
                         <p style="font-size:12px;font-weight:700;color:var(--text-1);
                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            ${n.title}
+                            ${esc(n.title)}
                         </p>
                         <p style="font-size:11px;color:var(--text-2);margin-top:2px;">
-                            ${n.subject} &nbsp;·&nbsp; ${n.instructor}
+                            ${esc(n.subject)} &nbsp;·&nbsp; ${esc(n.instructor)}
                         </p>
-                        <p style="font-size:10px;color:var(--text-3);margin-top:3px;">${n.time}</p>
+                        <p style="font-size:10px;color:var(--text-3);margin-top:3px;">${esc(n.time)}</p>
                     </div>
                 `;
                 el.addEventListener('click', () => {

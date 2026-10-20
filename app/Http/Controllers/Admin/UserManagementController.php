@@ -214,7 +214,7 @@ class UserManagementController extends Controller
 
         AuditLogService::log("Released LRN (account reset): {$user->name}", 'User Management', "LRN: {$lrn}");
 
-        return back()->with('success', "Na-reset ang account. Puwede nang i-activate ulit ang LRN {$lrn} ng totoong may-ari.");
+        return back()->with('success', "Account reset. LRN {$lrn} can now be activated by its real owner.");
     }
 
     // ── Create Teacher ────────────────────────────────────────────

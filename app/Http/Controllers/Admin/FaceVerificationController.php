@@ -72,7 +72,7 @@ class FaceVerificationController extends Controller
 
         $registration->update([
             'status'        => 'rejected',
-            'reject_reason' => $data['reason'] ?? 'Hindi malinaw o hindi wastong larawan.',
+            'reject_reason' => $data['reason'] ?? 'The photo is unclear or invalid.',
             'inappropriate' => $inappropriate,
             'reviewed_at'   => now(),
         ]);

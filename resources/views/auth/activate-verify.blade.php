@@ -1,17 +1,20 @@
 @extends('layouts.auth-card')
 
-@section('title', 'I-verify ang Email')
-@section('heading', 'Ilagay ang code')
-@section('desc')
-    May 6-digit code na ipinadala sa <strong>{{ $email }}</strong>. Valid ito nang {{ $minutes }} minuto.
+@section('title', 'Verify Email')
+
+@section('steps')
+    <li class="ac-step is-done"><span class="ac-step-dot">✓</span> Your details</li>
+    <li class="ac-step-line" aria-hidden="true"></li>
+    <li class="ac-step is-active"><span class="ac-step-dot">2</span> Verify email</li>
 @endsection
 
-@section('icon')
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+@section('heading', 'Check your email')
+@section('desc')
+    We sent a 6-digit code to <strong>{{ $email }}</strong>. It expires in {{ $minutes }} minutes.
 @endsection
 
 @section('content')
-<form method="POST" action="{{ route('activate.verify.submit') }}">
+<form method="POST" action="{{ route('activate.verify.submit') }}" data-once>
     @csrf
     <div class="ac-group">
         <label for="code">Verification code</label>
@@ -22,19 +25,20 @@
 
     <label class="ac-check">
         <input type="checkbox" name="trust_device" value="1">
-        <span>Tandaan ang device na ito nang 30 araw (hindi na hihingan ng code sa login). <strong>Huwag i-check</strong> kung shared o computer shop ito.</span>
+        <span>Remember this device for 30 days (no code needed when signing in). <strong>Don't check</strong> on shared or internet-café computers.</span>
     </label>
 
-    <button type="submit" class="ac-btn">I-activate ang account</button>
+    <button type="submit" class="ac-btn" data-busy="Activating…">Activate account</button>
 </form>
 
-<form method="POST" action="{{ route('activate.resend') }}" style="text-align:center;margin-top:10px;">
+<form method="POST" action="{{ route('activate.resend') }}" style="text-align:center;margin-top:8px;">
     @csrf
-    <span style="font-size:13px;color:var(--text-2);">Walang dumating?</span>
-    <button type="submit" class="ac-btn-link">Ipadala ulit</button>
+    <span style="font-size:13.5px;color:var(--text-2);">Didn't get the code?</span>
+    <button type="submit" class="ac-btn-link">Resend code</button>
 </form>
 @endsection
 
 @section('footer')
-    <div>Maling email? <a href="{{ route('activate') }}">Magsimula ulit</a></div>
+    <span>Wrong email? <a href="{{ route('activate') }}">Start over</a></span>
+    <span><a href="{{ route('login') }}">Back to sign in</a></span>
 @endsection

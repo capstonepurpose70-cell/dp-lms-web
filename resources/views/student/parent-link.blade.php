@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Magulang')
+@section('title', 'Parent')
 
 @section('content')
 <style>
@@ -58,47 +58,47 @@
 </style>
 
 <div class="pl-wrap">
-    <h1 class="pl-title">Magulang</h1>
-    <p class="pl-sub">I-link ang account ng magulang o guardian mo para makita nila ang grades at records mo.</p>
+    <h1 class="pl-title">Parent</h1>
+    <p class="pl-sub">Link your parent or guardian's account so they can see your grades and records.</p>
 
     @if($errors->any())
         <div class="pl-err" role="alert">{{ $errors->first() }}</div>
     @endif
 
     @if(!$student->studentProfile)
-        {{-- Hindi pa enrolled — walang pangalan ng magulang na maikukumpara --}}
+        {{-- Not enrolled yet — no parent names to match against --}}
         <div class="pl-card">
             <p class="pl-note">
-                Kailangan munang <strong>ma-approve ang iyong enrollment</strong> bago ma-link ang magulang mo.
-                Dito kinukuha ang pangalan ng nanay, tatay, o guardian na ikukumpara.
+                Your <strong>enrollment must be approved</strong> before you can link a parent.
+                We use the mother, father, or guardian names from your enrollment form to verify them.
             </p>
-            <p style="margin-top:14px;"><a class="pl-btn" href="{{ route('student.enroll') }}">Pumunta sa enrollment form</a></p>
+            <p style="margin-top:14px;"><a class="pl-btn" href="{{ route('student.enroll') }}">Go to enrollment form</a></p>
         </div>
 
     @elseif($link)
-        {{-- Bagong code — ipinapakita NGAYON LANG, hindi naka-store --}}
+        {{-- New code — shown ONLY now, never stored in plain text --}}
         <div class="pl-card">
             <div class="pl-code-grid">
-                <div class="pl-qr" role="img" aria-label="QR code para sa magulang">{!! $link['qr_svg'] !!}</div>
+                <div class="pl-qr" role="img" aria-label="QR code for your parent">{!! $link['qr_svg'] !!}</div>
                 <div>
-                    <div class="pl-code-label">{{ $link['purpose'] === 'link' ? 'Code para sa magulang' : 'Recovery code' }}</div>
+                    <div class="pl-code-label">{{ $link['purpose'] === 'link' ? 'Code for your parent' : 'Recovery code' }}</div>
                     <div class="pl-code">{{ $link['code'] }}</div>
-                    <div class="pl-meta">Valid hanggang {{ $link['expires_at']->timezone(config('app.timezone'))->format('M j, g:i A') }} · isang beses lang magagamit</div>
+                    <div class="pl-meta">Valid until {{ $link['expires_at']->timezone(config('app.timezone'))->format('M j, g:i A') }} · can be used once</div>
                     <ol class="pl-steps">
                         @if($link['purpose'] === 'link')
-                            <li>I-scan ng magulang mo ang QR gamit ang <strong>sarili niyang phone</strong>.</li>
-                            <li>Ilalagay niya ang pangalan, mobile number, at password.</li>
-                            <li>Kapag tugma ang pangalan sa enrollment form mo, makikita na niya agad ang records mo.</li>
+                            <li>Your parent scans the QR code with <strong>their own phone</strong>.</li>
+                            <li>They enter their name, mobile number, and a password.</li>
+                            <li>If their name matches your enrollment form, they can see your records right away.</li>
                         @else
-                            <li>I-scan ng magulang mo ang QR, o pumunta siya sa "I-recover" sa login page.</li>
-                            <li>Ilalagay niya ang code, mobile number niya, at bagong password.</li>
+                            <li>Your parent scans the QR code, or opens "Recover" on the sign-in page.</li>
+                            <li>They enter the code, their mobile number, and a new password.</li>
                         @endif
                     </ol>
                     <div class="pl-url">{{ $link['url'] }}</div>
                 </div>
             </div>
         </div>
-        <p class="pl-note">⚠️ Ibigay lang ang code sa magulang o guardian mo. Huwag i-post o i-share sa iba.</p>
+        <p class="pl-note">⚠️ Only give this code to your parent or guardian. Don't post or share it.</p>
 
     @elseif($parent)
         <div class="pl-card">
@@ -106,39 +106,39 @@
                 <div class="pl-avatar" aria-hidden="true">{{ strtoupper(mb_substr($parent->name, 0, 1)) }}</div>
                 <div style="flex:1;min-width:0;">
                     <div class="pl-name">{{ $parent->name }}</div>
-                    <div class="pl-meta">Naka-link na magulang</div>
+                    <div class="pl-meta">Linked parent</div>
                 </div>
                 @if($parent->status === 'approved')
-                    <span class="pl-pill pl-pill-ok">Aktibo</span>
+                    <span class="pl-pill pl-pill-ok">Active</span>
                 @else
-                    <span class="pl-pill pl-pill-wait">Hinihintay ang admin</span>
+                    <span class="pl-pill pl-pill-wait">Waiting for admin</span>
                 @endif
             </div>
         </div>
 
         @if($parent->status === 'approved')
             <div class="pl-card">
-                <p class="pl-note">Nakalimutan ng magulang mo ang password, o bago ang phone niya? Gumawa ng <strong>recovery code</strong>.</p>
+                <p class="pl-note">Did your parent forget their password or get a new phone? Create a <strong>recovery code</strong>.</p>
                 <form method="POST" action="{{ route('student.parent-link.store') }}" style="margin-top:14px;">
                     @csrf
-                    <button type="submit" class="pl-btn">Gumawa ng recovery code</button>
+                    <button type="submit" class="pl-btn">Create recovery code</button>
                 </form>
             </div>
         @else
-            <p class="pl-note">Hindi tumugma ang pangalan sa enrollment form mo, kaya iche-check muna ito ng admin.</p>
+            <p class="pl-note">The name didn't match your enrollment form, so the school admin will verify it first.</p>
         @endif
 
-        <p class="pl-note" style="margin-top:8px;">Hindi mo kilala ang naka-link? I-report agad sa iyong adviser o sa admin.</p>
+        <p class="pl-note" style="margin-top:8px;">Don't recognize this person? Report it to your adviser or the school admin right away.</p>
 
     @else
         <div class="pl-card">
             <p class="pl-note">
-                Wala pang naka-link na magulang. Gumawa ng <strong>one-time code</strong> at ipa-scan sa magulang mo.
-                Valid ito nang 24 oras at isang beses lang magagamit.
+                No parent is linked yet. Create a <strong>one-time code</strong> and let your parent scan it.
+                It's valid for 24 hours and can be used once.
             </p>
             <form method="POST" action="{{ route('student.parent-link.store') }}" style="margin-top:14px;">
                 @csrf
-                <button type="submit" class="pl-btn">Gumawa ng code para sa magulang</button>
+                <button type="submit" class="pl-btn">Create code for my parent</button>
             </form>
         </div>
     @endif

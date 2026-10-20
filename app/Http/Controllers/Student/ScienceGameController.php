@@ -15,7 +15,7 @@ class ScienceGameController extends Controller
     {
         $grade = (string) (Auth::user()->grade_level ?? '');
         abort_unless(in_array($grade, ['11', '12'], true), 403,
-            'Ang Strata Rush Science Game ay para sa Grade 11 at Grade 12 lang.');
+            'The Strata Rush Science Game is available to Grade 11 and Grade 12 students only.');
         return $grade;
     }
 

@@ -938,6 +938,8 @@ const notifDropdown = document.getElementById('notifDropdown');
 const notifBadge    = document.getElementById('notifBadge');
 const notifList     = document.getElementById('notifList');
 const notifEmpty    = document.getElementById('notifEmpty');
+// Escape bago ilagay sa innerHTML (XSS) — kapareho ng layouts/app.blade.php
+const tEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 const TYPE_ICONS = {
     quiz:       { bg:'#faf5ff', stroke:'#a855f7', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
@@ -992,12 +994,12 @@ function loadNotifs() {
                     <div style="flex:1;min-width:0;">
                         <p style="font-size:12px;font-weight:700;color:var(--text-1);
                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            ${n.title}
+                            ${tEsc(n.title)}
                         </p>
                         <p style="font-size:11px;color:var(--text-2);margin-top:2px;">
-                            ${n.subject} &nbsp;·&nbsp; ${n.instructor}
+                            ${tEsc(n.subject)} &nbsp;·&nbsp; ${tEsc(n.instructor)}
                         </p>
-                        <p style="font-size:10px;color:var(--text-3);margin-top:3px;">${n.time}</p>
+                        <p style="font-size:10px;color:var(--text-3);margin-top:3px;">${tEsc(n.time)}</p>
                     </div>
                 `;
                 el.addEventListener('click', () => {

@@ -52,15 +52,15 @@ class LrnController extends Controller
             'student_name' => 'required|string|max:255',
             'grade_level'  => 'nullable|string|in:7,8,9,10,11,12',
         ], [
-            'lrn.digits'            => 'Ang LRN ay dapat eksaktong 12 digits.',
-            'lrn.unique'            => 'Nasa listahan na ang LRN na ito.',
-            'student_name.required' => 'Kailangan ang pangalan — ito ang ikukumpara sa activation.',
+            'lrn.digits'            => 'The LRN must be exactly 12 digits.',
+            'lrn.unique'            => 'This LRN is already on the list.',
+            'student_name.required' => 'Student name is required — it is matched during account activation.',
         ]);
 
         OfficialLrn::create($data);
         AuditLogService::log("Added LRN: {$data['lrn']}", 'LRN Master List');
 
-        return back()->with('success', "LRN {$data['lrn']} added — puwede nang mag-activate ang estudyante gamit ito.");
+        return back()->with('success', "LRN {$data['lrn']} added — the student can now activate their account.");
     }
 
     /**
@@ -89,11 +89,11 @@ class LrnController extends Controller
                 continue;
             }
             if (blank($name)) {
-                $skipped[] = $lrn . ' — walang pangalan (kailangan sa activation)';
+                $skipped[] = $lrn . ' — missing name (required for activation)';
                 continue;
             }
             if ($grade !== null && $grade !== '' && !in_array($grade, ['7', '8', '9', '10', '11', '12'], true)) {
-                $skipped[] = $lrn . " — maling grade '{$grade}' (may kuwit ba sa pangalan?)";
+                $skipped[] = $lrn . " — invalid grade '{$grade}' (is there a comma in the name?)";
                 continue;
             }
             if (OfficialLrn::where('lrn', $lrn)->exists()) {
@@ -124,7 +124,7 @@ class LrnController extends Controller
     public function destroy(OfficialLrn $lrn)
     {
         if ($lrn->claimed_by !== null) {
-            return back()->withErrors(['general' => 'Hindi mabubura — may naka-register nang account sa LRN na ito.']);
+            return back()->withErrors(['general' => 'Cannot delete — an account is already registered with this LRN.']);
         }
 
         AuditLogService::log("Deleted LRN: {$lrn->lrn}", 'LRN Master List');

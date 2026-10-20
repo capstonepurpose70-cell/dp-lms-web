@@ -208,7 +208,7 @@
                                     <div class="en-email">{{ $enrollment->student->email ?? '—' }}</div>
                                     {{-- Birthdate cross-check: activation vs enrollment form --}}
                                     @if(($bd = $enrollment->student?->birthdate) && $enrollment->birthdate && !$bd->isSameDay($enrollment->birthdate))
-                                        <div style="font-size:11.5px;font-weight:700;color:#b45309;margin-top:2px;">⚠️ Hindi tugma ang birthdate sa activation</div>
+                                        <div style="font-size:11.5px;font-weight:700;color:#b45309;margin-top:2px;">⚠️ Birthdate differs from activation</div>
                                     @endif
                                 </div>
                             </div>

@@ -24,7 +24,7 @@ class StudentActivationController extends Controller
         // Honeypot — tao ay hindi makakakita sa field na ito
         if (filled($request->input('website'))) {
             AuditLogService::log('Activation blocked — honeypot', 'Auth', $request->ip());
-            return back()->with('error', 'Hindi maproseso ang request. Subukan ulit.');
+            return back()->with('error', 'We could not process your request. Please try again.');
         }
 
         $data   = $request->validate(StudentActivationService::rules(), StudentActivationService::messages());
@@ -52,7 +52,7 @@ class StudentActivationController extends Controller
 
     public function verify(Request $request, StudentActivationService $activation, TrustedDeviceService $devices)
     {
-        $request->validate(['code' => 'required|digits:6'], ['code.digits' => '6 digits ang code.']);
+        $request->validate(['code' => 'required|digits:6'], ['code.digits' => 'The code must be 6 digits.']);
 
         $user = $activation->verify((string) session('activation_token'), $request->code);
 
@@ -68,13 +68,13 @@ class StudentActivationController extends Controller
         AuditLogService::log('Login successful (activation)', 'Auth', 'Role: student');
 
         return redirect()->route('student.enroll')
-            ->with('success', 'Na-activate na ang account mo! Susunod: i-fill ang enrollment form para ma-assign ka sa section.');
+            ->with('success', 'Your account is active! Next, fill out the enrollment form so you can be assigned to a section.');
     }
 
     public function resend(StudentActivationService $activation)
     {
         $activation->resend((string) session('activation_token'));
 
-        return back()->with('success', 'Nagpadala ulit ng bagong code.');
+        return back()->with('success', 'A new code has been sent.');
     }
 }

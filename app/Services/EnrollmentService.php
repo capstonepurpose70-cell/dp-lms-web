@@ -103,7 +103,7 @@ class EnrollmentService
 
         if ($requestGrade !== null && $requestGrade !== (string) $section->grade_level) {
             throw ValidationException::withMessages([
-                'section_id' => "Grade {$requestGrade} ang estudyante pero Grade {$section->grade_level} ang napiling section.",
+                'section_id' => "The student is Grade {$requestGrade}, but the selected section is Grade {$section->grade_level}.",
             ]);
         }
 

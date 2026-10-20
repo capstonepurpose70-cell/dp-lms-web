@@ -1,70 +1,93 @@
 @extends('layouts.auth-card')
 
-@section('title', 'I-activate ang Account')
-@section('heading', 'I-activate ang Student Account')
-@section('desc', 'Para sa unang beses. Gamitin ang LRN at buong pangalan mo gaya ng nasa class list ng paaralan.')
+@section('title', 'Activate Account')
+@section('wrap-class', 'is-wide')
 
-@section('icon')
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l6.16-3.42A12 12 0 0112 20.06a12 12 0 01-6.16-9.48L12 14z"/></svg>
+@section('steps')
+    <li class="ac-step is-active"><span class="ac-step-dot">1</span> Your details</li>
+    <li class="ac-step-line" aria-hidden="true"></li>
+    <li class="ac-step"><span class="ac-step-dot">2</span> Verify email</li>
 @endsection
 
+@section('heading', 'Activate your student account')
+@section('desc', 'First time here? Enter your LRN and full name exactly as they appear on your school class list.')
+
 @section('content')
-<form method="POST" action="{{ route('activate.start') }}" novalidate>
+<form method="POST" action="{{ route('activate.start') }}" data-once novalidate>
     @csrf
 
-    {{-- Honeypot --}}
+    {{-- Honeypot (hidden from people, visible to bots) --}}
     <div class="ac-hp" aria-hidden="true">
         <label for="website">Website</label>
         <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
     </div>
 
-    <div class="ac-group">
-        <label for="lrn">LRN</label>
-        <input class="ac-input @error('lrn') is-error @enderror" type="text" id="lrn" name="lrn"
-               value="{{ old('lrn') }}" inputmode="numeric" pattern="\d{12}" maxlength="12"
-               autocomplete="off" placeholder="12-digit LRN" required>
-        <p class="ac-hint">Nasa report card o school ID mo.</p>
+    <p class="ac-section">School record</p>
+    <div class="ac-grid">
+        <div class="ac-group">
+            <label for="lrn">LRN</label>
+            <input class="ac-input @error('lrn') is-error @enderror" type="text" id="lrn" name="lrn"
+                   value="{{ old('lrn') }}" inputmode="numeric" pattern="\d{12}" maxlength="12"
+                   autocomplete="off" placeholder="12-digit LRN" required autofocus>
+            <p class="ac-hint">Found on your report card or school ID.</p>
+        </div>
+
+        <div class="ac-group">
+            <label for="birthdate">Birthdate</label>
+            <input class="ac-input @error('birthdate') is-error @enderror" type="date" id="birthdate" name="birthdate"
+                   value="{{ old('birthdate') }}" autocomplete="bday" max="{{ now()->subYears(8)->toDateString() }}" required>
+            <p class="ac-hint">Your adviser will compare this with your enrollment form.</p>
+        </div>
+
+        <div class="ac-group ac-span">
+            <label for="name">Full name</label>
+            <input class="ac-input @error('name') is-error @enderror" type="text" id="name" name="name"
+                   value="{{ old('name') }}" autocomplete="name" placeholder="e.g. Juan Santos Dela Cruz" maxlength="255" required>
+        </div>
     </div>
 
-    <div class="ac-group">
-        <label for="name">Buong pangalan</label>
-        <input class="ac-input" type="text" id="name" name="name" value="{{ old('name') }}"
-               autocomplete="name" placeholder="Hal. Juan Santos Dela Cruz" maxlength="255" required>
+    <p class="ac-section">Your account</p>
+    <div class="ac-grid">
+        <div class="ac-group ac-span">
+            <label for="email">Email address</label>
+            <input class="ac-input @error('email') is-error @enderror" type="email" id="email" name="email"
+                   value="{{ old('email') }}" autocomplete="email" autocapitalize="none" spellcheck="false"
+                   placeholder="you@gmail.com" maxlength="254" required>
+            <p class="ac-hint">We'll send a 6-digit code here. Use an email you can open — it's also used for password resets.</p>
+        </div>
+
+        <div class="ac-group">
+            <label for="password">Password</label>
+            <div class="ac-pw">
+                <input class="ac-input @error('password') is-error @enderror" type="password" id="password" name="password"
+                       autocomplete="new-password" maxlength="100" required>
+                <button type="button" class="ac-pw-toggle" data-pw-toggle="password" aria-pressed="false">Show</button>
+            </div>
+        </div>
+
+        <div class="ac-group">
+            <label for="password_confirmation">Confirm password</label>
+            <div class="ac-pw">
+                <input class="ac-input" type="password" id="password_confirmation" name="password_confirmation"
+                       autocomplete="new-password" maxlength="100" required>
+                <button type="button" class="ac-pw-toggle" data-pw-toggle="password_confirmation" aria-pressed="false">Show</button>
+            </div>
+        </div>
     </div>
 
-    <div class="ac-group">
-        <label for="birthdate">Birthdate</label>
-        <input class="ac-input" type="date" id="birthdate" name="birthdate" value="{{ old('birthdate') }}"
-               autocomplete="bday" max="{{ now()->subYears(8)->toDateString() }}" required>
-        <p class="ac-hint">Ikukumpara ito ng adviser mo sa enrollment form.</p>
-    </div>
+    <ul class="ac-rules" data-pw-rules="password" data-pw-confirm="password_confirmation" aria-label="Password requirements">
+        <li data-rule="length">At least 8 characters</li>
+        <li data-rule="mixed">Upper and lowercase letters</li>
+        <li data-rule="number">At least one number</li>
+        <li data-rule="symbol">At least one symbol</li>
+        <li data-rule="match">Passwords match</li>
+    </ul>
 
-    <div class="ac-group">
-        <label for="email">Email</label>
-        <input class="ac-input @error('email') is-error @enderror" type="email" id="email" name="email"
-               value="{{ old('email') }}" autocomplete="email" autocapitalize="none" spellcheck="false"
-               placeholder="Dito ipapadala ang code" maxlength="254" required>
-        <p class="ac-hint">Gamitin ang email na nabubuksan mo — dito rin ang "Forgot password".</p>
-    </div>
-
-    <div class="ac-group">
-        <label for="password">Password</label>
-        <input class="ac-input @error('password') is-error @enderror" type="password" id="password" name="password"
-               autocomplete="new-password" maxlength="100" required>
-        <p class="ac-hint">8+ characters, may malaki at maliit na letra, numero, at simbolo.</p>
-    </div>
-
-    <div class="ac-group">
-        <label for="password_confirmation">Ulitin ang password</label>
-        <input class="ac-input" type="password" id="password_confirmation" name="password_confirmation"
-               autocomplete="new-password" maxlength="100" required>
-    </div>
-
-    <button type="submit" class="ac-btn">Ipadala ang code sa email</button>
+    <button type="submit" class="ac-btn" data-busy="Sending code…">Continue</button>
 </form>
 @endsection
 
 @section('footer')
-    <div>May account na? <a href="{{ route('login') }}">Mag-login</a></div>
-    <div>Magulang ka? <a href="{{ route('parent.activate') }}">I-link gamit ang code ng anak</a></div>
+    <span>Already activated? <a href="{{ route('login') }}">Sign in</a></span>
+    <span>Parent? <a href="{{ route('parent.activate') }}">Link with your child's code</a></span>
 @endsection

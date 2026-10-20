@@ -529,7 +529,7 @@
                     <label for="emailInput">Email, LRN, or Mobile Number</label>
                     <input type="text" name="email" id="emailInput"
                         value="{{ old('email') }}"
-                        placeholder="Email, 12-digit LRN, o 09XXXXXXXXX"
+                        placeholder="Email, 12-digit LRN, or 09XXXXXXXXX"
                         autocomplete="username"
                         autocapitalize="none"
                         spellcheck="false"
@@ -579,8 +579,8 @@
             </form>
 
             <div class="card-footer gsap-footer">
-                <div>Estudyante, unang beses? <a href="{{ route('activate') }}" onclick="slideTo(this, event)">I-activate ang account</a></div>
-                <div style="margin-top:6px;">Magulang? <a href="{{ route('parent.activate') }}">I-link gamit ang code ng anak</a></div>
+                <div>Student, first time here? <a href="{{ route('activate') }}" onclick="slideTo(this, event)">Activate your account</a></div>
+                <div style="margin-top:6px;">Parent? <a href="{{ route('parent.activate') }}">Link with your child's code</a></div>
             </div>
 
             <p class="copyright gsap-footer">

@@ -27,8 +27,8 @@ class ParentActivationController extends Controller
 
         if ($parent->status !== 'approved') {
             return redirect()->route('login')->with('success',
-                'Nagawa na ang account mo, pero hindi tugma ang pangalan sa records ng iyong anak. '
-                . 'Makakapag-login ka kapag na-verify na ito ng admin.');
+                'Your account was created, but your name does not match your child\'s records. '
+                . 'You can sign in once the school admin verifies it.');
         }
 
         auth()->login($parent);
@@ -37,7 +37,7 @@ class ParentActivationController extends Controller
 
         AuditLogService::log('Login successful (parent activation)', 'Auth', 'Role: parent');
 
-        return redirect()->route('parent.dashboard')->with('success', 'Maligayang pagdating! Naka-link na ang account mo sa iyong anak.');
+        return redirect()->route('parent.dashboard')->with('success', 'Welcome! Your account is now linked to your child.');
     }
 
     public function showRecover(Request $request)
@@ -56,7 +56,7 @@ class ParentActivationController extends Controller
 
         if ($parent->status !== 'approved') {
             return redirect()->route('login')->with('success',
-                'Napalitan na ang password. Makakapag-login ka kapag na-verify na ng admin ang account mo.');
+                'Your password was changed. You can sign in once the school admin verifies your account.');
         }
 
         auth()->login($parent);
@@ -65,6 +65,6 @@ class ParentActivationController extends Controller
 
         AuditLogService::log('Login successful (parent recovery)', 'Auth', 'Role: parent');
 
-        return redirect()->route('parent.dashboard')->with('success', 'Napalitan na ang password mo.');
+        return redirect()->route('parent.dashboard')->with('success', 'Your password has been changed.');
     }
 }

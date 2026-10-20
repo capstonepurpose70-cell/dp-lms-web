@@ -66,6 +66,41 @@ class DashboardController extends Controller
         return response()->json($children);
     }
 
+    // ── GET /api/parent/attendance?days=30 ────────────────────────────────────
+    // Arrival history ng mga anak (mula sa Raspberry Pi scans).
+    public function attendance(\Illuminate\Http\Request $request)
+    {
+        $days     = min(max((int) $request->query('days', 30), 1), 180);
+        $children = auth()->user()->children()->get(['id', 'name', 'email']);
+
+        $records = \App\Models\Attendance::where(function ($q) use ($children) {
+                $q->whereIn('user_id', $children->pluck('id'));
+                $emails = $children->pluck('email')->filter();
+                if ($emails->isNotEmpty()) {
+                    $q->orWhereIn('student_id', $emails);
+                }
+            })
+            ->where('attended_at', '>=', now()->subDays($days)->startOfDay())
+            ->orderByDesc('attended_at')
+            ->get();
+
+        return response()->json($children->map(fn ($child) => [
+            'student_id'   => $child->id,
+            'student_name' => $child->name,
+            'records'      => $records
+                ->filter(fn ($a) => (int) $a->user_id === (int) $child->id
+                    || ($child->email && $a->student_id === $child->email))
+                ->values()
+                ->map(fn ($a) => [
+                    'id'          => $a->id,
+                    'status'      => $a->status,          // present | late
+                    'attended_at' => $a->attended_at?->toIso8601String(),
+                    'date'        => $a->attended_at?->toDateString(),
+                    'time'        => $a->attended_at?->format('g:i A'),
+                ]),
+        ])->values());
+    }
+
     // ── Private helper ─────────────────────────────────────────────────────────
     private function formatChild($child, bool $withGrades = false, bool $withProfile = false): array
     {

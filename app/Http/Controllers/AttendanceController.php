@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\FaceRegistration;
 use App\Models\User;
+use App\Services\ParentNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -24,7 +25,7 @@ class AttendanceController extends Controller
     }
 
     // ESP32 / Pi calls this — device key, no user login
-    public function store(Request $request)
+    public function store(Request $request, ParentNotifier $notifier)
     {
         if (!$this->deviceAllowed($request)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized device.'], 401);
@@ -73,7 +74,7 @@ class AttendanceController extends Controller
         [$ch, $cm]  = array_pad(explode(':', (string) config('attendance.late_after', '07:30')), 2, '00');
         $status     = $attendedAt->greaterThan(now()->copy()->setTime((int) $ch, (int) $cm)) ? 'late' : 'present';
 
-        Attendance::create([
+        $attendance = Attendance::create([
             'user_id'      => $user?->id,
             'student_id'   => $key,
             'student_name' => $validated['student_name'] ?? $user?->name,
@@ -82,6 +83,13 @@ class AttendanceController extends Controller
             'source'       => 'iot',
             'attended_at'  => $attendedAt,
         ]);
+
+        // 🔔 "Juan arrived at school · 7:12 AM" sa magulang (in-app + FCM push).
+        // Unang scan lang ng araw ang umaabot dito (may dedupe sa itaas),
+        // kaya isang notification lang kada araw. Hindi masisira ng palyadong push ang scan.
+        if ($user) {
+            $notifier->childArrived($user, $attendance);
+        }
 
         return response()->json([
             'success' => true,

@@ -499,15 +499,15 @@
 {{-- Reset account — kapag may nag-report na hindi siya ang nag-activate ng LRN --}}
 @if($user->role === 'student' && $user->lrn)
 <form method="POST" action="{{ route('admin.users.release-lrn', $user) }}"
-      onsubmit="return confirm('I-reset ang account na ito?\n\nMadi-disable ang account at maibabalik ang LRN {{ $user->lrn }} para ma-activate ng totoong may-ari. Gawin lang ito kapag may report na hindi siya ang nag-activate.');"
+      onsubmit="return confirm('Reset this account?\n\nThe account will be disabled and LRN {{ $user->lrn }} will be released so its real owner can activate it. Only do this when someone reports they did not activate it.');"
       style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border,#e5e7eb);">
     @csrf @method('PATCH')
     <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin:0 0 8px;line-height:1.5;">
         Activated {{ $user->created_at?->format('M j, Y g:i A') }}
-        @if($user->birthdate) · birthdate na inilagay: {{ $user->birthdate->format('M j, Y') }} @endif
+        @if($user->birthdate) · birthdate entered: {{ $user->birthdate->format('M j, Y') }} @endif
     </p>
     <button type="submit" style="border:1px solid var(--danger,#dc2626);color:var(--danger,#dc2626);background:#fff;border-radius:var(--r-md,10px);padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px;">
-        Reset account (ibalik ang LRN)
+        Reset account (release LRN)
     </button>
 </form>
 @endif
@@ -604,9 +604,9 @@
                         {{-- Para sa desisyon sa pending na magulang: ikumpara sa enrollment form ng anak --}}
                         @if($user->status === 'pending' && ($p = $child->studentProfile))
                         <div class="up-student-section" style="margin-top:4px;">
-                            Nasa enrollment form —
-                            Ina: {{ $p->mother_name ?: '—' }} ·
-                            Ama: {{ $p->father_name ?: '—' }} ·
+                            On enrollment form —
+                            Mother: {{ $p->mother_name ?: '—' }} ·
+                            Father: {{ $p->father_name ?: '—' }} ·
                             Guardian: {{ $p->guardian_name ?: '—' }}
                         </div>
                         @endif

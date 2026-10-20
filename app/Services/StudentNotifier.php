@@ -89,7 +89,7 @@ class StudentNotifier
             $this->push->sendToUsers(
                 $approved,
                 '📢 ' . $title,
-                'Mula kay ' . $teacherName . ': ' . $body,
+                'From ' . $teacherName . ': ' . $body,
                 ['type' => 'announcement', 'id' => $id, 'teacher' => $teacherName],
             );
         });

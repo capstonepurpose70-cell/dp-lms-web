@@ -27,6 +27,28 @@ class NotificationController extends Controller
         ]);
     }
 
+    /**
+     * GET /api/notifications — para sa Flutter: huling 50 (nabasa man o hindi),
+     * kasama ang buong `data` (hal. arrival: student_name, status, attended_at).
+     */
+    public function index()
+    {
+        $user = auth()->user();
+
+        return response()->json([
+            'unread' => $user->unreadNotifications()->count(),
+            'items'  => $user->notifications()->take(50)->get()->map(fn ($n) => [
+                'id'         => $n->id,
+                'type'       => $n->data['type'] ?? 'module',
+                'title'      => $n->data['title'] ?? '',
+                'data'       => $n->data,
+                'read'       => $n->read_at !== null,
+                'created_at' => $n->created_at->toIso8601String(),
+                'time'       => $n->created_at->diffForHumans(),
+            ]),
+        ]);
+    }
+
     public function read(string $id)
     {
         auth()->user()->notifications()->findOrFail($id)->markAsRead();

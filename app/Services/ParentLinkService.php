@@ -40,7 +40,7 @@ class ParentLinkService
             'code'           => ['required', 'string', 'max:20'],
             'name'           => ['required', 'string', 'max:255', 'regex:/^[\pL .\'\-]+$/u', function ($attr, $value, $fail) {
                 if (count(NameMatcher::tokens($value)) < 2) {
-                    $fail('Ilagay ang buong pangalan (pangalan at apelyido).');
+                    $fail('Please enter your full name (first and last name).');
                 }
             }],
             'contact_number' => ['required', 'regex:/^09\d{9}$/', 'unique:users,contact_number'],
@@ -61,10 +61,10 @@ class ParentLinkService
     public static function messages(): array
     {
         return [
-            'name.regex'           => 'Letra lang ang puwede sa pangalan.',
-            'contact_number.regex' => 'Maglagay ng tamang PH mobile number (hal. 09171234567).',
-            'contact_number.unique'=> 'Nakarehistro na ang mobile number na ito.',
-            'email.unique'         => 'Nakarehistro na ang email na ito.',
+            'name.regex'           => 'Names may contain letters only.',
+            'contact_number.regex' => 'Enter a valid PH mobile number (e.g. 09171234567).',
+            'contact_number.unique'=> 'This mobile number is already registered.',
+            'email.unique'         => 'This email is already registered.',
         ];
     }
 
@@ -111,17 +111,17 @@ class ParentLinkService
     public function generate(User $student): array
     {
         if ($student->role !== 'student' || $student->status !== 'approved') {
-            throw ValidationException::withMessages(['code' => 'Estudyante lang na aprubado ang puwedeng gumawa ng parent code.']);
+            throw ValidationException::withMessages(['code' => 'Only approved students can create a parent code.']);
         }
 
         if (!$student->studentProfile) {
-            throw ValidationException::withMessages(['code' => 'Kailangan munang ma-approve ang iyong enrollment bago ma-link ang magulang.']);
+            throw ValidationException::withMessages(['code' => 'Your enrollment must be approved before you can link a parent.']);
         }
 
         $parent = $student->parent;
 
         if ($parent && $parent->status === 'pending') {
-            throw ValidationException::withMessages(['code' => 'May naka-link nang magulang na hinihintay pa ang pag-apruba ng admin.']);
+            throw ValidationException::withMessages(['code' => 'A linked parent is still waiting for admin approval.']);
         }
 
         $purpose = $parent ? ParentLinkCode::PURPOSE_RECOVER : ParentLinkCode::PURPOSE_LINK;
@@ -163,7 +163,7 @@ class ParentLinkService
             $student = User::whereKey($link->student_id)->lockForUpdate()->first();
 
             if (!$student || $student->parent_id !== null) {
-                throw ValidationException::withMessages(['code' => 'May naka-link nang magulang ang estudyanteng ito.']);
+                throw ValidationException::withMessages(['code' => 'This student already has a linked parent.']);
             }
 
             $profile = $student->studentProfile;
@@ -208,7 +208,7 @@ class ParentLinkService
             // Iisang mensahe para sa maling code at maling numero — walang
             // ibinubunyag kung alin ang mali.
             if (!$parent || $parent->contact_number !== $data['contact_number']) {
-                throw ValidationException::withMessages(['code' => 'Mali o expired ang code, o hindi tugma ang mobile number.']);
+                throw ValidationException::withMessages(['code' => 'The code is invalid or expired, or the mobile number does not match.']);
             }
 
             $parent->update(['password' => Hash::make($data['password'])]);
@@ -228,7 +228,7 @@ class ParentLinkService
             ->first();
 
         if (!$link || !$link->isUsable()) {
-            throw ValidationException::withMessages(['code' => 'Mali o expired ang code. Humingi ng bago sa iyong anak.']);
+            throw ValidationException::withMessages(['code' => 'The code is invalid or expired. Ask your child for a new one.']);
         }
 
         return $link;

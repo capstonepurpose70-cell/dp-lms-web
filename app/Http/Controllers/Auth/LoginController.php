@@ -76,8 +76,8 @@ class LoginController extends Controller
         if (empty($user->email)) {
             AuditLogService::log('Login blocked — new device, no email', 'Auth', $identifier);
             return back()->withInput()->with('error',
-                'Bagong device ito. Humingi ng recovery code sa iyong anak (sa kanyang DP-LMS account) '
-                . 'at gamitin ito sa "Nakalimutan ang password / bagong device".');
+                'This is a new device. Ask your child for a recovery code (from their DP-LMS account) '
+                . 'and use it on the "Parent recovery" page.');
         }
 
         // Store user temporarily in session — require OTP before full login

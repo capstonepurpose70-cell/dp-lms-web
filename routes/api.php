@@ -28,6 +28,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/user',    fn(Request $r) => $r->user());
 
+    // ── In-app notifications (lahat ng role) — hal. "Juan arrived at school" ──
+    Route::get('/notifications',                [App\Http\Controllers\NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read',     [App\Http\Controllers\NotificationController::class, 'read']);
+    Route::post('/notifications/read-all',      [App\Http\Controllers\NotificationController::class, 'readAll']);
+
     // ── FCM push tokens (kahit anong naka-login na user) ──────────────
     Route::post('/fcm-token',   [App\Http\Controllers\Api\FcmTokenController::class, 'store']);
     Route::delete('/fcm-token', [App\Http\Controllers\Api\FcmTokenController::class, 'destroy']);
@@ -87,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:parent')->prefix('parent')->group(function () {
         Route::get('/dashboard',     [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'index']);
         Route::get('/child-records', [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'childRecords']);
+        Route::get('/attendance',    [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'attendance']);
     });
 
     // Messaging (shared: student <-> teacher)

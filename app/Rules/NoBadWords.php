@@ -15,7 +15,7 @@ class NoBadWords implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (is_string($value) && BadWordFilter::containsBadWord($value)) {
-            $fail('Pakiusap, iwasan ang masasamang salita.');
+            $fail('Please avoid inappropriate language.');
         }
     }
 }
