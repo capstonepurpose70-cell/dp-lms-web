@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Message;
-use App\Models\TeacherAssignment;
-use App\Models\TeacherSubject;
 use App\Models\User;
+use App\Rules\NoBadWords;
 use Illuminate\Http\Request;
 
 class MessageController extends Controller
@@ -14,34 +13,13 @@ class MessageController extends Controller
     /** Who the current user is allowed to message (IDs) */
     private function allowedContactIds($me)
     {
-        if ($me->role === 'student') {
-            $sectionId = $me->studentEnrollment?->section?->id ?? $me->section_id;
-            if (! $sectionId) {
-                return collect();
-            }
-            // Teachers who teach this student's section
-            return TeacherSubject::where('section_id', $sectionId)->pluck('user_id')
-                ->merge(TeacherAssignment::where('section_id', $sectionId)->pluck('user_id'))
-                ->filter()->unique()->values();
-        }
-
-        if ($me->role === 'teacher') {
-            $sectionIds = TeacherSubject::where('user_id', $me->id)->pluck('section_id')
-                ->merge(TeacherAssignment::where('user_id', $me->id)->pluck('section_id'))
-                ->filter()->unique()->values();
-            if ($sectionIds->isEmpty()) {
-                return collect();
-            }
+        return match ($me->role) {
+            // Teachers of this student's section (subject teachers + adviser)
+            'student' => User::teacherIdsForSection($me->studentSectionId()),
             // Students inside the teacher's sections (direct or via enrollment)
-            $direct = User::where('role', 'student')
-                ->whereIn('section_id', $sectionIds)->pluck('id');
-            $viaEnroll = User::where('role', 'student')
-                ->whereHas('studentEnrollment', fn($q) => $q->whereIn('section_id', $sectionIds))
-                ->pluck('id');
-            return $direct->merge($viaEnroll)->filter()->unique()->values();
-        }
-
-        return collect();
+            'teacher' => User::studentIdsInSections($me->teachingSectionIds()),
+            default   => collect(),
+        };
     }
 
     /** Compact display info for a user */
@@ -178,7 +156,7 @@ class MessageController extends Controller
         $me = $request->user();
 
         $data = $request->validate([
-            'body'        => 'nullable|string|max:2000',
+            'body'        => ['nullable', 'string', 'max:2000', new NoBadWords],
             'file'        => 'nullable|file|max:10240|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,csv,jpg,jpeg,png,zip',
             'reply_to_id' => 'nullable|integer',
         ]);
@@ -275,7 +253,7 @@ class MessageController extends Controller
         }
 
         $data = $request->validate([
-            'body' => 'required|string|max:2000',
+            'body' => ['required', 'string', 'max:2000', new NoBadWords],
         ]);
 
         $msg->update([

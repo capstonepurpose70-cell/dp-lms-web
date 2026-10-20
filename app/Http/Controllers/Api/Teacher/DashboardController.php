@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api\Teacher;
 
+use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Attendance;
 use App\Models\Grade;
 use App\Models\LearningMaterial;
-use App\Models\Section;
 use App\Models\Subject;
-use App\Models\TeacherAssignment;
 use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
-use App\Services\PushNotificationService;
+use App\Services\GradeService;
+use App\Services\StudentNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,17 +29,12 @@ class DashboardController extends Controller
             ->where('user_id', $teacher->id)
             ->get();
 
-        // Sections come from BOTH subject assignments AND faculty section assignments
-        $sectionIds = TeacherSubject::where('user_id', $teacher->id)->pluck('section_id')
-            ->merge(TeacherAssignment::where('user_id', $teacher->id)->pluck('section_id'))
-            ->filter()
-            ->unique()
-            ->values();
+        // Sections: subject teacher + adviser + teacher_assignments
+        $sectionIds = $teacher->teachingSectionIds();
 
         // Count approved students inside this teacher's sections
-        $studentCount = User::where('role', 'student')
+        $studentCount = User::whereIn('id', User::studentIdsInSections($sectionIds))
             ->where('status', 'approved')
-            ->whereIn('section_id', $sectionIds)
             ->count();
 
         $subjectCount = $assignments->pluck('subject_id')->filter()->unique()->count();
@@ -108,13 +103,9 @@ class DashboardController extends Controller
     {
         $teacher = auth()->user();
 
-        $sectionIds = TeacherSubject::where('user_id', $teacher->id)
-            ->pluck('section_id')
-            ->unique();
-
-        $students = User::where('role', 'student')
+        // Dati: subject sections lang — hindi kasama ang advisory class
+        $students = User::whereIn('id', User::studentIdsInSections($teacher->teachingSectionIds()))
             ->where('status', 'approved')
-            ->whereIn('section_id', $sectionIds)
             ->with('section')
             ->orderBy('name')
             ->get()
@@ -178,61 +169,20 @@ class DashboardController extends Controller
 
     // ── POST /api/teacher/grades ──────────────────────────────────────────────
     // Body: { student_id, subject_id, quarter, written_works, performance_tasks, quarterly_assessment }
-    public function saveGrade(Request $request)
+    public function saveGrade(Request $request, GradeService $grades)
     {
-        $request->validate([
-            'student_id'           => 'required|exists:users,id',
-            'subject_id'           => 'required|exists:subjects,id',
-            'quarter'              => 'required|in:Q1,Q2,Q3,Q4',
-            'written_works'        => 'nullable|numeric|min:0|max:100',
-            'performance_tasks'    => 'nullable|numeric|min:0|max:100',
-            'quarterly_assessment' => 'nullable|numeric|min:0|max:100',
-            'remarks'              => 'nullable|string|max:255',
-        ]);
+        $data = $request->validate(GradeService::rules());
 
-        $teacher = auth()->user();
-
-        // Ensure teacher is assigned to this subject
-        $isAssigned = TeacherSubject::where('user_id', $teacher->id)
-            ->where('subject_id', $request->subject_id)
-            ->exists();
-
-        if (!$isAssigned) {
-            return response()->json(['message' => 'You are not assigned to this subject.'], 403);
+        try {
+            $grade = $grades->save(auth()->user(), $data);
+        } catch (ActionNotAllowed $e) {
+            return response()->json(['message' => $e->getMessage()], $e->status);
         }
-
-        // Compute final grade using DepEd formula: WW 25% + PT 50% + QA 25%
-        $ww = $request->written_works ?? 0;
-        $pt = $request->performance_tasks ?? 0;
-        $qa = $request->quarterly_assessment ?? 0;
-        $finalGrade = round(($ww * 0.25) + ($pt * 0.50) + ($qa * 0.25), 2);
-
-        $grade = Grade::updateOrCreate(
-            [
-                'user_id'    => $request->student_id,
-                'subject_id' => $request->subject_id,
-                'quarter'    => $request->quarter,
-            ],
-            [
-                'written_works'        => $ww,
-                'performance_tasks'    => $pt,
-                'quarterly_assessment' => $qa,
-                'final_grade'          => $finalGrade,
-                'remarks'              => $finalGrade >= 75 ? 'Passed' : 'Failed',
-                'school_year'          => \App\Models\SchoolYear::current()?->label ?? now()->year . '-' . (now()->year + 1),
-            ]
-        );
-
-        AuditLogService::log(
-            "Updated grade for student ID {$request->student_id}",
-            'Gradebook',
-            "Subject: {$request->subject_id} | Quarter: {$request->quarter} | Final: {$finalGrade}"
-        );
 
         return response()->json([
             'message'     => 'Grade saved successfully.',
-            'final_grade' => $finalGrade,
-            'passed'      => $finalGrade >= 75,
+            'final_grade' => (float) $grade->final_grade,
+            'passed'      => $grade->isPassed(),
             'grade'       => $grade,
         ]);
     }
@@ -271,7 +221,7 @@ class DashboardController extends Controller
 
     // ── POST /api/teacher/materials ───────────────────────────────────────────
     // Multipart: title, subject_id, quarter, week, description, file (optional)
-    public function storeMaterial(Request $request)
+    public function storeMaterial(Request $request, StudentNotifier $notifier)
     {
         $request->validate([
             'title'       => 'required|string|max:255',
@@ -313,38 +263,8 @@ class DashboardController extends Controller
             'is_published' => true,
         ]);
 
-        // 🔔 Notify enrolled students (in-app + FCM).
-        // The material is already saved above, so ANY notification failure is
-        // caught and logged — the upload still returns 201 success (no more 500).
-        try {
-            $subject = Subject::find($request->subject_id);
-            if ($subject) {
-                $students = User::where('role', 'student')
-                    ->where('status', 'approved')
-                    ->where('grade_level', $subject->grade_level)
-                    ->whereHas('studentEnrollment')
-                    ->get();
-
-                foreach ($students as $student) {
-                    $student->notify(new \App\Notifications\ActivityAssigned(
-                        title:      $material->title,
-                        subject:    $subject->name,
-                        instructor: $teacher->name,
-                        type:       'module',
-                        url:        '/student/modules',
-                    ));
-                }
-
-                app(PushNotificationService::class)->sendToUsers(
-                    $students->pluck('id')->all(),
-                    'New material: ' . $material->title,
-                    "{$teacher->name} posted in {$subject->name}",
-                    ['type' => 'material', 'id' => (string) $material->id],
-                );
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Material notify failed (upload still succeeded): '.$e->getMessage());
-        }
+        // 🔔 Notify enrolled students (in-app + FCM). Never breaks the upload.
+        $notifier->newMaterial($material, Subject::findOrFail($request->subject_id), $teacher);
 
         AuditLogService::log(
             "Uploaded material: {$material->title}",
@@ -401,14 +321,19 @@ class DashboardController extends Controller
 
     // ── POST /api/teacher/announcements ───────────────────────────────────────
     // Body: { title, body, audience, section_id? }
-    public function storeAnnouncement(Request $request)
+    public function storeAnnouncement(Request $request, StudentNotifier $notifier)
     {
+        $teachingIds = auth()->user()->teachingSectionIds();
+
         $request->validate([
             'title'      => 'required|string|max:255',
-            'body'       => 'required|string',
+            'body'       => 'required|string|max:20000',
             'audience'   => 'required|in:all,students,parents',
-            'section_id' => 'nullable|exists:sections,id',
-        ]);
+            // Sariling section lang ang puwedeng i-target
+            'section_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::in($teachingIds->all())],
+        ], ['section_id.in' => 'You can only post to your own sections.']);
+
+        $sectionIds = $request->filled('section_id') ? [(int) $request->section_id] : $teachingIds;
 
         $announcement = Announcement::create([
             'user_id'    => auth()->id(),
@@ -419,25 +344,15 @@ class DashboardController extends Controller
             'is_published' => true,
         ]);
 
-        // 🔔 Push notification (FCM) to students in the teacher's section(s).
+        // 🔔 Push (FCM) to students in the teacher's section(s). Never breaks posting
+        // (dati walang try/catch dito — 500 kahit naka-save na ang announcement).
         if ($request->audience !== 'parents') {
-            // Sections this teacher handles — BOTH subject AND faculty assignments
-            // (same sources as the dashboard, so we never miss a section).
-            $annSectionIds = TeacherSubject::where('user_id', auth()->id())->pluck('section_id')
-                ->merge(TeacherAssignment::where('user_id', auth()->id())->pluck('section_id'))
-                ->filter()->unique();
-            $annQuery = User::where('role', 'student')
-                ->where('status', 'approved')
-                ->whereIn('section_id', $annSectionIds);
-            if ($request->filled('section_id')) {
-                $annQuery->where('section_id', $request->section_id);
-            }
-            $teacherName = auth()->user()->name;
-            app(PushNotificationService::class)->sendToUsers(
-                $annQuery->pluck('id')->all(),
-                '📢 ' . $announcement->title,
-                'Mula kay ' . $teacherName . ': ' . $announcement->body,
-                ['type' => 'announcement', 'id' => $announcement->id, 'teacher' => $teacherName],
+            $notifier->announcement(
+                User::studentIdsInSections($sectionIds),
+                $announcement->title,
+                $announcement->body,
+                $announcement->id,
+                auth()->user()->name,
             );
         }
 
@@ -475,13 +390,10 @@ class DashboardController extends Controller
         $teacher = auth()->user();
 
         // Teacher's sections — as a SUBJECT teacher OR as an ADVISER.
-        $sectionIds = TeacherSubject::where('user_id', $teacher->id)->pluck('section_id')
-            ->merge(\App\Models\TeacherAssignment::where('user_id', $teacher->id)->pluck('section_id'))
-            ->filter()->unique()->values();
+        $sectionIds = $teacher->teachingSectionIds();
 
         // The teacher's roster (students in those sections).
-        $roster = User::where('role', 'student')
-            ->whereIn('section_id', $sectionIds)
+        $roster = User::whereIn('id', User::studentIdsInSections($sectionIds))
             ->with('section')
             ->get(['id', 'name', 'email', 'section_id']);
         $rosterIds    = $roster->pluck('id')->filter()->values();

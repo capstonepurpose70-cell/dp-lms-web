@@ -75,6 +75,11 @@
             ✓ {{ session('success') }}
         </div>
     @endif
+    @if($errors->any())
+        <div role="alert" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px 14px;border-radius:12px;font-size:13px;margin-bottom:14px;">
+            {{ $errors->first() }}
+        </div>
+    @endif
 
     <div class="msg-card">
         <div class="msg-grid">

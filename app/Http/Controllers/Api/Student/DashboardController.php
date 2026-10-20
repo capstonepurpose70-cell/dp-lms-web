@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\LearningMaterial;
 use App\Models\TeacherSubject;
+use App\Services\EnrollmentService;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -26,7 +28,8 @@ class DashboardController extends Controller
             'section'       => $section?->only(['id','name']),
             'subject_count' => $subjects->count(),
             'announcements' => Announcement::published()
-                ->forAudience('student')->with('author')->latest()->take(5)->get()
+                ->forAudience('student')->visibleToSections([$section?->id])
+                ->with('author')->latest()->take(5)->get()
                 ->map(fn($a) => ['id'=>$a->id,'title'=>$a->title,'body'=>$a->body,'date'=>$a->created_at->toDateString(),'author'=>$a->author?->name]),
         ]);
     }
@@ -53,12 +56,9 @@ class DashboardController extends Controller
 
     public function modules()
     {
-        $user       = auth()->user();
-        $enrollment = $user->studentEnrollment;
-        $section    = $enrollment?->section ?? $user->section;
-
-        $subjectIds = $section
-            ? TeacherSubject::where('section_id', $section->id)->pluck('subject_id')
+        $sectionId  = auth()->user()->studentSectionId();
+        $subjectIds = $sectionId
+            ? TeacherSubject::where('section_id', $sectionId)->pluck('subject_id')
             : collect();
 
         $materials = LearningMaterial::with(['subject','teacher'])
@@ -87,6 +87,7 @@ class DashboardController extends Controller
             ->map(fn($g) => [
                 'subject'              => $g->subject?->name,
                 'quarter'              => $g->quarter,
+                'school_year'          => $g->school_year,
                 'written_works'        => $g->written_works,
                 'performance_tasks'    => $g->performance_tasks,
                 'quarterly_assessment' => $g->quarterly_assessment,
@@ -101,6 +102,7 @@ class DashboardController extends Controller
     public function announcements()
     {
         $items = Announcement::published()->forAudience('student')
+            ->visibleToSections([auth()->user()->studentSectionId()])
             ->with('author')->latest()->get()
             ->map(fn($a) => [
                 'id'          => $a->id,
@@ -115,50 +117,13 @@ class DashboardController extends Controller
         return response()->json($items);
     }
 
-    public function assignments()
+    /** POST /api/student/enroll — parehong rules at tsek sa web (EnrollmentService) */
+    public function enroll(Request $request, EnrollmentService $enrollments)
     {
-        // Placeholder — extend once assignments are tied to student sections
-        return response()->json([]);
-    }
+        $data = $request->validate(EnrollmentService::rules(), EnrollmentService::messages());
 
-    public function enroll(\Illuminate\Http\Request $request)
-    {
-        $request->validate([
-            // grade_level & school_year: itinatakda ng SERVER, hindi ng app
-            'student_type' => 'required|in:new,old,transfer',
-            'full_name'    => 'required|string|max:255',
-            'age'          => 'required|integer',
-            'birthdate'    => 'required|date',
-            'gender'       => 'required|in:Male,Female',
-            'address'      => 'required|string',
-        ]);
-
-        $user = auth()->user();
-        \App\Models\EnrollmentRequest::updateOrCreate(
-            ['user_id' => $user->id, 'status' => 'pending'],
-            $request->only(['student_type','full_name','age','birthdate','gender','address','mother_name','father_name','guardian_name','guardian_contact']) + [
-                'grade_level' => $user->grade_level ?: 'To be assigned',
-                'school_year' => optional(\App\Models\SchoolYear::active()->first())->label ?? 'Current',
-                'status'      => 'pending',
-            ]
-        );
+        $enrollments->submit($request->user(), $data);
 
         return response()->json(['message' => 'Enrollment submitted!']);
-    }
-
-    /**
-     * School years for the mobile enrollment dropdown (active first, newest first).
-     * Guarantees the student picks a real, existing school year.
-     */
-    public function schoolYears()
-    {
-        $years = \App\Models\SchoolYear::orderByDesc('is_active')
-            ->orderByDesc('starts_at')
-            ->pluck('label')
-            ->filter()
-            ->unique()
-            ->values();
-
-        return response()->json(['school_years' => $years]);
     }
 }

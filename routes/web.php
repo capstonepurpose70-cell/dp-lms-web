@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\StudentActivationController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ParentActivationController;
@@ -163,27 +164,10 @@ Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name(
         Route::post('/science-game/score',      [App\Http\Controllers\Student\ScienceGameController::class, 'submitScore'])->name('science-game.score');
         Route::get('/science-game/leaderboard', [App\Http\Controllers\Student\ScienceGameController::class, 'leaderboard'])->name('science-game.leaderboard');
 
-        // Notifications
-        Route::get('/notifications/data', fn() => response()->json([
-            'unread' => auth()->user()->unreadNotifications->count(),
-            'items'  => auth()->user()->unreadNotifications->take(10)->map(fn($n) => [
-                'id'         => $n->id,
-                'title'      => $n->data['title'],
-                'subject'    => $n->data['subject'],
-                'instructor' => $n->data['instructor'],
-                'type'       => $n->data['type'],
-                'url'        => $n->data['url'],
-                'time'       => $n->created_at->diffForHumans(),
-            ]),
-        ]));
-        Route::post('/notifications/{id}/read', function ($id) {
-            auth()->user()->notifications()->findOrFail($id)->markAsRead();
-            return response()->json(['ok' => true]);
-        });
-        Route::post('/notifications/read-all', function () {
-            auth()->user()->unreadNotifications->markAsRead();
-            return response()->json(['ok' => true]);
-        });
+        // Notifications (bell)
+        Route::get('/notifications/data',       [NotificationController::class, 'data']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'read']);
+        Route::post('/notifications/read-all',  [NotificationController::class, 'readAll']);
     });
 // ═════════════════════════════════════════════════════════════════════════════
 // TEACHER ROUTES
@@ -201,9 +185,10 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::get('/enrollments/{enrollment}',        [TeacherEnrollmentController::class, 'show'])->name('enrollments.show');
         Route::post('/enrollments/{enrollment}/approve',[TeacherEnrollmentController::class, 'approve'])->name('enrollments.approve');
         Route::post('/enrollments/{enrollment}/reject', [TeacherEnrollmentController::class, 'reject'])->name('enrollments.reject');
-        Route::resource('gradebook',     GradebookController::class);
-        Route::resource('materials',     MaterialController::class);
-        Route::resource('announcements', AnnouncementController::class);
+        // ->only(): dati 7 route bawat isa pero ilang method lang ang meron → 500
+        Route::resource('gradebook',     GradebookController::class)->only(['index', 'store']);
+        Route::resource('materials',     MaterialController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+        Route::resource('announcements', AnnouncementController::class)->only(['index', 'store', 'destroy']);
 
         // Quizzes / assignments (file-based)
         Route::get('/assignments',                       [App\Http\Controllers\Teacher\AssignmentController::class, 'index'])->name('assignments.index');
@@ -217,26 +202,10 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::get('/messages',  [TeacherMessageController::class, 'index'])->name('messages');
         Route::post('/messages', [TeacherMessageController::class, 'store'])->name('messages.store');
 
-       Route::get('/notifications/data', fn() => response()->json([
-            'unread' => auth()->user()->unreadNotifications->count(),
-            'items'  => auth()->user()->unreadNotifications->take(10)->map(fn($n) => [
-                'id'         => $n->id,
-                'title'      => $n->data['title'] ?? '',
-                'subject'    => $n->data['subject'] ?? '',
-                'instructor' => $n->data['instructor'] ?? '',
-                'type'       => $n->data['type'] ?? 'module',
-                'url'        => $n->data['url'] ?? '#',
-                'time'       => $n->created_at->diffForHumans(),
-            ]),
-        ]));
-        Route::post('/notifications/{id}/read', function ($id) {
-            auth()->user()->notifications()->findOrFail($id)->markAsRead();
-            return response()->json(['ok' => true]);
-        });
-        Route::post('/notifications/read-all', function () {
-            auth()->user()->unreadNotifications->markAsRead();
-            return response()->json(['ok' => true]);
-        });
+        // Notifications (bell)
+        Route::get('/notifications/data',       [NotificationController::class, 'data']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'read']);
+        Route::post('/notifications/read-all',  [NotificationController::class, 'readAll']);
     });
 // ═════════════════════════════════════════════════════════════════════════════
 // PARENT ROUTES
@@ -327,10 +296,6 @@ Route::patch('/profile/update-password',
             [UserManagementController::class, 'approve'])->name('users.approve');
         Route::patch('/users/{user}/reject',
             [UserManagementController::class, 'reject'])->name('users.reject');
-        Route::get('/users/{user}/assign-teacher',
-            [UserManagementController::class, 'showAssignTeacher'])->name('users.assign-teacher');
-        Route::post('/users/{user}/assign-teacher',
-            [UserManagementController::class, 'assignTeacher'])->name('users.assign-teacher.submit');
         Route::patch('/users/{user}/release-lrn',
             [UserManagementController::class, 'releaseLrn'])->name('users.release-lrn');
         Route::post('/users/{user}/link-child',
@@ -352,8 +317,11 @@ Route::patch('/profile/update-password',
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-// IOT ATTENDANCE API — ESP32-CAM, no auth, no CSRF
+// IOT ATTENDANCE API — ESP32-CAM / Raspberry Pi. Walang user login at CSRF;
+// X-Device-Key ang patunay (ATTENDANCE_DEVICE_KEY). Throttled kada IP.
 // ═════════════════════════════════════════════════════════════════════════════
-Route::post('/api/attendance', [App\Http\Controllers\AttendanceController::class, 'store']);
-Route::get('/api/attendance',  [App\Http\Controllers\AttendanceController::class, 'index']);
-Route::get('/api/faces/approved', [App\Http\Controllers\AttendanceController::class, 'approvedFaces']);
+Route::middleware('throttle:120,1')->group(function () {
+    Route::post('/api/attendance',    [App\Http\Controllers\AttendanceController::class, 'store']);
+    Route::get('/api/attendance',     [App\Http\Controllers\AttendanceController::class, 'index']);
+    Route::get('/api/faces/approved', [App\Http\Controllers\AttendanceController::class, 'approvedFaces']);
+});

@@ -13,7 +13,8 @@ Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'regis
 Route::post('/activate',        [App\Http\Controllers\Api\StudentActivationController::class, 'start'])->middleware('throttle:20,1');
 Route::post('/activate/verify', [App\Http\Controllers\Api\StudentActivationController::class, 'verify'])->middleware('throttle:20,1');
 Route::post('/activate/resend', [App\Http\Controllers\Api\StudentActivationController::class, 'resend'])->middleware('throttle:5,10');
-Route::post('/forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgotPassword']);
+Route::post('/forgot-password',       [App\Http\Controllers\Api\AuthController::class, 'forgotPassword'])->middleware('throttle:10,1');
+Route::post('/forgot-password/reset', [App\Http\Controllers\Api\AuthController::class, 'resetPassword'])->middleware('throttle:20,1');
 
 // ── Public: Parent activation / recovery (code mula sa account ng anak) ──
 Route::middleware('throttle:30,1')->group(function () {
@@ -94,6 +95,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/contacts',       [App\Http\Controllers\Api\MessageController::class, 'contacts']);
         Route::get('/thread/{user}',  [App\Http\Controllers\Api\MessageController::class, 'thread']);
         Route::post('/thread/{user}', [App\Http\Controllers\Api\MessageController::class, 'send']);
+        // Dati: may method sa controller pero walang route → 404 ang edit/unsend/typing sa app
+        Route::post('/typing/{user}',    [App\Http\Controllers\Api\MessageController::class, 'typing'])->middleware('throttle:60,1');
+        Route::patch('/{message}',       [App\Http\Controllers\Api\MessageController::class, 'update'])->whereNumber('message');
+        Route::delete('/{message}',      [App\Http\Controllers\Api\MessageController::class, 'destroy'])->whereNumber('message');
     });
 
 });

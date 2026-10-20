@@ -7,6 +7,9 @@ use App\Models\Announcement;
 use App\Models\ClassSchedule;
 use App\Models\LearningMaterial;
 use App\Models\TeacherSubject;
+use App\Models\User;
+use App\Rules\NoBadWords;
+use App\Services\EnrollmentService;
 use Illuminate\Http\Request;
 
 class StudentDashboardController extends Controller
@@ -40,6 +43,7 @@ class StudentDashboardController extends Controller
                                         ->where('is_read', false)->count(),
             'announcements'      => Announcement::published()
                                         ->forAudience('student')
+                                        ->visibleToSections([$section?->id])
                                         ->with('author')
                                         ->latest()
                                         ->take(5)
@@ -125,16 +129,10 @@ class StudentDashboardController extends Controller
     public function messages()
     {
         $user = auth()->user();
-        $sectionId = $user->studentEnrollment?->section?->id ?? $user->section_id;
 
-        // Teachers who teach this student's section
-        $teacherIds = collect();
-        if ($sectionId) {
-            $teacherIds = TeacherSubject::where('section_id', $sectionId)->pluck('user_id')
-                ->merge(\App\Models\TeacherAssignment::where('section_id', $sectionId)->pluck('user_id'))
-                ->filter()->unique();
-        }
-        $teachers = \App\Models\User::whereIn('id', $teacherIds)->orderBy('name')->get();
+        // Teachers of this student's section (subject teachers + adviser)
+        $teacherIds = User::teacherIdsForSection($user->studentSectionId());
+        $teachers   = User::whereIn('id', $teacherIds)->orderBy('name')->get();
 
         // All messages involving this student (newest first)
         $messages = \App\Models\Message::with(['sender', 'receiver'])
@@ -152,17 +150,11 @@ class StudentDashboardController extends Controller
 
         $data = $request->validate([
             'teacher_id' => 'required|exists:users,id',
-            'body'       => 'required|string|max:2000',
+            'body'       => ['required', 'string', 'max:2000', new NoBadWords],
         ]);
 
         // The recipient must be a teacher of the student's section
-        $sectionId = $user->studentEnrollment?->section?->id ?? $user->section_id;
-        $allowed = collect();
-        if ($sectionId) {
-            $allowed = TeacherSubject::where('section_id', $sectionId)->pluck('user_id')
-                ->merge(\App\Models\TeacherAssignment::where('section_id', $sectionId)->pluck('user_id'))
-                ->filter()->unique();
-        }
+        $allowed = User::teacherIdsForSection($user->studentSectionId());
         if (! $allowed->contains((int) $data['teacher_id'])) {
             return back()->withErrors(['teacher_id' => 'You can only message your own teachers.'])->withInput();
         }
@@ -216,54 +208,12 @@ public function enrollmentForm()
 ]);
 }
 
-public function submitEnrollment(\Illuminate\Http\Request $request)
+public function submitEnrollment(Request $request, EnrollmentService $enrollments)
 {
-    $user = auth()->user();
+    // Iisang rules para sa web at API (EnrollmentService)
+    $data = $request->validate(EnrollmentService::rules(), EnrollmentService::messages());
 
-    $request->validate([
-        // grade_level at school_year: HINDI na pinipili ng estudyante —
-        // server ang nagtatakda (aktibong SY + grade mula sa records/LRN list)
-        'student_type'        => 'required|in:new,old,transfer',
-        // \pL + /u: tinatanggap ang ñ at accent (Peña, Nuñez), gitling at apostrophe
-        'full_name'           => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
-        'age'                 => 'required|integer|min:10|max:25',
-        'birthdate'           => 'required|date',
-        'gender'              => 'required|in:Male,Female',
-        'address'             => 'required|string|max:500',
-        'mother_name'         => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]*$/u'],
-        'father_name'         => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]*$/u'],
-        'guardian_name'       => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]*$/u'],
-        'guardian_contact'    => ['nullable', 'string', 'max:20', 'regex:/^[0-9\+\-\s]*$/'],
-        'last_school'         => 'nullable|string|max:255',
-        'last_grade_completed'=> 'nullable|string|max:50',
-    ], [
-        'full_name.regex'        => 'Full name must contain letters only, no numbers.',
-        'mother_name.regex'      => 'Mother\'s name must contain letters only.',
-        'father_name.regex'      => 'Father\'s name must contain letters only.',
-        'guardian_name.regex'    => 'Guardian\'s name must contain letters only.',
-        'guardian_contact.regex' => 'Contact number must contain numbers only.',
-    ]);
-
-    \App\Models\EnrollmentRequest::updateOrCreate(
-        ['user_id' => $user->id, 'status' => 'pending'],
-        [
-            'grade_level'          => $user->grade_level ?: 'To be assigned',
-            'school_year'          => optional(\App\Models\SchoolYear::active()->first())->label ?? 'Current',
-            'student_type'         => $request->student_type,
-            'full_name'            => $request->full_name,
-            'age'                  => $request->age,
-            'birthdate'            => $request->birthdate,
-            'gender'               => $request->gender,
-            'address'              => $request->address,
-            'mother_name'          => $request->mother_name,
-            'father_name'          => $request->father_name,
-            'guardian_name'        => $request->guardian_name,
-            'guardian_contact'     => $request->guardian_contact,
-            'last_school'          => $request->last_school,
-            'last_grade_completed' => $request->last_grade_completed,
-            'status'               => 'pending',
-        ]
-    );
+    $enrollments->submit(auth()->user(), $data);
 
     return redirect()->route('student.dashboard')
         ->with('success', 'Enrollment form submitted! Please wait for faculty review.');

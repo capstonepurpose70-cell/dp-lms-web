@@ -126,7 +126,7 @@
                     <div class="prof-input-wrap">
                         <input type="password" name="password" id="new_pw"
                                class="prof-input {{ $errors->has('password') ? 'error' : '' }}"
-                               placeholder="Min. 8 characters">
+                               placeholder="Min. 12 characters">
                         <button type="button" class="prof-toggle" onclick="togglePw('new_pw', this)">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -134,7 +134,7 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="prof-hint">At least 8 characters</div>
+                    <div class="prof-hint">At least 12 characters, with uppercase, lowercase, a number and a symbol</div>
                     @error('password')<div class="prof-error">{{ $message }}</div>@enderror
                 </div>
 

@@ -17,7 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
         'approved'    => \App\Http\Middleware\ApprovedMiddleware::class,
         'session.otp' => \App\Http\Middleware\SessionOtpMiddleware::class,
         'force.password' => \App\Http\Middleware\ForcePasswordChange::class,
-        'not.banned' => \App\Http\Middleware\EnsureNotBanned::class,
     ]);
 
     $middleware->validateCsrfTokens(except: [

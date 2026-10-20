@@ -45,4 +45,20 @@ class Announcement extends Model
               ->orWhere('audience', $role . 's');
         });
     }
+
+    /**
+     * School-wide (walang section) + para sa mga ibinigay na section lang.
+     * Dati, lumalabas sa LAHAT ang announcement na para sa iisang section.
+     */
+    public function scopeVisibleToSections($query, iterable $sectionIds)
+    {
+        $ids = collect($sectionIds)->filter()->unique()->values()->all();
+
+        return $query->where(function ($q) use ($ids) {
+            $q->whereNull('section_id');
+            if ($ids) {
+                $q->orWhereIn('section_id', $ids);
+            }
+        });
+    }
 }

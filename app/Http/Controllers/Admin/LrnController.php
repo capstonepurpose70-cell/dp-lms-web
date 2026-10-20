@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 /**
  * Official LRN Master List.
  * Dito idinadagdag ng admin ang mga LRN ng estudyante (bulk o isa-isa —
- * hal. para sa BAGONG student/transferee) bago sila makapag-register.
+ * hal. para sa BAGONG student/transferee) bago sila makapag-activate.
  */
 class LrnController extends Controller
 {
@@ -47,17 +47,20 @@ class LrnController extends Controller
     {
         $data = $request->validate([
             'lrn'          => 'required|digits:12|unique:official_lrns,lrn',
-            'student_name' => 'nullable|string|max:255',
-            'grade_level'  => 'nullable|string|max:20',
+            // Required na: ang activation ay nangangailangan ng pangalang tugma
+            // sa masterlist — ang LRN na walang pangalan ay hindi ma-a-activate.
+            'student_name' => 'required|string|max:255',
+            'grade_level'  => 'nullable|string|in:7,8,9,10,11,12',
         ], [
-            'lrn.digits' => 'Ang LRN ay dapat eksaktong 12 digits.',
-            'lrn.unique' => 'Nasa listahan na ang LRN na ito.',
+            'lrn.digits'            => 'Ang LRN ay dapat eksaktong 12 digits.',
+            'lrn.unique'            => 'Nasa listahan na ang LRN na ito.',
+            'student_name.required' => 'Kailangan ang pangalan — ito ang ikukumpara sa activation.',
         ]);
 
         OfficialLrn::create($data);
         AuditLogService::log("Added LRN: {$data['lrn']}", 'LRN Master List');
 
-        return back()->with('success', "LRN {$data['lrn']} added — pwede nang mag-register ang estudyante gamit ito.");
+        return back()->with('success', "LRN {$data['lrn']} added — puwede nang mag-activate ang estudyante gamit ito.");
     }
 
     /**
@@ -83,6 +86,14 @@ class LrnController extends Controller
 
             if (strlen($lrn) !== 12) {
                 $skipped[] = 'Line ' . ($i + 1) . ' — invalid LRN';
+                continue;
+            }
+            if (blank($name)) {
+                $skipped[] = $lrn . ' — walang pangalan (kailangan sa activation)';
+                continue;
+            }
+            if ($grade !== null && $grade !== '' && !in_array($grade, ['7', '8', '9', '10', '11', '12'], true)) {
+                $skipped[] = $lrn . " — maling grade '{$grade}' (may kuwit ba sa pangalan?)";
                 continue;
             }
             if (OfficialLrn::where('lrn', $lrn)->exists()) {

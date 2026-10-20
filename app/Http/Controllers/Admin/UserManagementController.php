@@ -4,22 +4,35 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTeacherRequest;
+use App\Models\OfficialLrn;
 use App\Models\SchoolYear;
 use App\Models\Section;
-use App\Models\StudentEnrollment;
-use App\Models\StudentProfile;
 use App\Models\Subject;
-use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\SmsService;
 use App\Services\TeacherAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class UserManagementController extends Controller
 {
+    /**
+     * Search sa name/email/LRN/mobile — NAKA-GROUP sa iisang (…) .
+     * Dati: `role = x AND name LIKE … OR email LIKE …` — dahil sa OR,
+     * lumalabas ang ibang role sa tab at nalalampasan ang status filter.
+     */
+    private function search($query, string $term)
+    {
+        return $query->where(function ($w) use ($term) {
+            $w->where('name', 'like', "%{$term}%")
+              ->orWhere('email', 'like', "%{$term}%")
+              ->orWhere('lrn', 'like', "%{$term}%")
+              ->orWhere('contact_number', 'like', "%{$term}%");
+        });
+    }
+
     // ── Main index ────────────────────────────────────────────────
     public function index(Request $request)
     {
@@ -31,10 +44,7 @@ class UserManagementController extends Controller
             ->groupBy('grade_level');
 
         $students = User::where('role', 'student')
-            ->when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%")
-            )
+            ->when($request->search, fn($q) => $this->search($q, $request->search))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->when($request->grade, fn($q) => $q->where('grade_level', $request->grade))
             ->when($request->section_id, fn($q) => $q->where('section_id', $request->section_id))
@@ -43,20 +53,14 @@ class UserManagementController extends Controller
             ->paginate(15, ['*'], 'student_page');
 
         $teachers = User::where('role', 'teacher')
-            ->when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%")
-            )
+            ->when($request->search, fn($q) => $this->search($q, $request->search))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->with(['teacherSubjects.section'])
             ->latest()
             ->paginate(15, ['*'], 'teacher_page');
 
         $parents = User::where('role', 'parent')
-            ->when($request->search, fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%")
-            )
+            ->when($request->search, fn($q) => $this->search($q, $request->search))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->with(['children.section'])
             ->latest()
@@ -122,6 +126,11 @@ class UserManagementController extends Controller
             return back()->withErrors(['student_id' => 'Selected account is not a student.']);
         }
 
+        // Isang magulang kada anak — dati tahimik na napapalitan ang dating naka-link.
+        if ($student->parent_id !== null && (int) $student->parent_id !== (int) $user->id) {
+            return back()->withErrors(['student_id' => "{$student->name} is already linked to another parent. Unlink them first."]);
+        }
+
         $student->update(['parent_id' => $user->id]);
 
         AuditLogService::log("Linked child {$student->name} to parent {$user->name}", 'User Management');
@@ -144,22 +153,24 @@ class UserManagementController extends Controller
     {
         $user->update(['status' => 'approved']);
 
-        try {
-            \Illuminate\Support\Facades\Mail::send(
-                'emails.account-approved',
-                ['user' => $user],
-                function($m) use ($user) {
-                    $m->to($user->email)
-                      ->subject('Account Approved — DP-LMS');
-                }
-            );
-        } catch (\Exception $e) {}
+        // Magulang na walang email — laktawan ang email (dati: exception na nilulunok)
+        if ($user->email) {
+            try {
+                Mail::send(
+                    'emails.account-approved',
+                    ['user' => $user],
+                    fn ($m) => $m->to($user->email)->subject('Account Approved — DP-LMS')
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         if ($user->contact_number || $user->phone_number) {
             $phone = $user->phone_number ?? $user->contact_number;
             $message = "Hello {$user->name}! Your DP-LMS account at Sto. Domingo NHS has been approved. "
                      . "You can now log in at: " . config('app.url') . "/login - DP-LMS";
-            \App\Services\SmsService::send($phone, $message);
+            SmsService::send($phone, $message);
         }
 
         AuditLogService::log("Approved user: {$user->name}", 'User Management');
@@ -194,7 +205,7 @@ class UserManagementController extends Controller
         $lrn = $user->lrn;
 
         DB::transaction(function () use ($user, $lrn) {
-            \App\Models\OfficialLrn::where('lrn', $lrn)->update(['claimed_by' => null]);
+            OfficialLrn::where('lrn', $lrn)->update(['claimed_by' => null]);
 
             $user->update(['status' => 'rejected', 'lrn' => null]);
             $user->tokens()->delete();
@@ -241,144 +252,4 @@ class UserManagementController extends Controller
                 ->withErrors(['general' => 'Failed to create teacher: ' . $e->getMessage()]);
         }
     }
- 
- 
-    // ── Enroll Student ────────────────────────────────────────────
-    public function showEnrollStudent(User $user)
-    {
-        $sections = Section::where('is_active', true)
-            ->orderBy('grade_level')
-            ->orderBy('name')
-            ->get();
-
-        $grades   = range(7, 12);
-        $profile  = $user->studentProfile;
-        $student  = $user;
-
-        return view('admin.users.enroll-student', compact('student', 'sections', 'grades', 'profile'));
-    }
-
-    public function enrollStudent(Request $request, User $user)
-    {
-        $request->validate([
-            'section_id'           => 'required|exists:sections,id',
-            'grade_level' => 'required|string|in:7,8,9,10,11,12',
-            'phone_number'         => 'nullable|string|max:20',
-            'school_year' => 'required|string|exists:school_years,name',
-            'student_type'         => 'required|in:new,old,transfer',
-            'full_name'            => 'required|string|max:255',
-            'age'                  => 'nullable|integer|min:10|max:25',
-            'birthdate'            => 'nullable|date',
-            'gender'               => 'nullable|in:Male,Female',
-            'address'              => 'nullable|string',
-            'mother_name'          => 'nullable|string|max:255',
-            'father_name'          => 'nullable|string|max:255',
-            'guardian_name'        => 'nullable|string|max:255',
-            'guardian_contact'     => 'nullable|string|max:20',
-            'last_school'          => 'nullable|string|max:255',
-            'last_grade_completed' => 'nullable|string|max:50',
-        ]);
-
-        $section = Section::find($request->section_id);
-
-        $user->update([
-            'section_id'   => $request->section_id,
-            'grade_level'  => $request->grade_level,
-            'phone_number' => $request->phone_number ?? $user->contact_number,
-            'status'       => 'approved',
-        ]);
-
-        StudentProfile::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'full_name'            => $request->full_name,
-                'age'                  => $request->age,
-                'birthdate'            => $request->birthdate,
-                'gender'               => $request->gender,
-                'address'              => $request->address,
-                'mother_name'          => $request->mother_name,
-                'father_name'          => $request->father_name,
-                'guardian_name'        => $request->guardian_name,
-                'guardian_contact'     => $request->guardian_contact,
-                'student_type'         => $request->student_type,
-                'last_school'          => $request->last_school,
-                'last_grade_completed' => $request->last_grade_completed,
-            ]
-        );
-
-        StudentEnrollment::updateOrCreate(
-            ['user_id' => $user->id, 'school_year' => $request->school_year],
-            [
-                'section_id'  => $request->section_id,
-                'grade_level' => $request->grade_level,
-                'status'      => 'enrolled',
-                'enrolled_at' => now(),
-            ]
-        );
-
-        $phone        = $request->phone_number ?? $user->contact_number;
-        $subjectCount = in_array($request->grade_level, ['11', '12']) ? 9 : 8;
-
-        if ($phone) {
-            $message = "Hello {$user->name}! You are now enrolled at Sto. Domingo NHS. "
-                     . "Grade: {$request->grade_level} | Section: {$section->name} | "
-                     . "Subjects: {$subjectCount} | SY: {$request->school_year}. "
-                     . "Log in to DP-LMS to view your dashboard. - Admin";
-            SmsService::send($phone, $message);
-        }
-
-        AuditLogService::log(
-            "Enrolled student: {$user->name}",
-            'Enrollment',
-            "Section: {$section->name} | Grade: {$request->grade_level} | Type: {$request->student_type}"
-        );
-
-        return redirect()->route('admin.users.index', ['tab' => 'students'])
-            ->with('success', "{$user->name} enrolled in {$section->name}."
-                . ($phone ? ' SMS sent.' : ''));
-    }
-
-    // ── Assign Teacher ────────────────────────────────────────────
-    public function showAssignTeacher(User $user)
-    {
-        $allTeachers = User::where('role', 'teacher')
-            ->where('status', 'approved')
-            ->with(['teacherSubjects.subject', 'teacherSubjects.section'])
-            ->get();
-
-        $subjects = Subject::where('is_active', true)
-            ->where('grade_level', $user->grade_level)
-            ->get();
-
-        return view('admin.users.assign-teacher', compact('user', 'allTeachers', 'subjects'));
-    }
-
-    public function assignTeacher(Request $request, User $user)
-    {
-        $request->validate([
-            'assignments'              => 'required|array|min:1',
-            'assignments.*.teacher_id' => 'required|exists:users,id',
-            'assignments.*.subject_id' => 'required|exists:subjects,id',
-        ]);
-
-        foreach ($request->assignments as $assignment) {
-            TeacherSubject::updateOrCreate(
-                [
-                    'user_id'    => $assignment['teacher_id'],
-                    'subject_id' => $assignment['subject_id'],
-                    'section_id' => $user->section_id,
-                ],
-                [
-                    'grade_level' => $user->grade_level,
-                   'school_year' => \App\Models\SchoolYear::current()?->label ?? '2025-2026',
-                ]
-            );
-        }
-
-        AuditLogService::log("Assigned teachers to student: {$user->name}", 'User Management');
-
-        return redirect()->route('admin.users.index', ['tab' => 'students'])
-            ->with('success', "Teachers assigned to {$user->name} successfully.");
-    }
-
 }

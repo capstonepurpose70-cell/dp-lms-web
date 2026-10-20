@@ -39,17 +39,19 @@ class Grade extends Model
 
     // ─── Helper Methods ───────────────────────────────────────────────────────
 
+    public const PASSING = 75;
+
     public function isPassed(): bool
     {
-        return $this->final_grade !== null && $this->final_grade >= 75;
+        return $this->final_grade !== null && $this->final_grade >= self::PASSING;
     }
 
-    public function computeFinalGrade(): float
+    /**
+     * Final grade: WW 25% + PT 50% + QA 25%.
+     * Iisang formula para sa web gradebook at mobile API (GradeService).
+     */
+    public static function computeFinal(?float $ww, ?float $pt, ?float $qa): float
     {
-        // DepEd grading formula
-        $ww = ($this->written_works ?? 0) * 0.25;
-        $pt = ($this->performance_tasks ?? 0) * 0.50;
-        $qa = ($this->quarterly_assessment ?? 0) * 0.25;
-        return round($ww + $pt + $qa, 2);
+        return round(($ww ?? 0) * 0.25 + ($pt ?? 0) * 0.50 + ($qa ?? 0) * 0.25, 2);
     }
 }

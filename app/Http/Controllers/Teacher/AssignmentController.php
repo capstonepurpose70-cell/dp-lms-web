@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Teacher;
 
+use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\Submission;
 use App\Models\TeacherSubject;
-use App\Models\User;
-use App\Services\PushNotificationService;
+use App\Services\StudentNotifier;
+use App\Services\SubmissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -43,7 +44,7 @@ class AssignmentController extends Controller
         return view('teacher.assignment-create', compact('pairs'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, StudentNotifier $notifier)
     {
         $data = $request->validate([
             'subject_id'   => 'required|exists:subjects,id',
@@ -85,34 +86,7 @@ class AssignmentController extends Controller
 
         // 🔔 Notify section students (in-app + FCM). Never breaks the upload.
         if ($assignment->is_published) {
-            try {
-                $assignment->loadMissing('subject');
-                $subjectName = $assignment->subject?->name ?? 'Subject';
-
-                $students = User::where('role', 'student')
-                    ->where('status', 'approved')
-                    ->where('section_id', $data['section_id'])
-                    ->get();
-
-                foreach ($students as $student) {
-                    $student->notify(new \App\Notifications\ActivityAssigned(
-                        title:      $assignment->title,
-                        subject:    $subjectName,
-                        instructor: auth()->user()->name,
-                        type:       'quiz',
-                        url:        '/student/quizzes',
-                    ));
-                }
-
-                app(PushNotificationService::class)->sendToUsers(
-                    $students->pluck('id')->all(),
-                    'New quiz: ' . $assignment->title,
-                    auth()->user()->name . ' posted a new quiz',
-                    ['type' => 'quiz', 'id' => (string) $assignment->id],
-                );
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Quiz notify failed (upload still succeeded): '.$e->getMessage());
-            }
+            $notifier->newAssignment($assignment, auth()->user());
         }
 
         return redirect()->route('teacher.assignments.index')
@@ -132,43 +106,18 @@ class AssignmentController extends Controller
         return view('teacher.assignment-show', compact('assignment', 'submissions'));
     }
 
-    public function grade(Request $request, Submission $submission)
+    public function grade(Request $request, Submission $submission, SubmissionService $submissions)
     {
-        abort_unless($submission->assignment?->user_id === auth()->id(), 403);
-
         $data = $request->validate([
-            'score'   => 'required|integer|min:0',
-            'remarks' => 'nullable|string',
+            'score'    => 'required|integer|min:0',
+            'feedback' => 'nullable|string|max:5000',
         ]);
 
-        $submission->update([
-            'score'   => $data['score'],
-            'remarks' => $data['remarks'] ?? $submission->remarks,
-            'status'  => 'graded',
-        ]);
-
-        // 🔔 Notify the graded student (in-app + FCM). Never breaks grading.
         try {
-            $submission->loadMissing(['assignment.subject', 'student']);
-            $student = $submission->student;
-            if ($student) {
-                $student->notify(new \App\Notifications\ActivityAssigned(
-                    title:      $submission->assignment?->title ?? 'Activity',
-                    subject:    $submission->assignment?->subject?->name ?? 'Subject',
-                    instructor: auth()->user()->name,
-                    type:       'grade',
-                    url:        '/student/quizzes',
-                ));
-
-                app(PushNotificationService::class)->sendToUsers(
-                    [$student->id],
-                    'Your work was graded: ' . ($submission->assignment?->title ?? 'Activity'),
-                    'Score: ' . $submission->score . '/' . ($submission->assignment?->max_score ?? '-'),
-                    ['type' => 'grade', 'id' => (string) ($submission->assignment_id ?? '')],
-                );
-            }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Grade notify failed (grade still saved): '.$e->getMessage());
+            $submissions->grade($submission, auth()->user(), (int) $data['score'], $data['feedback'] ?? null);
+        } catch (ActionNotAllowed $e) {
+            abort_if($e->status === 403, 403);
+            return back()->withErrors(['score' => $e->getMessage()]);
         }
 
         return back()->with('success', 'Submission graded.');

@@ -2,25 +2,20 @@
 
 namespace App\Http\Controllers\Api\Student;
 
+use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
-use App\Models\Submission;
+use App\Services\SubmissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class AssignmentController extends Controller
 {
-    /** Resolve the student's section (enrollment-aware) */
-    private function sectionId($user)
-    {
-        return $user->studentEnrollment?->section?->id ?? $user->section_id;
-    }
-
     /** GET /api/student/assignments — published quizzes/assignments for the student's section */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $sectionId = $this->sectionId($user);
+        $user      = $request->user();
+        $sectionId = $user->studentSectionId();
         if (! $sectionId) {
             return response()->json([]);
         }
@@ -56,10 +51,9 @@ class AssignmentController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
-        $sectionId = $this->sectionId($user);
 
         $a = Assignment::with('subject')
-            ->where('section_id', $sectionId)
+            ->where('section_id', $user->studentSectionId())
             ->where('is_published', true)
             ->findOrFail($id);
 
@@ -78,7 +72,8 @@ class AssignmentController extends Controller
             'submission'   => $sub ? [
                 'id'           => $sub->id,
                 'file_url'     => $sub->file_path ? Storage::disk('public')->url($sub->file_path) : null,
-                'remarks'      => $sub->remarks,
+                'remarks'      => $sub->remarks,   // sagot ng estudyante
+                'feedback'     => $sub->feedback,  // komento ng teacher (bago)
                 'score'        => $sub->score,
                 'status'       => $sub->status,
                 'submitted_at' => $sub->submitted_at?->toDateTimeString(),
@@ -87,61 +82,24 @@ class AssignmentController extends Controller
     }
 
     /** POST /api/student/assignments/{id}/submit — submit answer (file and/or typed text) */
-    public function submit(Request $request, $id)
+    public function submit(Request $request, $id, SubmissionService $submissions)
     {
         $user = $request->user();
-        $sectionId = $this->sectionId($user);
 
-        $a = Assignment::where('section_id', $sectionId)
+        $a = Assignment::where('section_id', $user->studentSectionId())
             ->where('is_published', true)
             ->findOrFail($id);
 
-        // 🔒 Auto-close: hindi na tumatanggap ng sagot pag lampas na ang deadline.
-        if ($a->isOverdue()) {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'This quiz is already closed — the deadline has passed.',
-            ], 403);
-        }
-
         $request->validate([
-            'remarks' => 'nullable|string',
+            'remarks' => 'nullable|string|max:20000',
             'file'    => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,ppt,pptx,xls,xlsx',
         ]);
 
-        if (! $request->hasFile('file') && ! $request->filled('remarks')) {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Please attach a file or type your answer.',
-            ], 422);
+        try {
+            $submissions->submit($a, $user, $request->file('file'), $request->input('remarks'));
+        } catch (ActionNotAllowed $e) {
+            return $e->toJson();
         }
-
-        // One submission per student — re-submitting updates the existing one
-        $submission = Submission::firstOrNew([
-            'assignment_id' => $a->id,
-            'user_id'       => $user->id,
-        ]);
-
-        // 🔒 Locked once graded — no re-submission allowed.
-        if ($submission->exists && $submission->status === 'graded') {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'This activity has already been graded. Submissions are locked.',
-            ], 422);
-        }
-
-        if ($request->hasFile('file')) {
-            if ($submission->file_path) {
-                Storage::disk('public')->delete($submission->file_path);
-            }
-            $submission->file_path = $request->file('file')
-                ->store("submissions/{$a->id}/{$user->id}", 'public');
-        }
-
-        $submission->remarks      = $request->input('remarks', $submission->remarks);
-        $submission->status       = 'submitted';
-        $submission->submitted_at = now();
-        $submission->save();
 
         return response()->json([
             'ok'      => true,

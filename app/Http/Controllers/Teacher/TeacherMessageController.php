@@ -4,32 +4,16 @@ namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Models\Message;
-use App\Models\TeacherAssignment;
-use App\Models\TeacherSubject;
 use App\Models\User;
+use App\Rules\NoBadWords;
 use Illuminate\Http\Request;
 
 class TeacherMessageController extends Controller
 {
-    /** Student IDs this teacher is allowed to message (same-section scope). */
+    /** Student IDs this teacher is allowed to message (same-section scope, incl. advisory). */
     private function allowedStudentIds($me)
     {
-        $sectionIds = TeacherSubject::where('user_id', $me->id)->pluck('section_id')
-            ->merge(TeacherAssignment::where('user_id', $me->id)->pluck('section_id'))
-            ->filter()->unique()->values();
-
-        if ($sectionIds->isEmpty()) {
-            return collect();
-        }
-
-        $direct = User::where('role', 'student')
-            ->whereIn('section_id', $sectionIds)->pluck('id');
-
-        $viaEnroll = User::where('role', 'student')
-            ->whereHas('studentEnrollment', fn($q) => $q->whereIn('section_id', $sectionIds))
-            ->pluck('id');
-
-        return $direct->merge($viaEnroll)->filter()->unique()->values();
+        return User::studentIdsInSections($me->teachingSectionIds());
     }
 
     private function sectionNameFor($student)
@@ -128,7 +112,7 @@ class TeacherMessageController extends Controller
 
         $data = $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'body'        => 'required|string|max:2000',
+            'body'        => ['required', 'string', 'max:2000', new NoBadWords],
         ]);
 
         if (! $this->allowedStudentIds($me)->contains((int) $data['receiver_id'])) {

@@ -36,6 +36,7 @@ protected $fillable = [
     protected $hidden = [
         'password',
         'remember_token',
+        'invite_token',   // lumalabas dati sa GET /api/user
     ];
 
     protected $casts = [
@@ -198,6 +199,68 @@ protected $fillable = [
     public function isPending(): bool
     {
         return $this->status === 'pending';
+    }
+
+    // ─── Section scope (iisang pinagkukunan para sa lahat ng controller) ──────
+
+    /** Section ng estudyante: aktibong enrollment muna, saka users.section_id. */
+    public function studentSectionId(): ?int
+    {
+        $id = $this->studentEnrollment?->section_id ?? $this->section_id;
+
+        return $id ? (int) $id : null;
+    }
+
+    /**
+     * Lahat ng section na hawak ng teacher — bilang SUBJECT teacher
+     * (teacher_subjects), bilang ADVISER (sections.adviser_id — ang gamit ng
+     * Sections page at enrollment review), o sa teacher_assignments.
+     * Dati magkakaiba ang pinagkukunan kada page, kaya hindi nakikita ng
+     * adviser ang sarili niyang klase sa ibang page.
+     */
+    public function teachingSectionIds(): \Illuminate\Support\Collection
+    {
+        return TeacherSubject::where('user_id', $this->id)->pluck('section_id')
+            ->merge(TeacherAssignment::where('user_id', $this->id)->pluck('section_id'))
+            ->merge(Section::where('adviser_id', $this->id)->pluck('id'))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    /** IDs ng mga teacher ng isang section: subject teachers + adviser. */
+    public static function teacherIdsForSection(?int $sectionId): \Illuminate\Support\Collection
+    {
+        if (!$sectionId) {
+            return collect();
+        }
+
+        return TeacherSubject::where('section_id', $sectionId)->pluck('user_id')
+            ->merge(TeacherAssignment::where('section_id', $sectionId)->pluck('user_id'))
+            ->merge(Section::whereKey($sectionId)->pluck('adviser_id'))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    /** IDs ng estudyanteng nasa mga section na ito (direkta o via enrollment). */
+    public static function studentIdsInSections(iterable $sectionIds): \Illuminate\Support\Collection
+    {
+        $ids = collect($sectionIds)->filter()->values();
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return static::where('role', 'student')
+            ->where(function ($q) use ($ids) {
+                $q->whereIn('section_id', $ids)
+                  ->orWhereHas('studentEnrollment', fn ($e) => $e->whereIn('section_id', $ids));
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
     }
     public function teacherSubjects()
 {

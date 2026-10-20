@@ -6,12 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\LearningMaterial;
 use App\Models\Subject;
 use App\Models\TeacherSubject;
+use App\Models\User;
 use App\Services\AuditLogService;
-use App\Services\PushNotificationService;
+use App\Services\StudentNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use App\Notifications\ActivityAssigned;
-use App\Models\User;
 
 class MaterialController extends Controller
 {
@@ -49,7 +48,7 @@ class MaterialController extends Controller
         return view('teacher.materials-create', compact('subjects'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, StudentNotifier $notifier)
     {
         $request->validate([
             'title'       => 'required|string|max:255',
@@ -114,31 +113,10 @@ class MaterialController extends Controller
             'Learning Materials'
         );
 
-        // Notify students if published
+        // 🔔 Notify students if published (in-app + FCM). Dati walang try/catch
+        // dito — 500 ang nakikita ng teacher kahit naka-save na ang material.
         if ($material->is_published) {
-            $students = User::where('role', 'student')
-                ->where('status', 'approved')
-                ->where('grade_level', $subject->grade_level)
-                ->whereHas('studentEnrollment')
-                ->get();
-
-            foreach ($students as $student) {
-                $student->notify(new ActivityAssigned(
-                    title:      $material->title,
-                    subject:    $subject->name,
-                    instructor: auth()->user()->name,
-                    type:       'module',
-                    url:        '/student/modules',
-                ));
-            }
-
-            // 🔔 Push notification (FCM) to the same students.
-            app(PushNotificationService::class)->sendToUsers(
-                $students->pluck('id')->all(),
-                'New material: ' . $material->title,
-                auth()->user()->name . ' posted in ' . $subject->name,
-                ['type' => 'material', 'id' => $material->id],
-            );
+            $notifier->newMaterial($material, $subject, auth()->user());
         }
 
         return redirect()->route('teacher.materials.index')
@@ -205,53 +183,5 @@ class MaterialController extends Controller
     }
 
     return view('teacher.materials-show', compact('material', 'viewers', 'comments'));
-}
-
-public function edit(LearningMaterial $material)
-{
-    abort_if($material->user_id !== auth()->id(), 403);
-
-    $subjectIds = TeacherSubject::where('user_id', auth()->id())->pluck('subject_id');
-    $subjects   = Subject::whereIn('id', $subjectIds)->where('is_active', true)->get();
-
-    return view('teacher.materials-edit', compact('material', 'subjects'));
-}
-
-public function update(Request $request, LearningMaterial $material)
-{
-    abort_if($material->user_id !== auth()->id(), 403);
-
-    $request->validate([
-        'title'       => 'required|string|max:255',
-        'subject_id'  => 'required|exists:subjects,id',
-        'quarter'     => 'required|in:Q1,Q2,Q3,Q4',
-        'week'        => 'nullable|integer|min:1|max:20',
-        'description' => 'nullable|string|max:1000',
-        'file'        => 'nullable|file|max:20480|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,png,jpg,jpeg,mp4,zip',
-    ]);
-
-    if ($request->hasFile('file') && $request->file('file')->isValid()) {
-        if ($material->file_path) {
-            Storage::disk('public')->delete($material->file_path);
-        }
-        $material->file_path = $request->file('file')->store('materials', 'public');
-        $material->file_type = $request->file('file')->getClientOriginalExtension();
-    }
-
-    $material->update([
-        'title'        => $request->title,
-        'subject_id'   => $request->subject_id,
-        'quarter'      => $request->quarter,
-        'week'         => $request->week,
-        'description'  => $request->description,
-        'is_published' => $request->has('is_published'),
-        'file_path'    => $material->file_path,
-        'file_type'    => $material->file_type,
-    ]);
-
-    AuditLogService::log("Updated material: {$material->title}", 'Learning Materials');
-
-    return redirect()->route('teacher.materials.index')
-        ->with('success', "Material '{$material->title}' updated.");
 }
 }

@@ -12,17 +12,20 @@ class DashboardController extends Controller
     {
         $parent = auth()->user();
 
-        $children = $parent->children()
+        $childModels = $parent->children()
             ->with([
                 'grades.subject',
                 'section',
                 'studentEnrollment.section',
             ])
-            ->get()
-            ->map(fn($child) => $this->formatChild($child, withGrades: true));
+            ->get();
 
+        $children = $childModels->map(fn($child) => $this->formatChild($child, withGrades: true));
+
+        // School-wide + para sa section ng mga anak lang (dati lahat ng section)
         $announcements = Announcement::published()
             ->forAudience('parent')
+            ->visibleToSections($childModels->map(fn ($c) => $c->studentSectionId()))
             ->with('author')
             ->latest()
             ->take(5)
@@ -55,7 +58,6 @@ class DashboardController extends Controller
                 'grades.subject',
                 'section',
                 'studentEnrollment.section',
-                'enrollments',
                 'studentProfile',
             ])
             ->get()

@@ -37,6 +37,9 @@
     @if(session('success'))
         <div class="sb-flash">{{ session('success') }}</div>
     @endif
+    @if($errors->any())
+        <div class="sb-flash" role="alert" style="background:#FEF2F2;border-color:#FECACA;color:#B91C1C;">{{ $errors->first() }}</div>
+    @endif
 
     <div class="sb-head">
         <div class="sb-title">{{ $assignment->title }}</div>
@@ -87,8 +90,9 @@
                     <input type="number" name="score" class="sb-score" min="0" max="{{ $assignment->max_score }}" value="{{ $s->score }}" required>
                 </div>
                 <div style="flex:1">
-                    <label>Remarks (optional)</label>
-                    <input type="text" name="remarks" class="sb-remarks" value="{{ $s->remarks }}" placeholder="Feedback for the student...">
+                    <label>Feedback (optional)</label>
+                    {{-- `feedback` — hindi na pinapalitan ang sagot ng estudyante (`remarks`) --}}
+                    <input type="text" name="feedback" class="sb-remarks" value="{{ $s->feedback }}" maxlength="5000" placeholder="Feedback for the student...">
                 </div>
                 <button type="submit" class="sb-save">Save Grade</button>
             </form>

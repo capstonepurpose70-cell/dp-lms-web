@@ -24,10 +24,13 @@ public function submit(Request $request)
         'password' => 'required',
     ]);
 
-    // ── 1. Rate limit check MUNA ──
-    $key = 'admin-login:' . $request->ip();
+    // ── 1. Rate limit check MUNA (kada IP at kada email) ──
+    // Dati: hit($key, 45) = 45 SEGUNDO lang ang lock kahit "30 minutes" ang
+    // mensahe → 5 hula ng admin password kada 45 segundo.
+    $key      = 'admin-login:' . $request->ip();
+    $emailKey = 'admin-login-email:' . mb_strtolower((string) $request->email);
 
-    if (RateLimiter::tooManyAttempts($key, 5)) {
+    if (RateLimiter::tooManyAttempts($key, 5) || RateLimiter::tooManyAttempts($emailKey, 10)) {
         AuditLogService::log('Admin login blocked — rate limit', 'Auth', $request->email);
         return back()->with('error', 'Too many attempts. Please try again in 30 minutes.');
     }
@@ -36,14 +39,17 @@ public function submit(Request $request)
     $admin = Admin::where('email', $request->email)->first();
 
     if (!$admin || !Hash::check($request->password, $admin->password)) {
-        RateLimiter::hit($key, 45);
+        RateLimiter::hit($key, 1800);
+        RateLimiter::hit($emailKey, 1800);
         AuditLogService::log('Failed admin login', 'Auth', $request->email);
         return back()->with('error', 'Invalid administrator credentials.')->withInput();
     }
 
     // ── 3. Success ──
     Auth::guard('admin')->login($admin);
+    $request->session()->regenerate();   // panlaban sa session fixation
     RateLimiter::clear($key);
+    RateLimiter::clear($emailKey);
 
 return redirect()->route('admin.dashboard')
     ->with('login_success', true);

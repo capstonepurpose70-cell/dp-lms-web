@@ -85,13 +85,13 @@
                     <label>LRN (12 digits) *</label>
                     <input type="text" name="lrn" value="{{ old('lrn') }}" maxlength="12"
                            inputmode="numeric" pattern="\d{12}" placeholder="e.g. 123456789012" required>
-                    <label>Student Name (optional)</label>
-                    <input type="text" name="student_name" value="{{ old('student_name') }}" placeholder="Dela Cruz, Juan">
+                    <label>Student Name *</label>
+                    <input type="text" name="student_name" value="{{ old('student_name') }}" placeholder="Dela Cruz Juan" required>
                     <label>Grade Level (optional)</label>
-                    <input type="text" name="grade_level" value="{{ old('grade_level') }}" placeholder="e.g. 11">
+                    <input type="text" name="grade_level" value="{{ old('grade_level') }}" placeholder="7 – 12" inputmode="numeric">
                     <button class="lrn-btn" type="submit">Add LRN</button>
                 </form>
-                <p class="lrn-hint">Kapag naidagdag, pwede nang mag-register ang estudyante gamit ang LRN na ito.</p>
+                <p class="lrn-hint">Kapag naidagdag, puwede nang mag-activate ang estudyante gamit ang LRN at pangalang ito.</p>
             </div>
 
             <div class="lrn-card">
@@ -99,12 +99,12 @@
                 <form method="POST" action="{{ route('admin.lrns.bulk') }}">
                     @csrf
                     <label>Isang LRN bawat linya</label>
-                    <textarea name="bulk" placeholder="123456789012&#10;123456789013,Dela Cruz Juan&#10;123456789014,Santos Maria,11"></textarea>
+                    <textarea name="bulk" placeholder="123456789013,Dela Cruz Juan&#10;123456789014,Santos Maria,11"></textarea>
                     <button class="lrn-btn gold" type="submit">Import All</button>
                 </form>
                 <p class="lrn-hint">
-                    Formats: <b>LRN</b> lang · <b>LRN,Name</b> · <b>LRN,Name,Grade</b>.
-                    Awtomatikong nilalaktawan ang duplicate at invalid.
+                    Formats: <b>LRN,Name</b> · <b>LRN,Name,Grade</b>. Kailangan ang pangalan (ginagamit sa activation).
+                    Walang kuwit sa loob ng pangalan. Awtomatikong nilalaktawan ang duplicate at invalid.
                     (Pwedeng i-copy-paste diretso mula sa Excel column.)
                 </p>
             </div>

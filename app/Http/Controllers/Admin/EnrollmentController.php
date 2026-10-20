@@ -5,12 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EnrollmentRequest;
 use App\Models\Section;
-use App\Models\StudentEnrollment;
-use App\Models\StudentProfile;
 use App\Services\AuditLogService;
+use App\Services\EnrollmentService;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class EnrollmentController extends Controller
 {
@@ -36,85 +34,32 @@ class EnrollmentController extends Controller
     }
 
     // ── Approve an enrollment request + place the student in a section ──
-    public function approve(Request $httpRequest, EnrollmentRequest $enrollment)
+    public function approve(Request $httpRequest, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
         $httpRequest->validate([
             'section_id' => 'required|exists:sections,id',
         ]);
 
-        $section = Section::find($httpRequest->section_id);
-        $student = $enrollment->student;
+        $section = Section::findOrFail($httpRequest->section_id);
 
-        if (!$student) {
-            return back()->with('error', 'Student record not found for this request.');
-        }
-
-        $enrollment->update([
-            'status'      => 'approved',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-        ]);
-
-        $student->update([
-            'section_id'  => $section->id,
-            'grade_level' => $enrollment->grade_level,
-            'status'      => 'approved',
-        ]);
-
-        StudentProfile::updateOrCreate(
-            ['user_id' => $student->id],
-            [
-                'full_name'            => $enrollment->full_name,
-                'age'                  => $enrollment->age,
-                'birthdate'            => $enrollment->birthdate,
-                'gender'               => $enrollment->gender,
-                'address'              => $enrollment->address,
-                'mother_name'          => $enrollment->mother_name,
-                'father_name'          => $enrollment->father_name,
-                'guardian_name'        => $enrollment->guardian_name,
-                'guardian_contact'     => $enrollment->guardian_contact,
-                'student_type'         => $enrollment->student_type,
-                'last_school'          => $enrollment->last_school,
-                'last_grade_completed' => $enrollment->last_grade_completed,
-            ]
-        );
-
-        StudentEnrollment::updateOrCreate(
-            ['user_id' => $student->id, 'school_year' => $enrollment->school_year],
-            [
-                'section_id'  => $section->id,
-                'grade_level' => $enrollment->grade_level,
-                'status'      => 'enrolled',
-                'enrolled_at' => now(),
-            ]
-        );
-
-        $subjectCount = in_array($enrollment->grade_level, ['11', '12']) ? 9 : 8;
+        // reviewed_by = null: ang admin ay nasa hiwalay na `admins` table
+        // (dati auth()->id() ng WEB guard — mali o null).
+        $student = $enrollments->approve($enrollment, $section, null);
+        $grade   = $student->grade_level;
 
         if ($student->contact_number || $student->phone_number) {
             $phone   = $student->phone_number ?? $student->contact_number;
             $message = "Hello {$student->name}! Your enrollment at Sto. Domingo NHS has been approved. "
-                     . "Grade: {$enrollment->grade_level} | Section: {$section->name} | "
-                     . "Subjects: {$subjectCount} | SY: {$enrollment->school_year}. "
+                     . "Grade: {$grade} | Section: {$section->name} | "
+                     . "Subjects: " . EnrollmentService::subjectCount($grade) . " | SY: {$enrollment->school_year}. "
                      . "Log in to DP-LMS to view your dashboard. - DP-LMS";
             SmsService::send($phone, $message);
         }
 
-        try {
-            Mail::send('emails.enrollment-approved', [
-                'student'      => $student,
-                'section'      => $section,
-                'request'      => $enrollment,
-                'subjectCount' => $subjectCount,
-            ], function ($m) use ($student) {
-                $m->to($student->email)->subject('Enrollment Approved — DP-LMS');
-            });
-        } catch (\Exception $e) {}
-
         AuditLogService::log(
             "Approved enrollment: {$student->name}",
             'Enrollment',
-            "Section: {$section->name} | Grade: {$enrollment->grade_level}"
+            "Section: {$section->name} | Grade: {$grade}"
         );
 
         return redirect()->route('admin.enrollment.index')
@@ -122,33 +67,15 @@ class EnrollmentController extends Controller
     }
 
     // ── Reject an enrollment request ──
-    public function reject(Request $httpRequest, EnrollmentRequest $enrollment)
+    public function reject(Request $httpRequest, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
         $httpRequest->validate([
             'remarks' => 'nullable|string|max:500',
         ]);
 
-        $student = $enrollment->student;
+        $student = $enrollments->reject($enrollment, $httpRequest->remarks, null);
 
-        $enrollment->update([
-            'status'      => 'rejected',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-            'remarks'     => $httpRequest->remarks,
-        ]);
-
-        if ($student) {
-            try {
-                Mail::send('emails.enrollment-rejected', [
-                    'student' => $student,
-                    'remarks' => $httpRequest->remarks,
-                ], function ($m) use ($student) {
-                    $m->to($student->email)->subject('Enrollment Update — DP-LMS');
-                });
-            } catch (\Exception $e) {}
-
-            AuditLogService::log("Rejected enrollment: {$student->name}", 'Enrollment');
-        }
+        AuditLogService::log("Rejected enrollment: {$student->name}", 'Enrollment');
 
         return redirect()->route('admin.enrollment.index')
             ->with('success', 'Enrollment request has been rejected.');

@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
-use App\Models\TeacherSubject;
-use App\Models\TeacherAssignment;
 use App\Models\User;
 use App\Services\AuditLogService;
-use App\Services\PushNotificationService;
+use App\Services\StudentNotifier;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AnnouncementController extends Controller
 {
@@ -20,51 +19,38 @@ class AnnouncementController extends Controller
         return view('teacher.announcements', compact('announcements'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, StudentNotifier $notifier)
     {
+        $teachingIds = auth()->user()->teachingSectionIds();
+
         $request->validate([
             'title'      => 'required|string|max:255',
-            'body'       => 'required|string',
+            'body'       => 'required|string|max:20000',
             'audience'   => 'required|in:all,students,parents',
-            'section_id' => 'nullable|exists:sections,id',
-        ]);
+            // Sariling section lang ang puwedeng i-target
+            'section_id' => ['nullable', 'integer', Rule::in($teachingIds->all())],
+        ], ['section_id.in' => 'You can only post to your own sections.']);
 
         $announcement = Announcement::create([
-            'user_id'    => auth()->id(),
-            'title'      => $request->title,
-            'body'       => $request->body,
-            'audience'   => $request->audience,
-            'section_id' => $request->section_id,
+            'user_id'      => auth()->id(),
+            'title'        => $request->title,
+            'body'         => $request->body,
+            'audience'     => $request->audience,
+            'section_id'   => $request->section_id,
+            'is_published' => true,
         ]);
 
-        // 🔔 Push notification (FCM) to students in the teacher's section(s).
-        // Wrapped so a notification failure can NEVER break posting.
+        // 🔔 Push (FCM) to students in the teacher's section(s). Never breaks posting.
         if ($request->audience !== 'parents') {
-            try {
-                // Sections this teacher handles — BOTH subject AND faculty assignments.
-                $annSectionIds = TeacherSubject::where('user_id', auth()->id())->pluck('section_id')
-                    ->merge(TeacherAssignment::where('user_id', auth()->id())->pluck('section_id'))
-                    ->filter()->unique();
+            $sectionIds = $request->filled('section_id') ? [(int) $request->section_id] : $teachingIds;
 
-                $annQuery = User::where('role', 'student')
-                    ->where('status', 'approved')
-                    ->whereIn('section_id', $annSectionIds);
-
-                if ($request->filled('section_id')) {
-                    $annQuery->where('section_id', $request->section_id);
-                }
-
-                $teacherName = auth()->user()->name;
-                // FCM v1 requires ALL data values to be strings (int id silently fails).
-                app(PushNotificationService::class)->sendToUsers(
-                    $annQuery->pluck('id')->all(),
-                    '📢 ' . $announcement->title,
-                    'Mula kay ' . $teacherName . ': ' . $announcement->body,
-                    ['type' => 'announcement', 'id' => (string) $announcement->id, 'teacher' => (string) $teacherName],
-                );
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Announcement notify failed (post still succeeded): '.$e->getMessage());
-            }
+            $notifier->announcement(
+                User::studentIdsInSections($sectionIds),
+                $announcement->title,
+                $announcement->body,
+                $announcement->id,
+                auth()->user()->name,
+            );
         }
 
         AuditLogService::log(
@@ -73,12 +59,6 @@ class AnnouncementController extends Controller
         );
 
         return back()->with('success', 'Announcement posted successfully.');
-    }
-
-    public function show(Announcement $announcement)
-    {
-        abort_if($announcement->user_id !== auth()->id(), 403);
-        return view('teacher.announcements', compact('announcement'));
     }
 
     public function destroy(Announcement $announcement)

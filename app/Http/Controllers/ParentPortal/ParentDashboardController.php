@@ -18,8 +18,10 @@ class ParentDashboardController extends Controller
             ])
             ->get();
 
+        // School-wide + para sa section ng mga anak lang (dati lahat ng section)
         $announcements = Announcement::published()
             ->forAudience('parent')
+            ->visibleToSections($children->map(fn ($c) => $c->studentSectionId()))
             ->with('author')
             ->latest()
             ->take(5)
@@ -36,7 +38,6 @@ class ParentDashboardController extends Controller
                 'grades.subject',
                 'section',
                 'studentEnrollment.section',
-                'enrollments',
             ])
             ->get();
 

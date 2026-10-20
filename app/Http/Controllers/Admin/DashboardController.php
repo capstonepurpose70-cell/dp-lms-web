@@ -95,11 +95,17 @@ class DashboardController extends Controller
                 }
 
                 if ($index !== false && $index >= 0) {
-                    if (strpos($action, 'login') !== false || strpos($action, 'logged in') !== false) {
+                    // Dati: (1) kasama ang "Failed login" at "Login blocked" sa
+                    // bilang ng logins; (2) "registration" ay HINDI naglalaman ng
+                    // "register" kaya laging 0 ang registrations.
+                    // Successful lang: "Login…" (web/mobile), hindi "Login blocked…"/"Failed login"
+                    if (str_starts_with($action, 'login') && !str_contains($action, 'blocked')) {
                         $logData[$index]++;
-                    } elseif (strpos($action, 'approval') !== false || strpos($action, 'approve') !== false || strpos($action, 'status_change') !== false) {
+                    } elseif (str_contains($action, 'approve')) {
                         $aprData[$index]++;
-                    } elseif (strpos($action, 'register') !== false || strpos($action, 'signup') !== false || strpos($action, 'create_user') !== false) {
+                    } elseif (str_contains($action, 'account activated')
+                           || str_starts_with($action, 'parent linked')
+                           || str_contains($action, 'registration')) {
                         $regData[$index]++;
                     }
                 }

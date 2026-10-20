@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
  
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use App\Services\AuditLogService;
+use App\Services\PasswordResetService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
  
 class AuthController extends Controller
 {
@@ -67,9 +68,42 @@ class AuthController extends Controller
         ], 410);
     }
 
-    public function forgotPassword(Request $request)
+    /**
+     * POST /api/forgot-password  { email }
+     * Dati: stub na nagsasabing "sent" pero walang ipinapadala.
+     * Parehong sagot may account man o wala (walang enumeration).
+     */
+    public function forgotPassword(Request $request, PasswordResetService $resets)
     {
-        // You can reuse your existing OTP/email flow here
-        return response()->json(['message' => 'Password reset email sent.']);
+        $request->validate(['email' => 'required|email|max:254']);
+
+        if (!$resets->sendCode($request->email)) {
+            return response()->json(['message' => 'Too many attempts. Please wait a few minutes.'], 429);
+        }
+
+        return response()->json([
+            'message'         => 'If an account exists for that email, a 6-digit reset code has been sent.',
+            'expires_minutes' => PasswordResetService::CODE_MINUTES,
+        ]);
+    }
+
+    /** POST /api/forgot-password/reset  { email, code, password, password_confirmation } */
+    public function resetPassword(Request $request, PasswordResetService $resets)
+    {
+        $data = $request->validate([
+            'email'    => 'required|email|max:254',
+            'code'     => 'required|digits:6',
+            'password' => PasswordResetService::passwordRules(),
+        ]);
+
+        if ($error = $resets->checkCode($data['email'], $data['code'])) {
+            throw ValidationException::withMessages(['code' => $error]);
+        }
+
+        if (!$resets->reset($data['email'], $data['password'])) {
+            throw ValidationException::withMessages(['email' => 'Account not found.']);
+        }
+
+        return response()->json(['message' => 'Password reset successfully. You can now log in.']);
     }
 }

@@ -46,7 +46,8 @@ class AdminProfileController extends Controller
 
         $request->validate([
             'current_password' => ['required'],
-            'password'         => ['required', 'confirmed', Password::min(8)],
+            // Pinakamataas na access sa system — pinakamahigpit na password rule
+            'password'         => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()->symbols()],
         ]);
 
         if (!Hash::check($request->current_password, $admin->password)) {

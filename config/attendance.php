@@ -13,4 +13,9 @@ return [
     | hosting publicly, and use the SAME value in the Pi's config.py (DEVICE_KEY).
     */
     'device_key' => env('ATTENDANCE_DEVICE_KEY', ''),
+
+    /*
+    | Scan AFTER this time (24h, server timezone) = "late"; on or before = "present".
+    */
+    'late_after' => env('ATTENDANCE_LATE_AFTER', '07:30'),
 ];

@@ -7,22 +7,40 @@ use App\Models\LearningMaterial;
 use App\Models\MaterialView;
 use App\Models\MaterialLike;
 use App\Models\MaterialComment;
+use App\Models\TeacherSubject;
+use App\Rules\NoBadWords;
 use Illuminate\Http\Request;
 
 /**
- * Handles student/teacher interactions on learning materials:
+ * Handles student interactions on learning materials:
  * read receipts (views), hearts (likes), and comments.
  *
- * This is a NEW, self-contained controller — it does not modify any
- * existing materials logic. All counts are queried directly by
- * learning_material_id so no existing models/methods are affected.
+ * All counts are queried directly by learning_material_id.
  */
 class MaterialInteractionController extends Controller
 {
+    /**
+     * Material na nakikita ng estudyante: published + subject na itinuturo sa
+     * section niya (kapareho ng /api/student/modules). Dati `findOrFail($id)`
+     * lang — kayang i-like/comment-an ang kahit anong material (pati
+     * unpublished o ng ibang section) basta alam ang ID.
+     */
+    private function studentMaterial($id): LearningMaterial
+    {
+        $sectionId  = auth()->user()->studentSectionId();
+        $subjectIds = $sectionId
+            ? TeacherSubject::where('section_id', $sectionId)->pluck('subject_id')
+            : collect();
+
+        return LearningMaterial::where('is_published', true)
+            ->whereIn('subject_id', $subjectIds)
+            ->findOrFail($id);
+    }
+
     // ── STUDENT: record a view (read receipt). Safe to call repeatedly. ──
     public function studentView($id)
     {
-        LearningMaterial::findOrFail($id);
+        $this->studentMaterial($id);
 
         MaterialView::firstOrCreate([
             'learning_material_id' => $id,
@@ -35,7 +53,7 @@ class MaterialInteractionController extends Controller
     // ── STUDENT: toggle heart/like. ──
     public function studentToggleLike($id)
     {
-        LearningMaterial::findOrFail($id);
+        $this->studentMaterial($id);
 
         $existing = MaterialLike::where('learning_material_id', $id)
             ->where('user_id', auth()->id())
@@ -61,9 +79,9 @@ class MaterialInteractionController extends Controller
     // ── STUDENT: add a comment. ──
     public function studentAddComment(Request $request, $id)
     {
-        LearningMaterial::findOrFail($id);
+        $this->studentMaterial($id);
 
-        $request->validate(['body' => 'required|string|max:1000']);
+        $request->validate(['body' => ['required', 'string', 'max:1000', new NoBadWords]]);
 
         $comment = MaterialComment::create([
             'learning_material_id' => $id,
@@ -83,7 +101,7 @@ class MaterialInteractionController extends Controller
     // ── STUDENT: material detail (counts + liked_by_me + comments). ──
     public function studentDetail($id)
     {
-        LearningMaterial::findOrFail($id);
+        $this->studentMaterial($id);
         $uid = auth()->id();
 
         return response()->json([
@@ -93,29 +111,6 @@ class MaterialInteractionController extends Controller
             'view_count'    => MaterialView::where('learning_material_id', $id)->count(),
             'comment_count' => MaterialComment::where('learning_material_id', $id)->count(),
             'comments'      => $this->formatComments($id, $uid),
-        ]);
-    }
-
-    // ── TEACHER: detail with viewers list (owner only). ──
-    public function teacherDetail($id)
-    {
-        // Ensure the requesting teacher owns this material.
-        LearningMaterial::where('user_id', auth()->id())->findOrFail($id);
-
-        $viewers = MaterialView::with('user')
-            ->where('learning_material_id', $id)
-            ->latest()->get()
-            ->map(fn($v) => [
-                'user'      => $v->user?->name,
-                'viewed_at' => $v->created_at?->diffForHumans(),
-            ]);
-
-        return response()->json([
-            'view_count'    => $viewers->count(),
-            'like_count'    => MaterialLike::where('learning_material_id', $id)->count(),
-            'comment_count' => MaterialComment::where('learning_material_id', $id)->count(),
-            'viewers'       => $viewers,
-            'comments'      => $this->formatComments($id, auth()->id()),
         ]);
     }
 

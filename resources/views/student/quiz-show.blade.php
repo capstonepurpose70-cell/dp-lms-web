@@ -55,8 +55,8 @@
         <div class="qs-graded">
             <h4>YOUR GRADE</h4>
             <div class="qs-score">{{ $submission->score }}<span style="font-size:16px;color:#64748B">/{{ $assignment->max_score }}</span></div>
-            @if($submission->remarks)
-                <div style="font-size:13px; color:#334155; margin-top:6px"><strong>Teacher remarks:</strong> {{ $submission->remarks }}</div>
+            @if($submission->feedback)
+                <div style="font-size:13px; color:#334155; margin-top:6px"><strong>Teacher feedback:</strong> {{ $submission->feedback }}</div>
             @endif
         </div>
     @endif

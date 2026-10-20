@@ -12,17 +12,15 @@ class TeacherDashboardController extends Controller
     {
         $teacher = auth()->user();
 
-        // Get this teacher's assigned sections and subjects
+        // Subject assignments (para sa "My Subjects" cards)
         $assignments = TeacherSubject::with(['subject', 'section'])
             ->where('user_id', $teacher->id)
             ->get();
 
-        $sectionIds = $assignments->pluck('section_id')->unique();
-
-        // Get students in teacher's sections
-        $students = User::where('role', 'student')
+        // Students: subject sections + advisory section (dati subject lang —
+        // hindi nakikita ng adviser ang sarili niyang klase)
+        $students = User::whereIn('id', User::studentIdsInSections($teacher->teachingSectionIds()))
             ->where('status', 'approved')
-            ->whereIn('section_id', $sectionIds)
             ->with('section')
             ->orderBy('name')
             ->get();

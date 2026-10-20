@@ -79,10 +79,15 @@ public function createTeacherWithAssignments(array $data): User
             'subject_id'        => null,
             'school_year_id'    => $schoolYear?->id,
             'grade_level'       => $adviserSection?->grade_level ?? '',
-            'school_year_label' => $schoolYear?->name ?? '2025-2026',
+            // Dati `->name` — walang ganoong column (label ang meron), kaya laging '2025-2026'
+            'school_year_label' => $schoolYear?->label,
             'is_adviser'        => true,
             'status'            => 'active',
         ]);
+
+        // Iisang "source of truth" ng adviser: sections.adviser_id — ito ang
+        // gamit ng Sections page at ng enrollment review.
+        $adviserSection?->update(['adviser_id' => $teacher->id]);
     }
 
     // ── Invite token ──

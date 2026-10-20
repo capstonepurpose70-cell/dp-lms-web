@@ -5,12 +5,9 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\EnrollmentRequest;
 use App\Models\Section;
-use App\Models\StudentEnrollment;
-use App\Models\StudentProfile;
-use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\EnrollmentService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Enrollment review — ADVISER-driven (DepEd setup, walang HR/Faculty).
@@ -94,7 +91,7 @@ class EnrollmentController extends Controller
     }
 
     // ── APPROVE — ilagay ang student sa section + email ──────────────────────
-    public function approve(Request $request, EnrollmentRequest $enrollment)
+    public function approve(Request $request, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
         $data = $request->validate([
             'section_id' => 'required|exists:sections,id',
@@ -105,103 +102,42 @@ class EnrollmentController extends Controller
             ->where('adviser_id', auth()->id())
             ->firstOrFail();
 
-        $student = $enrollment->student;
-
-        $enrollment->update([
-            'status'      => 'approved',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-        ]);
-
-        $student->update([
-            'section_id'  => $section->id,
-            'grade_level' => $enrollment->grade_level,
-            'status'      => 'approved',
-        ]);
-
-        StudentProfile::updateOrCreate(
-            ['user_id' => $student->id],
-            [
-                'full_name'            => $enrollment->full_name,
-                'age'                  => $enrollment->age,
-                'birthdate'            => $enrollment->birthdate,
-                'gender'               => $enrollment->gender,
-                'address'              => $enrollment->address,
-                'mother_name'          => $enrollment->mother_name,
-                'father_name'          => $enrollment->father_name,
-                'guardian_name'        => $enrollment->guardian_name,
-                'guardian_contact'     => $enrollment->guardian_contact,
-                'student_type'         => $enrollment->student_type,
-                'last_school'          => $enrollment->last_school,
-                'last_grade_completed' => $enrollment->last_grade_completed,
-            ]
-        );
-
-        StudentEnrollment::updateOrCreate(
-            ['user_id' => $student->id, 'school_year' => $enrollment->school_year],
-            [
-                'section_id'  => $section->id,
-                'grade_level' => $enrollment->grade_level,
-                'status'      => 'enrolled',
-                'enrolled_at' => now(),
-            ]
-        );
-
-        $subjectCount = in_array($enrollment->grade_level, ['11', '12']) ? 9 : 8;
-
-        // Email — may section + schedule na. Huwag mag-crash kung pumalya ang SMTP.
-        try {
-            Mail::send('emails.enrollment-approved', [
-                'student'      => $student,
-                'request'      => $enrollment,
-                'section'      => $section,
-                'subjectCount' => $subjectCount,
-            ], function ($m) use ($student) {
-                $m->to($student->email)->subject('Your Enrollment is Approved — DP-LMS');
-            });
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Enrollment email failed: ' . $e->getMessage());
-        }
+        // Pending lang + tugma ang grade — nasa EnrollmentService
+        $student = $enrollments->approve($enrollment, $section, auth()->id());
 
         AuditLogService::log(
             "Approved enrollment: {$student->name}",
             'Enrollment (Adviser)',
-            "Section: {$section->name} | Grade: {$enrollment->grade_level}"
+            "Section: {$section->name} | Grade: {$section->grade_level}"
         );
 
         return redirect()->route('teacher.enrollments.index')
-            ->with('success', "{$student->name} is now enrolled in {$section->name}. An email was sent with their details.");
+            ->with('success', "{$student->name} is now enrolled in {$section->name}.");
     }
 
     // ── REJECT ────────────────────────────────────────────────────────────────
-    public function reject(Request $request, EnrollmentRequest $enrollment)
+    public function reject(Request $request, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
+        // Dati: kahit sinong teacher (kahit hindi adviser) ay kayang mag-reject.
+        // Ngayon: adviser lang, at ng grade na hawak niya.
+        $myGrades = Section::whereIn('id', $this->myAdvisorySectionIds())->pluck('grade_level')
+            ->map(fn ($g) => (string) $g)->all();
+        abort_if(empty($myGrades), 403, 'Only section advisers can review enrollments.');
+
+        $requestGrade = (string) $enrollment->grade_level;
+        abort_if(
+            in_array($requestGrade, ['7', '8', '9', '10', '11', '12'], true) && !in_array($requestGrade, $myGrades, true),
+            403,
+            'This request is for a grade level you do not advise.'
+        );
+
         $data = $request->validate([
             'remarks' => 'required|string|max:500',
         ], [
             'remarks.required' => 'Please state the reason for rejection.',
         ]);
 
-        $student = $enrollment->student;
-
-        $enrollment->update([
-            'status'      => 'rejected',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-            'remarks'     => $data['remarks'],
-        ]);
-
-        try {
-            Mail::send('emails.enrollment-rejected', [
-                'student' => $student,
-                'request' => $enrollment,
-                'reason'  => $data['remarks'],
-            ], function ($m) use ($student) {
-                $m->to($student->email)->subject('Enrollment Update — DP-LMS');
-            });
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Enrollment reject email failed: ' . $e->getMessage());
-        }
+        $student = $enrollments->reject($enrollment, $data['remarks'], auth()->id());
 
         AuditLogService::log(
             "Rejected enrollment: {$student->name}",
@@ -210,6 +146,6 @@ class EnrollmentController extends Controller
         );
 
         return redirect()->route('teacher.enrollments.index')
-            ->with('success', "Enrollment for {$student->name} was rejected. An email was sent.");
+            ->with('success', "Enrollment for {$student->name} was rejected.");
     }
 }
