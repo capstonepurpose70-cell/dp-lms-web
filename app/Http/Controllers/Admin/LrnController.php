@@ -97,7 +97,7 @@ class LrnController extends Controller
                 continue;
             }
             if (OfficialLrn::where('lrn', $lrn)->exists()) {
-                $skipped[] = $lrn . ' — nasa listahan na';
+                $skipped[] = $lrn . ' — already on the list';
                 continue;
             }
 
@@ -114,7 +114,7 @@ class LrnController extends Controller
         $msg = "{$added} LRN(s) added.";
         if ($skipped) {
             $msg .= ' Skipped: ' . implode('; ', array_slice($skipped, 0, 8))
-                  . (count($skipped) > 8 ? ' …at ' . (count($skipped) - 8) . ' pa' : '');
+                  . (count($skipped) > 8 ? ' …and ' . (count($skipped) - 8) . ' more' : '');
         }
 
         return back()->with('success', $msg);

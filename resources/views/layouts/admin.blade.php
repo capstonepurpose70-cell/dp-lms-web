@@ -1008,6 +1008,18 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* ── Pagination ── for ->links('pagination::default') (plain markup; the
+   Tailwind pagination view needs classes missing from the compiled CSS) */
+ul.pagination { display:flex; flex-wrap:wrap; gap:6px; list-style:none; margin:0; padding:0; align-items:center; }
+ul.pagination li > a, ul.pagination li > span {
+    display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 10px;
+    border:1px solid var(--border-default); border-radius:9px; background:var(--white); color:var(--slate-700);
+    text-decoration:none; font-weight:600; font-size:13px; transition:border-color .15s, color .15s;
+}
+ul.pagination li > a:hover { border-color:var(--blue-500); color:var(--blue-500); }
+ul.pagination li.active > span { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
+ul.pagination li.disabled > span { opacity:.45; cursor:default; }
+
 /* ── Skeleton ── (skeletonShimmer keyframes defined above) */
 .sk {
     display: block;
