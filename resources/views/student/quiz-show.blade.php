@@ -63,7 +63,11 @@
 
     <div class="qs-card">
         <div style="font-size:16px; font-weight:700; color:#0F172A; margin-bottom:16px">
-            {{ $submission ? 'Update your answer' : 'Submit your answer' }}
+            @if(($submission && $submission->status === 'graded') || $assignment->isOverdue())
+                {{ $submission ? 'Your submission' : 'Submission closed' }}
+            @else
+                {{ $submission ? 'Update your answer' : 'Submit your answer' }}
+            @endif
         </div>
 
         @if($submission)
@@ -75,6 +79,12 @@
             </div>
         @endif
 
+        @php
+            $isGraded = $submission && $submission->status === 'graded';
+            $isClosed = $assignment->isOverdue();
+        @endphp
+
+        @if(!$isGraded && !$isClosed)
         <form method="POST" action="{{ route('student.quizzes.submit', $assignment) }}" enctype="multipart/form-data">
             @csrf
             <div class="qs-field">
@@ -90,6 +100,11 @@
             <button type="submit" class="qs-submit">{{ $submission ? 'Update Submission' : 'Submit Answer' }}</button>
             <div class="qs-note">You can re-submit anytime before your teacher grades it.</div>
         </form>
+        @else
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px; font-size:13.5px; color:#475569">
+                {{ $isGraded ? 'This activity has been graded. Submissions are locked.' : 'This quiz is closed — the deadline has passed.' }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection
