@@ -146,12 +146,12 @@ $coverColors = [
 ];
 @endphp
 
-<div class="max-w-5xl mx-auto">
+<div style="max-width:1024px;margin:0 auto;">
 
     {{-- Header --}}
-    <div class="mb-8 fade-in fade-in-1">
-        <h1 class="text-2xl font-bold text-gray-800">My Subjects</h1>
-        <p class="text-sm text-gray-400 mt-1">
+    <div class="fade-in fade-in-1" style="margin-bottom:32px;">
+        <h1 style="font-size:24px;font-weight:700;color:#1f2937;">My Subjects</h1>
+        <p style="font-size:14px;color:#9ca3af;margin-top:4px;">
             @if($enrollment)
                 {{ $subjects->count() }} {{ Str::plural('subject', $subjects->count()) }}
                 &nbsp;·&nbsp; Grade {{ $enrollment->grade_level }}
@@ -175,8 +175,8 @@ $coverColors = [
                        2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
             </svg>
         </div>
-        <h3 class="text-base font-bold text-gray-700 mb-2">No subjects yet</h3>
-        <p class="text-sm text-gray-400 mb-6">
+        <h3 style="font-size:16px;font-weight:700;color:#374151;margin-bottom:8px;">No subjects yet</h3>
+        <p style="font-size:14px;color:#9ca3af;margin-bottom:24px;">
             You need to be enrolled first before subjects are assigned to you.
         </p>
         <a href="{{ route('student.enroll') }}"
@@ -211,8 +211,8 @@ $coverColors = [
                        18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
             </svg>
         </div>
-        <h3 class="text-base font-bold text-gray-700 mb-2">No subjects assigned yet</h3>
-        <p class="text-sm text-gray-400">
+        <h3 style="font-size:16px;font-weight:700;color:#374151;margin-bottom:8px;">No subjects assigned yet</h3>
+        <p style="font-size:14px;color:#9ca3af;">
             Your teacher hasn't assigned any subjects to your section yet.
             Please check back later.
         </p>
@@ -223,13 +223,15 @@ $coverColors = [
     <div class="subjects-grid">
         @foreach($subjects as $index => $ts)
         @php
-            $color = $coverColors[$index % count($coverColors)];
-            $abbr  = collect(explode(' ', $ts->subject->name))
+            $color       = $coverColors[$index % count($coverColors)];
+            // Null-safe: nabura man ang subject, hindi mag-e-error ang page
+            $subjectName = $ts->subject?->name ?? 'Subject removed';
+            $abbr  = collect(explode(' ', $subjectName))
                         ->filter(fn($w) => strlen($w) > 2)
                         ->take(2)
                         ->map(fn($w) => strtoupper(substr($w, 0, 1)))
                         ->implode('');
-            $abbr  = $abbr ?: strtoupper(substr($ts->subject->name, 0, 3));
+            $abbr  = $abbr ?: strtoupper(substr($subjectName, 0, 3));
         @endphp
         <div class="subject-card fade-in fade-in-{{ $index + 1 }}">
             {{-- Cover --}}
@@ -240,7 +242,7 @@ $coverColors = [
 
             {{-- Body --}}
             <div class="subject-body">
-                <p class="subject-name">{{ $ts->subject->name }}</p>
+                <p class="subject-name">{{ $subjectName }}</p>
                 <div class="subject-meta">
                     <div class="subject-meta-row">
                         <svg width="11" height="11" fill="none" stroke="currentColor"
