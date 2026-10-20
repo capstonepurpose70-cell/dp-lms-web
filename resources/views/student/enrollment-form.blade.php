@@ -442,8 +442,8 @@
             var by  = now.getFullYear() - age;
             var mm  = String(now.getMonth() + 1).padStart(2, '0');
             var dd  = String(now.getDate()).padStart(2, '0');
-            bdEl.value = by + '-' + mm + '-' + dd;
-            if (hint) hint.textContent = 'Estimated: born around ' + MONTHS[now.getMonth()] + ' ' + by + '. I-adjust ang eksaktong araw kung kailangan.';
+            // Hindi na pinapalitan ang birthdate (dati: na-o-overwrite ang totoong petsa)
+            if (hint) hint.textContent = 'Estimated: born around ' + MONTHS[now.getMonth()] + ' ' + by + '. Please enter your exact birthdate below.';
         });
     })();
 </script>
