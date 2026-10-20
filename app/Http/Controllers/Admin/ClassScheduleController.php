@@ -22,8 +22,9 @@ class ClassScheduleController extends Controller
             ->orderBy('name')
             ->get();
 
-        $sectionId = $request->integer('section_id') ?: $sections->first()?->id;
-        $section   = $sectionId ? Section::find($sectionId) : null;
+        // Mula lang sa active list — kapag mali/inactive ang section_id, unang
+        // section ang ipapakita (dati "Create a section first" ang lumalabas).
+        $section = $sections->firstWhere('id', $request->integer('section_id')) ?? $sections->first();
 
         $schedules = collect();
         $subjects  = collect();
@@ -45,7 +46,7 @@ class ClassScheduleController extends Controller
 
         $teachers = User::where('role', 'teacher')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'status']);
 
         return view('admin.schedules.index', compact(
             'sections', 'section', 'schedules', 'subjects', 'teachers'
