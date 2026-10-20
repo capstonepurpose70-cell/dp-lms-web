@@ -1,29 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Learning Modules')
 
-@section('sidebar')
-    <a href="{{ route('student.dashboard') }}"
-        class="{{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
-        Dashboard
-    </a>
-    <a href="{{ route('student.modules') }}"
-        class="{{ request()->routeIs('student.modules') ? 'active' : '' }}">
-        Learning Modules
-    </a>
-    <a href="{{ route('student.quizzes') }}"
-        class="{{ request()->routeIs('student.quizzes') ? 'active' : '' }}">
-        Quizzes
-    </a>
-    <a href="{{ route('student.grades') }}"
-        class="{{ request()->routeIs('student.grades') ? 'active' : '' }}">
-        My Grades
-    </a>
-    <a href="{{ route('student.messages') }}"
-        class="{{ request()->routeIs('student.messages') ? 'active' : '' }}">
-        Messages
-    </a>
-@endsection
-
 @section('content')
 <style>
     .fade-up {
@@ -200,7 +177,7 @@
                     </div>
                     <div class="flex-1">
                         <p style="font-size:14px;font-weight:700;color:#111827;">
-                            {{ $ts->subject->name }}
+                            {{ $ts->subject?->name ?? 'Subject removed' }}
                         </p>
                         <p style="font-size:11px;color:#9ca3af;">
                             {{ $ts->teacher->name ?? 'TBA' }}
