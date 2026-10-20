@@ -6,7 +6,6 @@
     .sq-wrap { max-width:920px; margin:0 auto; padding:4px 0 48px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
     .sq-title { font-size:24px; font-weight:800; color:#0F172A; }
     .sq-sub { font-size:13px; color:#64748B; margin:2px 0 24px; }
-    .sq-flash { background:#F0FDF4; border:1px solid #86EFAC; color:#166534; padding:12px 16px; border-radius:12px; margin-bottom:18px; font-size:14px; font-weight:600; }
     .sq-card { display:flex; align-items:center; justify-content:space-between; gap:14px; background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:18px 20px; margin-bottom:13px; box-shadow:0 1px 3px rgba(15,23,42,.05); transition:.2s; }
     .sq-card:hover { box-shadow:0 8px 24px rgba(15,23,42,.10); transform:translateY(-2px); }
     .sq-name { font-size:16px; font-weight:700; color:#0F172A; }
@@ -26,9 +25,7 @@
     <div class="sq-title">Quizzes &amp; Assignments</div>
     <div class="sq-sub">Open a quiz to view it and submit your answer.</div>
 
-    @if(session('success'))
-        <div class="sq-flash">{{ session('success') }}</div>
-    @endif
+    {{-- Success flash: ipinapakita na ng layouts/app.blade.php (dati dalawang beses lumalabas) --}}
 
     @if($assignments->count())
         @foreach($assignments as $a)
