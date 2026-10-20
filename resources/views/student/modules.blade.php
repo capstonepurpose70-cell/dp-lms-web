@@ -105,11 +105,11 @@
     }
 </style>
 
-<div class="max-w-4xl mx-auto">
+<div style="max-width:896px;margin:0 auto;">
 
-    <div class="mb-6 fade-up">
-        <h1 class="text-2xl font-bold text-gray-800">Learning Modules</h1>
-        <p class="text-sm text-gray-400 mt-1">
+    <div class="fade-up" style="margin-bottom:24px;">
+        <h1 style="font-size:24px;font-weight:700;color:#1f2937;">Learning Modules</h1>
+        <p style="font-size:14px;color:#9ca3af;margin-top:4px;">
             @if($section)
                 Materials for {{ $section->name }}
             @else
@@ -120,24 +120,22 @@
 
     @if(!$section)
         {{-- Not enrolled yet --}}
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center fade-up">
+        <div class="fade-up" style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:24px;text-align:center;">
             <svg width="32" height="32" fill="none" stroke="#f59e0b"
-                stroke-width="2" viewBox="0 0 24 24" class="mx-auto mb-3">
+                stroke-width="2" viewBox="0 0 24 24" style="display:block;margin:0 auto 12px;">
                 <path stroke-linecap="round" stroke-linejoin="round"
                     d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p class="text-amber-700 font-semibold text-sm">Not yet enrolled</p>
-            <p class="text-amber-600 text-xs mt-1">
+            <p style="color:#b45309;font-weight:600;font-size:14px;">Not yet enrolled</p>
+            <p style="color:#d97706;font-size:12px;margin-top:4px;">
                 Please wait for the administrator to assign your section.
             </p>
         </div>
 
     @elseif($materials->isEmpty())
         {{-- Enrolled but no materials yet --}}
-        <div class="bg-white border border-gray-100 rounded-xl shadow-sm p-12 text-center fade-up">
-            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center
-                        justify-content-center mx-auto mb-4"
-                style="display:flex;align-items:center;justify-content:center;">
+        <div class="fade-up" style="background:#fff;border:1px solid #f3f4f6;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:48px;text-align:center;">
+            <div style="width:64px;height:64px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
                 <svg width="28" height="28" fill="none" stroke="#93c5fd"
                     stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -148,8 +146,8 @@
                            18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                 </svg>
             </div>
-            <p class="text-gray-500 font-semibold text-sm">No materials available yet</p>
-            <p class="text-gray-400 text-xs mt-1">
+            <p style="color:#6b7280;font-weight:600;font-size:14px;">No materials available yet</p>
+            <p style="color:#9ca3af;font-size:12px;margin-top:4px;">
                 Your teachers haven't uploaded any materials yet. Check back later.
             </p>
         </div>
@@ -175,7 +173,7 @@
                                    18c-1.746 0-3.332.477-4.5 1.253"/>
                         </svg>
                     </div>
-                    <div class="flex-1">
+                    <div style="flex:1;">
                         <p style="font-size:14px;font-weight:700;color:#111827;">
                             {{ $ts->subject?->name ?? 'Subject removed' }}
                         </p>
@@ -185,12 +183,6 @@
                             {{ $subjectMaterials->count() }} material(s)
                         </p>
                     </div>
-                    @if($subjectMaterials->count())
-                        <span style="padding:2px 10px;border-radius:20px;font-size:11px;
-                                     font-weight:600;background:#dcfce7;color:#15803d;">
-                            {{ $subjectMaterials->count() }} files
-                        </span>
-                    @endif
                 </div>
 
                 @if($subjectMaterials->count())
@@ -218,7 +210,7 @@
                             style="background:{{ $style['bg'] }};color:{{ $style['color'] }};">
                             {{ $style['label'] }}
                         </div>
-                        <div class="flex-1 min-w-0">
+                        <div style="flex:1;min-width:0;">
                             <p style="font-size:13px;font-weight:600;color:#111827;
                                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                 {{ $material->title }}
