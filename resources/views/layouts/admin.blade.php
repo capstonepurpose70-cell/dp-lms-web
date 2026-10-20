@@ -120,9 +120,9 @@
 
             /* Text on sidebar (dark bg) */
             --sidebar-text:      rgba(255,255,255,0.9);
-            --sidebar-muted:     rgba(255,255,255,0.45);
-            --sidebar-active-bg: rgba(255,255,255,0.12);
-            --sidebar-hover-bg:  rgba(255,255,255,0.07);
+            --sidebar-muted:     rgba(255,255,255,0.74);
+            --sidebar-active-bg: rgba(255,255,255,0.18);
+            --sidebar-hover-bg:  rgba(255,255,255,0.09);
 
             /* Borders */
             --border-default: var(--slate-200);
@@ -593,7 +593,7 @@
         .nav-section-label {
             font-size: 9.5px; font-weight: 700;
             letter-spacing: 0.1em; text-transform: uppercase;
-            color: var(--sidebar-muted);
+            color: rgba(255,255,255,0.5);
             padding: 0.5rem 1rem 0.25rem;
             display: block;
             white-space: nowrap;
@@ -631,17 +631,29 @@
         }
         .nav-link:hover {
             background: var(--sidebar-hover-bg);
-            color: var(--white);
+            color: #ffffff;
         }
         .nav-link:hover svg { transform: scale(1.1); }
         .nav-link.active {
             background: var(--sidebar-active-bg);
-            color: var(--white);
-            font-weight: 600;
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10), 0 4px 14px -6px rgba(0,0,0,0.45);
         }
-    .nav-link.active::before {
-    display: none;
-}
+        .nav-link.active svg { color: #93c5fd; }
+        /* Left accent bar marks the current page */
+        .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 18%; bottom: 18%;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background: #60a5fa;
+        }
+        .nav-link:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: -2px;
+        }
 
         /* ── Nav Link Label (text + badge wrapper) ── */
         .nav-link-label {
@@ -996,11 +1008,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* ── Skeleton ── */
-@keyframes skeletonShimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
+/* ── Skeleton ── (skeletonShimmer keyframes defined above) */
 .sk {
     display: block;
     border-radius: 6px;
@@ -1629,11 +1637,15 @@
        ACTIVE NAV LINK — JS-managed after Barba navigation
     ═══════════════════════════════════════ */
     function updateActiveLink() {
-        const path = window.location.pathname;
-        document.querySelectorAll('.nav-link').forEach(link => {
-            const href = (link.getAttribute('href') || '').replace(/\?.*$/, '');
-            const isActive = href && href !== '/' && path.startsWith(href);
+        // route() outputs absolute URLs, so compare pathnames only
+        const path = window.location.pathname.replace(/\/+$/, '');
+        document.querySelectorAll('.nav-link[href]').forEach(link => {
+            let hrefPath = '';
+            try { hrefPath = new URL(link.href, window.location.origin).pathname.replace(/\/+$/, ''); } catch (e) {}
+            const isActive = hrefPath !== '' && (path === hrefPath || path.startsWith(hrefPath + '/'));
             link.classList.toggle('active', isActive);
+            if (isActive) link.setAttribute('aria-current', 'page');
+            else link.removeAttribute('aria-current');
         });
     }
 
@@ -1941,21 +1953,57 @@ function showSkeleton(url) {
 }
 
 
+/* Navigation id: a slow response from an older click must never
+   overwrite the page the user navigated to afterwards. */
+let spaNavId = 0;
+
+/* Hover prefetch: the request starts while the pointer is still on the
+   link, so the click usually finds the HTML already loading/loaded. */
+const spaPrefetched = new Map();
+const SPA_PREFETCH_TTL = 8000;
+
+function spaRequest(url) {
+    return fetch(url, { headers: { 'X-SPA-Request': '1' }, cache: 'no-store' })
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.text();
+        });
+}
+
+function spaPrefetch(url) {
+    const hit = spaPrefetched.get(url);
+    if (hit && Date.now() - hit.t < SPA_PREFETCH_TTL) return;
+    const p = spaRequest(url);
+    p.catch(() => spaPrefetched.delete(url));
+    spaPrefetched.set(url, { t: Date.now(), p: p });
+}
+
+function spaTake(url) {
+    const hit = spaPrefetched.get(url);
+    spaPrefetched.delete(url);
+    if (hit && Date.now() - hit.t < SPA_PREFETCH_TTL) return hit.p;
+    return spaRequest(url);
+}
+
 function spaNavigate(url) {
     const curMain = document.getElementById('mainContent');
+    const navId   = ++spaNavId;
 
     curMain.style.transition = '';
     curMain.style.opacity    = '1';
     curMain.style.transform  = 'none';
 
-    showSkeleton(url);
+    showLoadBar();
+    // Skeleton only when the server is slow — fast pages swap with no flash
+    const skeletonTimer = setTimeout(() => {
+        if (navId === spaNavId) showSkeleton(url);
+    }, 120);
 
-    fetch(url, { headers: { 'X-SPA-Request': '1' }, cache: 'no-store' })
-        .then(r => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.text();
-        })
+    spaTake(url)
         .then(html => {
+            if (navId !== spaNavId) return;
+            clearTimeout(skeletonTimer);
+
             const parser  = new DOMParser();
             const doc     = parser.parseFromString(html, 'text/html');
             const newMain = doc.getElementById('mainContent');
@@ -1965,11 +2013,9 @@ function spaNavigate(url) {
                 return;
             }
 
-            curMain.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
-            curMain.style.opacity    = '0';
-            curMain.style.transform  = 'translateY(8px)';
+            if (doc.title) document.title = doc.title;
 
-            setTimeout(() => {
+            {
                 curMain.innerHTML = '';
                 Array.from(newMain.childNodes).forEach(node => {
                     if (node.nodeName !== 'SCRIPT') {
@@ -1977,16 +2023,19 @@ function spaNavigate(url) {
                     }
                 });
 
+                curMain.scrollTop        = 0;
+                curMain.style.transition = 'none';
+                curMain.style.opacity    = '0';
+                curMain.style.transform  = 'translateY(4px)';
+                void curMain.offsetWidth; // commit start state so the fade runs
+                curMain.style.transition = 'opacity 0.16s ease, transform 0.16s ease';
+                curMain.style.opacity    = '1';
+                curMain.style.transform  = 'translateY(0)';
+
                 const scripts = Array.from(newMain.querySelectorAll('script'));
 
                 function runNextScript(i) {
                     if (i >= scripts.length) {
-                        requestAnimationFrame(() => {
-                            curMain.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
-                            curMain.style.opacity    = '1';
-                            curMain.style.transform  = 'translateY(0)';
-                            curMain.scrollTop        = 0;
-                        });
                         finishLoadBar();
                         applyCollapsedState(false);
                         updateActiveLink();
@@ -2015,10 +2064,11 @@ function spaNavigate(url) {
                 }
 
                 runNextScript(0);
-
-            }, 160);
+            }
         })
         .catch(err => {
+            if (navId !== spaNavId) return;
+            clearTimeout(skeletonTimer);
             console.error('spaNavigate error:', err);
             curMain.style.opacity   = '1';
             curMain.style.transform = 'none';
@@ -2051,10 +2101,27 @@ function finishLoadBar() {
 
 // Intercept all nav-link clicks
 document.querySelectorAll('.nav-link').forEach(link => {
+    let hoverTimer = null;
+    const prefetchable = () => {
+        const href = link.getAttribute('href');
+        return href && !href.startsWith('#') && link.href !== window.location.href;
+    };
+    link.addEventListener('mouseenter', function () {
+        if (!prefetchable()) return;
+        hoverTimer = setTimeout(() => spaPrefetch(link.getAttribute('href')), 65);
+    });
+    link.addEventListener('mouseleave', function () { clearTimeout(hoverTimer); });
+    link.addEventListener('touchstart', function () {
+        if (prefetchable()) spaPrefetch(link.getAttribute('href'));
+    }, { passive: true });
+
     link.addEventListener('click', function (e) {
         const href = this.getAttribute('href');
         if (!href || href.startsWith('#')) return;
+        // Ctrl/Cmd/Shift/middle-click: let the browser open a new tab/window
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
         e.preventDefault();
+        clearTimeout(hoverTimer);
         history.pushState(null, '', href);
         updateActiveLink();
         spaNavigate(href);
@@ -2066,7 +2133,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
 // Browser back/forward
 window.addEventListener('popstate', () => {
     updateActiveLink();
-    spaNavigate(window.location.pathname);
+    spaNavigate(window.location.pathname + window.location.search);
 });
 
     /* ═══════════════════════════════════════
@@ -2076,9 +2143,9 @@ window.addEventListener('popstate', () => {
         targets: '.sidebar-brand, .nav-section-wrapper, .nav-link',
         opacity: [0, 1],
         translateX: [-10, 0],
-        duration: 400,
+        duration: 260,
         easing: 'easeOutQuad',
-        delay: anime.stagger(40, { start: 60 })
+        delay: anime.stagger(18, { start: 0 })
     });
 
 document.getElementById('mainContent').addEventListener('click', function(e) {
@@ -2089,6 +2156,8 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
     if (!href || href.startsWith('#') || href.startsWith('http')) return;
     if (link.hasAttribute('data-no-spa')) return;
     if (link.closest('form')) return;
+    if (link.target === '_blank' || link.hasAttribute('download')) return;
+    if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
 
     e.preventDefault();
     history.pushState(null, '', href);
