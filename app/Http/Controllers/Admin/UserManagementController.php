@@ -244,7 +244,7 @@ class UserManagementController extends Controller
             return redirect()
                 ->route('admin.users.index', ['tab' => 'teachers'])
                 ->with('success', "Teacher account for {$teacher->name} created. "
-                    . "Temporary password: {$tempPw}  —  ibigay ito sa teacher; papalitan nila ito sa unang pag-login.");
+                    . "Temporary password: {$tempPw}  —  give this to the teacher; they will be asked to change it on first login.");
  
         } catch (\Exception $e) {
             return back()

@@ -20,10 +20,12 @@ class SectionController extends Controller
 {
     public function index(Request $request)
     {
-        $sections = Section::with('adviser:id,name,email')
-            ->orderBy('grade_level')
-            ->orderBy('name')
-            ->get();
+        $sections = Section::with('adviser:id,name,email,status')
+            ->withCount('students')
+            ->get()
+            // Numeric grade order (string sort would put "10" before "7")
+            ->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, mb_strtolower($s->name)))
+            ->values();
 
         // Mga teacher na pwedeng maging adviser
         $teachers = User::where('role', 'teacher')
@@ -42,13 +44,25 @@ class SectionController extends Controller
         return ['nullable', Rule::exists('users', 'id')->where('role', 'teacher')];
     }
 
+    /** Bawal ang dalawang section na pareho ang pangalan sa iisang grade. */
+    private function uniqueNameRule(Request $request, ?Section $ignore = null)
+    {
+        $rule = Rule::unique('sections', 'name')->where('grade_level', (string) $request->input('grade_level'));
+        return $ignore ? $rule->ignore($ignore->id) : $rule;
+    }
+
     public function store(Request $request)
     {
+        $request->merge(['name' => trim((string) $request->input('name'))]);
+
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
+            'name'        => ['required', 'string', 'max:100', $this->uniqueNameRule($request)],
             'grade_level' => 'required|string|in:7,8,9,10,11,12',
             'adviser_id'  => $this->adviserRule(),
-        ], ['adviser_id.exists' => 'The adviser must be a teacher.']);
+        ], [
+            'adviser_id.exists' => 'The adviser must be a teacher.',
+            'name.unique'       => 'A section with this name already exists in that grade level.',
+        ]);
 
         $data['school_year'] = SchoolYear::current()?->label;
         $data['is_active']   = true;
@@ -61,12 +75,24 @@ class SectionController extends Controller
 
     public function update(Request $request, Section $section)
     {
+        $request->merge(['name' => trim((string) $request->input('name'))]);
+
+        // Unique check lang kapag pinalitan ang pangalan/grade — para hindi
+        // ma-block ang pag-save ng adviser sa lumang duplicate na row.
+        $nameRules = ['required', 'string', 'max:100'];
+        if ($request->input('name') !== $section->name || (string) $request->input('grade_level') !== (string) $section->grade_level) {
+            $nameRules[] = $this->uniqueNameRule($request, $section);
+        }
+
         $data = $request->validate([
-            'name'        => 'required|string|max:100',
+            'name'        => $nameRules,
             'grade_level' => 'required|string|in:7,8,9,10,11,12',
             'adviser_id'  => $this->adviserRule(),
             'is_active'   => 'nullable|boolean',
-        ], ['adviser_id.exists' => 'The adviser must be a teacher.']);
+        ], [
+            'adviser_id.exists' => 'The adviser must be a teacher.',
+            'name.unique'       => 'A section with this name already exists in that grade level.',
+        ]);
 
         $data['is_active'] = $request->boolean('is_active');
         $section->update($data);
