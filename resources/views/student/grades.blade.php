@@ -1,14 +1,6 @@
 @extends('layouts.app')
 @section('title', 'My Grades')
 
-@section('sidebar')
-    <a href="{{ route('student.dashboard') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Dashboard</a>
-    <a href="{{ route('student.modules') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Learning Modules</a>
-    <a href="{{ route('student.quizzes') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Quizzes</a>
-    <a href="{{ route('student.grades') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-blue-50 text-blue-700 font-medium">My Grades</a>
-    <a href="{{ route('student.messages') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Messages</a>
-@endsection
-
 @section('content')
 <div class="max-w-4xl mx-auto">
     <div class="mb-6">
@@ -16,12 +8,18 @@
         <p class="text-sm text-gray-500 mt-1">Academic performance overview</p>
     </div>
 
-    @forelse($grades->groupBy('subject_id') as $subjectId => $subjectGrades)
+    {{-- Naka-grupo ayon sa school year (pinakabago muna) para hindi maghalo ang mga taon --}}
+    @forelse($grades->groupBy(fn ($g) => $g->school_year ?: 'Unspecified')->sortKeysDesc() as $schoolYear => $yearGrades)
+    <h2 style="font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748B;margin:18px 0 10px;">
+        School Year {{ $schoolYear }}
+    </h2>
+
+    @foreach($yearGrades->groupBy('subject_id') as $subjectId => $subjectGrades)
     @php $subject = $subjectGrades->first()->subject; @endphp
     <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4">
         <h2 class="text-sm font-semibold text-gray-800 mb-3">
-            {{ $subject->name }}
-            <span class="text-xs text-gray-400 font-normal ml-2">{{ $subject->code }}</span>
+            {{ $subject?->name ?? 'Subject removed' }}
+            <span class="text-xs text-gray-400 font-normal ml-2">{{ $subject?->code }}</span>
         </h2>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -43,7 +41,7 @@
                         <td class="py-2 text-gray-600">{{ $grade->performance_tasks ?? '—' }}</td>
                         <td class="py-2 text-gray-600">{{ $grade->quarterly_assessment ?? '—' }}</td>
                         <td class="py-2 font-bold
-                            {{ $grade->final_grade >= 75 ? 'text-green-600' : 'text-red-500' }}">
+                            {{ $grade->final_grade === null ? 'text-gray-400' : ($grade->isPassed() ? 'text-green-600' : 'text-red-500') }}">
                             {{ $grade->final_grade ?? '—' }}
                         </td>
                         <td class="py-2">
@@ -60,6 +58,7 @@
             </table>
         </div>
     </div>
+    @endforeach
     @empty
     <div class="bg-white rounded-xl border border-gray-200 p-8 text-center">
         <p class="text-gray-400 text-sm">No grades recorded yet.</p>
