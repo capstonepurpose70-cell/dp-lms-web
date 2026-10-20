@@ -298,7 +298,7 @@
                     </svg>
                 </span>
                 <div style="min-width:0;">
-                    <p class="sd-subj-name">{{ $ts->subject->name }}</p>
+                    <p class="sd-subj-name">{{ $ts->subject?->name ?? 'Subject removed' }}</p>
                     <p class="sd-subj-teacher">{{ $ts->teacher->name ?? 'Teacher to be assigned' }}</p>
                 </div>
             </div>

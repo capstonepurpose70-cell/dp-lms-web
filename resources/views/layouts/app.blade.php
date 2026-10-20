@@ -354,6 +354,7 @@ body.collapsed .sidebar-nav {
         }
         .flash-success { background: #F0FDF4; border: 1.5px solid #86EFAC; color: #15803D; }
         .flash-error   { background: #FEF2F2; border: 1.5px solid #FCA5A5; color: #991B1B; }
+        .flash-info    { background: #EFF6FF; border: 1.5px solid #BFDBFE; color: #1E40AF; }
 
         /* ═══════════════════════════════════════════
            MODAL
@@ -597,6 +598,15 @@ body.collapsed .sidebar-nav {
                     <path stroke-linecap="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 {{ session('error') }}
+            </div>
+        @endif
+        {{-- Info (hal. "Your enrollment is pending review.") — dati hindi ipinapakita --}}
+        @if(session('info'))
+            <div class="flash flash-info" role="status">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {{ session('info') }}
             </div>
         @endif
         @yield('content')
