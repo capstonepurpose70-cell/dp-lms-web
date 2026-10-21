@@ -24,6 +24,9 @@
             --slate-500:       #93a0b4;
             --slate-700:       #c2cbd9;
             --slate-900:       #e8eef7;
+            --slate-800:       #dbe3ef;
+            --slate-600:       #a9b4c6;
+            --slate-300:       #3a4a66;
             --border-default:  #25324a;
             --border-nav:      rgba(255,255,255,0.07);
             --um-blue-50:      #14233c;
@@ -96,9 +99,12 @@
 
             /* Neutrals */
             --slate-900: #0f172a;
+            --slate-800: #1e293b; /* were used by pages but never defined */
             --slate-700: #334155;
+            --slate-600: #475569;
             --slate-500: #64748b;
             --slate-400: #94a3b8;
+            --slate-300: #cbd5e1;
             --slate-200: #e2e8f0;
             --slate-100: #f1f5f9;
             --slate-50:  #f8fafc;

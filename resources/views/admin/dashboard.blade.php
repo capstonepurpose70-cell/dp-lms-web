@@ -94,6 +94,28 @@
     .stat-meta.purple { color: #534AB7; }
     .stat-meta svg { width: 13px; height: 13px; }
 
+    /* Needs attention */
+    .att-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1rem; margin-bottom:1.5rem; }
+    .att-card { display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--r-lg); border:1px solid var(--border-default);
+        background:var(--white); text-decoration:none; transition:box-shadow .18s, transform .18s, border-color .18s; }
+    .att-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .att-ic { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; flex-shrink:0; }
+    .att-ic svg { width:20px; height:20px; }
+    .att-txt { flex:1; min-width:0; }
+    .att-txt b { display:block; font-family:'Outfit', sans-serif; font-size:22px; font-weight:700; color:var(--slate-900); line-height:1.1; }
+    .att-txt span { font-size:12.5px; color:var(--slate-500); font-weight:500; }
+    .att-go { width:16px; height:16px; color:var(--slate-400); flex-shrink:0; }
+    .att-card.warn { border-color:rgba(217,119,6,.35); }
+    .att-card.warn .att-ic { background:rgba(245,158,11,.14); color:#b45309; }
+    .att-card.warn:hover { border-color:#d97706; }
+    .att-card.ok .att-ic   { background:rgba(22,163,74,.12); color:#15803d; }
+    .att-card.info .att-ic { background:rgba(37,99,235,.10); color:#1d4ed8; }
+    [data-theme="dark"] .att-card.warn .att-ic { color:#fbbf24; }
+    [data-theme="dark"] .att-card.ok .att-ic   { color:#4ade80; }
+    [data-theme="dark"] .att-card.info .att-ic { color:#93c5fd; }
+    [data-theme="dark"] .role-pill.teacher { background:rgba(37,99,235,.18); color:#93c5fd; }
+    @media (max-width: 900px) { .att-grid { grid-template-columns:1fr; } }
+
     /* Chart panel */
     .chart-panel {
         background: var(--white); border: 1px solid var(--border-default);
@@ -251,7 +273,7 @@
             <div class="stat-value">{{ $totalTeachers }}</div>
             <div class="stat-meta teal">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Active accounts
+                {{ $approvedTeachers }} active {{ Str::plural('account', $approvedTeachers) }}
             </div>
         </div>
         <div class="stat-card amber">
@@ -276,6 +298,34 @@
                 Audit log entries
             </div>
         </div>
+    </div>
+
+    {{-- Needs attention — quick links to the pages where the admin acts --}}
+    <div class="att-grid">
+        <a href="{{ route('admin.enrollment.index', ['status' => 'pending'], false) }}" class="att-card {{ $pendingEnrollments ? 'warn' : 'ok' }}">
+            <div class="att-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+            <div class="att-txt">
+                <b>{{ $pendingEnrollments }}</b>
+                <span>{{ $pendingEnrollments ? Str::plural('enrollment request', $pendingEnrollments) . ' to review' : 'No enrollment requests waiting' }}</span>
+            </div>
+            <svg class="att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="{{ route('admin.sections.index', [], false) }}" class="att-card {{ $sectionsNoAdviser ? 'warn' : 'ok' }}">
+            <div class="att-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
+            <div class="att-txt">
+                <b>{{ $sectionsNoAdviser }}</b>
+                <span>{{ $sectionsNoAdviser ? 'active ' . Str::plural('section', $sectionsNoAdviser) . ' without an adviser' : 'Every active section has an adviser' }}</span>
+            </div>
+            <svg class="att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="{{ route('admin.lrns.index', ['status' => 'available'], false) }}" class="att-card info">
+            <div class="att-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg></div>
+            <div class="att-txt">
+                <b>{{ number_format($availableLrns) }}</b>
+                <span>LRNs not yet activated by students</span>
+            </div>
+            <svg class="att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
     </div>
 
     {{-- Activity Chart Panel --}}
@@ -325,7 +375,8 @@
                 @forelse($pendingUsers as $user)
                 <div class="pending-row">
                     <div class="pending-avatar">
-                        {{ collect(explode(' ', $user->name))->map(fn($w) => strtoupper($w[0]))->take(2)->join('') }}
+                        {{-- preg_split: dati $w[0] sa "Juan  Cruz" (dobleng space) = 500 error --}}
+                        {{ collect(preg_split('/\s+/', trim($user->name), -1, PREG_SPLIT_NO_EMPTY))->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(2)->join('') ?: '?' }}
                     </div>
                     <div class="pending-info">
                         <div class="pending-name">{{ $user->name }}</div>
@@ -333,14 +384,16 @@
                     </div>
                     <div class="pending-actions">
                         <span class="role-pill {{ $user->role }}">{{ ucfirst($user->role) }}</span>
-                        <form method="POST" action="{{ route('admin.users.approve', $user) }}" style="display:inline;">
+                        <form method="POST" action="{{ route('admin.users.approve', $user) }}" style="display:inline;"
+                              data-msg="Approve {{ $user->name }}? They will be able to log in." onsubmit="return confirm(this.dataset.msg);">
                             @csrf @method('PATCH')
                             <button type="submit" class="action-btn approve">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 Approve
                             </button>
                         </form>
-                        <form method="POST" action="{{ route('admin.users.reject', $user) }}" style="display:inline;">
+                        <form method="POST" action="{{ route('admin.users.reject', $user) }}" style="display:inline;"
+                              data-msg="Reject {{ $user->name }}? They will not be able to log in." onsubmit="return confirm(this.dataset.msg);">
                             @csrf @method('PATCH')
                             <button type="submit" class="action-btn reject">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -444,8 +497,9 @@
         document.getElementById('calPrev').addEventListener('click', () => { if (--vm < 0) { vm = 11; vy--; } render(); });
         document.getElementById('calNext').addEventListener('click', () => { if (++vm > 11) { vm = 0; vy++; } render(); });
         document.getElementById('calToday').addEventListener('click', () => { vy = today.getFullYear(); vm = today.getMonth(); render(); });
-        document.addEventListener('click', () => open(false));
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') open(false); });
+        // Document listeners outlive this page under SPA navigation — act only while it's on screen
+        document.addEventListener('click', () => { if (document.body.contains(cal)) open(false); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.contains(cal)) open(false); });
 
         render();
     })();
@@ -464,6 +518,12 @@
     }
 
     const canvas = document.getElementById('activityChart');
+    // Chart.js is from a CDN — without internet show a note instead of breaking the page script
+    if (typeof Chart === 'undefined') {
+        canvas.parentNode.innerHTML = '<div style="height:100%;display:grid;place-items:center;color:var(--slate-500);font-size:13px;text-align:center;padding:0 16px;">'
+            + 'The activity chart could not load (no internet connection). All other dashboard data is up to date.</div>';
+        return;
+    }
     const ctx    = canvas.getContext('2d');
 
     const BASE_DS = {
@@ -591,8 +651,8 @@
 
     /* Entrance animations */
     if (typeof anime !== 'undefined') {
-        anime({ targets:'.stat-card',         opacity:[0,1], translateY:[16,0], duration:420, easing:'easeOutQuad', delay:anime.stagger(70) });
-        anime({ targets:'.chart-panel,.panel',opacity:[0,1], translateY:[12,0], duration:380, easing:'easeOutQuad', delay:anime.stagger(80,{start:280}) });
+        anime({ targets:'.stat-card,.att-card', opacity:[0,1], translateY:[12,0], duration:300, easing:'easeOutQuad', delay:anime.stagger(40) });
+        anime({ targets:'.chart-panel,.panel',  opacity:[0,1], translateY:[10,0], duration:300, easing:'easeOutQuad', delay:anime.stagger(50,{start:160}) });
     }
 
 })();

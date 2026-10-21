@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\EnrollmentRequest;
+use App\Models\OfficialLrn;
+use App\Models\Section;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -13,126 +17,108 @@ class DashboardController extends Controller
     {
         $today = now()->toDateString();
 
-        // Helper to get counts for specific actions per day
-        // We assume 'action' column in audit_logs contains strings like 'Login', 'Approval', 'Registration'
-        // Adjust these strings if your actual log actions are different (e.g., 'user.login')
-        
-        $getChartData = function ($periodType) use ($today) {
-            $dates = [];
-            $regData = [];
-            $aprData = [];
-            $logData = [];
+        // ── Chart data ───────────────────────────────────────────────────
+        // Dati: kinukuha ang LAHAT ng audit log rows ng buong taon nang 3 beses
+        // (weekly/monthly/yearly) at binibilang sa PHP — bumabagal habang
+        // dumarami ang logins. Ngayon: ISANG grouped query (≤ ~370 rows),
+        // parehong mga patakaran sa pagbilang gaya ng dati:
+        //   log = nagsisimula sa "login" pero hindi "blocked" (hindi kasama ang "Failed login")
+        //   apr = may "approve"
+        //   reg = "account activated" / nagsisimula sa "parent linked" / may "registration"
+        $weekStart = now()->startOfWeek();
+        $weekEnd   = now()->endOfWeek();
+        $from      = $weekStart->copy()->min(now()->startOfYear());   // week may start in last year
+        $to        = $weekEnd->copy()->max(now()->endOfYear());       // or end in next year
 
-            // Determine date range based on period
-            switch ($periodType) {
-                case 'weekly':
-                    $startDate = now()->startOfWeek();
-                    $endDate = now()->endOfWeek();
-                    $groupBy = 'DAY';
-                    break;
-                case 'monthly':
-                    $startDate = now()->startOfMonth();
-                    $endDate = now()->endOfMonth();
-                    $groupBy = 'DAY'; // Can be MONTH if you want yearly view aggregated differently
-                    break;
-                case 'yearly':
-                    $startDate = now()->startOfYear();
-                    $endDate = now()->endOfYear();
-                    $groupBy = 'MONTH';
-                    break;
-                default:
-                    return null;
-            }
+        $a = 'LOWER(action)';
+        $category = "CASE
+            WHEN {$a} LIKE 'login%' AND {$a} NOT LIKE '%blocked%' THEN 'log'
+            WHEN {$a} LIKE '%approve%' THEN 'apr'
+            WHEN {$a} LIKE '%account activated%' OR {$a} LIKE 'parent linked%' OR {$a} LIKE '%registration%' THEN 'reg'
+            ELSE NULL END";
 
-            // Fetch all logs in that range
-            $logs = AuditLog::whereBetween('created_at', [$startDate, $endDate])
-                ->select(DB::raw("DATE(created_at) as log_date"), 'action')
-                ->get();
+        $daily = AuditLog::whereBetween('created_at', [$from, $to])
+            ->selectRaw("DATE(created_at) as d, {$category} as cat, COUNT(*) as c")
+            ->groupBy('d', 'cat')
+            ->get()
+            ->filter(fn ($r) => $r->cat !== null);
 
-            // Generate labels (Dates or Months)
-            if ($periodType === 'yearly') {
-                $labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            } else {
-                // For weekly/monthly, generate list of dates
-                $currentDate = clone $startDate;
-                while ($currentDate <= $endDate) {
-                    $dates[] = $currentDate->format('Y-m-d');
-                    $currentDate->addDay();
-                }
-                
-                if ($periodType === 'weekly') {
-                    // Format labels as Mon, Tue, etc.
-                    $tempDates = clone $startDate;
-                    $labels = [];
-                    while ($tempDates <= $endDate) {
-                        $labels[] = $tempDates->format('D');
-                        $tempDates->addDay();
+        // [Y-m-d][cat] => count
+        $byDay = [];
+        foreach ($daily as $r) {
+            $byDay[(string) $r->d][$r->cat] = (int) $r->c;
+        }
+
+        $series = function (array $days, array $labels) use ($byDay) {
+            $out = ['labels' => $labels, 'reg' => [], 'apr' => [], 'log' => []];
+            foreach ($days as $dayKeys) {
+                foreach (['reg', 'apr', 'log'] as $cat) {
+                    $sum = 0;
+                    foreach ((array) $dayKeys as $d) {
+                        $sum += $byDay[$d][$cat] ?? 0;
                     }
-                } else {
-                    // Monthly labels: Jan 1, Jan 2...
-                    $labels = array_map(fn($d) => date('M j', strtotime($d)), $dates);
+                    $out[$cat][] = $sum;
                 }
             }
-
-            // Initialize arrays with 0s
-            $regData = array_fill(0, count($labels), 0);
-            $aprData = array_fill(0, count($labels), 0);
-            $logData = array_fill(0, count($labels), 0);
-
-            // Map logs to arrays
-            foreach ($logs as $log) {
-                $dateStr = $log->log_date;
-                $action = strtolower($log->action); // Ensure case insensitivity
-
-                // Find index of this date in our labels/dates array
-                $index = -1;
-                if ($periodType === 'yearly') {
-                     // For yearly, we match by month number
-                     $monthNum = (int)date('n', strtotime($dateStr));
-                     $index = $monthNum - 1; 
-                } else {
-                     $index = array_search($dateStr, $dates);
-                }
-
-                if ($index !== false && $index >= 0) {
-                    // Dati: (1) kasama ang "Failed login" at "Login blocked" sa
-                    // bilang ng logins; (2) "registration" ay HINDI naglalaman ng
-                    // "register" kaya laging 0 ang registrations.
-                    // Successful lang: "Login…" (web/mobile), hindi "Login blocked…"/"Failed login"
-                    if (str_starts_with($action, 'login') && !str_contains($action, 'blocked')) {
-                        $logData[$index]++;
-                    } elseif (str_contains($action, 'approve')) {
-                        $aprData[$index]++;
-                    } elseif (str_contains($action, 'account activated')
-                           || str_starts_with($action, 'parent linked')
-                           || str_contains($action, 'registration')) {
-                        $regData[$index]++;
-                    }
-                }
-            }
-
-            return [
-                'labels' => $labels,
-                'reg'    => $regData,
-                'apr'    => $aprData,
-                'log'    => $logData,
-            ];
+            return $out;
         };
 
+        // Weekly: Mon..Sun of this week
+        $weekDays = [];
+        for ($d = $weekStart->copy(); $d->lte($weekEnd); $d->addDay()) {
+            $weekDays[] = $d->toDateString();
+        }
+        $chartDataWeekly = $series($weekDays, array_map(fn ($d) => Carbon::parse($d)->format('D'), $weekDays));
+
+        // Monthly: every day of this month
+        $monthDays = [];
+        for ($d = now()->startOfMonth(); $d->lte(now()->endOfMonth()); $d->addDay()) {
+            $monthDays[] = $d->toDateString();
+        }
+        $chartDataMonthly = $series($monthDays, array_map(fn ($d) => Carbon::parse($d)->format('M j'), $monthDays));
+
+        // Yearly: 12 months, each bucket = all days of that month (this year)
+        $year = now()->year;
+        $monthBuckets = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $start = Carbon::create($year, $m, 1);
+            $bucket = [];
+            for ($d = $start->copy(); $d->month === $m; $d->addDay()) {
+                $bucket[] = $d->toDateString();
+            }
+            $monthBuckets[] = $bucket;
+        }
+        $chartDataYearly = $series($monthBuckets, ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+
+        // ── Counts ───────────────────────────────────────────────────────
+        $roleStatus = User::whereIn('role', ['student', 'teacher', 'parent'])
+            ->selectRaw('role, status, COUNT(*) as c')
+            ->groupBy('role', 'status')
+            ->get();
+        $count = fn ($role, $status = null) => (int) $roleStatus
+            ->where('role', $role)
+            ->when($status, fn ($c) => $c->where('status', $status))
+            ->sum('c');
+
         return view('admin.dashboard', [
-            'totalStudents'   => User::where('role', 'student')->count(),
-            'totalTeachers'   => User::where('role', 'teacher')->count(),
-            'totalParents'    => User::where('role', 'parent')->count(),
-            'pendingStudents' => User::where('role', 'student')->where('status', 'pending')->count(),
-            'pendingParents'  => User::where('role', 'parent')->where('status', 'pending')->count(),
-            'todayLogs'       => AuditLog::whereDate('created_at', $today)->count(),
-            'pendingUsers'    => User::where('status', 'pending')->latest()->take(5)->get(),
-            'recentLogs'      => AuditLog::latest()->take(8)->get(),
-            
-            // Pass the generated data to the view
-            'chartDataWeekly'   => $getChartData('weekly'),
-            'chartDataMonthly'  => $getChartData('monthly'),
-            'chartDataYearly'   => $getChartData('yearly'),
+            'totalStudents'    => $count('student'),
+            'totalTeachers'    => $count('teacher'),
+            'totalParents'     => $count('parent'),
+            'pendingStudents'  => $count('student', 'pending'),
+            'pendingParents'   => $count('parent', 'pending'),
+            'approvedTeachers' => $count('teacher', 'approved'),
+            'todayLogs'        => AuditLog::whereDate('created_at', $today)->count(),
+            'pendingUsers'     => User::where('status', 'pending')->latest()->take(5)->get(),
+            'recentLogs'       => AuditLog::latest()->take(8)->get(),
+
+            // "Needs attention" — mga dapat aksyunan ng admin
+            'pendingEnrollments'  => EnrollmentRequest::where('status', 'pending')->count(),
+            'sectionsNoAdviser'   => Section::where('is_active', true)->whereNull('adviser_id')->count(),
+            'availableLrns'       => OfficialLrn::whereNull('claimed_by')->count(),
+
+            'chartDataWeekly'  => $chartDataWeekly,
+            'chartDataMonthly' => $chartDataMonthly,
+            'chartDataYearly'  => $chartDataYearly,
         ]);
     }
 }
