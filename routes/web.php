@@ -216,6 +216,7 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         // ->only(): dati 7 route bawat isa pero ilang method lang ang meron → 500
         Route::resource('gradebook',     GradebookController::class)->only(['index', 'store']);
         Route::resource('materials',     MaterialController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+        Route::patch('/materials/{material}/publish', [MaterialController::class, 'togglePublish'])->name('materials.publish');
         Route::resource('announcements', AnnouncementController::class)->only(['index', 'store', 'destroy']);
 
         // Quizzes / assignments (file-based)
@@ -224,6 +225,7 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::post('/assignments',                      [App\Http\Controllers\Teacher\AssignmentController::class, 'store'])->name('assignments.store');
         Route::get('/assignments/{assignment}',          [App\Http\Controllers\Teacher\AssignmentController::class, 'show'])->name('assignments.show');
         Route::delete('/assignments/{assignment}',       [App\Http\Controllers\Teacher\AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::patch('/assignments/{assignment}/publish',[App\Http\Controllers\Teacher\AssignmentController::class, 'togglePublish'])->name('assignments.publish');
         Route::post('/submissions/{submission}/grade',   [App\Http\Controllers\Teacher\AssignmentController::class, 'grade'])->name('submissions.grade');
 
         // Messaging — chat with students in the teacher's sections

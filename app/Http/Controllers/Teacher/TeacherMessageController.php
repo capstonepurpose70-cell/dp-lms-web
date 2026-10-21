@@ -29,21 +29,22 @@ class TeacherMessageController extends Controller
         // ── Inbox: one row per person, newest first ──────────────────────────
         $msgs = Message::where('sender_id', $me->id)
             ->orWhere('receiver_id', $me->id)
-            ->orderByDesc('created_at')
+            ->orderByDesc('created_at')->orderByDesc('id')
             ->get();
 
         $threads = [];
         foreach ($msgs as $m) {
-            $otherId = $m->sender_id === $me->id ? $m->receiver_id : $m->sender_id;
+            $mine    = (int) $m->sender_id === (int) $me->id;
+            $otherId = (int) ($mine ? $m->receiver_id : $m->sender_id);
             if (! isset($threads[$otherId])) {
                 $threads[$otherId] = [
                     'last_body' => $m->body,
                     'last_at'   => $m->created_at,
-                    'last_mine' => $m->sender_id === $me->id,
+                    'last_mine' => $mine,
                     'unread'    => 0,
                 ];
             }
-            if ($m->receiver_id === $me->id && ! $m->is_read) {
+            if (! $mine && ! $m->is_read) {
                 $threads[$otherId]['unread']++;
             }
         }
@@ -72,8 +73,12 @@ class TeacherMessageController extends Controller
         $activeUser = null;
         $messages   = collect();
 
-        if ($activeId) {
-            $activeUser = User::find($activeId);
+        // Only people this teacher may talk to: own students, or someone already in the inbox.
+        // Dati kahit anong user ID (admin, parent, ibang teacher) nabubuksan → nakikita ang pangalan.
+        $allowedIds = $this->allowedStudentIds($me);
+        if ($activeId && ctype_digit((string) $activeId)
+            && ($allowedIds->contains((int) $activeId) || isset($threads[(int) $activeId]))) {
+            $activeUser = User::find((int) $activeId);
             if ($activeUser) {
                 Message::where('sender_id', $activeUser->id)
                     ->where('receiver_id', $me->id)
@@ -86,13 +91,13 @@ class TeacherMessageController extends Controller
                     ->orWhere(function ($q) use ($me, $activeUser) {
                         $q->where('sender_id', $activeUser->id)->where('receiver_id', $me->id);
                     })
-                    ->orderBy('created_at')
+                    ->orderBy('created_at')->orderBy('id')
                     ->get();
             }
         }
 
         // Students available to start a new conversation
-        $contacts = User::whereIn('id', $this->allowedStudentIds($me))
+        $contacts = User::whereIn('id', $allowedIds)
             ->orderBy('name')->get(['id', 'name']);
 
         return view('teacher.messages', [
@@ -128,8 +133,7 @@ class TeacherMessageController extends Controller
             'is_read'     => false,
         ]);
 
-        return redirect()
-            ->route('teacher.messages', ['with' => $data['receiver_id']])
-            ->with('success', 'Message sent!');
+        // No flash banner — the new message already shows in the thread.
+        return redirect()->route('teacher.messages', ['with' => $data['receiver_id']]);
     }
 }

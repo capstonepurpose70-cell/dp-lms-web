@@ -569,12 +569,12 @@
                 <div class="toggle-row">
                     <div class="toggle-info">
                         <p class="toggle-title">Publish immediately</p>
-                        <p class="toggle-desc">Students can view this material right away after upload.</p>
+                        <p class="toggle-desc">Students can view it right away. Turn off to save as a draft — you can publish it later.</p>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" name="is_published" value="1"
                                id="publishToggle"
-                               {{ old('is_published') ? 'checked' : '' }}>
+                               {{ (old('_token') ? old('is_published') : true) ? 'checked' : '' }}>
                         <div class="toggle-track"></div>
                         <div class="toggle-thumb"></div>
                     </label>

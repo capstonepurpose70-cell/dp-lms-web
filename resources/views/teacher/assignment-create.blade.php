@@ -85,7 +85,7 @@
 
         <div class="cq-field">
             <label class="cq-check">
-                <input type="checkbox" name="is_published" value="1" {{ old('is_published', '1') ? 'checked' : '' }}>
+                <input type="checkbox" name="is_published" value="1" {{ (old('_token') ? old('is_published') : true) ? 'checked' : '' }}>
                 Publish now (students can see it immediately)
             </label>
         </div>

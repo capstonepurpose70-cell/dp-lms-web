@@ -123,12 +123,33 @@ class MaterialController extends Controller
             ->with('success', "Material '{$material->title}' uploaded successfully.");
     }
 
+    // PATCH /teacher/materials/{material}/publish — draft ↔ published.
+    // Dati walang paraan para i-publish ang draft, kaya hindi na ito makikita ng students.
+    public function togglePublish(LearningMaterial $material, StudentNotifier $notifier)
+    {
+        abort_if((int) $material->user_id !== (int) auth()->id(), 403, 'You can only change your own materials.');
+
+        $material->update(['is_published' => ! $material->is_published]);
+
+        AuditLogService::log(
+            ($material->is_published ? 'Published' : 'Unpublished') . " material: {$material->title}",
+            'Learning Materials'
+        );
+
+        if ($material->is_published && $material->subject) {
+            $notifier->newMaterial($material, $material->subject, auth()->user());
+        }
+
+        return back()->with('success', $material->is_published
+            ? "'{$material->title}' is now visible to students."
+            : "'{$material->title}' is now a draft. Students can no longer see it.");
+    }
+
     public function destroy(LearningMaterial $material)
     {
-
-           if ($material->user_id !== auth()->id()) {
-        abort(403, 'You can only delete your own materials.');
-    }
+        if ((int) $material->user_id !== (int) auth()->id()) {
+            abort(403, 'You can only delete your own materials.');
+        }
 
         if ($material->file_path) {
             Storage::disk('public')->delete($material->file_path);
@@ -146,7 +167,7 @@ class MaterialController extends Controller
 
     public function show(LearningMaterial $material)
 {
-    abort_if($material->user_id !== auth()->id(), 403);
+    abort_if((int) $material->user_id !== (int) auth()->id(), 403);
 
     $material->loadCount(['views', 'likes', 'comments']);
 

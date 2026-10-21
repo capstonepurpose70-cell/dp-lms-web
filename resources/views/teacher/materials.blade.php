@@ -505,6 +505,14 @@
                    onclick="dmOpen('{{ route('teacher.materials.show', $material) }}', '{{ route('teacher.materials.destroy', $material) }}')"
                    class="dm-trigger px-2.5 py-1 rounded-lg text-xs font-semibold"
                    style="background:#eff6ff;color:#2563eb;border:none;cursor:pointer;transition:background .18s,transform .18s;">Details</button>
+                <form method="POST" action="{{ route('teacher.materials.publish', $material) }}" style="margin:0;"
+                      onsubmit="return confirm('{{ $material->is_published ? 'Unpublish this material? Students will no longer see it.' : 'Publish this material? Students will be notified.' }}');">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit"
+                        class="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                        style="background:{{ $material->is_published ? '#f1f5f9' : '#dcfce7' }};color:{{ $material->is_published ? '#475569' : '#15803d' }};border:none;cursor:pointer;">{{ $material->is_published ? 'Unpublish' : 'Publish' }}</button>
+                </form>
                 <form method="POST" action="{{ route('teacher.materials.destroy', $material) }}"
                       onsubmit="return confirm('Delete this material? This cannot be undone.');"
                       style="margin:0;">
@@ -699,11 +707,11 @@
                     <div class="um-toggle-row">
                         <div>
                             <p class="um-toggle-title">Publish immediately</p>
-                            <p class="um-toggle-desc">Students can view this material right away.</p>
+                            <p class="um-toggle-desc">Students can view it right away. Turn off to save as a draft — you can publish it later.</p>
                         </div>
                         <label class="um-switch">
                             <input type="checkbox" name="is_published" value="1"
-                                   {{ old('is_published') ? 'checked' : '' }}>
+                                   {{ (old('_token') ? old('is_published') : true) ? 'checked' : '' }}>
                             <div class="um-track"></div>
                             <div class="um-thumb"></div>
                         </label>
@@ -892,7 +900,12 @@
     window.umHandleFile = function (input) {
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
-        const ext  = file.name.split('.').pop().toLowerCase();
+        if (file.size > 20 * 1048576) {
+            alert('This file is larger than 20 MB. Please choose a smaller file.');
+            umClearFile();
+            return;
+        }
+        const ext  = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
         const [color, bg] = EXT_COLORS[ext] || ['#3B82F6','#EFF6FF'];
         const size = file.size > 1048576
             ? (file.size/1048576).toFixed(2)+' MB'

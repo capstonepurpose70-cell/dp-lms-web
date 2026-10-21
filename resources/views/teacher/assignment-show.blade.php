@@ -34,9 +34,6 @@
 <div class="sb-wrap">
     <a href="{{ route('teacher.assignments.index') }}" class="sb-back">← Back to quizzes</a>
 
-    @if(session('success'))
-        <div class="sb-flash">{{ session('success') }}</div>
-    @endif
     @if($errors->any())
         <div class="sb-flash" role="alert" style="background:#FEF2F2;border-color:#FECACA;color:#B91C1C;">{{ $errors->first() }}</div>
     @endif

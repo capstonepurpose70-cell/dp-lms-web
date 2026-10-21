@@ -142,13 +142,6 @@
     <div class="form-card">
         <h2 class="text-sm font-bold text-gray-700 mb-4">Post New Announcement</h2>
 
-        @if(session('success'))
-            <div class="bg-green-50 border border-green-200 text-green-700 text-xs
-                        rounded-lg px-3 py-2 mb-4 font-medium">
-                {{ session('success') }}
-            </div>
-        @endif
-
         <form method="POST" action="{{ route('teacher.announcements.store') }}">
             @csrf
 
@@ -211,7 +204,7 @@
                     {{-- Delete button (hard delete — mawawala rin sa students) --}}
                     <form method="POST"
                         action="{{ route('teacher.announcements.destroy', $announcement->id) }}"
-                        onsubmit="return confirm('Delete this announcement? Mawawala rin ito sa mga students.');"
+                        onsubmit="return confirm('Delete this announcement? Students will no longer see it.');"
                         class="flex-shrink-0">
                         @csrf
                         @method('DELETE')

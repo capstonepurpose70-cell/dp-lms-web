@@ -46,10 +46,6 @@
         <p>Review student enrollment requests and assign them to your advisory section.</p>
     </div>
 
-    @if (session('success'))
-        <div class="en-ok">{{ session('success') }}</div>
-    @endif
-
     @unless ($hasAdvisory)
         <div class="en-note">
             ⚠️ Only section <b>advisers</b> review enrollment requests, and you are not assigned to a section yet.

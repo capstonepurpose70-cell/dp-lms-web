@@ -54,7 +54,7 @@ class AssignmentController extends Controller
             'subject_id'   => 'required|exists:subjects,id',
             'section_id'   => 'required|exists:sections,id',
             'title'        => 'required|string|max:255',
-            'instructions' => 'nullable|string',
+            'instructions' => 'nullable|string|max:20000',
             'due_date'     => 'nullable|date',
             'max_score'    => 'nullable|integer|min:1|max:1000',
             'is_published' => 'nullable|boolean',

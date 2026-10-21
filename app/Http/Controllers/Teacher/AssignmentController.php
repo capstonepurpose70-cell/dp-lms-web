@@ -50,11 +50,15 @@ class AssignmentController extends Controller
             'subject_id'   => 'required|exists:subjects,id',
             'section_id'   => 'required|exists:sections,id',
             'title'        => 'required|string|max:255',
-            'instructions' => 'nullable|string',
-            'due_date'     => 'nullable|date',
+            'instructions' => 'nullable|string|max:20000',
+            'due_date'     => 'nullable|date|after:now',
             'max_score'    => 'nullable|integer|min:1|max:1000',
             'is_published' => 'nullable|boolean',
             'file'         => 'nullable|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,ppt,pptx,xls,xlsx',
+        ], [
+            'subject_id.required' => 'Please choose a class.',
+            'section_id.required' => 'Please choose a class.',
+            'due_date.after'      => 'The due date must be later than now.',
         ]);
 
         $teaches = TeacherSubject::where('user_id', auth()->id())
@@ -121,6 +125,22 @@ class AssignmentController extends Controller
         }
 
         return back()->with('success', 'Submission graded.');
+    }
+
+    // PATCH /teacher/assignments/{assignment}/publish — draft ↔ published
+    public function togglePublish(Assignment $assignment, StudentNotifier $notifier)
+    {
+        abort_unless((int) $assignment->user_id === (int) auth()->id(), 403);
+
+        $assignment->update(['is_published' => ! $assignment->is_published]);
+
+        if ($assignment->is_published) {
+            $notifier->newAssignment($assignment, auth()->user());
+        }
+
+        return back()->with('success', $assignment->is_published
+            ? "'{$assignment->title}' is now visible to students."
+            : "'{$assignment->title}' is now a draft. Students can no longer see it.");
     }
 
     public function destroy(Assignment $assignment)

@@ -28,5 +28,10 @@ class AppServiceProvider extends ServiceProvider
         Mail::extend('brevo', function (array $config) {
             return new BrevoTransport($config['key'] ?? env('BREVO_API_KEY', ''));
         });
+
+        // Plain <ul class="pagination"> markup (styled in the layouts). The default
+        // Tailwind pager relies on classes missing from the built CSS.
+        \Illuminate\Pagination\Paginator::defaultView('pagination::default');
+        \Illuminate\Pagination\Paginator::defaultSimpleView('pagination::simple-default');
     }
 }

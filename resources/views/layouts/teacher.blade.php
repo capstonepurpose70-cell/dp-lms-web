@@ -361,6 +361,17 @@ body.collapsed .sidebar-nav {
         .flash-success { background: #F0FDF4; border: 1.5px solid #86EFAC; color: #15803D; }
         .flash-error   { background: #FEF2F2; border: 1.5px solid #FCA5A5; color: #991B1B; }
 
+        /* Pagination (Paginator::defaultView = pagination::default) */
+        ul.pagination { display:flex; flex-wrap:wrap; gap:6px; list-style:none; margin:0; padding:0; align-items:center; }
+        ul.pagination li > a, ul.pagination li > span {
+            display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; padding:0 10px;
+            border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text-2);
+            text-decoration:none; font-weight:600; font-size:13px; transition:border-color .15s, color .15s;
+        }
+        ul.pagination li > a:hover { border-color:var(--accent); color:var(--accent); }
+        ul.pagination li.active > span { background:var(--accent-dark); border-color:var(--accent-dark); color:#fff; }
+        ul.pagination li.disabled > span { opacity:.45; cursor:default; }
+
         /* ═══════════════════════════════════════════
            MODAL
         ═══════════════════════════════════════════ */

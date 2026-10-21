@@ -123,18 +123,12 @@ class DashboardController extends Controller
     }
 
     // ── GET /api/teacher/gradebook ────────────────────────────────────────────
-    public function gradebook(Request $request)
+    public function gradebook(Request $request, GradeService $gradeService)
     {
         $teacher = auth()->user();
 
-        $subjectIds = TeacherSubject::where('user_id', $teacher->id)
-            ->pluck('subject_id');
-        $sectionIds = TeacherSubject::where('user_id', $teacher->id)
-            ->pluck('section_id');
-
-        $query = Grade::with(['student.section', 'subject'])
-            ->whereIn('subject_id', $subjectIds)
-            ->whereHas('student', fn($q) => $q->whereIn('section_id', $sectionIds));
+        // Only subject + section pairs this teacher actually teaches
+        $query = $gradeService->visibleTo($teacher)->with(['student.section', 'subject']);
 
         // Optional filters
         if ($request->filled('subject_id')) {
@@ -144,7 +138,10 @@ class DashboardController extends Controller
             $query->where('quarter', $request->quarter);
         }
         if ($request->filled('section_id')) {
-            $query->whereHas('student', fn($q) => $q->where('section_id', $request->section_id));
+            $query->whereIn('user_id', User::studentIdsInSections([(int) $request->section_id]));
+        }
+        if ($request->filled('school_year')) {
+            $query->where('school_year', $request->school_year);
         }
 
         $grades = $query->latest()->get()->map(fn($g) => [
@@ -162,6 +159,7 @@ class DashboardController extends Controller
             'final_grade'          => $g->final_grade,
             'remarks'              => $g->remarks,
             'passed'               => $g->isPassed(),
+            'school_year'          => $g->school_year,
         ]);
 
         return response()->json($grades);
@@ -171,7 +169,7 @@ class DashboardController extends Controller
     // Body: { student_id, subject_id, quarter, written_works, performance_tasks, quarterly_assessment }
     public function saveGrade(Request $request, GradeService $grades)
     {
-        $data = $request->validate(GradeService::rules());
+        $data = $request->validate(GradeService::rules(), [], GradeService::attributes());
 
         try {
             $grade = $grades->save(auth()->user(), $data);

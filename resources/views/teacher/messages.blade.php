@@ -32,7 +32,8 @@
                        display:flex; align-items:center; gap:11px; }
     .msg-body-area { flex:1; padding:18px; overflow-y:auto; max-height:430px; background:#fcfdff; }
     .bubble { max-width:74%; margin-bottom:10px; padding:9px 13px; border-radius:14px;
-              font-size:14px; line-height:1.4; }
+              font-size:14px; line-height:1.4; overflow-wrap:anywhere; }
+    .bubble-text { white-space:pre-wrap; }
     .bubble-row { display:flex; }
     .bubble-mine  { margin-left:auto; background:#2563eb; color:#fff; border-bottom-right-radius:4px; }
     .bubble-their { margin-right:auto; background:#fff; color:#0f172a; border:1px solid #eef2f7;
@@ -70,12 +71,7 @@
         <p style="font-size:13px;color:#94a3b8;margin-top:2px;">Chat with students in your sections.</p>
     </div>
 
-    @if(session('success'))
-        <div style="background:#dcfce7;border:1px solid #bbf7d0;color:#15803d;padding:10px 14px;border-radius:12px;font-size:13px;margin-bottom:14px;">
-            ✓ {{ session('success') }}
-        </div>
-    @endif
-    @if($errors->any())
+    @if($errors->any() && ! $activeUser)
         <div role="alert" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:10px 14px;border-radius:12px;font-size:13px;margin-bottom:14px;">
             {{ $errors->first() }}
         </div>
@@ -103,7 +99,7 @@
                     @forelse($conversations as $conv)
                         <a class="msg-conv {{ $activeUser && $activeUser->id == $conv['id'] ? 'active' : '' }}"
                            href="{{ route('teacher.messages', ['with' => $conv['id']]) }}">
-                            <div class="msg-avatar">{{ strtoupper(substr($conv['name'] ?? '?', 0, 1)) }}</div>
+                            <div class="msg-avatar">{{ mb_strtoupper(mb_substr($conv['name'] ?? '?', 0, 1)) }}</div>
                             <div style="flex:1;min-width:0;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
                                     <span class="msg-name">{{ $conv['name'] }}</span>
@@ -131,7 +127,7 @@
                     <div class="msg-thread-head">
                         <a href="{{ route('teacher.messages') }}"
                            style="display:none;color:#64748b;" class="msg-back">←</a>
-                        <div class="msg-avatar">{{ strtoupper(substr($activeUser->name ?? '?', 0, 1)) }}</div>
+                        <div class="msg-avatar">{{ mb_strtoupper(mb_substr($activeUser->name ?? '?', 0, 1)) }}</div>
                         <div>
                             <p style="font-size:14px;font-weight:700;color:#0f172a;">{{ $activeUser->name }}</p>
                             @if($activeSection)
@@ -142,10 +138,10 @@
 
                     <div class="msg-body-area" id="msgBody">
                         @forelse($messages as $m)
-                            @php $mine = $m->sender_id === $me->id; @endphp
+                            @php $mine = (int) $m->sender_id === (int) $me->id; @endphp
                             <div class="bubble-row">
                                 <div class="bubble {{ $mine ? 'bubble-mine' : 'bubble-their' }}">
-                                    {{ $m->body }}
+                                    <span class="bubble-text">{{ $m->body }}</span>
                                     <div class="bubble-time">{{ $m->created_at?->format('M d, h:i A') }}</div>
                                 </div>
                             </div>
@@ -160,12 +156,12 @@
                         <div style="background:#fee2e2;color:#b91c1c;font-size:12px;padding:8px 14px;">{{ $message }}</div>
                     @enderror
 
-                    <form method="POST" action="{{ route('teacher.messages.store') }}" class="msg-composer">
+                    <form method="POST" action="{{ route('teacher.messages.store') }}" class="msg-composer" onsubmit="if(this.dataset.sent){return false;}this.dataset.sent=1;">
                         @csrf
                         <input type="hidden" name="receiver_id" value="{{ $activeUser->id }}">
                         <textarea name="body" rows="1" placeholder="Type a message…"
                                   required maxlength="2000"
-                                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.submit();}"></textarea>
+                                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(this.value.trim()){this.form.requestSubmit?this.form.requestSubmit():this.form.submit();}}"></textarea>
                         <button type="submit" class="msg-send" aria-label="Send">
                             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                         </button>

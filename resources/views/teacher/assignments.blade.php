@@ -22,6 +22,8 @@
     .qz-row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid #F1F5F9; }
     .qz-count { font-size:13px; color:#475569; font-weight:600; }
     .qz-view { font-size:13px; font-weight:700; color:#2563EB; text-decoration:none; }
+    .qz-toggle { font-size:12px; font-weight:700; color:#475569; background:#F1F5F9; border:0; padding:5px 11px; border-radius:8px; cursor:pointer; }
+    .qz-toggle:hover { background:#E2E8F0; color:#1D4ED8; }
     .qz-empty { text-align:center; padding:60px 20px; color:#94A3B8; }
     .qz-empty svg { width:54px; height:54px; margin-bottom:14px; opacity:.5; }
 </style>
@@ -38,15 +40,19 @@
         </a>
     </div>
 
-    @if(session('success'))
-        <div class="qz-flash">{{ session('success') }}</div>
-    @endif
-
     @if($assignments->count())
         <div class="qz-grid">
             @foreach($assignments as $a)
                 <div class="qz-card">
-                    <span class="qz-pill {{ $a->is_published ? 'qz-pub' : 'qz-draft' }}">{{ $a->is_published ? 'Published' : 'Draft' }}</span>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                        <span class="qz-pill {{ $a->is_published ? 'qz-pub' : 'qz-draft' }}">{{ $a->is_published ? 'Published' : 'Draft' }}</span>
+                        <form method="POST" action="{{ route('teacher.assignments.publish', $a) }}" style="margin:0;"
+                              onsubmit="return confirm('{{ $a->is_published ? 'Unpublish this quiz? Students will no longer see it.' : 'Publish this quiz? Students in the section will be notified.' }}');">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="qz-toggle">{{ $a->is_published ? 'Unpublish' : 'Publish' }}</button>
+                        </form>
+                    </div>
                     <h3 style="margin-top:10px">{{ $a->title }}</h3>
                     <div class="qz-meta">
                         {{ $a->subject?->name }} • {{ $a->section?->name }}<br>
