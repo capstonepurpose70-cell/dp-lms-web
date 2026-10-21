@@ -135,7 +135,7 @@ flowchart TD
     L[Login screen<br/>Email / LRN / Mobile + password] --> P["POST /api/login<br/>{ email, password }"]
     P -->|200| T[token + user → Home ayon sa role]
     P -->|401| X1[Mali ang credentials]
-    P -->|403| X2[Hindi pa approved]
+    P -->|403| X2[Hindi pa approved, o<br/>temporary password pa — palitan muna sa website]
     P -->|429| X3[Maghintay — 20 subok/min]
     L -.-> F1[Forgot password]
     F1 --> F2["POST /api/forgot-password { email }"]
@@ -152,6 +152,11 @@ flowchart TD
 - `200` → `{ "token", "user": { id, name, email, role, grade_level, status } }`
 - Mobile: tinatanggap ang `+63 917 123 4567`, `09171234567`, atbp. Ang **12-digit na purong numero ay LRN**.
 - **Walang OTP** sa mobile login (hindi nagbago).
+- `403 { "message": "Account not yet approved." }` — pending/rejected na account.
+- **BAGO (2026-10-21):** `403 { "message": "Please log in on the website first and set a new password." }` —
+  lumang teacher account na may *temporary password* pa. Ipakita ang `message` as-is (walang token).
+  Ang mga bagong teacher ay nag-a-activate gamit ang **activation link** sa browser (sariling email + password),
+  tapos saka mag-login sa app — walang pagbabago sa login screen.
 
 ### `POST /api/forgot-password` (throttle 10/min)
 
