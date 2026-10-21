@@ -298,6 +298,10 @@ Route::patch('/profile/update-password',
             [UserManagementController::class, 'createTeacher'])->name('users.create-teacher');
         Route::post('/users/store-teacher',
             [UserManagementController::class, 'storeTeacher'])->name('users.store-teacher');
+        Route::get('/users/import-teachers',
+            [UserManagementController::class, 'importTeachersForm'])->name('users.import-teachers');
+        Route::post('/users/import-teachers',
+            [UserManagementController::class, 'importTeachers'])->name('users.import-teachers.store');
 
 
         // ── WILDCARD {user} routes — AFTER all static routes ─────
@@ -313,6 +317,8 @@ Route::patch('/profile/update-password',
             [UserManagementController::class, 'linkChild'])->name('users.link-child');
         Route::delete('/users/{user}/unlink-child/{child}',
             [UserManagementController::class, 'unlinkChild'])->name('users.unlink-child');
+        Route::post('/users/{user}/activation-link',
+            [UserManagementController::class, 'newActivationLink'])->name('users.activation-link');
 
         // ── Enrollment management ─────────────────────────────────
         Route::get('/enrollment',

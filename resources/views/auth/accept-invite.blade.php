@@ -6,6 +6,7 @@
 <title>Activate Account — DP-LMS</title>
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+@include('partials.gsap-fallback')
 <style>
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -249,6 +250,7 @@ label {
       DP-LMS teacher account.
     </p>
 
+    @if($teacher->email)
     <div class="user-badge">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round"
@@ -256,9 +258,31 @@ label {
       </svg>
       {{ $teacher->email }}
     </div>
+    @endif
 
     <form method="POST" action="{{ route('invite.accept', $token) }}" id="inviteForm" novalidate>
       @csrf
+
+      {{-- Email — only for teachers imported without one (bulk Import Teachers) --}}
+      @if(!$teacher->email)
+      <div class="form-group" id="fg0">
+        <label for="emailInput">Your Email <span style="color:var(--red)">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+            </svg>
+          </span>
+          <input type="email" name="email" id="emailInput" value="{{ old('email') }}"
+                 class="pw-input {{ $errors->has('email') ? 'is-error' : '' }}"
+                 placeholder="you@deped.gov.ph or your Gmail" autocomplete="email" required>
+        </div>
+        @error('email')
+          <p class="error-msg">{{ $message }}</p>
+        @enderror
+        <p style="font-size:12px;color:#6b7280;margin:6px 0 0;">Use an email you can open — your first login sends a verification code there.</p>
+      </div>
+      @endif
 
       {{-- New Password --}}
       <div class="form-group" id="fg1">
@@ -272,7 +296,7 @@ label {
           </span>
           <input type="password" name="password" id="pwInput"
                  class="pw-input {{ $errors->has('password') ? 'is-error' : '' }}"
-                 placeholder="Min. 8 characters"
+                 placeholder="8+ chars: A-Z, a-z, 0-9, symbol"
                  oninput="updateStrength(this.value)"
                  autocomplete="new-password"
                  required>

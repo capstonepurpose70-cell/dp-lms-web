@@ -73,6 +73,7 @@ class UserManagementController extends Controller
 
         // Bilang ng naghihintay ng approval kada role (badge sa tabs)
         $pendingCounts = User::where('status', 'pending')
+            ->whereNull('invite_token') // imported teachers awaiting their own activation aren't approvals
             ->whereIn('role', ['student', 'teacher', 'parent'])
             ->selectRaw('role, COUNT(*) as c')
             ->groupBy('role')
@@ -227,6 +228,56 @@ class UserManagementController extends Controller
         AuditLogService::log("Released LRN (account reset): {$user->name}", 'User Management', "LRN: {$lrn}");
 
         return back()->with('success', "Account reset. LRN {$lrn} can now be activated by its real owner.");
+    }
+
+    // ── Import Teachers (bulk, no emails needed) ──────────────────
+    public function importTeachersForm()
+    {
+        // Advisory codes the admin can copy, e.g. "7-GUTIERREZ" (sections without an adviser first)
+        $sections = Section::where('is_active', true)->get(['id', 'name', 'grade_level', 'adviser_id'])
+            ->sortBy(fn ($s) => sprintf('%d|%02d|%s', $s->adviser_id ? 1 : 0, (int) $s->grade_level, $s->name))
+            ->values();
+
+        // Teachers who have not activated their account yet
+        $awaiting = User::where('role', 'teacher')
+            ->where('status', 'pending')
+            ->whereNotNull('invite_token')
+            ->orderBy('name')
+            ->get(['id', 'name', 'employee_id', 'invite_expires_at']);
+        $advisoryOf = Section::whereIn('adviser_id', $awaiting->pluck('id'))->get(['name', 'grade_level', 'adviser_id'])->keyBy('adviser_id');
+
+        return view('admin.users.import-teachers', compact('sections', 'awaiting', 'advisoryOf'));
+    }
+
+    public function importTeachers(Request $request, \App\Services\TeacherRosterService $roster)
+    {
+        $request->validate(['roster' => 'required|string|max:20000'], [
+            'roster.required' => 'Paste at least one teacher (one per line).',
+        ]);
+
+        $result = $roster->import($request->roster);
+
+        // Links are shown ONCE (only their SHA-256 hash is stored)
+        return redirect()->route('admin.users.import-teachers')
+            ->with('import_result', $result)
+            ->with('success', $result['created']
+                ? "{$result['created']} teacher " . \Illuminate\Support\Str::plural('account', $result['created']) . ' created. Give each teacher their activation link.'
+                : 'No new teacher accounts were created — see the notes below.');
+    }
+
+    public function newActivationLink(User $user, \App\Services\TeacherRosterService $roster)
+    {
+        // Only for teachers who never activated — never for an active account (would allow takeover)
+        abort_unless($user->role === 'teacher' && $user->status === 'pending', 404);
+
+        $link = $roster->newLink($user);
+
+        return redirect()->route('admin.users.import-teachers')
+            ->with('import_result', ['created' => 0, 'results' => [[
+                'line' => null, 'name' => $user->name, 'ok' => true, 'link' => $link,
+                'advisory' => null, 'note' => 'New link — the old link no longer works.',
+            ]]])
+            ->with('success', "New activation link for {$user->name}.");
     }
 
     // ── Create Teacher ────────────────────────────────────────────

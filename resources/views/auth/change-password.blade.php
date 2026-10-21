@@ -6,6 +6,7 @@
 <title>Change Password — DP-LMS</title>
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+@include('partials.gsap-fallback')
 <style>
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

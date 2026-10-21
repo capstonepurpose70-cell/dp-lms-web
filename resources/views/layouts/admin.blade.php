@@ -2157,7 +2157,8 @@ window.addEventListener('popstate', () => {
     /* ═══════════════════════════════════════
        PAGE ENTRANCE ANIMATION (initial load only)
     ═══════════════════════════════════════ */
-    anime({
+    // anime.js is from a CDN — skip the animation offline instead of breaking the rest of this script
+    if (typeof anime !== 'undefined') anime({
         targets: '.sidebar-brand, .nav-section-wrapper, .nav-link',
         opacity: [0, 1],
         translateX: [-10, 0],

@@ -108,7 +108,8 @@ class DashboardController extends Controller
             'pendingParents'   => $count('parent', 'pending'),
             'approvedTeachers' => $count('teacher', 'approved'),
             'todayLogs'        => AuditLog::whereDate('created_at', $today)->count(),
-            'pendingUsers'     => User::where('status', 'pending')->latest()->take(5)->get(),
+            // Imported teachers waiting to activate their own link are not "registrations to approve"
+            'pendingUsers'     => User::where('status', 'pending')->whereNull('invite_token')->latest()->take(5)->get(),
             'recentLogs'       => AuditLog::latest()->take(8)->get(),
 
             // "Needs attention" — mga dapat aksyunan ng admin

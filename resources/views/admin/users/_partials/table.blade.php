@@ -172,7 +172,13 @@
                                     <span class="um-dim">No classes yet</span>
                                 @endif
                             </td>
-                            <td><span class="um-badge um-badge-{{ $teacher->status }}">{{ ucfirst($teacher->status) }}</span></td>
+                            <td>
+                                @if($teacher->status === 'pending' && $teacher->invite_token)
+                                    <span class="um-badge um-badge-pending" title="Has not opened their activation link yet">Awaiting activation</span>
+                                @else
+                                    <span class="um-badge um-badge-{{ $teacher->status }}">{{ ucfirst($teacher->status) }}</span>
+                                @endif
+                            </td>
                             <td class="r">
                                 @include('admin.users._partials.row-actions', ['u' => $teacher])
                             </td>

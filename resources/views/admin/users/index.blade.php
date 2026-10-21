@@ -106,7 +106,8 @@
     .um-icon-btn { width:34px; height:34px; display:inline-grid; place-items:center; border-radius:9px; border:1px solid var(--border-default);
         background:var(--white); color:var(--slate-500); cursor:pointer; transition:border-color .15s, color .15s, background .15s; }
     .um-icon-btn svg { width:16px; height:16px; }
-    .um-btn-view:hover    { border-color:#2563eb; color:#2563eb; }
+    .um-btn-view:hover, .um-btn-link:hover { border-color:#2563eb; color:#2563eb; }
+    .um-btn-link { color:#b45309; border-color:rgba(217,119,6,.35); }
     .um-btn-approve { color:#16a34a; border-color:rgba(22,163,74,.35); }
     .um-btn-approve:hover { background:rgba(22,163,74,.10); }
     .um-btn-reject  { color:#dc2626; border-color:rgba(220,38,38,.35); }
@@ -186,10 +187,16 @@
                 <p class="um-subtitle">Students, teachers and parents — search, review pending accounts, and open any profile.</p>
             </div>
         </div>
-        <a href="{{ route('admin.users.create-teacher') }}" class="um-add" data-no-spa>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-            Add Teacher
-        </a>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="{{ route('admin.users.import-teachers', [], false) }}" class="um-add" style="background:transparent; color:var(--slate-700); border:1px solid var(--border-default); box-shadow:none;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import Teachers
+            </a>
+            <a href="{{ route('admin.users.create-teacher') }}" class="um-add" data-no-spa>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                Add Teacher
+            </a>
+        </div>
     </div>
 
     {{-- Tabs (Students / Teachers / Parents) --}}
