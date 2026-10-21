@@ -31,7 +31,13 @@ class FaceVerificationController extends Controller
         $sections = \App\Models\Section::where('is_active', true)->get(['id', 'name', 'grade_level'])
             ->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, mb_strtolower($s->name)))->values();
 
-        return view('admin.face-verification.index', compact('pending', 'reviewed', 'sections'));
+        // Same filter as the Pi sync (approvedFaces): approved student accounts only
+        $studentCount    = User::where('role', 'student')->where('status', 'approved')->count();
+        $registeredCount = FaceRegistration::where('status', 'approved')
+            ->whereHas('user', fn ($q) => $q->where('role', 'student')->where('status', 'approved'))
+            ->count();
+
+        return view('admin.face-verification.index', compact('pending', 'reviewed', 'sections', 'studentCount', 'registeredCount'));
     }
 
     /** Approve a face set */
