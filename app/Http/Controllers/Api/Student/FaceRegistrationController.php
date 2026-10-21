@@ -23,6 +23,11 @@ class FaceRegistrationController extends Controller
             'status'        => $registration->status ?? null, // pending|approved|rejected|null
             'images_count'  => $registration->images_count ?? 0,
             'reject_reason' => $registration->reject_reason ?? null,
+            // false = register at the school kiosk with the adviser (no upload screen in the app)
+            'self_upload'   => FaceRegistrationService::selfUploadEnabled(),
+            'how_to'        => FaceRegistrationService::selfUploadEnabled()
+                ? 'Take your photos in the app; an admin will review them.'
+                : 'Your adviser registers your face at the school kiosk (Raspberry Pi camera).',
         ]);
     }
 
@@ -32,6 +37,7 @@ class FaceRegistrationController extends Controller
         $user = $request->user();
 
         try {
+            $faces->assertSelfUploadAllowed();
             $faces->assertCanRegister($user);
         } catch (ActionNotAllowed $e) {
             return $e->toJson();

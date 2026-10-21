@@ -16,6 +16,20 @@ use Illuminate\Support\Facades\Storage;
  */
 class FaceRegistrationService
 {
+    /** Self-upload (phone/web) is off by default — faces are registered at the school kiosk. */
+    public static function selfUploadEnabled(): bool
+    {
+        return (bool) config('attendance.face_self_upload', false);
+    }
+
+    /** Guard for the self-upload endpoints only (the kiosk path does not call this). */
+    public function assertSelfUploadAllowed(): void
+    {
+        if (!self::selfUploadEnabled()) {
+            throw new ActionNotAllowed('Face registration is done at the school kiosk. Ask your adviser to register your face.', 403);
+        }
+    }
+
     /** Pareho ang tsek sa web at API bago tumanggap ng images. */
     public function assertCanRegister(User $user): void
     {

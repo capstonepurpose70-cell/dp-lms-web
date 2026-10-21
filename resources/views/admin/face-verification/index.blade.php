@@ -30,9 +30,15 @@
     </div>
 
     {{-- ── PENDING ─────────────────────────────────────────────── --}}
-    <h2 style="font-size:14px;font-weight:700;color:#334155;margin:0 0 12px;">
+    <h2 style="font-size:14px;font-weight:700;color:#334155;margin:0 0 4px;">
         Pending ({{ $pending->count() }})
     </h2>
+    @unless (\App\Services\FaceRegistrationService::selfUploadEnabled())
+        <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin:0 0 12px;">
+            Student self-upload is turned off (kiosk only), so only uploads made before the switch can appear here.
+            To allow phone/web uploads again, set <code>FACE_SELF_UPLOAD=true</code> on the server.
+        </p>
+    @endunless
 
     @forelse ($pending as $r)
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;

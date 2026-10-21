@@ -16,6 +16,16 @@ class FaceRegistrationController extends Controller
         $user         = auth()->user();
         $registration = FaceRegistration::where('user_id', $user->id)->latest()->first();
 
+        // Kiosk-only (default): status page, no camera / upload
+        if (!FaceRegistrationService::selfUploadEnabled()) {
+            return view('student.face-status', [
+                'registration' => $registration,
+                'blocked'      => $user->face_warnings >= 3,
+                'enrolled'     => $user->studentSectionId() !== null,
+                'adviser'      => \App\Models\Section::with('adviser:id,name')->find($user->studentSectionId())?->adviser,
+            ]);
+        }
+
         return view('student.face-register', [
             'registration' => $registration,
             'blocked'      => $user->face_warnings >= 3,
@@ -30,6 +40,7 @@ class FaceRegistrationController extends Controller
         $user = auth()->user();
 
         try {
+            $faces->assertSelfUploadAllowed();
             $faces->assertCanRegister($user);
         } catch (ActionNotAllowed $e) {
             return $e->toJson();

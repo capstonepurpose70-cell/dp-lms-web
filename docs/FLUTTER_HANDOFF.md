@@ -350,6 +350,22 @@ Lahat ay may `X-Device-Key` (dapat kapareho ng `ATTENDANCE_DEVICE_KEY` sa server
 
 ---
 
+## 8.1 Face registration — KIOSK ONLY na (2026-10-21)
+
+Hindi na nagre-register ng mukha ang estudyante sa phone. Ang **adviser** ang nagpapakita ng one-time QR,
+at sa **Raspberry Pi kiosk** kinukunan ang mukha (tingnan `RASPBERRY_PI_FACE_KIOSK.md`). Dahilan: mas secure
+(nakikita ng adviser kung sino talaga ang nasa camera — walang ibang mukha sa account ng iba) at walang
+admin review queue.
+
+| Endpoint | Ngayon |
+|---|---|
+| `GET /api/student/face` | Gumagana pa. Bagong fields: `self_upload` (`false`) at `how_to` (text na ipapakita) |
+| `POST /api/student/face` | **`403 { ok:false, message: "Face registration is done at the school kiosk. Ask your adviser to register your face." }`** habang `self_upload` = false |
+
+Sa app: kapag `self_upload` = `false`, **itago ang camera/upload screen** at ipakita na lang ang status:
+`status = approved` → "Your face is registered ✓"; kung hindi → ipakita ang `how_to`. Ang server
+setting ay `FACE_SELF_UPLOAD` (default `false`) — kapag ginawang `true`, babalik ang dating upload flow.
+
 ## 9. Checklist para sa Flutter
 
 - [ ] Ipadala ang `Accept: application/json` sa **lahat** ng request
