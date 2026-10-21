@@ -201,6 +201,11 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::post('/attendance/{session}/code',    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'code'])->whereNumber('session')->name('attendance.code');
         Route::post('/attendance/{session}/close',   [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'close'])->whereNumber('session')->name('attendance.close');
         Route::post('/attendance/{session}/mark',    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'mark'])->whereNumber('session')->name('attendance.mark');
+
+        // Face registration at the Raspberry Pi kiosk (adviser shows a one-time QR)
+        Route::get('/face-kiosk',                [App\Http\Controllers\Teacher\FaceKioskController::class, 'index'])->name('face-kiosk.index');
+        Route::post('/face-kiosk/{student}',     [App\Http\Controllers\Teacher\FaceKioskController::class, 'issue'])->whereNumber('student')->name('face-kiosk.issue');
+        Route::get('/face-kiosk/codes/{code}',   [App\Http\Controllers\Teacher\FaceKioskController::class, 'status'])->whereNumber('code')->name('face-kiosk.status');
         Route::get('/students', [TeacherStudentController::class, 'index'])->name('students.index');
 
         // ── Enrollment review (adviser) ──
@@ -284,6 +289,10 @@ Route::patch('/profile/update-password',
         // ── Face Verification ─────────────────────────────────────
         Route::get('/face',                    [FaceVerificationController::class, 'index'])->name('face.index');
         Route::patch('/face/{registration}/approve', [FaceVerificationController::class, 'approve'])->name('face.approve');
+        // Kiosk QR (Raspberry Pi face registration)
+        Route::get('/face/kiosk/students',       [FaceVerificationController::class, 'kioskStudents'])->name('face.kiosk.students');
+        Route::post('/face/kiosk/{student}',     [FaceVerificationController::class, 'kioskIssue'])->whereNumber('student')->name('face.kiosk.issue');
+        Route::get('/face/kiosk/codes/{code}',   [FaceVerificationController::class, 'kioskStatus'])->whereNumber('code')->name('face.kiosk.status');
 
         // ── LRN Master List ─────────────────────────────
         Route::get('/lrns',          [LrnController::class, 'index'])->name('lrns.index');
@@ -356,4 +365,8 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::post('/api/attendance',    [App\Http\Controllers\AttendanceController::class, 'store']);
     Route::get('/api/attendance',     [App\Http\Controllers\AttendanceController::class, 'index']);
     Route::get('/api/faces/approved', [App\Http\Controllers\AttendanceController::class, 'approvedFaces']);
+
+    // Face kiosk — Pi scans the adviser's one-time QR, then uploads photos for that student
+    Route::get('/api/kiosk/face',  [App\Http\Controllers\FaceKioskController::class, 'lookup']);
+    Route::post('/api/kiosk/face', [App\Http\Controllers\FaceKioskController::class, 'register'])->middleware('throttle:30,1');
 });

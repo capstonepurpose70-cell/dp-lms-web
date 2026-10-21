@@ -3,6 +3,10 @@
 Para sa: Flutter developer (o Claude Code session) ng `dp_lms` app, at sa gumagawa ng Raspberry Pi script.
 Backend: `dp-lms-web` (Laravel). Basahin kasama ng `FLUTTER_HANDOFF.md`.
 
+> **Pagre-register ng mukha:** sa Raspberry Pi kiosk na gamit ang one-time QR mula sa adviser/admin —
+> tingnan ang `RASPBERRY_PI_FACE_KIOSK.md` at `docs/raspberry-pi/face_kiosk.py`. Ang mga mukhang na-register
+> doon ay **approved agad** at lumalabas sa `GET /api/faces/approved`.
+
 > **Ano ang nangyayari:** tumapat ang estudyante sa camera ng Raspberry Pi 5 sa gate →
 > nakilala ang mukha → nag-POST ang Pi sa server → na-save ang attendance →
 > **agad na push notification sa phone ng magulang**: *"Juan Dela Cruz arrived at school —

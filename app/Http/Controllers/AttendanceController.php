@@ -19,13 +19,7 @@ class AttendanceController extends Controller
      */
     private function deviceAllowed(Request $request): bool
     {
-        $deviceKey = (string) config('attendance.device_key');
-
-        if ($deviceKey === '') {
-            return app()->environment('local');
-        }
-
-        return hash_equals($deviceKey, (string) $request->header('X-Device-Key', ''));
+        return \App\Support\DeviceKey::valid($request);
     }
 
     // ESP32 / Pi calls this — device key, no user login

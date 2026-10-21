@@ -760,6 +760,14 @@ const NAV_ITEMS = [
 },
 
 {
+    href : '/teacher/face-kiosk',
+    label: 'Face Registration',
+    icon : `<path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2
+                 M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 005 0"/>`
+},
+
+{
     href : '/teacher/messages',
     label: 'Messages',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"

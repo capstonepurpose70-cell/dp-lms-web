@@ -5,11 +5,28 @@
 <div style="max-width:1100px;margin:0 auto;padding:24px 8px;">
 
     <div style="margin-bottom:20px;">
-        <h1 style="font-size:20px;font-weight:800;color:#0f172a;margin:0;">Face Verification</h1>
-        <p style="font-size:13px;color:#64748b;margin:4px 0 0;">
-            I-verify ang mga mukha ng estudyante bago gamitin sa attendance camera.
-            Mukha lang hanggang leeg ang dapat — i-flag ang anumang hindi wasto.
+        <h1 style="font-size:20px;font-weight:800;color:var(--slate-900,#0f172a);margin:0;">Face Verification</h1>
+        <p style="font-size:13px;color:var(--slate-500,#64748b);margin:4px 0 0;">
+            Faces used by the Raspberry Pi gate camera. Register a face at the kiosk with a one-time QR (saved right away),
+            or review photos students uploaded themselves. Photos must show the face down to the neck only — flag anything inappropriate.
         </p>
+    </div>
+
+    {{-- ── REGISTER AT THE KIOSK (one-time QR) ─────────────────── --}}
+    <div style="background:var(--white,#fff);border:1px solid var(--border-default,#e2e8f0);border-radius:16px;padding:18px;margin-bottom:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+            <div>
+                <h2 style="font-size:15px;font-weight:800;color:var(--slate-900,#0f172a);margin:0;">Register a face at the kiosk</h2>
+                <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin:3px 0 0;">Choose a section, then show the student's QR to the Raspberry Pi camera. Advisers can also do this from their own portal.</p>
+            </div>
+            <select id="fkSection" style="height:40px;padding:0 12px;border:1.5px solid var(--border-default,#e2e8f0);border-radius:10px;font-size:13.5px;background:var(--white,#fff);color:var(--slate-900,#0f172a);min-width:240px;">
+                <option value="">— Choose a section —</option>
+                @foreach ($sections as $s)
+                    <option value="{{ $s->id }}">Grade {{ $s->grade_level }} – {{ $s->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div id="fkList" style="margin-top:12px;font-size:13px;color:var(--slate-500,#64748b);">Students appear here after you choose a section.</div>
     </div>
 
     {{-- ── PENDING ─────────────────────────────────────────────── --}}
@@ -51,7 +68,7 @@
                          style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;
                                 border:1px solid #e2e8f0;">
                 @empty
-                    <p style="font-size:12px;color:#94a3b8;">Walang larawang nakita.</p>
+                    <p style="font-size:12px;color:#94a3b8;">No photos found.</p>
                 @endforelse
             </div>
 
@@ -82,7 +99,7 @@
     @empty
         <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;
                     padding:28px;text-align:center;color:#94a3b8;font-size:13px;margin-bottom:24px;">
-            Walang pending na face registration. 🎉
+            No face registrations waiting for review. 🎉
         </div>
     @endforelse
 
@@ -128,7 +145,7 @@
             <textarea name="reason" rows="2"
                 style="width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;
                        font-size:13px;margin:6px 0 16px;resize:none;"
-                placeholder="Hal. Hindi malinaw / hindi mukha lang ang larawan"></textarea>
+                placeholder="e.g. Blurry photo / not just the face"></textarea>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
                 <button type="button" onclick="closeReject()"
                     style="background:#f1f5f9;color:#475569;border:none;font-weight:600;font-size:13px;
@@ -148,11 +165,48 @@ function openReject(id, inappropriate) {
     document.getElementById('rjFlag').value = inappropriate ? '1' : '0';
     document.getElementById('rjTitle').textContent = inappropriate ? '⚠️ Flag inappropriate' : 'Reject face';
     document.getElementById('rjNote').textContent  = inappropriate
-        ? 'Magdadagdag ito ng WARNING. Sa ika-3 warning, maba-ban ang account ng estudyante.'
-        : 'I-reject lang (hindi warning). Pwedeng kumuha ulit ang estudyante.';
+        ? 'This adds a WARNING. On the 3rd warning the student\'s account is banned.'
+        : 'Reject only (no warning). The student can take new photos.';
     document.getElementById('rjSubmit').textContent = inappropriate ? 'Confirm & Warn' : 'Confirm Reject';
     document.getElementById('rejectModal').style.display = 'flex';
 }
 function closeReject() { document.getElementById('rejectModal').style.display = 'none'; }
+
+// Kiosk QR: load the chosen section's students
+(function () {
+    var sel = document.getElementById('fkSection'), list = document.getElementById('fkList');
+    if (!sel) return;
+    var URL_STUDENTS = @json(route('admin.face.kiosk.students'));
+    var URL_ISSUE    = @json(url('admin/face/kiosk'));
+    var CHIP = {
+        approved: ['#16a34a', '#fff', 'Registered'],
+        pending:  ['#f59e0b', '#3f2d00', 'Waiting for review'],
+        rejected: ['#dc2626', '#fff', 'Rejected']
+    };
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+    sel.addEventListener('change', function () {
+        if (!sel.value) { list.textContent = 'Students appear here after you choose a section.'; return; }
+        list.textContent = 'Loading…';
+        fetch(URL_STUDENTS + '?section_id=' + encodeURIComponent(sel.value), { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (rows) {
+                if (!Array.isArray(rows) || !rows.length) { list.textContent = 'No approved students in this section yet.'; return; }
+                list.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;">' + rows.map(function (s) {
+                    var c = CHIP[s.face_status] || ['#e2e8f0', '#475569', 'No face yet'];
+                    var btn = s.blocked
+                        ? '<span style="font-size:12px;color:#b91c1c;font-weight:700;">Blocked (3 warnings)</span>'
+                        : '<button type="button" data-kiosk-issue="' + esc(URL_ISSUE + '/' + s.id) + '" data-name="' + esc(s.name) + '" style="height:32px;padding:0 12px;border-radius:9px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;">' + (s.face_status === 'approved' ? 'Re-register' : 'Show QR') + '</button>';
+                    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border-default,#e2e8f0);border-radius:12px;padding:9px 12px;">'
+                        + '<div style="min-width:0;"><div style="font-weight:700;color:var(--slate-900,#0f172a);font-size:13px;">' + esc(s.name) + '</div>'
+                        + '<span style="display:inline-block;margin-top:3px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:800;background:' + c[0] + ';color:' + c[1] + ';">' + c[2] + '</span></div>'
+                        + btn + '</div>';
+                }).join('') + '</div>';
+            })
+            .catch(function () { list.textContent = 'Could not load students. Please try again.'; });
+    });
+})();
 </script>
+
+@include('partials.face-kiosk-modal')
 @endsection

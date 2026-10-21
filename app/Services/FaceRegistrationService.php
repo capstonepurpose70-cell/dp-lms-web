@@ -30,9 +30,11 @@ class FaceRegistrationService
 
     /**
      * @param \Illuminate\Http\UploadedFile[] $files
+     * @param bool $approved true = captured at the school kiosk with a staff-issued QR
+     *                       (no admin review needed); false = self-upload, waits for admin
      * @return int ilang image ang na-save
      */
-    public function replaceImages(User $user, array $files): int
+    public function replaceImages(User $user, array $files, bool $approved = false): int
     {
         $this->assertCanRegister($user);
 
@@ -63,8 +65,9 @@ class FaceRegistrationService
         FaceRegistration::where('user_id', $user->id)->delete();
         FaceRegistration::create([
             'user_id'      => $user->id,
-            'status'       => 'pending',
+            'status'       => $approved ? 'approved' : 'pending',
             'images_count' => $count,
+            'reviewed_at'  => $approved ? now() : null,
         ]);
 
         return $count;

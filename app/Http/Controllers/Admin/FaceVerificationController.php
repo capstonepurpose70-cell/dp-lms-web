@@ -27,7 +27,11 @@ class FaceVerificationController extends Controller
             ->get()
             ->map(fn ($r) => $this->withImages($r));
 
-        return view('admin.face-verification.index', compact('pending', 'reviewed'));
+        // For "Register a face at the kiosk" (one-time QR per student)
+        $sections = \App\Models\Section::where('is_active', true)->get(['id', 'name', 'grade_level'])
+            ->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, mb_strtolower($s->name)))->values();
+
+        return view('admin.face-verification.index', compact('pending', 'reviewed', 'sections'));
     }
 
     /** Approve a face set */
@@ -106,6 +110,50 @@ class FaceVerificationController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    // ── Kiosk QR (Raspberry Pi face registration) ───────────────────────────
+
+    /** GET /admin/face/kiosk/students?section_id= — students of a section with their face status. */
+    public function kioskStudents(Request $request, \App\Services\FaceKioskService $kiosk)
+    {
+        $data = $request->validate(['section_id' => 'required|integer|exists:sections,id']);
+
+        return response()->json($kiosk->studentsWithFaceStatus([$data['section_id']])->map(fn ($s) => [
+            'id'          => $s->id,
+            'name'        => $s->name,
+            'lrn'         => $s->lrn,
+            'face_status' => $s->face_status,
+            'blocked'     => (int) $s->face_warnings >= 3,
+        ])->values());
+    }
+
+    /** POST /admin/face/kiosk/{student} — one-time QR (10 min). */
+    public function kioskIssue(User $student, \App\Services\FaceKioskService $kiosk)
+    {
+        try {
+            $r = $kiosk->issue($student, 'admin', auth('admin')->id());
+        } catch (\App\Exceptions\ActionNotAllowed $e) {
+            return $e->toJson();
+        }
+
+        return response()->json([
+            'ok'          => true,
+            'code_id'     => $r['id'],
+            'qr_svg'      => $r['qr_svg'],
+            'student'     => $student->name,
+            'expires_at'  => $r['expires_at']->toIso8601String(),
+            'server_time' => now()->toIso8601String(),
+            'status_url'  => route('admin.face.kiosk.status', $r['id']),
+        ]);
+    }
+
+    /** GET /admin/face/kiosk/codes/{code} — waiting | registered | expired | cancelled */
+    public function kioskStatus(int $code, \App\Services\FaceKioskService $kiosk)
+    {
+        $row = \App\Models\FaceKioskCode::find($code);
+
+        return response()->json(['status' => $row ? $kiosk->status($row) : 'cancelled']);
     }
 
     /** Attach public image URLs to a registration row */
