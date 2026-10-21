@@ -2,24 +2,30 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Section;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
-     * Seed the application's database.
+     * `php artisan db:seed` — ligtas patakbuhin ulit (pati sa production).
+     *
+     * Dati gumagawa ito ng "Test User" (test@example.com / password) — default na
+     * login na hindi dapat umiiral sa live na system.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            AdminSeeder::class,     // skipped kapag may admin na
+            SubjectSeeder::class,   // keyed by name + grade
         ]);
+
+        // SectionSeeder gumagawa ng SHS placeholders na nire-rename ng AdvisorySectionSeeder;
+        // kapag pinatakbo ulit, babalik ang placeholders. Kaya sa bagong database lang.
+        if (Section::count() === 0) {
+            $this->call([SectionSeeder::class, AdvisorySectionSeeder::class]);
+        } else {
+            $this->command?->info('Sections already exist — skipped. Run AdvisorySectionSeeder by itself if advisers still need linking.');
+        }
     }
 }

@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Raspberry Pi device config (holds the device key)
+/docs/raspberry-pi/config.py

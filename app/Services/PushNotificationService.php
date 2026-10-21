@@ -26,7 +26,7 @@ class PushNotificationService
     private function credentials(): ?array
     {
         // 1) Production (Railway): base64-encoded JSON in env.
-        $b64 = env('FIREBASE_CREDENTIALS_BASE64');
+        $b64 = config('services.firebase.credentials_base64'); // env() is null once config is cached
         if (!empty($b64)) {
             $json = base64_decode($b64, true);
             if ($json !== false) {

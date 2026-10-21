@@ -35,9 +35,16 @@ return [
         ],
     ],
 
+    // SMS (semaphore.co). The key comes from the environment only — never commit it.
     'semaphore' => [
-    'key'    => env('512965dbc6ba3dd219a0ec868b6648a5'),
-    'sender' => env('SMS_SENDER_NAME', 'DPLMS'),
-],
+        'key'    => env('SEMAPHORE_API_KEY'),
+        'sender' => env('SMS_SENDER_NAME', 'DPLMS'),
+    ],
+
+    // FCM push: service-account JSON, base64-encoded (Railway variable).
+    // Local fallback: storage/app/firebase/firebase-service-account.json
+    'firebase' => [
+        'credentials_base64' => env('FIREBASE_CREDENTIALS_BASE64'),
+    ],
 
 ];
