@@ -31,6 +31,7 @@ class Admin extends Authenticatable
 
     public function auditLogs()
     {
-        return $this->hasMany(AuditLog::class, 'user_id');
+        // user_id is shared with users-table ids — only rows logged as admin belong here
+        return $this->hasMany(AuditLog::class, 'user_id')->where('role', 'admin');
     }
 }

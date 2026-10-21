@@ -9,7 +9,7 @@ class AuditLogService
     public static function log(
         string $action,
         string $module = 'General',
-        string $description = null,
+        ?string $description = null, // explicit nullable (implicit is deprecated in PHP 8.4)
         $user = null
     ): void {
         // Allow passing the user explicitly (e.g. during API login, before the

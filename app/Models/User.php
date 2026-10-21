@@ -156,7 +156,10 @@ protected $fillable = [
 
     public function auditLogs()
     {
-        return $this->hasMany(AuditLog::class);
+        // audit_logs.user_id also stores ADMIN ids (separate `admins` table) — exclude
+        // role=admin rows so an admin's actions never appear in a same-id user's history.
+        return $this->hasMany(AuditLog::class)
+            ->where(fn ($q) => $q->whereNull('role')->orWhere('role', '!=', 'admin'));
     }
 
     public function learningMaterials()
