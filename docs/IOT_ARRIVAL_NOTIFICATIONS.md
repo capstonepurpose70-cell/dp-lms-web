@@ -60,6 +60,10 @@ sequenceDiagram
 
 Lahat ng request: header **`X-Device-Key: <ATTENDANCE_DEVICE_KEY>`** (parehong value sa server `.env`/Railway variables at sa `config.py` ng Pi). Throttle: 120 request/min kada IP.
 
+> **(2026-10-21) Fail-closed na:** kapag walang `ATTENDANCE_DEVICE_KEY` sa server, bukas lang ito kapag
+> `APP_ENV=local` (XAMPP). Sa production (Railway, `APP_ENV=production`) → **`401 Unauthorized device`**
+> hangga't hindi naitatakda ang key. Dati bukas sa lahat — kahit sino ay makakapag-post ng pekeng arrival.
+
 ### `GET /api/faces/approved`
 
 ```json

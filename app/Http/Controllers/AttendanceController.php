@@ -13,15 +13,19 @@ class AttendanceController extends Controller
 {
     /**
      * Device authentication — X-Device-Key dapat tugma sa ATTENDANCE_DEVICE_KEY.
-     * Kapag WALANG key sa .env (local LAN testing), bukas — kaya DAPAT itakda
-     * ang key sa production.
+     * Walang key sa .env: bukas LANG sa local (XAMPP testing). Sa production,
+     * SARADO (dati bukas — kahit sino ay makakapag-post ng pekeng attendance
+     * at makaka-download ng lahat ng face photos).
      */
     private function deviceAllowed(Request $request): bool
     {
         $deviceKey = (string) config('attendance.device_key');
 
-        return $deviceKey === ''
-            || hash_equals($deviceKey, (string) $request->header('X-Device-Key', ''));
+        if ($deviceKey === '') {
+            return app()->environment('local');
+        }
+
+        return hash_equals($deviceKey, (string) $request->header('X-Device-Key', ''));
     }
 
     // ESP32 / Pi calls this — device key, no user login
