@@ -390,7 +390,7 @@
         <div class="up-hero-body">
             <div class="up-hero-left">
                 <div class="up-avatar {{ $user->role }}">
-                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                    {{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}
                 </div>
                 <div>
                     <h1 class="up-hero-name">{{ $user->name }}</h1>
@@ -555,7 +555,7 @@
                 @foreach($myStudents as $student)
                 <div class="up-student-card">
                     <div class="up-student-avatar">
-                        {{ strtoupper(substr($student->name, 0, 1)) }}
+                        {{ mb_strtoupper(mb_substr($student->name, 0, 1)) }}
                     </div>
                     <div style="min-width:0;">
                         <div class="up-student-name">{{ $student->name }}</div>
@@ -589,7 +589,7 @@
                 <span>{{ $user->child_name }}</span>
             </div>
             <p style="font-size:13px;color:var(--slate-500,#64748b);margin:-2px 0 14px;">
-                Ito ang pangalan ng anak na inilagay sa registration. I-link ito sa tamang student account sa ibaba.
+                This is the child's name entered during registration. Link it to the correct student account below.
             </p>
             @endif
 
@@ -597,7 +597,7 @@
             @forelse($user->children as $child)
             <div class="up-student-card" style="justify-content:space-between;">
                 <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                    <div class="up-student-avatar">{{ strtoupper(substr($child->name, 0, 1)) }}</div>
+                    <div class="up-student-avatar">{{ mb_strtoupper(mb_substr($child->name, 0, 1)) }}</div>
                     <div style="min-width:0;">
                         <div class="up-student-name">{{ $child->name }}</div>
                         <div class="up-student-section">{{ $child->section->name ?? 'No section' }} · {{ $child->email }}</div>
@@ -613,7 +613,8 @@
                     </div>
                 </div>
                 <form method="POST" action="{{ route('admin.users.unlink-child', [$user, $child]) }}"
-                      onsubmit="return confirm('Alisin ang link kay {{ $child->name }}?');" style="margin:0;">
+                      data-msg="Unlink {{ $child->name }} from this parent?"
+                      onsubmit="return confirm(this.dataset.msg);" style="margin:0;">
                     @csrf @method('DELETE')
                     <button type="submit" style="border:1px solid var(--danger,#dc2626);color:var(--danger,#dc2626);background:#fff;border-radius:var(--r-md,10px);padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;">
                         Unlink
@@ -622,7 +623,7 @@
             </div>
             @empty
             <p style="font-size:14px;color:var(--slate-500,#64748b);margin:0 0 14px;">
-                Wala pang naka-link na anak sa account na ito.
+                No child is linked to this account yet.
             </p>
             @endforelse
 
@@ -646,7 +647,7 @@
             </form>
             @if(($linkableStudents ?? collect())->isEmpty())
             <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin-top:8px;">
-                Walang available na unlinked na approved student. (Ang naka-link na sa ibang magulang ay hindi lalabas dito.)
+                No approved, unlinked students available. (Students already linked to another parent are not listed.)
             </p>
             @endif
 
@@ -784,6 +785,8 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirm(); });
 
     document.addEventListener('click', function (e) {
+        // Only while this full profile page is on screen (not after SPA navigation away)
+        if (!document.body.contains(backdrop)) return;
         const btn = e.target.closest('[data-action="approve"],[data-action="reject"]');
         if (!btn) return;
         openConfirm(btn.dataset.action, btn.dataset.url, btn.dataset.name);

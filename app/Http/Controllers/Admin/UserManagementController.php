@@ -66,12 +66,24 @@ class UserManagementController extends Controller
             ->latest()
             ->paginate(15, ['*'], 'parent_page');
 
+        // Advisory section(s) ng bawat teacher sa page na ito (para sa Teachers tab)
+        $advisories = Section::whereIn('adviser_id', $teachers->pluck('id'))
+            ->get(['id', 'name', 'grade_level', 'adviser_id'])
+            ->groupBy('adviser_id');
+
+        // Bilang ng naghihintay ng approval kada role (badge sa tabs)
+        $pendingCounts = User::where('status', 'pending')
+            ->whereIn('role', ['student', 'teacher', 'parent'])
+            ->selectRaw('role, COUNT(*) as c')
+            ->groupBy('role')
+            ->pluck('c', 'role');
+
+        $data = compact('students', 'teachers', 'parents', 'tab', 'sectionsByGrade', 'advisories', 'pendingCounts');
+
         // AJAX — i-return ang JSON + rendered partial
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
             return response()->json([
-                'html' => view('admin.users._partials.table', compact(
-                    'students', 'teachers', 'parents', 'tab', 'sectionsByGrade'
-                ))->render(),
+                'html' => view('admin.users._partials.table', $data)->render(),
                 'counts' => [
                     'students' => $students->total(),
                     'teachers' => $teachers->total(),
@@ -80,9 +92,7 @@ class UserManagementController extends Controller
             ]);
         }
 
-        return view('admin.users.index', compact(
-            'students', 'teachers', 'parents', 'tab', 'sectionsByGrade'
-        ));
+        return view('admin.users.index', $data);
     }
 
     // ── Show user ─────────────────────────────────────────────────
@@ -140,7 +150,7 @@ class UserManagementController extends Controller
     // ── Unlink a child from a parent ──────────────────────────────
     public function unlinkChild(User $user, User $child)
     {
-        abort_unless($child->parent_id === $user->id, 404);
+        abort_unless((int) $child->parent_id === (int) $user->id, 404);
 
         $child->update(['parent_id' => null]);
 
@@ -174,7 +184,9 @@ class UserManagementController extends Controller
         }
 
         AuditLogService::log("Approved user: {$user->name}", 'User Management');
-        return back()->with('success', "{$user->name} approved. Email/SMS notification sent.");
+        return back()->with('success', $user->email
+            ? "{$user->name} approved. A notification email was sent."
+            : "{$user->name} approved.");
     }
 
     // ── Reject user ───────────────────────────────────────────────
