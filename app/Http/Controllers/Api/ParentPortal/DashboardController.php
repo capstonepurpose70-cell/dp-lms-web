@@ -101,6 +101,36 @@ class DashboardController extends Controller
         ])->values());
     }
 
+    /**
+     * GET /api/parent/class-attendance?days=30 — per-class results (present / late / absent)
+     * taken by the subject teachers. (Gate arrivals are /api/parent/attendance.)
+     */
+    public function classAttendance(\Illuminate\Http\Request $request)
+    {
+        $days     = min(max((int) $request->query('days', 30), 1), 180);
+        $children = auth()->user()->children()->get(['id', 'name']);
+
+        $records = \App\Models\ClassAttendanceRecord::with(['session.subject:id,name', 'session.teacher:id,name'])
+            ->whereIn('student_id', $children->pluck('id'))
+            ->where('created_at', '>=', now()->subDays($days)->startOfDay())
+            ->latest('id')
+            ->get()
+            ->groupBy('student_id');
+
+        return response()->json($children->map(fn ($child) => [
+            'student_id'   => $child->id,
+            'student_name' => $child->name,
+            'records'      => ($records[$child->id] ?? collect())->map(fn ($r) => [
+                'session_id'   => $r->session_id,
+                'subject_name' => $r->session?->subject?->name,
+                'teacher_name' => $r->session?->teacher?->name,
+                'date'         => $r->session?->opened_at?->toDateString(),
+                'status'       => $r->status,                            // present | late | absent
+                'marked_at'    => $r->marked_at?->toIso8601String(),     // null when absent
+            ])->values(),
+        ])->values());
+    }
+
     // ── Private helper ─────────────────────────────────────────────────────────
     private function formatChild($child, bool $withGrades = false, bool $withProfile = false): array
     {

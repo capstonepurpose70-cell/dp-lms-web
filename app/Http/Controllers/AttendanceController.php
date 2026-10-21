@@ -103,30 +103,8 @@ class AttendanceController extends Controller
         ], 200);
     }
 
-    // Teacher views attendance of their students only
-    public function teacherIndex()
-    {
-        // Lahat ng section ng teacher — subject teacher, adviser, o assignment.
-        $sectionIds = auth()->user()->teachingSectionIds();
-
-        $students      = User::whereIn('id', User::studentIdsInSections($sectionIds))->get(['id', 'email']);
-        $studentIds    = $students->pluck('id')->filter()->values();
-        $studentEmails = $students->pluck('email')->filter()->values();
-
-        // Robust kahit null/luma ang section_id ng device row.
-        $attendances = Attendance::with('user')
-            ->where(function ($q) use ($sectionIds, $studentIds, $studentEmails) {
-                $q->whereIn('section_id', $sectionIds);
-                if ($studentIds->isNotEmpty())    $q->orWhereIn('user_id', $studentIds);
-                if ($studentEmails->isNotEmpty()) $q->orWhereIn('student_id', $studentEmails);
-            })
-            ->orderBy('attended_at', 'desc')
-            ->paginate(30);
-
-        $hasSections = $sectionIds->isNotEmpty();
-
-        return view('teacher.attendance.index', compact('attendances', 'hasSections'));
-    }
+    // (Teacher web page for gate scans removed — teachers now use Class Attendance:
+    //  Teacher\ClassAttendanceController. Gate scans still notify parents via store().)
 
     /**
      * GET /api/attendance — huling 50 scan para sa device display.

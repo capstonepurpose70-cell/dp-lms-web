@@ -61,6 +61,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/parent-link', [App\Http\Controllers\Api\ParentLinkController::class, 'generate'])
             ->middleware('throttle:10,10');
 
+        // Class attendance — enter the code shown by the teacher
+        Route::get('/class-attendance',            [App\Http\Controllers\Api\Student\ClassAttendanceController::class, 'index']);
+        Route::post('/class-attendance/{session}', [App\Http\Controllers\Api\Student\ClassAttendanceController::class, 'mark'])
+            ->whereNumber('session')->middleware('throttle:30,1');
+
         // Face registration (mobile camera)
         Route::get('/face',  [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'show']);
         Route::post('/face', [App\Http\Controllers\Api\Student\FaceRegistrationController::class, 'store']);
@@ -75,8 +80,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/grades',       [App\Http\Controllers\Api\Teacher\DashboardController::class, 'saveGrade']);
         Route::get('/announcements', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'announcements']);
         Route::post('/announcements',[App\Http\Controllers\Api\Teacher\DashboardController::class, 'storeAnnouncement']);
-        Route::get('/attendance',    [App\Http\Controllers\Api\Teacher\DashboardController::class, 'attendance']);
+        Route::get('/attendance',    [App\Http\Controllers\Api\Teacher\DashboardController::class, 'attendance']); // gate scans (legacy)
         Route::get('/students',      [App\Http\Controllers\Api\Teacher\DashboardController::class, 'students']);
+
+        // Class attendance (teacher opens a window, students enter the code)
+        Route::get('/class-attendance',                    [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'index']);
+        Route::post('/class-attendance',                   [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'store']);
+        Route::get('/class-attendance/{session}',          [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'show'])->whereNumber('session');
+        Route::post('/class-attendance/{session}/code',    [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'code'])->whereNumber('session');
+        Route::post('/class-attendance/{session}/close',   [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'close'])->whereNumber('session');
+        Route::post('/class-attendance/{session}/mark',    [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'mark'])->whereNumber('session');
 
         // Quizzes / assignments (file-based)
         Route::get('/assignments',             [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'index']);
@@ -93,6 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard',     [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'index']);
         Route::get('/child-records', [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'childRecords']);
         Route::get('/attendance',    [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'attendance']);
+        Route::get('/class-attendance', [App\Http\Controllers\Api\ParentPortal\DashboardController::class, 'classAttendance']);
     });
 
     // Messaging (shared: student <-> teacher)

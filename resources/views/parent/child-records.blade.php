@@ -64,7 +64,7 @@
 
         {{-- Child header --}}
         <div class="flex items-center gap-4 mb-5 flex-wrap">
-            <div class="cr-avatar">{{ strtoupper(substr($child->name, 0, 1)) }}</div>
+            <div class="cr-avatar">{{ mb_strtoupper(mb_substr($child->name, 0, 1)) }}</div>
             <div class="flex-1 min-w-0">
                 <div class="text-lg font-bold text-gray-800">{{ $child->name }}</div>
                 <div class="text-sm text-gray-400">
@@ -136,6 +136,44 @@
                 No grades recorded yet for this child.
             </div>
         @endif
+
+        {{-- Class attendance (taken by subject teachers) --}}
+        @php
+            $att = $classAttendance[$child->id] ?? collect();
+            $attChip = ['present' => ['#16a34a', '#fff', 'Present'], 'late' => ['#eab308', '#3f2d00', 'Late'], 'absent' => ['#dc2626', '#fff', 'Absent']];
+        @endphp
+        <div style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                <span style="font-weight:700; font-size:14px; color:#1e293b;">Class attendance · last 30 days</span>
+                @if($att->isNotEmpty())
+                    <span style="font-size:12.5px; color:#64748b;">
+                        <b style="color:#16a34a;">{{ $att->where('status', 'present')->count() }}</b> present ·
+                        <b style="color:#a16207;">{{ $att->where('status', 'late')->count() }}</b> late ·
+                        <b style="color:#dc2626;">{{ $att->where('status', 'absent')->count() }}</b> absent
+                    </span>
+                @endif
+            </div>
+            @if($att->isEmpty())
+                <div style="text-align:center; padding:14px; color:#94a3b8; font-size:13px; border:1px solid #f1f5f9; border-radius:12px;">No class attendance recorded yet.</div>
+            @else
+                <div class="subj-card">
+                    <table class="cr-table">
+                        <thead><tr><th>Date</th><th>Subject</th><th>Time</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @foreach($att->take(30) as $r)
+                                @php [$bg, $fg, $lbl] = $attChip[$r->status] ?? ['#94a3b8', '#fff', ucfirst($r->status)]; @endphp
+                                <tr>
+                                    <td>{{ $r->session?->opened_at?->format('D, M j') }}</td>
+                                    <td>{{ $r->session?->subject?->name ?? '—' }}</td>
+                                    <td>{{ $r->marked_at?->format('g:i A') ?? '—' }}</td>
+                                    <td><span style="display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:800; background:{{ $bg }}; color:{{ $fg }};">{{ $lbl }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
 
     </div>
     @empty

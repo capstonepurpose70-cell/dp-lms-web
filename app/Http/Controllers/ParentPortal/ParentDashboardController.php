@@ -41,6 +41,12 @@ class ParentDashboardController extends Controller
             ])
             ->get();
 
-        return view('parent.child-records', compact('children'));
+        // Class attendance (subject teachers), last 30 days, per child
+        $classAttendance = \App\Models\ClassAttendanceRecord::with(['session.subject:id,name'])
+            ->whereIn('student_id', $children->pluck('id'))
+            ->where('created_at', '>=', now()->subDays(30)->startOfDay())
+            ->latest('id')->get()->groupBy('student_id');
+
+        return view('parent.child-records', compact('children', 'classAttendance'));
     }
 }

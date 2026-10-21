@@ -183,6 +183,43 @@ class ReportController extends Controller
             ]));
     }
 
+    /** Class attendance (teacher-posted, per subject) for a date range, optional section — for SF2. */
+    public function exportClassAttendance(Request $request)
+    {
+        $data = $request->validate([
+            'from'       => 'required|date',
+            'to'         => 'required|date|after_or_equal:from',
+            'section_id' => 'nullable|exists:sections,id',
+        ]);
+        $from = Carbon::parse($data['from'])->startOfDay();
+        $to   = Carbon::parse($data['to'])->endOfDay();
+        abort_if($from->diffInDays($to) > 370, 422, 'Please choose a range of one year or less.');
+
+        $rows = DB::table('class_attendance_records as r')
+            ->join('class_attendance_sessions as s', 's.id', '=', 'r.session_id')
+            ->join('users as u', 'u.id', '=', 'r.student_id')
+            ->leftJoin('sections as sec', 'sec.id', '=', 's.section_id')
+            ->leftJoin('subjects as sub', 'sub.id', '=', 's.subject_id')
+            ->leftJoin('users as t', 't.id', '=', 's.teacher_id')
+            ->whereBetween('s.opened_at', [$from, $to])
+            ->when($data['section_id'] ?? null, fn ($q, $sid) => $q->where('s.section_id', $sid))
+            ->orderBy('s.opened_at')->orderBy('u.name')
+            ->get(['s.opened_at', 'r.marked_at', 'u.lrn', 'u.name', 'sec.grade_level', 'sec.name as section',
+                   'sub.name as subject', 't.name as teacher', 'r.status', 'r.marked_by']);
+
+        AuditLogService::log('Exported class attendance', 'Reports',
+            $from->toDateString() . ' to ' . $to->toDateString() . " · {$rows->count()} rows");
+
+        return $this->csv('class-attendance-' . $from->toDateString() . '-to-' . $to->toDateString() . '.csv',
+            ['Date', 'Class Start', 'Checked In', 'LRN', 'Name', 'Grade', 'Section', 'Subject', 'Teacher', 'Status', 'Marked By'],
+            $rows->map(fn ($r) => [
+                Carbon::parse($r->opened_at)->format('Y-m-d'), Carbon::parse($r->opened_at)->format('h:i A'),
+                $r->marked_at ? Carbon::parse($r->marked_at)->format('h:i A') : '',
+                $r->lrn, $r->name, $r->grade_level, $r->section, $r->subject, $r->teacher,
+                ucfirst((string) $r->status), ucfirst((string) $r->marked_by),
+            ]));
+    }
+
     /** UTF-8 CSV with BOM (Excel shows ñ correctly) and spreadsheet-formula injection guard. */
     private function csv(string $filename, array $header, $rows)
     {

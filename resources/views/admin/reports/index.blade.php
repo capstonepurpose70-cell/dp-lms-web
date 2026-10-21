@@ -236,8 +236,9 @@
                 </a>
             </div>
             <div class="rp-dl-box">
-                <b>Attendance log</b>
-                <p>Gate-camera arrivals with date, time in and status — useful for the SF2 daily attendance report.</p>
+                <b>Attendance logs</b>
+                <p><b>Class attendance</b> — each subject's present / late / absent taken by the teachers (use this for SF2).
+                   <b>Gate arrivals</b> — Raspberry Pi camera scans at the school gate.</p>
                 <form method="GET" action="{{ route('admin.reports.export.attendance') }}" class="rp-dl-form">
                     <div><label for="rpFrom">From</label><input id="rpFrom" type="date" name="from" class="rp-in" value="{{ $monthStart }}" max="{{ $todayStr }}" required></div>
                     <div><label for="rpTo">To</label><input id="rpTo" type="date" name="to" class="rp-in" value="{{ $todayStr }}" max="{{ $todayStr }}" required></div>
@@ -250,9 +251,13 @@
                             @endforeach
                         </select>
                     </div>
-                    <button type="submit" class="rp-btn primary">
+                    <button type="submit" class="rp-btn primary" formaction="{{ route('admin.reports.export.class-attendance') }}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Download
+                        Class attendance
+                    </button>
+                    <button type="submit" class="rp-btn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Gate arrivals
                     </button>
                 </form>
             </div>

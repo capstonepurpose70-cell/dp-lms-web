@@ -116,7 +116,8 @@ Returns the latest 50 (read and unread) + unread count. Verified response:
 - For `type == "arrival"` use `data.student_name`, `data.status` (`present` | `late`) and `data.attended_at`
   (ISO-8601 with `+08:00`; format it as local time, e.g. "7:12 AM · Oct 21"). Ignore `subject`/`instructor`/`url`
   (they exist for the web bell).
-- Other `type` values may appear (e.g. `module`, `activity`). Show them generically with `title`; never crash on an unknown type.
+- Other `type` values may appear (e.g. `module`, `activity`, and **`class_attendance`** / **`attendance_open`** —
+  see `FLUTTER_PROMPT_CLASS_ATTENDANCE.md`). Show unknown ones generically with `title`; never crash on an unknown type.
 
 ### 3.4 Mark as read
 

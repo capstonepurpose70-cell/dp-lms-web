@@ -165,6 +165,11 @@ Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name(
         Route::post('/parent-link', [StudentParentLinkController::class, 'store'])
             ->middleware('throttle:10,10')->name('parent-link.store');
 
+        // Class attendance — enter the code shown by the teacher
+        Route::get('/attendance',            [App\Http\Controllers\Student\ClassAttendanceController::class, 'index'])->name('attendance');
+        Route::post('/attendance/{session}', [App\Http\Controllers\Student\ClassAttendanceController::class, 'mark'])
+            ->whereNumber('session')->middleware('throttle:30,1')->name('attendance.mark');
+
         // Face registration (attendance camera)
         Route::get('/face-register',  [FaceRegistrationController::class, 'show'])->name('face.register');
         Route::post('/face-register', [FaceRegistrationController::class, 'store'])->name('face.store');
@@ -188,7 +193,14 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
     ->name('teacher.')
     ->group(function () {
         Route::get('/dashboard',         [TeacherDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/attendance', [App\Http\Controllers\AttendanceController::class, 'teacherIndex'])->name('attendance.index');
+        // Class attendance (teacher-posted, student enters the class code). Dati: listahan ng gate scans.
+        Route::get('/attendance',                    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/attendance',                   [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'store'])->name('attendance.store');
+        Route::get('/attendance/{session}',          [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'show'])->whereNumber('session')->name('attendance.show');
+        Route::get('/attendance/{session}/live',     [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'live'])->whereNumber('session')->name('attendance.live');
+        Route::post('/attendance/{session}/code',    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'code'])->whereNumber('session')->name('attendance.code');
+        Route::post('/attendance/{session}/close',   [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'close'])->whereNumber('session')->name('attendance.close');
+        Route::post('/attendance/{session}/mark',    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'mark'])->whereNumber('session')->name('attendance.mark');
         Route::get('/students', [TeacherStudentController::class, 'index'])->name('students.index');
 
         // ── Enrollment review (adviser) ──
@@ -266,6 +278,7 @@ Route::patch('/profile/update-password',
         Route::get('/reports',    [ReportController::class,    'index'])->name('reports');
         Route::get('/reports/export/enrollment', [ReportController::class, 'exportEnrollment'])->name('reports.export.enrollment');
         Route::get('/reports/export/attendance', [ReportController::class, 'exportAttendance'])->name('reports.export.attendance');
+        Route::get('/reports/export/class-attendance', [ReportController::class, 'exportClassAttendance'])->name('reports.export.class-attendance');
         Route::get('/audit-logs', [AuditLogController::class,  'index'])->name('audit-logs.index');
 
         // ── Face Verification ─────────────────────────────────────

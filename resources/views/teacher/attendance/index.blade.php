@@ -3,262 +3,162 @@
 
 @section('content')
 <style>
-    .att-wrap { max-width: 64rem; margin: 0 auto; }
-    .att-num  { font-variant-numeric: tabular-nums; }
+    .ca-page { max-width:1040px; animation: ca-fade .22s ease both; }
+    @keyframes ca-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    .ca-title { font-size:22px; font-weight:800; color:var(--text-1); margin:0; }
+    .ca-sub { font-size:13px; color:var(--text-2); margin:4px 0 18px; line-height:1.55; max-width:720px; }
 
-    /* ── Header ───────────────────────────────────────────── */
-    .att-eyebrow {
-        font-size: 11px; font-weight: 700; letter-spacing: .14em;
-        text-transform: uppercase; color: #94a3b8;
-    }
-    .att-title { font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: -.02em; }
-    .att-sub   { font-size: 13px; color: #94a3b8; margin-top: 2px; }
-    .att-live {
-        display: inline-flex; align-items: center; gap: 7px;
-        padding: 7px 13px; border-radius: 999px;
-        background: #f0f7ff; border: 1px solid #dbeafe;
-        font-size: 12px; font-weight: 600; color: #1d4ed8;
-    }
-    .att-dot {
-        width: 7px; height: 7px; border-radius: 50%; background: #2563eb;
-        box-shadow: 0 0 0 0 rgba(37,99,235,.5); animation: attpulse 1.8s infinite;
-    }
-    @keyframes attpulse {
-        0%   { box-shadow: 0 0 0 0 rgba(37,99,235,.45); }
-        70%  { box-shadow: 0 0 0 7px rgba(37,99,235,0); }
-        100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
-    }
+    .ca-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+    .ca-card h2 { font-size:15px; font-weight:800; color:var(--text-1); margin:0 0 4px; }
+    .ca-muted { font-size:12.5px; color:var(--text-2); margin:0 0 12px; line-height:1.5; }
 
-    /* ── Summary strip (one cohesive register summary) ────── */
-    .att-summary {
-        display: flex; background: #fff; border: 1px solid #eef2f7;
-        border-radius: 18px; box-shadow: 0 2px 14px rgba(15,23,42,.04);
-        overflow: hidden; margin-bottom: 22px;
-    }
-    .att-seg {
-        flex: 1; display: flex; align-items: center; gap: 13px;
-        padding: 18px 20px; border-left: 1px solid #f1f5f9;
-    }
-    .att-seg:first-child { border-left: none; }
-    .att-chip {
-        width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .att-seg-val { font-size: 24px; font-weight: 800; color: #0f172a; line-height: 1; }
-    .att-seg-lbl { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .ca-live { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 16px; border-radius:14px;
+        background:rgba(22,163,74,.08); border:1px solid rgba(22,163,74,.35); margin-bottom:10px; }
+    .ca-live b { color:var(--text-1); font-size:14px; }
+    .ca-live span { display:block; font-size:12.5px; color:var(--text-2); margin-top:2px; }
+    .ca-dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#16a34a; margin-right:6px; animation: ca-pulse 1.4s infinite; }
+    @keyframes ca-pulse { 50% { opacity:.3; } }
 
-    /* ── Log card ─────────────────────────────────────────── */
-    .att-card { background:#fff; border:1px solid #eef2f7; border-radius:18px;
-                box-shadow:0 2px 14px rgba(15,23,42,.04); overflow:hidden; }
-    .att-toolbar { display:flex; align-items:center; gap:12px; justify-content:space-between;
-                   padding:16px 18px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
-    .att-toolbar h2 { font-size:14px; font-weight:700; color:#0f172a; }
-    .att-search { position:relative; flex:1; min-width:180px; max-width:280px; }
-    .att-search input {
-        width:100%; padding:8px 12px 8px 34px; border:1px solid #e7edf3; border-radius:10px;
-        font-size:13px; color:#334155; background:#fbfcfe; outline:none; transition:.15s;
-    }
-    .att-search input:focus { border-color:#bfdbfe; background:#fff; box-shadow:0 0 0 3px rgba(59,130,246,.1); }
-    .att-search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#94a3b8; }
-    .att-count { font-size:12px; color:#94a3b8; }
+    .ca-grid { display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap:12px; }
+    .ca-label { display:block; font-size:12.5px; font-weight:700; color:var(--text-1); margin-bottom:6px; }
+    .ca-in { width:100%; height:44px; padding:0 12px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--surface); color:var(--text-1); box-sizing:border-box; }
+    .ca-in:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+    .ca-preview { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 4px; }
+    .ca-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:999px; font-size:12.5px; font-weight:700; }
+    .ca-chip.g { background:rgba(22,163,74,.12); color:#15803d; }
+    .ca-chip.y { background:rgba(234,179,8,.18); color:#a16207; }
+    .ca-chip.r { background:rgba(220,38,38,.10); color:#b91c1c; }
+    .ca-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 18px; border:0; border-radius:11px;
+        background:#15803d; color:#fff; font-size:14px; font-weight:800; cursor:pointer; text-decoration:none; }
+    .ca-btn:hover { background:#166534; }
+    .ca-btn.ghost { background:transparent; color:var(--text-1); border:1px solid var(--border); height:36px; font-size:13px; font-weight:700; }
+    .ca-btn.ghost:hover { border-color:#2563eb; color:#2563eb; }
+    .ca-btn:disabled { opacity:.6; cursor:wait; }
+    .ca-err { background:rgba(220,38,38,.08); border:1px solid rgba(220,38,38,.3); color:#b91c1c; padding:11px 14px; border-radius:12px; font-size:13px; margin-bottom:14px; }
+    .ca-empty { text-align:center; padding:28px 12px; color:var(--text-2); font-size:13.5px; }
 
-    /* ── Register rows (status rail = the signature) ──────── */
-    .att-row {
-        display:flex; align-items:center; gap:13px;
-        padding:13px 18px 13px 15px; border-bottom:1px solid #f6f8fb;
-        border-left:3px solid transparent; transition:background .15s;
-    }
-    .att-row:last-of-type { border-bottom:none; }
-    .att-row:hover { background:#f8fbff; }
-    .att-avatar {
-        width:38px; height:38px; border-radius:11px; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center;
-        font-size:14px; font-weight:700; color:#fff;
-        background:linear-gradient(135deg,#60a5fa,#2563eb);
-    }
-    .att-name { font-size:13.5px; font-weight:600; color:#0f172a; }
-    .att-meta { font-size:11.5px; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-top:2px; }
-    .att-time { font-size:12px; color:#64748b; display:flex; align-items:center; gap:5px; justify-content:flex-end; }
-    .att-badge { padding:3px 10px; border-radius:999px; font-size:10.5px; font-weight:700;
-                 display:inline-flex; align-items:center; gap:4px; }
-    .att-source { padding:3px 9px; border-radius:999px; font-size:10px; font-weight:600;
-                  background:#eff6ff; color:#2563eb; display:inline-flex; align-items:center; gap:4px; }
-
-    .att-empty { padding:54px 24px; text-align:center; }
-    .att-empty-icon {
-        width:58px; height:58px; border-radius:16px; margin:0 auto 16px;
-        background:#f1f5f9; color:#94a3b8; display:flex; align-items:center; justify-content:center;
-    }
-
-    @media (max-width:640px){
-        .att-summary { flex-direction:column; }
-        .att-seg { border-left:none; border-top:1px solid #f1f5f9; }
-        .att-seg:first-child { border-top:none; }
-        .att-time-col { display:none; }
-    }
+    .ca-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .ca-table th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); padding:9px 10px; border-bottom:1px solid var(--border); }
+    .ca-table td { padding:10px; border-bottom:1px solid var(--border); color:var(--text-1); }
+    .ca-table tr:last-child td { border-bottom:0; }
+    .ca-n { font-weight:800; }
+    .ca-n.g { color:#15803d; } .ca-n.y { color:#a16207; } .ca-n.r { color:#b91c1c; }
+    .ca-scroll { overflow-x:auto; }
+    @media (max-width: 760px) { .ca-grid { grid-template-columns:1fr; } }
 </style>
 
-<div class="att-wrap">
+<div class="ca-page">
+    <h1 class="ca-title">Class Attendance</h1>
+    <p class="ca-sub">Open attendance for one of your classes. Students get a notification on their phone and enter the
+        <b>4-digit code</b> you show in class. Before the on-time limit they are <b style="color:#15803d;">present</b>,
+        after it <b style="color:#a16207;">late</b>, and anyone who did not check in when it closes is <b style="color:#b91c1c;">absent</b>.
+        Parents are notified of every result.</p>
 
-    {{-- ── Header ───────────────────────────────────────────── --}}
-    <div class="flex items-start justify-between gap-4 mb-6">
-        <div>
-            <p class="att-eyebrow">Attendance Register</p>
-            <h1 class="att-title">Attendance</h1>
-            <p class="att-sub">{{ now()->format('l, F d, Y') }}</p>
-        </div>
-        <span class="att-live">
-            <span class="att-dot"></span>
-            Face&nbsp;ID device · Live
-        </span>
-    </div>
-
-    {{-- ── Summary strip ────────────────────────────────────── --}}
-    <div class="att-summary">
-        <div class="att-seg">
-            <span class="att-chip" style="background:#f1f5f9;color:#475569;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
-            </span>
-            <div>
-                <p class="att-seg-val att-num">{{ $attendances->total() }}</p>
-                <p class="att-seg-lbl">Total records</p>
-            </div>
-        </div>
-        <div class="att-seg">
-            <span class="att-chip" style="background:#dcfce7;color:#16a34a;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-            </span>
-            <div>
-                <p class="att-seg-val att-num" style="color:#16a34a;">{{ $attendances->where('status','present')->count() }}</p>
-                <p class="att-seg-lbl">Present (this page)</p>
-            </div>
-        </div>
-        <div class="att-seg">
-            <span class="att-chip" style="background:#eff6ff;color:#2563eb;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>
-            </span>
-            <div>
-                <p class="att-seg-val att-num" style="color:#2563eb;">{{ $attendances->where('source','iot')->count() }}</p>
-                <p class="att-seg-lbl">Via Face ID</p>
-            </div>
-        </div>
-    </div>
-
-    {{-- ── Log card ─────────────────────────────────────────── --}}
-    <div class="att-card">
-        <div class="att-toolbar">
-            <h2>Attendance log</h2>
-            @if($attendances->count())
-            <div class="att-search">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                <input id="attSearch" type="text" placeholder="Search this page…" autocomplete="off">
-            </div>
-            @endif
-            <span class="att-count att-num">{{ $attendances->total() }} records</span>
-        </div>
-
-        <div id="attList">
-        @forelse($attendances as $record)
-            @php
-                $s = strtolower($record->status ?? '');
-                $map = [
-                    'present' => ['#16a34a', '#dcfce7', '#15803d', 'Present'],
-                    'late'    => ['#d97706', '#fef3c7', '#b45309', 'Late'],
-                    'absent'  => ['#dc2626', '#fee2e2', '#b91c1c', 'Absent'],
-                    'excused' => ['#7c3aed', '#ede9fe', '#6d28d9', 'Excused'],
-                ];
-                $st = $map[$s] ?? ['#6366f1', '#e0e7ff', '#4338ca', ucfirst($record->status ?? '—')];
-                $dispName = $record->student_name ?? $record->student_id;
-                $section  = $record->user->section->name ?? null;
-                $isIot    = ($record->source ?? null) === 'iot';
-            @endphp
-            <div class="att-row"
-                 style="border-left-color: {{ $st[0] }};"
-                 data-search="{{ strtolower(($dispName ?? '').' '.($record->student_id ?? '').' '.($section ?? '')) }}">
-                <div class="att-avatar">{{ strtoupper(substr($dispName ?? '?', 0, 1)) }}</div>
-
-                <div class="flex-1 min-w-0">
-                    <p class="att-name truncate">{{ $dispName }}</p>
-                    <p class="att-meta">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg>
-                        {{ $section ?? 'No section' }}
-                    </p>
-                </div>
-
-                <div class="att-time-col text-right flex-shrink-0">
-                    <p class="att-time att-num">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                        {{ \Carbon\Carbon::parse($record->attended_at)->format('M d, h:i A') }}
-                    </p>
-                    <div class="flex gap-1.5 justify-end mt-1.5">
-                        @if($isIot)
-                        <span class="att-source">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 12h8"/></svg>
-                            Face ID
-                        </span>
-                        @endif
-                        <span class="att-badge" style="background: {{ $st[1] }}; color: {{ $st[2] }};">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                            {{ $st[3] }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        @empty
-            <div class="att-empty">
-                <div class="att-empty-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>
-                </div>
-                @if(!($hasSections ?? true))
-                    <p style="font-size:15px;color:#334155;font-weight:700;">No sections assigned yet</p>
-                    <p style="font-size:13px;color:#94a3b8;margin-top:6px;max-width:340px;margin-left:auto;margin-right:auto;">
-                        Once you are assigned to a section, your students' attendance will appear here automatically.
-                    </p>
-                @else
-                    <p style="font-size:15px;color:#334155;font-weight:700;">No records yet</p>
-                    <p style="font-size:13px;color:#94a3b8;margin-top:6px;max-width:360px;margin-left:auto;margin-right:auto;">
-                        The Face ID device will log your students here as they check in. Keep the camera running.
-                    </p>
-                @endif
-            </div>
-        @endforelse
-        </div>
-
-        {{-- shown by JS when a search matches nothing on this page --}}
-        <div id="attNoMatch" class="att-empty" style="display:none;">
-            <div class="att-empty-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-            </div>
-            <p style="font-size:14px;color:#334155;font-weight:600;">No match on this page</p>
-            <p style="font-size:12.5px;color:#94a3b8;margin-top:4px;">Try a different name, or check other pages below.</p>
-        </div>
-    </div>
-
-    {{-- ── Pagination ───────────────────────────────────────── --}}
-    @if($attendances->hasPages())
-    <div class="mt-4">
-        {{ $attendances->links() }}
-    </div>
+    @if ($errors->any())
+        <div class="ca-err" role="alert">{{ $errors->first() }}</div>
     @endif
 
+    @foreach ($open as $s)
+        <div class="ca-live">
+            <div>
+                <b><span class="ca-dot"></span>{{ $s->subject?->name }} · Grade {{ $s->section?->grade_level }} {{ $s->section?->name }} is open</b>
+                <span>Present until {{ $s->on_time_until->format('g:i A') }} · closes {{ $s->closes_at->format('g:i A') }}</span>
+            </div>
+            <a href="{{ route('teacher.attendance.show', $s) }}" class="ca-btn" style="height:38px;">Show code &amp; live list</a>
+        </div>
+    @endforeach
+
+    <div class="ca-card">
+        <h2>Start attendance</h2>
+        @if ($classes->isEmpty())
+            <div class="ca-empty">You have no classes yet. The admin assigns your classes in <b>Class Schedules</b>.</div>
+        @else
+            <p class="ca-muted">Choose the class and how long students have. You can close it early or mark students yourself anytime.</p>
+            <form method="POST" action="{{ route('teacher.attendance.store') }}" id="caForm">
+                @csrf
+                <div class="ca-grid">
+                    <div>
+                        <label class="ca-label" for="caClass">Class</label>
+                        <select id="caClass" name="class" class="ca-in" required>
+                            <option value="">— Choose a class —</option>
+                            @foreach ($classes as $c)
+                                @php $val = $c->section_id . '-' . $c->subject_id; @endphp
+                                <option value="{{ $val }}" @selected(old('class') === $val)>{{ $c->subject->name }} — Grade {{ $c->section->grade_level }} {{ $c->section->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="ca-label" for="caOn">Present if within</label>
+                        <select id="caOn" name="on_time_minutes" class="ca-in">
+                            @foreach ([5, 10, 15, 20, 30, 45, 60] as $m)
+                                <option value="{{ $m }}" @selected((int) old('on_time_minutes', 15) === $m)>{{ $m }} minutes</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="ca-label" for="caLate">Then late for</label>
+                        <select id="caLate" name="late_minutes" class="ca-in">
+                            @foreach ([0 => 'No late window', 5 => '5 minutes', 10 => '10 minutes', 15 => '15 minutes', 30 => '30 minutes', 45 => '45 minutes', 60 => '60 minutes'] as $m => $label)
+                                <option value="{{ $m }}" @selected((int) old('late_minutes', 15) === $m)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="ca-preview" aria-live="polite">
+                    <span class="ca-chip g" id="pvPresent">Present until —</span>
+                    <span class="ca-chip y" id="pvLate">Late until —</span>
+                    <span class="ca-chip r">Absent after that</span>
+                </div>
+                <div style="margin-top:14px;">
+                    <button type="submit" class="ca-btn" id="caStart">Start attendance &amp; notify students</button>
+                </div>
+            </form>
+        @endif
+    </div>
+
+    <div class="ca-card">
+        <h2>Recent attendance</h2>
+        @if ($history->isEmpty())
+            <div class="ca-empty">No attendance taken yet.</div>
+        @else
+            <div class="ca-scroll">
+                <table class="ca-table">
+                    <thead><tr><th>Date</th><th>Class</th><th>Present</th><th>Late</th><th>Absent</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach ($history as $h)
+                            <tr>
+                                <td>{{ $h->opened_at->format('M j, Y') }}<div style="font-size:12px;color:var(--text-3);">{{ $h->opened_at->format('g:i A') }}</div></td>
+                                <td>{{ $h->subject?->name }}<div style="font-size:12px;color:var(--text-3);">Grade {{ $h->section?->grade_level }} {{ $h->section?->name }}</div></td>
+                                <td class="ca-n g">{{ $h->present_count }}</td>
+                                <td class="ca-n y">{{ $h->late_count }}</td>
+                                <td class="ca-n r">{{ $h->closed_at ? $h->absent_count : '—' }}</td>
+                                <td style="text-align:right;">
+                                    <a href="{{ route('teacher.attendance.show', $h) }}" class="ca-btn ghost">{{ $h->isOpen() ? 'Open live' : 'View' }}</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
 </div>
 
 <script>
 (function () {
-    const input = document.getElementById('attSearch');
-    if (!input) return;
-    const list  = document.getElementById('attList');
-    const noMatch = document.getElementById('attNoMatch');
-    const rows = Array.from(list.querySelectorAll('.att-row'));
-    input.addEventListener('input', function () {
-        const q = input.value.trim().toLowerCase();
-        let shown = 0;
-        rows.forEach(function (r) {
-            const hit = !q || (r.dataset.search || '').indexOf(q) !== -1;
-            r.style.display = hit ? '' : 'none';
-            if (hit) shown++;
-        });
-        noMatch.style.display = (rows.length && shown === 0) ? '' : 'none';
+    var on = document.getElementById('caOn'), late = document.getElementById('caLate');
+    if (!on) return;
+    function fmt(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    function upd() {
+        var now = new Date(), p = new Date(now.getTime() + on.value * 60000), l = new Date(p.getTime() + late.value * 60000);
+        document.getElementById('pvPresent').textContent = 'Present until ' + fmt(p);
+        var lt = document.getElementById('pvLate');
+        lt.textContent = Number(late.value) ? 'Late until ' + fmt(l) : 'No late window';
+    }
+    on.addEventListener('change', upd); late.addEventListener('change', upd); upd(); setInterval(upd, 30000);
+    document.getElementById('caForm').addEventListener('submit', function (e) {
+        if (!document.getElementById('caClass').value) { e.preventDefault(); document.getElementById('caClass').focus(); return; }
+        var b = document.getElementById('caStart'); b.disabled = true; b.textContent = 'Starting…';
     });
 })();
 </script>
