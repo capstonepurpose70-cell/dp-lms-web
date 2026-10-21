@@ -22,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->validateCsrfTokens(except: [
         'api/*',
     ]);
+
+    // Logged-out visitors: admin pages → admin login (dati: lahat → /login ng student/teacher,
+    // kung saan hindi makakapag-login ang admin). API requests still get 401 JSON.
+    $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) =>
+        $request->is('admin', 'admin/*') ? route('admin.login') : route('login'));
 })
     ->withExceptions(function (Exceptions $exceptions) {
         //

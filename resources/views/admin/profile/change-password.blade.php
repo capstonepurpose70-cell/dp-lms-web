@@ -110,7 +110,7 @@
                     <div class="prof-input-wrap">
                         <input type="password" name="current_password" id="cur_pw"
                                class="prof-input {{ $errors->has('current_password') ? 'error' : '' }}"
-                               placeholder="Enter current password">
+                               placeholder="Enter current password" autocomplete="current-password">
                         <button type="button" class="prof-toggle" onclick="togglePw('cur_pw', this)">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -126,7 +126,7 @@
                     <div class="prof-input-wrap">
                         <input type="password" name="password" id="new_pw"
                                class="prof-input {{ $errors->has('password') ? 'error' : '' }}"
-                               placeholder="Min. 12 characters">
+                               placeholder="Min. 12 characters" autocomplete="new-password">
                         <button type="button" class="prof-toggle" onclick="togglePw('new_pw', this)">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -135,6 +135,10 @@
                         </button>
                     </div>
                     <div class="prof-hint">At least 12 characters, with uppercase, lowercase, a number and a symbol</div>
+                    <div class="prof-rules" id="pwRules" aria-live="polite">
+                        <span data-r="len">12+ characters</span><span data-r="up">Uppercase</span><span data-r="low">Lowercase</span>
+                        <span data-r="num">Number</span><span data-r="sym">Symbol</span>
+                    </div>
                     @error('password')<div class="prof-error">{{ $message }}</div>@enderror
                 </div>
 
@@ -143,7 +147,7 @@
                     <div class="prof-input-wrap">
                         <input type="password" name="password_confirmation" id="conf_pw"
                                class="prof-input"
-                               placeholder="Repeat new password">
+                               placeholder="Repeat new password" autocomplete="new-password">
                         <button type="button" class="prof-toggle" onclick="togglePw('conf_pw', this)">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -152,6 +156,10 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="prof-match" id="pwMatch" aria-live="polite"></div>
+
+                <p class="prof-hint" style="margin:0 0 12px;">After you change it, every other device signed in to this account is signed out.</p>
 
                 <button type="submit" class="prof-btn">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -164,10 +172,33 @@
     </div>
 </div>
 
+<style>
+    .prof-rules { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .prof-rules span { font-size:11.5px; font-weight:600; padding:2px 9px; border-radius:999px; background:var(--slate-100); color:var(--slate-500); }
+    .prof-rules span.ok { background:rgba(22,163,74,.12); color:#15803d; }
+    .prof-match { font-size:12px; font-weight:600; min-height:16px; margin:-6px 0 10px; }
+    .prof-match.ok { color:#15803d; } .prof-match.bad { color:var(--danger); }
+</style>
+
 <script>
 function togglePw(id, btn) {
     const input = document.getElementById(id);
     input.type = input.type === 'password' ? 'text' : 'password';
 }
+(function () {
+    // Live hints only — the server enforces the same rules
+    var pw = document.getElementById('new_pw'), cf = document.getElementById('conf_pw');
+    if (!pw || !cf) return;
+    var tests = { len: /^.{12,}$/, up: /[A-Z]/, low: /[a-z]/, num: /\d/, sym: /[^A-Za-z0-9]/ };
+    function upd() {
+        document.querySelectorAll('#pwRules span').forEach(function (s) { s.classList.toggle('ok', tests[s.dataset.r].test(pw.value)); });
+        var m = document.getElementById('pwMatch');
+        if (!cf.value) { m.textContent = ''; m.className = 'prof-match'; return; }
+        var same = cf.value === pw.value;
+        m.textContent = same ? '✓ Passwords match' : '✕ Passwords do not match';
+        m.className = 'prof-match ' + (same ? 'ok' : 'bad');
+    }
+    pw.addEventListener('input', upd); cf.addEventListener('input', upd);
+})();
 </script>
 @endsection

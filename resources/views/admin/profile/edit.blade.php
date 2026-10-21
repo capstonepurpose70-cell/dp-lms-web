@@ -52,6 +52,8 @@
     }
     .prof-input.error { border-color: var(--danger); }
     .prof-error { font-size: 12px; color: var(--danger); margin-top: 4px; }
+    .prof-hint { font-size: 11.5px; color: var(--slate-500); margin-top: 4px; }
+    .prof-field[hidden] { display: none; }
     .prof-btn {
         height: 40px; padding: 0 1.5rem;
         background: var(--blue-500);
@@ -119,7 +121,7 @@
             {{-- Avatar --}}
             <div class="prof-avatar-wrap">
                 <div class="prof-avatar-big">
-                    {{ strtoupper(substr($admin->name, 0, 1)) }}
+                    {{ mb_strtoupper(mb_substr($admin->name, 0, 1)) }}
                 </div>
                 <div class="prof-avatar-info">
                     <div class="prof-avatar-name">{{ $admin->name }}</div>
@@ -141,11 +143,21 @@
 
                 <div class="prof-field">
                     <label class="prof-label">Email Address</label>
-                    <input type="email" name="email"
-                           value="{{ old('email', $admin->email) }}"
+                    <input type="email" name="email" id="profEmail"
+                           value="{{ old('email', $admin->email) }}" data-original="{{ $admin->email }}"
                            class="prof-input {{ $errors->has('email') ? 'error' : '' }}"
-                           placeholder="your@email.com">
+                           placeholder="your@email.com" autocomplete="email">
+                    <div class="prof-hint">This is the email you sign in with.</div>
                     @error('email')<div class="prof-error">{{ $message }}</div>@enderror
+                </div>
+
+                {{-- Needed only when the email changes (shown automatically) --}}
+                <div class="prof-field" id="profPwField" @unless($errors->has('current_password') || old('email', $admin->email) !== $admin->email) hidden @endunless>
+                    <label class="prof-label" for="profCurPw">Current Password</label>
+                    <input type="password" name="current_password" id="profCurPw" autocomplete="current-password"
+                           class="prof-input {{ $errors->has('current_password') ? 'error' : '' }}"
+                           placeholder="Required to change your sign-in email">
+                    @error('current_password')<div class="prof-error">{{ $message }}</div>@enderror
                 </div>
 
                 <button type="submit" class="prof-btn">
@@ -158,5 +170,26 @@
         </div>
     </div>
 
+    {{-- Security --}}
+    <div class="prof-card" style="margin-top:1rem;">
+        <div class="prof-card-body" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div>
+                <div style="font-weight:700;color:var(--slate-900);font-size:14px;">Password</div>
+                <div style="font-size:12.5px;color:var(--slate-500);margin-top:2px;">Change it regularly. Changing it signs out every other device.</div>
+            </div>
+            <a href="{{ route('admin.profile.change-password') }}" class="prof-btn" style="width:auto;margin:0;text-decoration:none;">Change Password</a>
+        </div>
+    </div>
+
 </div>
+
+<script>
+(function () {
+    // Show the current-password field only when the sign-in email is being changed
+    var email = document.getElementById('profEmail'), field = document.getElementById('profPwField');
+    if (!email || !field) return;
+    function upd() { field.hidden = email.value.trim().toLowerCase() === (email.dataset.original || '').toLowerCase() && !field.querySelector('.prof-error'); }
+    email.addEventListener('input', upd);
+})();
+</script>
 @endsection

@@ -261,7 +261,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
     // ── Protected admin area ──────────────────────────────────────
-    Route::middleware('auth:admin')->group(function () {
+    // AuthenticateSession: kapag pinalitan ang admin password, nala-logout ang ibang device/session.
+    Route::middleware(['auth:admin', \Illuminate\Session\Middleware\AuthenticateSession::class])->group(function () {
         // Notifications
         Route::get('/notifications', fn() => response()->json([
             'count'         => 0,
