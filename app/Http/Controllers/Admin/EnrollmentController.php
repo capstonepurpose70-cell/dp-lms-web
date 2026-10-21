@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EnrollmentRequest;
 use App\Models\Section;
+use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\EnrollmentService;
 use App\Services\SmsService;
@@ -45,7 +46,24 @@ class EnrollmentController extends Controller
             ->groupBy('status')
             ->pluck('c', 'status');
 
-        return view('admin.enrollment.index', compact('enrollments', 'sections', 'counts', 'status', 'search'));
+        // Section balancing — stats per grade (one query per grade) + suggestion per pending row
+        $balance    = app(\App\Services\SectionBalanceService::class);
+        $gradeStats = [];
+        $suggested  = [];
+        foreach ($enrollments as $e) {
+            $g = (string) $e->grade_level;
+            if ($e->status !== 'pending' || !in_array($g, ['7', '8', '9', '10', '11', '12'], true)) {
+                continue;
+            }
+            $gradeStats[$g] ??= $balance->forGrade($g);
+            $suggested[$e->id] = $balance->suggest($e, $g);
+        }
+        $sectionSizes = User::where('role', 'student')->where('status', 'approved')->whereNotNull('section_id')
+            ->selectRaw('section_id, COUNT(*) as c')->groupBy('section_id')->pluck('c', 'section_id');
+
+        return view('admin.enrollment.index', compact(
+            'enrollments', 'sections', 'counts', 'status', 'search', 'gradeStats', 'suggested', 'sectionSizes'
+        ));
     }
 
     // ── Approve an enrollment request + place the student in a section ──

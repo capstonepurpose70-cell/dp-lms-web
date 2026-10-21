@@ -223,6 +223,7 @@ flowchart LR
 | `mother_name`, `father_name`, `guardian_name` | optional, letra lang — **ito ang ikukumpara kapag nag-link ang magulang** |
 | `guardian_contact` | optional, numero/`+`/`-`/espasyo, max 20 |
 | `last_school`, `last_grade_completed` | optional (dati hindi nase-save sa API — ngayon oo) |
+| `general_average` | **BAGO (2026-10-21)** — optional, number `60`–`100` (hal. `88.5`). General average noong nakaraang school year (Form 138). Ginagamit ng adviser/admin para balanse ang sections (heterogeneous). Label sa app: "General Average last school year (optional)" |
 
 `422 errors.student_type` = "already enrolled for this school year".
 

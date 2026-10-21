@@ -38,6 +38,8 @@ class EnrollmentService
             'guardian_contact'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9\+\-\s]*$/'],
             'last_school'          => 'nullable|string|max:255',
             'last_grade_completed' => 'nullable|string|max:50',
+            // Optional — used to keep sections heterogeneous (balanced mix of performance levels)
+            'general_average'      => 'nullable|numeric|between:60,100',
         ];
     }
 
@@ -49,6 +51,8 @@ class EnrollmentService
             'father_name.regex'      => 'Father\'s name must contain letters only.',
             'guardian_name.regex'    => 'Guardian\'s name must contain letters only.',
             'guardian_contact.regex' => 'Contact number must contain numbers only.',
+            'general_average.between' => 'General average must be between 60 and 100.',
+            'general_average.numeric' => 'General average must be a number, e.g. 88.5.',
         ];
     }
 
@@ -136,6 +140,7 @@ class EnrollmentService
                 'student_type'         => $request->student_type,
                 'last_school'          => $request->last_school,
                 'last_grade_completed' => $request->last_grade_completed,
+                'general_average'      => $request->general_average,
             ]);
 
             StudentEnrollment::updateOrCreate(

@@ -52,9 +52,8 @@
 
     @unless ($hasAdvisory)
         <div class="en-note">
-            ⚠️ You are not yet assigned as an <b>adviser</b> to any section. You can view pending requests,
-            but to approve a student you must first have an advisory section. Please ask the admin to
-            assign you as a section adviser.
+            ⚠️ Only section <b>advisers</b> review enrollment requests, and you are not assigned to a section yet.
+            Please ask the admin to assign you as a section adviser.
         </div>
     @endunless
 

@@ -56,7 +56,7 @@
     <a class="rv-back" href="{{ route('teacher.enrollments.index') }}">&larr; Back to enrollments</a>
 
     <div class="rv-head">
-        <div class="rv-av">{{ strtoupper(substr($enrollment->full_name ?? $st->name, 0, 1)) }}</div>
+        <div class="rv-av">{{ mb_strtoupper(mb_substr($enrollment->full_name ?? $st->name, 0, 1)) }}</div>
         <div>
             <h1>{{ $enrollment->full_name ?? $st->name }}</h1>
             <p>{{ $st->email }} &nbsp;·&nbsp; Grade {{ $enrollment->grade_level }} &nbsp;·&nbsp;
@@ -91,7 +91,7 @@
             <div class="rv-field"><label>LRN</label><div class="val">{{ $st->lrn ?? '—' }}</div></div>
             <div class="rv-field"><label>Age</label><div class="val">{{ $enrollment->age ?? '—' }}</div></div>
             <div class="rv-field"><label>Gender</label><div class="val">{{ ucfirst($enrollment->gender ?? '—') }}</div></div>
-            <div class="rv-field"><label>Birthdate</label><div class="val">{{ $enrollment->birthdate ?? '—' }}</div></div>
+            <div class="rv-field"><label>Birthdate</label><div class="val">{{ $enrollment->birthdate?->format('M j, Y') ?? '—' }}</div></div>
             <div class="rv-field"><label>Student Type</label><div class="val">{{ ucfirst($enrollment->student_type ?? '—') }}</div></div>
             <div class="rv-field" style="grid-column:1 / -1;"><label>Address</label><div class="val">{{ $enrollment->address ?? '—' }}</div></div>
             <div class="rv-field"><label>Mother's Name</label><div class="val">{{ $enrollment->mother_name ?? '—' }}</div></div>
@@ -101,8 +101,35 @@
             <div class="rv-field"><label>Last School</label><div class="val">{{ $enrollment->last_school ?? '—' }}</div></div>
             <div class="rv-field"><label>Last Grade Completed</label><div class="val">{{ $enrollment->last_grade_completed ?? '—' }}</div></div>
             <div class="rv-field"><label>School Year</label><div class="val">{{ $enrollment->school_year ?? '—' }}</div></div>
+            <div class="rv-field"><label>General Average (last school year)</label><div class="val">{{ $enrollment->general_average !== null ? number_format($enrollment->general_average, 2) : 'Not given' }}</div></div>
         </div>
     </div>
+
+    {{-- Section balancing — heterogeneous sections (mix of performance levels) --}}
+    @if ($status === 'pending' && $balanceStats->isNotEmpty())
+        @php
+            $bestOverallSec = $balanceStats->firstWhere('section.id', $bestOverall)['section'] ?? null;
+            $bestIsMine     = $bestOverall && $mySections->contains('id', $bestOverall);
+        @endphp
+        <div class="rv-card">
+            <h2>Grade {{ $grade }} sections — keep them balanced</h2>
+            @if ($bestOverallSec && !$bestIsMine)
+                <div class="rv-note warn">
+                    For a balanced mix, the best fit for this student is <b>{{ $bestOverallSec->name }}</b>
+                    ({{ $bestOverallSec->adviser ? 'adviser: ' . $bestOverallSec->adviser->name : 'no adviser yet' }}).
+                    You can still place them in your section, or leave this request for that adviser.
+                </div>
+            @elseif ($bestIsMine)
+                <div class="rv-note info">Your section is the best fit to keep Grade {{ $grade }} balanced.</div>
+            @endif
+            @include('partials.section-balance', [
+                'stats'       => $balanceStats,
+                'suggestedId' => $bestOverall,
+                'band'        => \App\Services\SectionBalanceService::band($enrollment->general_average),
+                'mineIds'     => $mySections->pluck('id')->all(),
+            ])
+        </div>
+    @endif
 
     @if ($status === 'pending')
         {{-- Approve: assign to adviser's section --}}
@@ -125,15 +152,16 @@
                         <select name="section_id" class="rv-sel" required>
                             <option value="">— Select your advisory section —</option>
                             @foreach ($mySections as $sec)
-                                <option value="{{ $sec->id }}">
-                                    {{ $sec->name }} (Grade {{ $sec->grade_level }})
+                                <option value="{{ $sec->id }}" @selected((int) $bestMine === (int) $sec->id || $mySections->count() === 1)>
+                                    {{ $sec->name }} (Grade {{ $sec->grade_level }}){{ (int) $bestMine === (int) $sec->id && $mySections->count() > 1 ? ' — suggested' : '' }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="rv-actions" style="margin-top:16px;">
                         <button type="submit" class="rv-btn approve"
-                                onclick="return confirm('Approve and enroll {{ $enrollment->full_name ?? $st->name }}?');">
+                                data-msg="Approve and enroll {{ $enrollment->full_name ?? $st->name }}?"
+                                onclick="return confirm(this.dataset.msg);">
                             ✓ Approve &amp; Enroll
                         </button>
                     </div>

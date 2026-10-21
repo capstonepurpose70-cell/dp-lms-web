@@ -271,6 +271,17 @@
                             class="field-input">
                     </div>
                 </div>
+
+                {{-- Optional — helps advisers keep sections balanced (heterogeneous) --}}
+                <div style="margin-top:16px; max-width:320px;">
+                    <label class="field-label" for="general_average">General Average last school year <span style="font-weight:500;color:#94a3b8;">(optional)</span></label>
+                    <input type="number" name="general_average" id="general_average"
+                        value="{{ old('general_average') }}" min="60" max="100" step="0.01" inputmode="decimal"
+                        placeholder="e.g. 88.50"
+                        class="field-input" @error('general_average') style="border-color:#f87171;" @enderror>
+                    @error('general_average')<p style="color:#dc2626;font-size:12px;margin-top:4px;">{{ $message }}</p>@enderror
+                    <p style="color:#94a3b8;font-size:12px;margin-top:4px;">From your last report card (Form 138). Leave blank if you don't know it.</p>
+                </div>
             </div>
         </div>
 

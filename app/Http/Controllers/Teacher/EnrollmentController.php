@@ -40,11 +40,9 @@ class EnrollmentController extends Controller
         $enrollments = EnrollmentRequest::with('student')
             ->when($tab === 'pending', function ($q) use ($myGrades) {
                 $q->where('status', 'pending');
-                // Kung may advisory ang teacher, i-filter sa grade nila;
-                // kung wala pa, ipakita lahat ng pending (bagong adviser).
-                if (!empty($myGrades)) {
-                    $q->whereIn('grade_level', $myGrades);
-                }
+                // Adviser lang ang nagre-review (ayon sa principal). Walang advisory =
+                // walang makikitang request (dati lahat ng pending, pero hindi rin nila mabuksan).
+                $q->whereIn('grade_level', $myGrades ?: ['__none__']);
             })
             ->when($tab === 'approved', fn($q) =>
                 $q->where('status', 'approved')->where('reviewed_by', auth()->id()))
@@ -63,7 +61,7 @@ class EnrollmentController extends Controller
 
         $counts = [
             'pending'  => EnrollmentRequest::where('status', 'pending')
-                            ->when(!empty($myGrades), fn($q) => $q->whereIn('grade_level', $myGrades))
+                            ->whereIn('grade_level', $myGrades ?: ['__none__'])
                             ->count(),
             'approved' => EnrollmentRequest::where('status', 'approved')->where('reviewed_by', auth()->id())->count(),
             'rejected' => EnrollmentRequest::where('status', 'rejected')->where('reviewed_by', auth()->id())->count(),
@@ -76,9 +74,29 @@ class EnrollmentController extends Controller
         ));
     }
 
-    // ── Show one request ─────────────────────────────────────────────────────
-    public function show(EnrollmentRequest $enrollment)
+    /**
+     * Advisers lang, at ng grade na hawak nila (kung alam ang grade ng request).
+     * Dati: kahit sinong teacher ay nakakabukas ng kahit anong request sa URL
+     * (address, magulang, birthdate ng estudyante).
+     */
+    private function authorizeReview(EnrollmentRequest $enrollment): void
     {
+        $myGrades = Section::whereIn('id', $this->myAdvisorySectionIds())->pluck('grade_level')
+            ->map(fn ($g) => (string) $g)->all();
+        abort_if(empty($myGrades), 403, 'Only section advisers can review enrollments.');
+
+        $requestGrade = (string) $enrollment->grade_level;
+        abort_if(
+            in_array($requestGrade, ['7', '8', '9', '10', '11', '12'], true) && !in_array($requestGrade, $myGrades, true),
+            403,
+            'This request is for a grade level you do not advise.'
+        );
+    }
+
+    // ── Show one request ─────────────────────────────────────────────────────
+    public function show(EnrollmentRequest $enrollment, \App\Services\SectionBalanceService $balance)
+    {
+        $this->authorizeReview($enrollment);
         $enrollment->load('student');
 
         // Ang mga section na pwedeng pagpilian — advisory ng teacher, tugma sa grade.
@@ -87,7 +105,16 @@ class EnrollmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('teacher.enrollments.show', compact('enrollment', 'mySections'));
+        // Section balancing: lahat ng section ng grade na ito (para makita ang buong hati),
+        // at ang mungkahing section — sa buong grade, at sa loob ng sariling advisory.
+        $grade = in_array((string) $enrollment->grade_level, ['7', '8', '9', '10', '11', '12'], true)
+            ? (string) $enrollment->grade_level
+            : (string) ($mySections->first()->grade_level ?? '');
+        $balanceStats  = $grade !== '' ? $balance->forGrade($grade) : collect();
+        $bestOverall   = $grade !== '' ? $balance->suggest($enrollment, $grade) : null;
+        $bestMine      = $grade !== '' ? $balance->suggest($enrollment, $grade, $mySections->pluck('id')->all()) : null;
+
+        return view('teacher.enrollments.show', compact('enrollment', 'mySections', 'balanceStats', 'bestOverall', 'bestMine', 'grade'));
     }
 
     // ── APPROVE — ilagay ang student sa section + email ──────────────────────
@@ -120,16 +147,7 @@ class EnrollmentController extends Controller
     {
         // Dati: kahit sinong teacher (kahit hindi adviser) ay kayang mag-reject.
         // Ngayon: adviser lang, at ng grade na hawak niya.
-        $myGrades = Section::whereIn('id', $this->myAdvisorySectionIds())->pluck('grade_level')
-            ->map(fn ($g) => (string) $g)->all();
-        abort_if(empty($myGrades), 403, 'Only section advisers can review enrollments.');
-
-        $requestGrade = (string) $enrollment->grade_level;
-        abort_if(
-            in_array($requestGrade, ['7', '8', '9', '10', '11', '12'], true) && !in_array($requestGrade, $myGrades, true),
-            403,
-            'This request is for a grade level you do not advise.'
-        );
+        $this->authorizeReview($enrollment);
 
         $data = $request->validate([
             'remarks' => 'required|string|max:500',

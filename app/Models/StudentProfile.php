@@ -20,10 +20,12 @@ class StudentProfile extends Model
         'student_type',
         'last_school',
         'last_grade_completed',
+        'general_average',
     ];
 
     protected $casts = [
-        'birthdate' => 'date',
+        'birthdate'       => 'date',
+        'general_average' => 'float',
     ];
 
     public function user()

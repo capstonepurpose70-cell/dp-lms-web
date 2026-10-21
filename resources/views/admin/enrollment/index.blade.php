@@ -103,8 +103,9 @@
     /* Details */
     .en-det { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px 20px; padding:14px 16px; border:1px solid var(--border-default);
         border-radius:12px; background:var(--white); }
-    .en-det div span { display:block; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--slate-500); margin-bottom:2px; }
-    .en-det div b { font-weight:600; color:var(--slate-900); font-size:13px; word-break:break-word; }
+    .en-det > div > span { display:block; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--slate-500); margin-bottom:2px; }
+    .en-det > div > b { font-weight:600; color:var(--slate-900); font-size:13px; word-break:break-word; }
+    .en-det > div.full > span { margin-bottom:6px; }
     .en-det .wide { grid-column:span 2; }
     .en-det .full { grid-column:1 / -1; }
 
@@ -192,6 +193,8 @@
                         $options   = $grade ? ($sectionsByGr[$grade] ?? collect()) : $sections;
                         $bdMismatch = ($bd = $stu?->birthdate) && $enrollment->birthdate && !$bd->isSameDay($enrollment->birthdate);
                         $detId     = 'enDet' . $enrollment->id;
+                        $sug       = $suggested[$enrollment->id] ?? null;
+                        $ga        = $enrollment->general_average;
                     @endphp
                     <tr class="main">
                         <td>
@@ -213,6 +216,7 @@
                             @else
                                 <span class="en-tbd">Grade not set</span>
                             @endif
+                            <div class="en-small" style="margin-top:3px;">{{ $ga !== null ? 'Avg. ' . number_format($ga, 2) : 'No avg. given' }}</div>
                         </td>
                         <td>{{ $typeLabel[$enrollment->student_type] ?? ucfirst((string) $enrollment->student_type) }}</td>
                         <td>
@@ -242,8 +246,9 @@
                                                 @foreach($options->groupBy(fn ($s) => (string) $s->grade_level) as $g => $group)
                                                     <optgroup label="Grade {{ $g }}">
                                                         @foreach($group as $section)
-                                                            <option value="{{ $section->id }}" @selected($options->count() === 1)>
-                                                                {{ $section->name }}{{ $section->adviser ? ' — '.$section->adviser->name : ' — no adviser' }}
+                                                            @php $isSug = $sug && (int) $sug === (int) $section->id; @endphp
+                                                            <option value="{{ $section->id }}" @selected($sug ? $isSug : $options->count() === 1)>
+                                                                {{ $isSug ? '★ ' : '' }}{{ $section->name }} — {{ (int) ($sectionSizes[$section->id] ?? 0) }} students{{ $section->adviser ? ' · '.$section->adviser->name : ' · no adviser' }}{{ $isSug ? ' (suggested)' : '' }}
                                                             </option>
                                                         @endforeach
                                                     </optgroup>
@@ -282,6 +287,17 @@
                                 <div class="wide"><span>Last school attended</span><b>{{ $enrollment->last_school ?: '—' }}</b></div>
                                 <div><span>Last grade completed</span><b>{{ $enrollment->last_grade_completed ?: '—' }}</b></div>
                                 <div><span>School year</span><b>{{ $enrollment->school_year ?: '—' }}</b></div>
+                                <div><span>General average</span><b>{{ $ga !== null ? number_format($ga, 2) : 'Not given' }}</b></div>
+                                @if($st === 'pending' && $grade && isset($gradeStats[$grade]))
+                                    <div class="full">
+                                        <span>Grade {{ $grade }} sections — keep them balanced</span>
+                                        @include('partials.section-balance', [
+                                            'stats'       => $gradeStats[$grade],
+                                            'suggestedId' => $sug,
+                                            'band'        => \App\Services\SectionBalanceService::band($ga),
+                                        ])
+                                    </div>
+                                @endif
                                 @if($bdMismatch)
                                     <div class="full"><span>Birthdate check</span><b style="color:#b45309;">Form: {{ $enrollment->birthdate->format('M j, Y') }} · Activation: {{ $stu->birthdate->format('M j, Y') }} — verify with the student before approving.</b></div>
                                 @endif
@@ -356,7 +372,7 @@
         form.addEventListener('submit', function (e) {
             var sel = form.querySelector('select[name="section_id"]');
             if (!sel.value) { e.preventDefault(); alert('Please select a section first.'); sel.focus(); return; }
-            var label = sel.options[sel.selectedIndex].text.split(' — ')[0];
+            var label = sel.options[sel.selectedIndex].text.split(' — ')[0].replace('★', '').trim();
             if (!confirm('Enroll ' + form.dataset.name + ' in ' + label + '?')) e.preventDefault();
         });
     });

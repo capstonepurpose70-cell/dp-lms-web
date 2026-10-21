@@ -22,6 +22,7 @@ class EnrollmentRequest extends Model
         'guardian_contact',
         'last_school',
         'last_grade_completed',
+        'general_average',
         'status',
         'reviewed_by',
         'reviewed_at',
@@ -29,8 +30,9 @@ class EnrollmentRequest extends Model
     ];
 
     protected $casts = [
-        'birthdate'   => 'date',
-        'reviewed_at' => 'datetime',
+        'birthdate'       => 'date',
+        'reviewed_at'     => 'datetime',
+        'general_average' => 'float',
     ];
 
     public function student()
