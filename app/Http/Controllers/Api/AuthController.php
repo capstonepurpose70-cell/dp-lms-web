@@ -20,7 +20,7 @@ class AuthController extends Controller
             'email'    => 'required|string|max:254',
             'password' => 'required',
         ]);
-
+        
         $user = User::resolveByIdentifier($request->email);
  
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -32,7 +32,16 @@ class AuthController extends Controller
             AuditLogService::log('Login blocked (not approved)', 'Auth', $user->email, $user);
             return response()->json(['message' => 'Account not yet approved.'], 403);
         }
- 
+
+        // Temporary password (old single "Create Teacher" accounts): dati nakakakuha ng
+        // mobile token at hindi kailanman napipilitang palitan. Sa website muna palitan.
+        if ($user->must_change_password) {
+            AuditLogService::log('Login blocked (temporary password)', 'Auth', $user->email, $user);
+            return response()->json([
+                'message' => 'Please log in on the website first and set a new password.',
+            ], 403);
+        }
+
         $token = $user->createToken('mobile-app')->plainTextToken;
  
         AuditLogService::log('Login', 'Auth', null, $user);
@@ -49,14 +58,14 @@ class AuthController extends Controller
             ],
         ]);
     }
- 
+
     public function logout(Request $request)
     {
         AuditLogService::log('Logout', 'Auth', null, $request->user());
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out.']);
     }
- 
+
     public function register(Request $request)
     {
         // Wala nang public registration.

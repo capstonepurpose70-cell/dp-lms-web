@@ -17,11 +17,11 @@ class TeacherInviteMail extends Mailable
     public string $inviteUrl;
     public string $expiresIn;
 
-    public function __construct(User $teacher, string $token)
+    public function __construct(User $teacher, string $token, string $expiresIn = '72 hours')
     {
         $this->teacher   = $teacher;
-        $this->inviteUrl = route('invite.accept', ['token' => $token]);
-        $this->expiresIn = '72 hours';
+        $this->inviteUrl = route('invite.show', ['token' => $token]);
+        $this->expiresIn = $expiresIn;
     }
 
     public function envelope(): Envelope

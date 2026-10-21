@@ -259,6 +259,7 @@
                         There are no active Grade {{ $section->grade_level }} subjects yet — add subjects first.
                     @else
                         Overlapping classes are blocked automatically for the same section, the same teacher, and the same room.
+                        Choosing a teacher also gives them this subject in their portal (gradebook, materials, quizzes).
                     @endif
                 </p>
             </form>

@@ -5,13 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTeacherRequest;
 use App\Models\OfficialLrn;
-use App\Models\SchoolYear;
 use App\Models\Section;
-use App\Models\Subject;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\SmsService;
-use App\Services\TeacherAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -283,36 +280,33 @@ class UserManagementController extends Controller
     // ── Create Teacher ────────────────────────────────────────────
     public function createTeacher()
     {
-        $sections   = Section::where('is_active', true)->orderBy('grade_level')->get();
-        $subjects   = Subject::where('is_active', true)->orderBy('grade_level')->get();
-        $schoolYear = SchoolYear::current();
- 
-        return view('admin.users.create-teacher', compact('sections', 'subjects', 'schoolYear'));
+        // Advisory choices: active sections, ones without an adviser first
+        $sections = Section::with('adviser:id,name')->where('is_active', true)->get()
+            ->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, mb_strtolower($s->name)))
+            ->values();
+
+        return view('admin.users.create-teacher', compact('sections'));
     }
- 
-    public function storeTeacher(
-        StoreTeacherRequest $request,
-        TeacherAssignmentService $assignmentService
-        // ← TeacherInviteService REMOVED — invite is handled inside the service
-    ) {
-        try {
-            $teacher = $assignmentService->createTeacherWithAssignments(
-                $request->validated()
-            );
- 
-            AuditLogService::log("Created teacher: {$teacher->name}", 'User Management');
 
-            $tempPw = $assignmentService->lastTempPassword;
+    /**
+     * Single teacher — same activation-link flow as Import Teachers.
+     * Dati: temporary password na ipinapakita sa admin + approved agad + gumagana
+     * sa mobile login nang hindi napapalitan. Ngayon: pending hanggang i-activate.
+     */
+    public function storeTeacher(StoreTeacherRequest $request, \App\Services\TeacherRosterService $roster)
+    {
+        $r = $roster->createOne($request->validated());
 
-            return redirect()
-                ->route('admin.users.index', ['tab' => 'teachers'])
-                ->with('success', "Teacher account for {$teacher->name} created. "
-                    . "Temporary password: {$tempPw}  —  give this to the teacher; they will be asked to change it on first login.");
- 
-        } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->withErrors(['general' => 'Failed to create teacher: ' . $e->getMessage()]);
-        }
+        $note = trim(($r['emailed'] ? "Invite emailed to {$r['teacher']->email}. " : ($r['teacher']->email
+                    ? 'The invite email could not be sent — give the teacher this link instead. ' : ''))
+                . $r['note']);
+
+        return redirect()->route('admin.users.import-teachers')
+            ->with('import_result', ['created' => 1, 'results' => [[
+                'line' => null, 'name' => $r['teacher']->name, 'ok' => true, 'link' => $r['link'],
+                'advisory' => $r['section'] ? "Grade {$r['section']->grade_level} – {$r['section']->name}" : null,
+                'note' => $note,
+            ]]])
+            ->with('success', "Teacher account for {$r['teacher']->name} created. Give them their activation link.");
     }
 }

@@ -129,6 +129,59 @@ class TeacherRosterService
         return ['created' => $created, 'results' => $results];
     }
 
+    /**
+     * Single "Add Teacher" — same activation-link flow as the bulk import (no temporary
+     * password). If an email is given, the link is also emailed; the admin always sees it once.
+     *
+     * @param array{name:string, email?:?string, employee_id?:?string, contact_number?:?string, adviser_section_id?:?int} $data
+     * @return array{teacher:User, link:string, emailed:bool, note:string}
+     */
+    public function createOne(array $data): array
+    {
+        $token   = Str::random(48);
+        $section = !empty($data['adviser_section_id'])
+            ? Section::where('is_active', true)->find($data['adviser_section_id'])
+            : null;
+        $note = '';
+        if ($section && $section->adviser_id) {
+            $note    = "Grade {$section->grade_level} {$section->name} already has an adviser — not changed.";
+            $section = null;
+        }
+
+        $teacher = DB::transaction(function () use ($data, $token, $section) {
+            $t = User::create([
+                'name'                 => preg_replace('/\s+/', ' ', trim($data['name'])),
+                'email'                => !empty($data['email']) ? strtolower(trim($data['email'])) : null,
+                'password'             => Hash::make(Str::random(40)), // unusable until activation
+                'role'                 => 'teacher',
+                'status'               => 'pending',
+                'employee_id'          => $data['employee_id'] ?? null ?: null,
+                'contact_number'       => $data['contact_number'] ?? null ?: null,
+                'invite_token'         => hash('sha256', $token),
+                'invite_expires_at'    => now()->addDays(self::LINK_DAYS),
+                'must_change_password' => false,
+            ]);
+            $section?->update(['adviser_id' => $t->id]);
+            return $t;
+        });
+
+        $link    = route('invite.show', $token);
+        $emailed = false;
+        if ($teacher->email) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($teacher->email)->send(new \App\Mail\TeacherInviteMail($teacher, $token, self::LINK_DAYS . ' days'));
+                $emailed = true;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Teacher invite email failed: ' . $e->getMessage());
+            }
+        }
+
+        AuditLogService::log("Created teacher: {$teacher->name}", 'User Management',
+            $section ? "Adviser of Grade {$section->grade_level} {$section->name}" : null);
+
+        return ['teacher' => $teacher, 'link' => $link, 'emailed' => $emailed, 'note' => $note, 'section' => $section];
+    }
+
     /** New activation link for a teacher who has not activated yet. Returns the URL. */
     public function newLink(User $teacher): string
     {

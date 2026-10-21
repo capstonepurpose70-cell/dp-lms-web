@@ -7,6 +7,7 @@ use App\Models\ClassSchedule;
 use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\Subject;
+use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
@@ -59,6 +60,7 @@ class ClassScheduleController extends Controller
         $this->guardAgainstConflicts($data);
 
         $schedule = ClassSchedule::create($data);
+        $this->grantLoad($schedule);
 
         AuditLogService::log(
             'Created class schedule',
@@ -74,7 +76,10 @@ class ClassScheduleController extends Controller
         $data = $this->validated($request);
         $this->guardAgainstConflicts($data, $schedule->id);
 
+        $before = $schedule->only(['teacher_id', 'subject_id', 'section_id']);
         $schedule->update($data);
+        $this->grantLoad($schedule);
+        $this->releaseLoad($before);
 
         AuditLogService::log(
             'Updated class schedule',
@@ -87,12 +92,50 @@ class ClassScheduleController extends Controller
 
     public function destroy(ClassSchedule $schedule)
     {
-        $label = $this->describe($schedule);
+        $label  = $this->describe($schedule);
+        $before = $schedule->only(['teacher_id', 'subject_id', 'section_id']);
         $schedule->delete();
+        $this->releaseLoad($before);
 
         AuditLogService::log('Deleted class schedule', 'Schedules', $label);
 
         return back()->with('success', 'Schedule removed.');
+    }
+
+    // ─── Teaching load (teacher_subjects) ─────────────────────────────────────
+    //
+    // teacher_subjects ang ginagamit ng gradebook, materials, assignments at ng
+    // "My Subjects" ng estudyante — pero walang screen na gumagawa nito. Ngayon:
+    // ang pag-assign ng teacher sa isang klase dito ang nagbibigay ng load.
+
+    private function grantLoad(ClassSchedule $s): void
+    {
+        if (!$s->teacher_id) {
+            return;
+        }
+        TeacherSubject::firstOrCreate(
+            ['user_id' => $s->teacher_id, 'subject_id' => $s->subject_id, 'section_id' => $s->section_id],
+            ['grade_level' => (string) ($s->section?->grade_level ?? ''), 'school_year' => $s->school_year]
+        );
+    }
+
+    /** Remove the load only when no other class still gives this teacher this subject in this section. */
+    private function releaseLoad(array $before): void
+    {
+        if (empty($before['teacher_id'])) {
+            return;
+        }
+        $stillTeaches = ClassSchedule::where('teacher_id', $before['teacher_id'])
+            ->where('subject_id', $before['subject_id'])
+            ->where('section_id', $before['section_id'])
+            ->exists();
+
+        if (!$stillTeaches) {
+            TeacherSubject::where('user_id', $before['teacher_id'])
+                ->where('subject_id', $before['subject_id'])
+                ->where('section_id', $before['section_id'])
+                ->delete();
+        }
     }
 
     // ─── Validation ───────────────────────────────────────────────────────────
