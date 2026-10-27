@@ -4,7 +4,8 @@
 @section('content')
 @php $chip = ['present' => ['g', 'Present'], 'late' => ['y', 'Late'], 'absent' => ['r', 'Absent']]; @endphp
 <style>
-    .sa-wrap { max-width:760px; margin:0 auto; padding:8px 16px 56px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
+    /* B6-12: no extra side padding — the layout already pads the page (dati makitid ang code field sa phone) */
+    .sa-wrap { max-width:760px; margin:0 auto; padding:0 0 40px; }
     .sa-h1 { font-size:26px; font-weight:800; color:#0F172A; }
     .sa-sub { font-size:13.5px; color:#64748B; margin:3px 0 20px; line-height:1.5; }
     .sa-card { background:#fff; border:1px solid #EEF1F5; border-radius:22px; padding:20px; box-shadow:0 4px 24px rgba(15,23,42,.05); margin-bottom:16px; }
@@ -30,7 +31,7 @@
     .sa-done { margin-top:14px; display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; color:#0F172A; }
     .st { display:inline-block; padding:5px 13px; border-radius:999px; font-size:13px; font-weight:800; }
     .st.g { background:#16A34A; color:#fff; } .st.y { background:#EAB308; color:#3F2D00; } .st.r { background:#DC2626; color:#fff; }
-    .sa-empty { text-align:center; padding:30px 12px; color:#94A3B8; }
+    .sa-empty { text-align:center; padding:30px 12px; color:#64748B; }
     .sa-empty b { display:block; color:#475569; font-size:15px; margin-bottom:3px; }
     .sa-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid #F1F5F9; }
     .sa-row:last-child { border-bottom:0; }
@@ -125,6 +126,13 @@
             if (input.value.length !== 4) { e.preventDefault(); input.focus(); return; }
             var b = f.querySelector('.js-btn'); b.disabled = true; b.textContent = 'Checking…';
         });
+    });
+
+    // B6-12: the Back button restored the page with the button stuck on "Checking…"
+    window.addEventListener('pageshow', function (e) {
+        if (!e.persisted) return;
+        document.querySelectorAll('.js-btn').forEach(function (b) { b.disabled = false; });
+        tick();
     });
 })();
 </script>

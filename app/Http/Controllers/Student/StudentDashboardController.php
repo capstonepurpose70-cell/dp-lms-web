@@ -122,6 +122,8 @@ class StudentDashboardController extends Controller
         $enrollment = $user->studentEnrollment;
         $section    = $enrollment?->section ?? $user->section;
 
+        $section?->loadMissing('adviser:id,name');   // B6-10: ginagamit ng view
+
         $schedules = $section
             ? ClassSchedule::with(['subject', 'teacher'])
                 ->where('section_id', $section->id)
@@ -178,22 +180,50 @@ class StudentDashboardController extends Controller
         return view('student.grades', ['years' => $years, 'passing' => Grade::PASSING]);
     }
 
-    public function messages()
+    /**
+     * One conversation per teacher (B6-2). Dati: iisang halo-halong listahan para sa lahat ng teacher,
+     * bago→luma, at hindi kailanman nami-mark as read sa web (B6-1) — kaya hindi nababawasan ang "Unread".
+     */
+    public function messages(Request $request)
     {
-        $user = auth()->user();
+        $user    = auth()->user();
+        $me      = (int) $user->id;
+        $allowed = User::teacherIdsForSection($user->studentSectionId());   // teachers of my section
 
-        // Teachers of this student's section (subject teachers + adviser)
-        $teacherIds = User::teacherIdsForSection($user->studentSectionId());
-        $teachers   = User::whereIn('id', $teacherIds)->orderBy('name')->get();
-
-        // All messages involving this student (newest first)
-        $messages = \App\Models\Message::with(['sender', 'receiver'])
-            ->where('sender_id', $user->id)
-            ->orWhere('receiver_id', $user->id)
-            ->orderByDesc('created_at')
+        $all = \App\Models\Message::where(fn ($q) => $q->where('sender_id', $me)->orWhere('receiver_id', $me))
+            ->orderBy('created_at')->orderBy('id')
             ->get();
+        $threads = $all->groupBy(fn ($m) => (int) ((int) $m->sender_id === $me ? $m->receiver_id : $m->sender_id));
 
-        return view('student.messages', compact('teachers', 'messages'));
+        // My teachers + any teacher I already talked to (hal. dating teacher — mababasa pa, hindi na masasagot)
+        $contacts = User::whereIn('id', $allowed->merge($threads->keys())->unique())
+            ->where('role', 'teacher')
+            ->get(['id', 'name'])
+            ->map(function ($t) use ($threads, $me, $allowed) {
+                $msgs          = $threads->get($t->id, collect());
+                $t->last       = $msgs->last();
+                $t->unread     = $msgs->where('receiver_id', $me)->where('is_read', false)->count();
+                $t->canMessage = $allowed->contains((int) $t->id);
+                return $t;
+            })
+            // conversations with activity first (newest), then the rest by name
+            ->sortBy(fn ($t) => sprintf('%d|%015d|%s', $t->last ? 0 : 1, PHP_INT_MAX - ($t->last?->created_at?->timestamp ?? 0), mb_strtolower($t->name)))
+            ->values();
+
+        $activeId = (int) $request->query('with');
+        $active   = $contacts->firstWhere('id', $activeId)
+            ?? $contacts->first(fn ($t) => $t->unread > 0)
+            ?? $contacts->first();
+
+        $thread = collect();
+        if ($active) {
+            \App\Models\Message::where('sender_id', $active->id)->where('receiver_id', $me)->where('is_read', false)
+                ->update(['is_read' => true, 'read_at' => now()]);
+            $active->unread = 0;
+            $thread = $threads->get($active->id, collect());
+        }
+
+        return view('student.messages', compact('contacts', 'active', 'thread'));
     }
 
     public function storeMessage(Request $request)
@@ -218,7 +248,8 @@ class StudentDashboardController extends Controller
             'is_read'     => false,
         ]);
 
-        return back()->with('success', 'Message sent!');
+        // Back to the same conversation (B6-2)
+        return redirect()->route('student.messages', ['with' => $data['teacher_id']]);
     }
 
     public function subjects()

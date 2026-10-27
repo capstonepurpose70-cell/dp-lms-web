@@ -36,6 +36,7 @@
     }
     .pl-btn:hover { filter: brightness(.95); }
     .pl-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .pl-btn[disabled] { opacity: .7; cursor: progress; }
 
     .pl-err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: var(--r-md); padding: 11px 14px; font-size: 13.5px; margin-bottom: 16px; }
 
@@ -99,6 +100,10 @@
             </div>
         </div>
         <p class="pl-note">⚠️ Only give this code to your parent or guardian. Don't post or share it.</p>
+        <p class="pl-note" style="margin-top:6px;">
+            This code is shown only once — it disappears when you leave or reload this page.
+            If your parent misses it, just create a new one.
+        </p>
 
     @elseif($parent)
         <div class="pl-card">
@@ -119,7 +124,7 @@
         @if($parent->status === 'approved')
             <div class="pl-card">
                 <p class="pl-note">Did your parent forget their password or get a new phone? Create a <strong>recovery code</strong>.</p>
-                <form method="POST" action="{{ route('student.parent-link.store') }}" style="margin-top:14px;">
+                <form method="POST" action="{{ route('student.parent-link.store') }}" data-once style="margin-top:14px;">
                     @csrf
                     <button type="submit" class="pl-btn">Create recovery code</button>
                 </form>
@@ -136,11 +141,19 @@
                 No parent is linked yet. Create a <strong>one-time code</strong> and let your parent scan it.
                 It's valid for 24 hours and can be used once.
             </p>
-            <form method="POST" action="{{ route('student.parent-link.store') }}" style="margin-top:14px;">
+            <form method="POST" action="{{ route('student.parent-link.store') }}" data-once style="margin-top:14px;">
                 @csrf
                 <button type="submit" class="pl-btn">Create code for my parent</button>
             </form>
         </div>
     @endif
 </div>
+{{-- B6-4: one click = one code (a double click used to make two, the second replacing the first) --}}
+<script>
+    document.querySelectorAll('form[data-once]').forEach(function (f) {
+        var b = f.querySelector('button[type="submit"]'), label = b.textContent;
+        f.addEventListener('submit', function () { b.disabled = true; b.textContent = 'Creating…'; });
+        window.addEventListener('pageshow', function (e) { if (e.persisted) { b.disabled = false; b.textContent = label; } });
+    });
+</script>
 @endsection

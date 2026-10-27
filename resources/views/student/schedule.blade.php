@@ -115,8 +115,8 @@
                 </div>
                 <p class="sch-empty-title">No schedule yet</p>
                 <p class="sch-empty-text">
-                    Your class schedule will appear here once you are enrolled<br>
-                    and the administrator assigns you to a section.
+                    Your class schedule will appear here once your enrollment is approved<br>
+                    and you are placed in a section.
                 </p>
             </div>
         </div>
@@ -184,7 +184,8 @@
                                         {{ $p->teacher?->name ?? 'Teacher to be assigned' }}
                                     </p>
                                     @if($p->room)
-                                        <span class="sch-room">Room {{ $p->room }}</span>
+                                        {{-- B6-10: free text (hal. "ALS Room 7") — "Room " lang kapag numero --}}
+                                        <span class="sch-room">{{ ctype_digit((string) $p->room) ? 'Room ' . $p->room : $p->room }}</span>
                                     @endif
                                 </article>
                             @empty

@@ -3,95 +3,97 @@
 
 @section('content')
 <style>
+    /* B6-8: plain CSS — 22 Tailwind classes here were missing from the build (Start button white-on-white,
+       no guide circle, no progress bar). Only used when FACE_SELF_UPLOAD=true. */
+    .fr-wrap { max-width: 680px; margin: 0 auto; }
+    .fr-wrap .hidden { display: none !important; }
+    .fr-title { font-size: 24px; font-weight: 800; color: var(--text-1); }
+    .fr-sub { font-size: 13.5px; color: var(--text-2); margin: 4px 0 18px; line-height: 1.55; }
+    .fr-sub b.ok { color: #15803D; }
+
+    .fr-alert { border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.5; border: 1px solid; }
+    .fr-alert b { display: block; margin-bottom: 2px; }
+    .fr-alert.bad  { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+    .fr-alert.warn { background: #FFF7ED; border-color: #FED7AA; color: #9A3412; }
+    .fr-alert.wait { background: #FEFCE8; border-color: #FDE68A; color: #854D0E; }
+    .fr-alert.ok   { background: #F0FDF4; border-color: #BBF7D0; color: #166534; }
+
+    .fr-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 5px; }
+    .fr-select { width: 100%; min-height: 44px; border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 14px; font-family: inherit; background: #fff; margin-bottom: 12px; }
+    .fr-status { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+
+    .fr-stage { position: relative; border-radius: 18px; overflow: hidden; background: #000; box-shadow: var(--shadow-md); aspect-ratio: 4 / 3; }
+    .fr-stage video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+    .fr-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .fr-oval { width: 55%; height: 78%; border-radius: 50%; border: 4px solid; }
     .ring { transition: border-color .15s ease, box-shadow .15s ease; }
     .ring-idle  { border-color: rgba(255,255,255,.65); box-shadow: 0 0 0 2000px rgba(0,0,0,.25); }
     .ring-warn  { border-color: #f59e0b; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 18px rgba(245,158,11,.6); }
-    .ring-ready { border-color: #3b82f6; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 18px rgba(59,130,246,.7);
-                  animation: pulse 1s ease-in-out infinite; }
+    .ring-ready { border-color: #3b82f6; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 18px rgba(59,130,246,.7); animation: frPulse 1s ease-in-out infinite; }
     .ring-ok    { border-color: #22c55e; box-shadow: 0 0 0 2000px rgba(0,0,0,.25), 0 0 22px rgba(34,197,94,.85); }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
-    .btn { width:100%; padding:.75rem; border-radius:.75rem; font-weight:600; font-size:.875rem; }
-    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    @keyframes frPulse { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+    .fr-phase { position: absolute; top: 12px; left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+
+    .fr-progress-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text-2); margin: 14px 0 6px; }
+    .fr-progress { height: 8px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+    .fr-bar { height: 100%; width: 0%; background: #16A34A; transition: width .2s ease; }
+
+    .fr-btn { display: block; width: 100%; min-height: 48px; margin-top: 12px; border-radius: 12px; font-weight: 700; font-size: 15px; font-family: inherit; cursor: pointer; border: none; }
+    .fr-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .fr-btn.primary { background: var(--accent); color: #fff; }
+    .fr-btn.go { background: #15803D; color: #fff; }
+    .fr-btn.ghost { background: #fff; color: var(--text-1); border: 1.5px solid var(--border); }
+    .fr-tip { font-size: 12.5px; color: var(--text-3); margin-top: 14px; text-align: center; line-height: 1.55; }
 </style>
 
-<div class="max-w-2xl mx-auto px-4 py-8">
-
-    <h1 class="text-xl font-bold text-gray-800 mb-1">Face Registration</h1>
-    <p class="text-sm text-gray-500 mb-6">
+<div class="fr-wrap">
+    <h1 class="fr-title">Face Registration</h1>
+    <p class="fr-sub">
         Enable the camera, choose which camera to use, then tap <b>Start</b>.
-        Blink when asked &mdash; the circle turns
-        <span class="text-green-600 font-semibold">green</span> once verified and captures automatically.
+        Blink when asked — the circle turns <b class="ok">green</b> once verified and captures automatically.
     </p>
 
     @if ($blocked)
-        <div class="rounded-xl border border-red-200 bg-red-50 p-4 mb-6">
-            <p class="font-bold text-red-700 text-sm">⛔ Face registration blocked</p>
-            <p class="text-sm text-red-600 mt-1">
-                Due to repeated violations, you can no longer register your face.
-                Please visit the admin office to resolve this.
-            </p>
+        <div class="fr-alert bad" role="alert">
+            <b>Face registration blocked</b>
+            Due to repeated violations, you can no longer register your face. Please visit the admin office.
         </div>
     @else
         @if ($warnings > 0)
-            <div class="rounded-xl border border-orange-200 bg-orange-50 p-4 mb-4">
-                <p class="text-sm text-orange-700">
-                    ⚠️ <b>Warning {{ $warnings }}/3:</b> An inappropriate image was rejected. Capture your face only.
-                </p>
-            </div>
+            <div class="fr-alert warn"><b>Warning {{ $warnings }}/3</b>An inappropriate image was rejected. Capture your face only.</div>
         @endif
         @if ($registration && $registration->status === 'pending')
-            <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 mb-4">
-                <p class="font-bold text-yellow-800 text-sm">⏳ Submitted — waiting for admin verification</p>
-                <p class="text-sm text-yellow-700 mt-1">You can re-capture below to replace your previous photos.</p>
-            </div>
+            <div class="fr-alert wait"><b>Submitted — waiting for admin verification</b>You can capture again below to replace your photos.</div>
         @elseif ($registration && $registration->status === 'approved')
-            <div class="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
-                <p class="font-bold text-green-800 text-sm">✅ Your face is approved</p>
-                <p class="text-sm text-green-700 mt-1">You can re-register below to update your photos.</p>
-            </div>
+            <div class="fr-alert ok"><b>Your face is approved ✓</b>You can register again below to update your photos.</div>
         @elseif ($registration && $registration->status === 'rejected')
-            <div class="rounded-xl border border-red-200 bg-red-50 p-4 mb-4">
-                <p class="font-bold text-red-700 text-sm">❌ Your last submission was rejected</p>
-                <p class="text-sm text-red-600 mt-1">Please capture clear photos of your face again.</p>
-            </div>
+            <div class="fr-alert bad"><b>Your last photos were not accepted</b>{{ $registration->reject_reason ?: 'Please capture clear photos of your face again.' }}</div>
         @endif
 
-        {{-- camera picker --}}
-        <div id="camRow" class="hidden mb-3">
-            <label class="block text-xs font-medium text-gray-500 mb-1">Choose camera</label>
-            <select id="camSelect" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"></select>
+        <div id="camRow" class="hidden">
+            <label class="fr-label" for="camSelect">Choose camera</label>
+            <select id="camSelect" class="fr-select"></select>
         </div>
 
-        {{-- detection status --}}
-        <p id="status" class="hidden text-xs mb-3"></p>
+        <p id="status" class="fr-status hidden" role="status"></p>
 
-        <div class="relative rounded-2xl overflow-hidden bg-black shadow-lg" style="aspect-ratio: 4 / 3;">
-            <video id="cam" autoplay playsinline muted class="w-full h-full object-cover" style="transform: scaleX(-1);"></video>
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div id="oval" class="ring ring-idle rounded-full border-4" style="width:55%; height:78%;"></div>
-            </div>
-            <div id="phase" class="absolute top-3 left-0 right-0 text-center text-white text-xs font-semibold drop-shadow">
-                Tap “Enable Camera” to begin
-            </div>
+        <div class="fr-stage">
+            <video id="cam" autoplay playsinline muted></video>
+            <div class="fr-overlay"><div id="oval" class="fr-oval ring ring-idle"></div></div>
+            <div id="phase" class="fr-phase" aria-live="polite">Tap “Enable camera” to begin</div>
         </div>
 
-        <div class="mt-4">
-            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                <span id="msg">Position your face inside the circle.</span>
-                <span id="countTxt" class="font-semibold">0 / 20</span>
-            </div>
-            <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div id="bar" class="h-full bg-green-500" style="width:0%; transition:width .2s ease;"></div>
-            </div>
+        <div class="fr-progress-row">
+            <span id="msg" aria-live="polite">Position your face inside the circle.</span>
+            <b id="countTxt">0 / 20</b>
         </div>
+        <div class="fr-progress" role="progressbar" aria-label="Photos captured"><div id="bar" class="fr-bar"></div></div>
 
-        <button id="enableBtn" class="btn bg-blue-600 text-white mt-5">📷 Enable Camera</button>
-        <button id="startBtn"  class="btn bg-green-600 text-white mt-3 hidden" disabled>▶️ Start</button>
-        <button id="retryBtn"  class="btn border border-gray-200 text-gray-600 mt-3 hidden">🔄 Try again</button>
+        <button type="button" id="enableBtn" class="fr-btn primary">Enable camera</button>
+        <button type="button" id="startBtn" class="fr-btn go hidden" disabled>Start</button>
+        <button type="button" id="retryBtn" class="fr-btn ghost hidden">Try again</button>
 
-        <p class="text-[11px] text-gray-400 mt-4 text-center leading-relaxed">
-            Tips: face the light, keep only your face inside the circle, then blink naturally when asked.
-        </p>
+        <p class="fr-tip">Tips: face the light, keep only your face inside the circle, then blink naturally when asked.</p>
     @endif
 </div>
 
@@ -142,7 +144,7 @@
 
     function msg(t)   { msgEl.textContent = t; }
     function phase(t) { phaseEl.textContent = t; }
-    function ring(s)  { oval.className = 'ring ring-' + s + ' rounded-full border-4'; }
+    function ring(s)  { oval.className = 'fr-oval ring ring-' + s; }
     function status(t, color) {
         statusEl.textContent = t;
         statusEl.style.color = color;
@@ -327,8 +329,9 @@
         const fd = new FormData();
         captures.forEach(function (blob, i) { fd.append('images[]', blob, 'img_' + (i + 1) + '.jpg'); });
         try {
-            const res = await fetch(POST_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF }, body: fd });
-            const data = await res.json();
+            // B6-9: ask for JSON — without it a validation error came back as an HTML redirect and showed "Network error"
+            const res = await fetch(POST_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }, body: fd });
+            const data = await res.json().catch(function () { return {}; });
             if (data.ok) {
                 phase('Done! Waiting for admin verification.');
                 msg(data.message || 'Submitted successfully.');

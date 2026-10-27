@@ -1,461 +1,244 @@
 @extends('layouts.app')
-@section('title', 'Submit Enrollment')
-
-@section('sidebar')
-    <a href="{{ route('student.dashboard') }}"
-        class="{{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
-        Dashboard
-    </a>
-    <a href="{{ route('student.enroll') }}"
-        class="{{ request()->routeIs('student.enroll*') ? 'active' : '' }}">
-        Enrollment Form
-    </a>
-    <a href="{{ route('student.modules') }}"
-        class="{{ request()->routeIs('student.modules') ? 'active' : '' }}">
-        Learning Modules
-    </a>
-    <a href="{{ route('student.grades') }}"
-        class="{{ request()->routeIs('student.grades') ? 'active' : '' }}">
-        My Grades
-    </a>
-@endsection
+@section('title', 'Enrollment Form')
 
 @section('content')
+{{-- B6-5/B6-6/B6-7: plain CSS (max-w-2xl / mb-5 were missing from the build), responsive grid,
+     real radio buttons for Student Type, labels tied to fields, readable errors, English hints. --}}
 <style>
-    .form-card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1.5px solid #f1f5f9;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-        padding: 24px;
-        margin-bottom: 16px;
-        animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    .ef-wrap { max-width: 720px; margin: 0 auto; }
+    .ef-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
+    .ef-sub { font-size: 13.5px; color: var(--text-2); margin: 4px 0 20px; line-height: 1.55; }
+
+    .ef-errors { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; font-size: 13.5px; }
+    .ef-errors ul { padding-left: 18px; line-height: 1.6; }
+
+    .ef-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 22px; margin-bottom: 16px; }
+    .ef-section { font-size: 12px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--accent-dark); padding-bottom: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+
+    .ef-grid { display: grid; gap: 14px; margin-bottom: 14px; }
+    .ef-2 { grid-template-columns: 1fr 1fr; }
+    .ef-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .ef-field { min-width: 0; }
+    .ef-label { display: block; font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; }
+    .ef-label .req { color: #B91C1C; }
+    .ef-label .opt { font-weight: 500; color: var(--text-3); }
+    .ef-input {
+        width: 100%; min-height: 44px; border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px;
+        font-size: 14px; color: var(--text-1); background: #F8FAFC; font-family: inherit;
+        transition: border-color .15s, box-shadow .15s;
     }
+    .ef-input:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-glow); }
+    .ef-input[readonly] { background: #F1F5F9; color: var(--text-2); cursor: not-allowed; }
+    .ef-input.is-error { border-color: #F87171; background: #FFF7F7; }
+    .ef-hint { font-size: 12px; color: var(--text-3); margin-top: 5px; line-height: 1.45; }
+    .ef-error { font-size: 12.5px; color: #B91C1C; margin-top: 5px; font-weight: 600; }
 
-    @keyframes fadeUp {
-        from { opacity:0; transform:translateY(12px); }
-        to   { opacity:1; transform:translateY(0); }
+    /* Student type: real radios (dati <div onclick> — hindi maaabot ng keyboard) */
+    .ef-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border: 0; padding: 0; margin: 0 0 14px; }
+    .ef-types legend { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; padding: 0; }
+    .ef-type { position: relative; }
+    .ef-type input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .ef-type span {
+        display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px;
+        border: 1.5px solid var(--border); border-radius: 10px; background: #F8FAFC;
+        font-size: 13.5px; font-weight: 700; color: var(--text-2); text-align: center;
     }
+    .ef-type input:checked + span { border-color: var(--accent); background: var(--accent-lt); color: var(--accent-dark); }
+    .ef-type input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .ef-transfer[hidden] { display: none; }
 
-    .section-title {
-        font-size: 11px;
-        font-weight: 700;
-        color: #2563eb;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 16px;
-        padding-bottom: 8px;
-        border-bottom: 1.5px solid #eff6ff;
+    .ef-submit {
+        width: 100%; min-height: 50px; border: none; border-radius: 12px; cursor: pointer;
+        background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; font-family: inherit;
+        box-shadow: 0 6px 16px var(--accent-glow);
     }
+    .ef-submit:hover { background: var(--accent-dark); }
+    .ef-submit[disabled] { opacity: .7; cursor: progress; }
+    .ef-foot { font-size: 12.5px; color: var(--text-2); text-align: center; margin-top: 10px; }
 
-    .field-label {
-        display: block;
-        font-size: 11px;
-        font-weight: 700;
-        color: #374151;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+    @media (max-width: 640px) {
+        .ef-2, .ef-3 { grid-template-columns: 1fr; }
+        .ef-card { padding: 18px 16px; }
     }
-
-    .field-input {
-        width: 100%;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 9px;
-        padding: 10px 13px;
-        font-size: 13px;
-        color: #111827;
-        background: #fafafa;
-        outline: none;
-        font-family: inherit;
-        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-        appearance: none;
-    }
-
-    .field-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        background: #fff;
-    }
-
-    .field-input.error {
-        border-color: #fca5a5;
-        background: #fff5f5;
-    }
-
-    select.field-input {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 10px center;
-        background-size: 13px;
-        padding-right: 30px;
-        cursor: pointer;
-    }
-
-    .field-error {
-        font-size: 10px;
-        color: #ef4444;
-        margin-top: 3px;
-        font-weight: 500;
-    }
-
-    .form-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-
-    .form-grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-
-    .type-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-
-  .type-btn {
-    flex: 1;
-    padding: 10px;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 9px;
-    background: #fafafa;
-    color: #6b7280;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s ease;
-    user-select: none;
-    -webkit-user-select: none;
-    position: relative;
-    z-index: 10;
-}
-
-    .type-btn:hover { border-color: #3b82f6; color: #2563eb; }
-
-    .type-btn.selected {
-        background: #eff6ff;
-        border-color: #3b82f6;
-        color: #1d4ed8;
-    }
-
-    .transfer-fields {
-        display: none;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 10px;
-    }
-
-    .transfer-fields.show { display: grid; }
-
-    .btn-submit {
-        width: 100%;
-        background: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 12px;
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
-        box-shadow: 0 4px 14px rgba(37,99,235,0.28);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-submit::before {
-        content: '';
-        position: absolute;
-        top: 0; left: -100%;
-        width: 60%; height: 100%;
-        background: linear-gradient(120deg, transparent,
-            rgba(255,255,255,0.18), transparent);
-        transition: left 0.5s ease;
-    }
-
-    .btn-submit:hover {
-        background: #1d4ed8;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(37,99,235,0.38);
-    }
-
-    .btn-submit:hover::before { left: 150%; }
-    .btn-submit:active { transform: scale(0.98); }
 </style>
 
-<div class="max-w-2xl mx-auto">
+@php
+    $err = fn ($f) => $errors->has($f) ? 'is-error' : '';
+    $type = old('student_type', 'new');
+@endphp
 
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Enrollment Form</h1>
-        <p class="text-sm text-gray-400 mt-1">
-            Fill out all required fields accurately.
-            Your enrollment will be reviewed by your adviser.
-        </p>
-    </div>
+<div class="ef-wrap">
+    <h1 class="ef-title">Enrollment Form</h1>
+    <p class="ef-sub">Fill out every required field (<span style="color:#B91C1C;">*</span>). Your adviser reviews the form and places you in a section.</p>
 
     @if($errors->any())
-        <div class="bg-red-50 border border-red-200 text-red-700 text-sm
-                    rounded-xl px-4 py-3 mb-5">
-            <ul class="list-disc list-inside space-y-1">
-                @foreach($errors->all() as $err)
-                    <li>{{ $err }}</li>
-                @endforeach
-            </ul>
+        <div class="ef-errors" role="alert">
+            <b>Please fix the following:</b>
+            <ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
         </div>
     @endif
 
-    <form method="POST" action="{{ route('student.enroll.submit') }}">
+    <form method="POST" action="{{ route('student.enroll.submit') }}" id="efForm" novalidate>
         @csrf
 
-        {{-- Section 1: Enrollment --}}
-        <div class="form-card">
-            <p class="section-title">Enrollment Information</p>
+        {{-- 1. Enrollment --}}
+        <section class="ef-card" aria-labelledby="ef-s1">
+            <h2 class="ef-section" id="ef-s1">Enrollment</h2>
 
-            <div class="form-grid-3">
-                <div>
-                    <label class="field-label">Grade Level</label>
-                    <input type="text" class="field-input" readonly
-                           value="{{ $userGrade ? 'Grade ' . $userGrade : 'To be confirmed by the school' }}"
-                           style="background:#f3f4f6; cursor:not-allowed;">
-                    <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">Awtomatikong itinatakda mula sa iyong school records.</p>
+            <div class="ef-grid ef-2">
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-grade">Grade level</label>
+                    <input id="ef-grade" type="text" class="ef-input" readonly aria-describedby="ef-grade-hint"
+                           value="{{ $userGrade ? 'Grade ' . $userGrade : 'To be confirmed by the school' }}">
+                    <p class="ef-hint" id="ef-grade-hint">Set automatically from your school records.</p>
                 </div>
-                <div>
-                    <label class="field-label">School Year</label>
-                    <input type="text" class="field-input" readonly
-                           value="{{ $activeSy->label ?? 'Current School Year' }}"
-                           style="background:#f3f4f6; cursor:not-allowed;">
-                    <p style="font-size:11px;color:#6b7280;margin:4px 0 0;">Kasalukuyang aktibong school year.</p>
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-sy">School year</label>
+                    <input id="ef-sy" type="text" class="ef-input" readonly value="{{ $activeSy->label ?? 'Current school year' }}">
                 </div>
             </div>
 
-            <div class="mb-3">
-                <label class="field-label mb-2">Student Type *</label>
-                <div class="type-row">
-                    <div class="type-btn {{ old('student_type','new') === 'new' ? 'selected' : '' }}"
-                        onclick="selectType('new',this)">
-                        New Student
-                    </div>
-                    <div class="type-btn {{ old('student_type') === 'old' ? 'selected' : '' }}"
-                        onclick="selectType('old',this)">
-                        Old Student
-                    </div>
-                    <div class="type-btn {{ old('student_type') === 'transfer' ? 'selected' : '' }}"
-                        onclick="selectType('transfer',this)">
-                        Transfer
-                    </div>
-                </div>
-                <input type="hidden" name="student_type" id="student_type"
-                    value="{{ old('student_type','new') }}">
+            <fieldset class="ef-types">
+                <legend>Student type <span class="req" style="color:#B91C1C;">*</span></legend>
+                @foreach(['new' => 'New student', 'old' => 'Old student', 'transfer' => 'Transferee'] as $value => $label)
+                    <label class="ef-type">
+                        <input type="radio" name="student_type" value="{{ $value }}" @checked($type === $value)>
+                        <span>{{ $label }}</span>
+                    </label>
+                @endforeach
+            </fieldset>
+            @error('student_type')<p class="ef-error">{{ $message }}</p>@enderror
 
-                <div class="transfer-fields {{ old('student_type') === 'transfer' ? 'show' : '' }}"
-                    id="transfer-fields">
-                    <div>
-                        <label class="field-label">Last School Attended</label>
-                        <input type="text" name="last_school"
-                            value="{{ old('last_school') }}"
-                            placeholder="School name"
-                            class="field-input">
-                    </div>
-                    <div>
-                        <label class="field-label">Last Grade Completed</label>
-                        <input type="text" name="last_grade_completed"
-                            value="{{ old('last_grade_completed') }}"
-                            placeholder="e.g. Grade 7"
-                            class="field-input">
-                    </div>
+            <div class="ef-grid ef-2 ef-transfer" id="efTransfer" @if($type !== 'transfer') hidden @endif>
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-last-school">Last school attended</label>
+                    <input id="ef-last-school" type="text" name="last_school" value="{{ old('last_school') }}" maxlength="255"
+                           placeholder="School name" class="ef-input {{ $err('last_school') }}">
+                    @error('last_school')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
-
-                {{-- Optional — helps advisers keep sections balanced (heterogeneous) --}}
-                <div style="margin-top:16px; max-width:320px;">
-                    <label class="field-label" for="general_average">General Average last school year <span style="font-weight:500;color:#94a3b8;">(optional)</span></label>
-                    <input type="number" name="general_average" id="general_average"
-                        value="{{ old('general_average') }}" min="60" max="100" step="0.01" inputmode="decimal"
-                        placeholder="e.g. 88.50"
-                        class="field-input" @error('general_average') style="border-color:#f87171;" @enderror>
-                    @error('general_average')<p style="color:#dc2626;font-size:12px;margin-top:4px;">{{ $message }}</p>@enderror
-                    <p style="color:#94a3b8;font-size:12px;margin-top:4px;">From your last report card (Form 138). Leave blank if you don't know it.</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Section 2: Personal Info --}}
-        <div class="form-card">
-            <p class="section-title">Personal Information</p>
-
-            <div class="form-grid-2">
-                <div>
-                    <label class="field-label">Full Name *</label>
-                    <input type="text" name="full_name"
-                        value="{{ old('full_name', $user->name) }}"
-                        placeholder="Complete full name"
-                        oninput="blockNumbers(this)"
-                        required
-                        class="field-input {{ $errors->has('full_name') ? 'error' : '' }}">
-                    <p style="font-size:10px;color:#9ca3af;margin-top:2px;">
-                        Letters only, no numbers
-                    </p>
-                    @error('full_name')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="field-label">Address *</label>
-                    <input type="text" name="address"
-                        value="{{ old('address') }}"
-                        placeholder="Complete home address"
-                        required
-                        class="field-input">
-                    @error('address')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-last-grade">Last grade completed</label>
+                    <input id="ef-last-grade" type="text" name="last_grade_completed" value="{{ old('last_grade_completed') }}" maxlength="50"
+                           placeholder="e.g. Grade 7" class="ef-input {{ $err('last_grade_completed') }}">
+                    @error('last_grade_completed')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 
-            <div class="form-grid-3">
-                <div>
-                    <label class="field-label">Age *</label>
-                    <input type="number" name="age" min="10" max="25"
-                        value="{{ old('age') }}"
-                        placeholder="Age" required
-                        oninput="blockLetters(this)"
-                        class="field-input {{ $errors->has('age') ? 'error' : '' }}">
-                    @error('age')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
+            <div class="ef-field" style="max-width:320px;">
+                <label class="ef-label" for="ef-ga">General average last school year <span class="opt">(optional)</span></label>
+                <input id="ef-ga" type="number" name="general_average" value="{{ old('general_average') }}" min="60" max="100" step="0.01"
+                       inputmode="decimal" placeholder="e.g. 88.50" aria-describedby="ef-ga-hint" class="ef-input {{ $err('general_average') }}">
+                @error('general_average')<p class="ef-error">{{ $message }}</p>@enderror
+                <p class="ef-hint" id="ef-ga-hint">From your last report card (Form 138). Leave blank if you don't know it.</p>
+            </div>
+        </section>
+
+        {{-- 2. Personal --}}
+        <section class="ef-card" aria-labelledby="ef-s2">
+            <h2 class="ef-section" id="ef-s2">Personal information</h2>
+
+            <div class="ef-grid ef-2">
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-name">Full name <span class="req">*</span></label>
+                    <input id="ef-name" type="text" name="full_name" value="{{ old('full_name', $user->name) }}" maxlength="255" required
+                           autocomplete="name" data-letters class="ef-input {{ $err('full_name') }}" aria-describedby="ef-name-hint"
+                           @error('full_name') aria-invalid="true" @enderror>
+                    @error('full_name')<p class="ef-error">{{ $message }}</p>@enderror
+                    <p class="ef-hint" id="ef-name-hint">Letters only, as on your birth certificate.</p>
                 </div>
-                <div>
-                    <label class="field-label">Birthdate *</label>
-                    <input type="date" name="birthdate"
-                        value="{{ old('birthdate') }}"
-                        required
-                        class="field-input {{ $errors->has('birthdate') ? 'error' : '' }}">
-                    @error('birthdate')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                    <p id="birthHint" style="font-size:12px;color:#16a34a;margin-top:5px;font-weight:600;line-height:1.4;"></p>
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-address">Home address <span class="req">*</span></label>
+                    <input id="ef-address" type="text" name="address" value="{{ old('address') }}" maxlength="500" required
+                           autocomplete="street-address" placeholder="House no., street, barangay, town"
+                           class="ef-input {{ $err('address') }}" @error('address') aria-invalid="true" @enderror>
+                    @error('address')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
-                <div>
-                    <label class="field-label">Gender *</label>
-                    <select name="gender" required
-                        class="field-input {{ $errors->has('gender') ? 'error' : '' }}">
-                        <option value="">— Select —</option>
-                        <option value="Male"   {{ old('gender')=='Male'   ?'selected':'' }}>Male</option>
-                        <option value="Female" {{ old('gender')=='Female' ?'selected':'' }}>Female</option>
+            </div>
+
+            <div class="ef-grid ef-3">
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-birthdate">Birthdate <span class="req">*</span></label>
+                    <input id="ef-birthdate" type="date" name="birthdate" value="{{ old('birthdate') }}" required
+                           max="{{ now()->subDay()->toDateString() }}" autocomplete="bday"
+                           class="ef-input {{ $err('birthdate') }}" @error('birthdate') aria-invalid="true" @enderror>
+                    @error('birthdate')<p class="ef-error">{{ $message }}</p>@enderror
+                </div>
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-age">Age <span class="req">*</span></label>
+                    <input id="ef-age" type="number" name="age" value="{{ old('age') }}" min="10" max="25" required inputmode="numeric"
+                           class="ef-input {{ $err('age') }}" aria-describedby="ef-age-hint" @error('age') aria-invalid="true" @enderror>
+                    @error('age')<p class="ef-error">{{ $message }}</p>@enderror
+                    <p class="ef-hint" id="ef-age-hint">Filled in from your birthdate.</p>
+                </div>
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-gender">Sex <span class="req">*</span></label>
+                    <select id="ef-gender" name="gender" required class="ef-input {{ $err('gender') }}" @error('gender') aria-invalid="true" @enderror>
+                        <option value="">Select…</option>
+                        <option value="Male" @selected(old('gender') === 'Male')>Male</option>
+                        <option value="Female" @selected(old('gender') === 'Female')>Female</option>
                     </select>
-                    @error('gender')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
+                    @error('gender')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Section 3: Family Info --}}
-        <div class="form-card">
-            <p class="section-title">Family Information</p>
+        {{-- 3. Family --}}
+        <section class="ef-card" aria-labelledby="ef-s3">
+            <h2 class="ef-section" id="ef-s3">Family information</h2>
+            <p class="ef-hint" style="margin:-6px 0 14px;">Your parent uses one of these names to link their DP-LMS account with yours.</p>
 
-            <div class="form-grid-2">
-                <div>
-                    <label class="field-label">Mother's Name</label>
-                    <input type="text" name="mother_name"
-                        value="{{ old('mother_name') }}"
-                        placeholder="Mother's full name"
-                        oninput="blockNumbers(this)"
-                        class="field-input">
-                    @error('mother_name')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="field-label">Father's Name</label>
-                    <input type="text" name="father_name"
-                        value="{{ old('father_name') }}"
-                        placeholder="Father's full name"
-                        oninput="blockNumbers(this)"
-                        class="field-input">
-                    @error('father_name')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
+            <div class="ef-grid ef-2">
+                @foreach(['mother_name' => "Mother's full name", 'father_name' => "Father's full name", 'guardian_name' => "Guardian's full name"] as $field => $label)
+                    <div class="ef-field">
+                        <label class="ef-label" for="ef-{{ $field }}">{{ $label }} <span class="opt">(optional)</span></label>
+                        <input id="ef-{{ $field }}" type="text" name="{{ $field }}" value="{{ old($field) }}" maxlength="255" data-letters
+                               class="ef-input {{ $err($field) }}">
+                        @error($field)<p class="ef-error">{{ $message }}</p>@enderror
+                    </div>
+                @endforeach
+                <div class="ef-field">
+                    <label class="ef-label" for="ef-gcontact">Guardian's contact number <span class="opt">(optional)</span></label>
+                    <input id="ef-gcontact" type="tel" name="guardian_contact" value="{{ old('guardian_contact') }}" maxlength="20"
+                           inputmode="tel" autocomplete="tel" placeholder="09XXXXXXXXX" class="ef-input {{ $err('guardian_contact') }}">
+                    @error('guardian_contact')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
             </div>
+        </section>
 
-            <div class="form-grid-2">
-                <div>
-                    <label class="field-label">Guardian's Name</label>
-                    <input type="text" name="guardian_name"
-                        value="{{ old('guardian_name') }}"
-                        placeholder="Guardian's full name"
-                        oninput="blockNumbers(this)"
-                        class="field-input">
-                    @error('guardian_name')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label class="field-label">Guardian's Contact</label>
-                    <input type="text" name="guardian_contact"
-                        value="{{ old('guardian_contact') }}"
-                        placeholder="09XXXXXXXXX"
-                        oninput="blockLetters(this)"
-                        class="field-input">
-                    @error('guardian_contact')
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-        </div>
-
-        <button type="submit" class="btn-submit">
-            Submit Enrollment Form
-        </button>
+        <button type="submit" class="ef-submit">Submit enrollment form</button>
+        <p class="ef-foot">You'll see the result on your dashboard once your adviser reviews it.</p>
     </form>
 </div>
 
 <script>
-    function selectType(type, el) {
-        document.querySelectorAll('.type-btn').forEach(function(b) {
-            b.classList.remove('selected');
-        });
-        el.classList.add('selected');
-        document.getElementById('student_type').value = type;
-        var tf = document.getElementById('transfer-fields');
-        tf.classList.toggle('show', type === 'transfer');
-    }
+(function () {
+    // Transferee → show last school fields
+    const transfer = document.getElementById('efTransfer');
+    document.querySelectorAll('input[name="student_type"]').forEach(function (r) {
+        r.addEventListener('change', function () { transfer.hidden = r.value !== 'transfer' || !r.checked; });
+    });
 
-    // Block numbers in name fields
-    function blockNumbers(input) {
-        input.value = input.value.replace(/[0-9]/g, '');
-    }
+    // Names: letters only (same rule as the server)
+    document.querySelectorAll('input[data-letters]').forEach(function (i) {
+        i.addEventListener('input', function () { const v = i.value.replace(/[0-9]/g, ''); if (v !== i.value) i.value = v; });
+    });
 
-    // Block letters in number fields
-    function blockLetters(input) {
-        input.value = input.value.replace(/[a-zA-Z]/g, '');
+    // Age from birthdate (B6-7) — still editable
+    const bd = document.getElementById('ef-birthdate'), age = document.getElementById('ef-age');
+    function fillAge() {
+        if (!bd.value) return;
+        const b = new Date(bd.value + 'T00:00:00'), n = new Date();
+        let a = n.getFullYear() - b.getFullYear();
+        if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
+        if (a > 0 && a < 120) age.value = a;
     }
+    bd.addEventListener('change', fillAge);
+    if (bd.value && !age.value) fillAge();
 
-    // Age -> auto-compute Birthdate (estimated birth year from age)
-    (function () {
-        var ageEl = document.querySelector('input[name="age"]');
-        var bdEl  = document.querySelector('input[name="birthdate"]');
-        var hint  = document.getElementById('birthHint');
-        if (!ageEl || !bdEl) return;
-        var MONTHS = ['January','February','March','April','May','June',
-                      'July','August','September','October','November','December'];
-        ageEl.addEventListener('input', function () {
-            var age = parseInt(ageEl.value, 10);
-            if (isNaN(age) || age < 1 || age > 120) { if (hint) hint.textContent = ''; return; }
-            var now = new Date();
-            var by  = now.getFullYear() - age;
-            var mm  = String(now.getMonth() + 1).padStart(2, '0');
-            var dd  = String(now.getDate()).padStart(2, '0');
-            // Hindi na pinapalitan ang birthdate (dati: na-o-overwrite ang totoong petsa)
-            if (hint) hint.textContent = 'Estimated: born around ' + MONTHS[now.getMonth()] + ' ' + by + '. Please enter your exact birthdate below.';
-        });
-    })();
+    // No double submit; Back restores the button
+    const form = document.getElementById('efForm'), btn = form.querySelector('.ef-submit');
+    form.addEventListener('submit', function () { btn.disabled = true; btn.textContent = 'Submitting…'; });
+    window.addEventListener('pageshow', function (e) { if (e.persisted) { btn.disabled = false; btn.textContent = 'Submit enrollment form'; } });
+})();
 </script>
 @endsection

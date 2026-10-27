@@ -6,10 +6,11 @@
     $status = $registration->status ?? null;   // approved | pending | rejected | null
 @endphp
 <style>
-    .fs-wrap { max-width:640px; margin:0 auto; padding:8px 16px 56px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
-    .fs-h1 { font-size:26px; font-weight:800; color:#0F172A; }
-    .fs-sub { font-size:13.5px; color:#64748B; margin:3px 0 20px; line-height:1.5; }
-    .fs-card { background:#fff; border:1px solid #EEF1F5; border-radius:22px; padding:24px; box-shadow:0 4px 24px rgba(15,23,42,.05); margin-bottom:16px; text-align:center; }
+    /* B6-13: layout tokens; no extra side padding (the layout already pads the page) */
+    .fs-wrap { max-width:640px; margin:0 auto; padding:0 0 40px; }
+    .fs-h1 { font-size:24px; font-weight:800; color:var(--text-1); }
+    .fs-sub { font-size:13.5px; color:var(--text-2); margin:4px 0 20px; line-height:1.5; }
+    .fs-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; box-shadow:var(--shadow-sm); margin-bottom:16px; text-align:center; }
     .fs-ic { width:84px; height:84px; border-radius:999px; display:grid; place-items:center; margin:0 auto 12px; }
     .fs-ic svg { width:44px; height:44px; }
     .fs-ok { background:rgba(22,163,74,.12); color:#16A34A; }

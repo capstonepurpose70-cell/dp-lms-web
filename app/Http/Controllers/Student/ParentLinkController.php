@@ -12,18 +12,27 @@ use Illuminate\Http\Request;
 
 /**
  * Estudyante: gumawa ng one-time code / QR para sa magulang.
- * Walang code na naka-store sa session — ipinapakita lang sa response na ito.
+ *
+ * B6-4: dati page ang ibinabalik ng POST — ang refresh / "Confirm resubmission" ay gumagawa ng
+ * BAGONG code at binubura ang nauna (na baka na-scan na ng magulang). Ngayon: POST → redirect → GET.
+ * Ang code ay nasa flash lang (isang request) — ipinapakita nang isang beses, saka nawawala.
  */
 class ParentLinkController extends Controller
 {
     public function show(Request $request)
     {
         $student = $request->user()->load('parent', 'studentProfile');
+        $link    = session('parent_link');
+
+        if ($link) {
+            $link['qr_svg'] = (new Writer(new ImageRenderer(new RendererStyle(240, 1), new SvgImageBackEnd())))
+                ->writeString($link['url']);
+        }
 
         return view('student.parent-link', [
             'student' => $student,
             'parent'  => $student->parent,
-            'link'    => null,
+            'link'    => $link,
         ]);
     }
 
@@ -36,13 +45,7 @@ class ParentLinkController extends Controller
             ? route('parent.activate', ['code' => $result['code']])
             : route('parent.recover', ['code' => $result['code']]);
 
-        $qrSvg = (new Writer(new ImageRenderer(new RendererStyle(240, 1), new SvgImageBackEnd())))
-            ->writeString($url);
-
-        return view('student.parent-link', [
-            'student' => $student,
-            'parent'  => $student->parent,
-            'link'    => $result + ['url' => $url, 'qr_svg' => $qrSvg],
-        ]);
+        return redirect()->route('student.parent-link')
+            ->with('parent_link', $result + ['url' => $url]);
     }
 }
