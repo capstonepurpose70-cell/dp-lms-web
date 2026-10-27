@@ -20,13 +20,13 @@ class TeacherStudentController extends Controller
             ->where('status', 'approved')
             ->with([
                 'section:id,name,grade_level',
-                'studentEnrollment',   // studentSectionId() — iwas isang query kada estudyante
+                'studentEnrollment',   // studentSectionId() — avoids one query per student
                 'grades' => fn ($q) => $q->where('school_year', $schoolYear)->with('subject:id,name'),
             ])
             ->orderBy('name')
             ->get();
 
-        // Which grades this teacher may see (dati: hindi naglo-load ng grades → laging "No grades recorded yet"):
+        // Which grades this teacher may see:
         //  - adviser of the student's section → all subjects
         //  - otherwise → only the subjects they teach in that section
         $advisory = Section::where('adviser_id', $teacher->id)->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -49,7 +49,7 @@ class TeacherStudentController extends Controller
                 }
             }
 
-            // Average of the recorded quarterly grades (dati: ang huling quarter lang ang "Final")
+            // Average of the recorded quarterly grades (not just the last quarter)
             $grades = [];
             ksort($bySubject);
             foreach ($bySubject as $name => $q) {

@@ -13,7 +13,7 @@ class SmsService
 
             // If no API key configured, just log and skip
             if (!$apiKey) {
-                // Walang phone number / message sa log (personal data ng students)
+                // No phone number / message in the log (students' personal data)
                 Log::info('SMS skipped — no API key configured');
                 return false;
             }

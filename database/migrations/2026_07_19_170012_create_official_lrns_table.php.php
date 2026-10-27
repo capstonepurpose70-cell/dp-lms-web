@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::create('official_lrns', function (Blueprint $table) {
             $table->id();
-            // Ang opisyal na Learner Reference Number mula sa registrar (12 digits)
+            // The official Learner Reference Number from the registrar (12 digits)
             $table->string('lrn', 12)->unique();
-            // Optional: pre-encoded na pangalan/grade mula sa masterlist
+            // Optional: name/grade pre-encoded from the masterlist
             $table->string('student_name')->nullable();
             $table->string('grade_level')->nullable();
-            // Sino ang naka-claim (naka-register na gamit ang LRN na 'to)
+            // Who claimed it (registered with this LRN)
             $table->unsignedBigInteger('claimed_by')->nullable()->index();
             $table->timestamps();
         });

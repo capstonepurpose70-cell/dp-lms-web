@@ -10,16 +10,16 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * Bulk "Import Teachers" — isang paste para sa buong faculty (walang email na kailangan).
+ * Bulk "Import Teachers" — one paste for the whole faculty (no emails needed).
  *
- * Bawat linya:  Name  |  Name, Advisory  |  Name, Advisory, Employee ID
- *   Advisory: "7-GUTIERREZ", "Grade 11 - SMAW WORKER", o blangko / "-" kung wala.
+ * Each line:  Name  |  Name, Advisory  |  Name, Advisory, Employee ID
+ *   Advisory: "7-GUTIERREZ", "Grade 11 - SMAW WORKER", or blank / "-" for none.
  *
- * Bawat teacher ay ginagawang PENDING na account na walang email at walang alam na
- * password, may isang personal na activation link (14 araw). Sa link, ilalagay ng
- * teacher ang SARILI niyang email at password. Ang unang login ay magpapadala ng OTP
- * sa email na iyon — patunay na kanya ito. Ang adviser ay agad na nakakabit sa section
- * (sections.adviser_id) para pagka-activate ay makikita na niya ang enrollment.
+ * Each teacher becomes a PENDING account with no email and no known password,
+ * plus a personal activation link (14 days). On that link the teacher enters
+ * THEIR OWN email and password. The first login sends an OTP to that email —
+ * proof that it is theirs. Advisers are attached to their section right away
+ * (sections.adviser_id) so they see enrollment requests as soon as they activate.
  */
 class TeacherRosterService
 {

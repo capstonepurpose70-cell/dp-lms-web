@@ -16,9 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Reports & Analytics + CSV exports (enrollment masterlist, attendance log).
- *
- * Dati: naka-hardcode ang "2025–2026", ang "This school year" ay bilang ng LAHAT ng taon,
- * N+1 query kada teacher, at walang export / attendance report.
+ * Figures follow the active school year; teacher counts are loaded in one query.
  */
 class ReportController extends Controller
 {

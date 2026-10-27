@@ -36,7 +36,7 @@ protected $fillable = [
     protected $hidden = [
         'password',
         'remember_token',
-        'invite_token',   // lumalabas dati sa GET /api/user
+        'invite_token',   // would otherwise show up in GET /api/user
     ];
 
     protected $casts = [
@@ -49,10 +49,10 @@ protected $fillable = [
     // ─── Login helpers ────────────────────────────────────────────────────────
 
     /**
-     * Hanapin ang user gamit ang EMAIL, LRN, o MOBILE NUMBER — kung ano ang
-     * inilagay sa login form. Puro digits (12) = LRN; PH mobile (09…, +63…)
-     * = contact_number; kung hindi, email ang ituturing.
-     * Iisang lugar lang ang lohika para pareho ang web at mobile API.
+     * Find a user by EMAIL, LRN or MOBILE NUMBER — whatever was typed in the
+     * login form. 12 digits = LRN; PH mobile (09…, +63…) = contact_number;
+     * anything else is treated as an email.
+     * One place for the rule so the web and the mobile API agree.
      */
     public static function resolveByIdentifier(?string $identifier): ?self
     {
@@ -62,8 +62,8 @@ protected $fillable = [
             return null;
         }
 
-        // LRN: eksaktong 12 digits (tugma sa masterlist at register rules).
-        // Nauuna ito sa mobile, kaya ang "639…" na walang "+" ay LRN ang turing.
+        // LRN: exactly 12 digits (same as the masterlist and register rules).
+        // Checked before mobile, so "639…" without "+" counts as an LRN.
         if (preg_match('/^\d{12}$/', $identifier)) {
             return static::where('lrn', $identifier)->first();
         }
@@ -75,7 +75,7 @@ protected $fillable = [
         return static::where('email', $identifier)->first();
     }
 
-    /** Pangalan ng route ng dashboard ayon sa role. */
+    /** Dashboard route name for the role. */
     public function homeRoute(): string
     {
         return match ($this->role) {
@@ -103,7 +103,7 @@ protected $fillable = [
         return $this->hasMany(User::class, 'parent_id');
     }
 
-    /** Aktibong parent-link code ng estudyante (isa lang kada estudyante). */
+    /** The student's active parent-link code (one per student). */
     public function parentLinkCode()
     {
         return $this->hasOne(ParentLinkCode::class, 'student_id');
@@ -204,9 +204,9 @@ protected $fillable = [
         return $this->status === 'pending';
     }
 
-    // ─── Section scope (iisang pinagkukunan para sa lahat ng controller) ──────
+    // ─── Section scope (one source for every controller) ──────────────────────
 
-    /** Section ng estudyante: aktibong enrollment muna, saka users.section_id. */
+    /** The student's section: active enrollment first, then users.section_id. */
     public function studentSectionId(): ?int
     {
         $id = $this->studentEnrollment?->section_id ?? $this->section_id;
@@ -215,11 +215,10 @@ protected $fillable = [
     }
 
     /**
-     * Lahat ng section na hawak ng teacher — bilang SUBJECT teacher
-     * (teacher_subjects), bilang ADVISER (sections.adviser_id — ang gamit ng
-     * Sections page at enrollment review), o sa teacher_assignments.
-     * Dati magkakaiba ang pinagkukunan kada page, kaya hindi nakikita ng
-     * adviser ang sarili niyang klase sa ibang page.
+     * Every section the teacher handles — as SUBJECT teacher
+     * (teacher_subjects), as ADVISER (sections.adviser_id — used by the
+     * Sections page and enrollment review), or via teacher_assignments.
+     * One source so every page shows an adviser their own class.
      */
     public function teachingSectionIds(): \Illuminate\Support\Collection
     {
@@ -232,7 +231,7 @@ protected $fillable = [
             ->values();
     }
 
-    /** IDs ng mga teacher ng isang section: subject teachers + adviser. */
+    /** Teacher ids of a section: subject teachers + adviser. */
     public static function teacherIdsForSection(?int $sectionId): \Illuminate\Support\Collection
     {
         if (!$sectionId) {
@@ -248,7 +247,7 @@ protected $fillable = [
             ->values();
     }
 
-    /** IDs ng estudyanteng nasa mga section na ito (direkta o via enrollment). */
+    /** Ids of students in these sections (directly or through enrollment). */
     public static function studentIdsInSections(iterable $sectionIds): \Illuminate\Support\Collection
     {
         $ids = collect($sectionIds)->filter()->values();

@@ -8,8 +8,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Section balancing — heterogeneous sections (principal: "hetero mix ang mga bata kaya
- * dapat maayos na nahahati ang section").
+ * Section balancing — heterogeneous sections (the principal wants high and low
+ * performers spread evenly across sections).
  *
  * For a grade level, summarises every active section: size, boys/girls, average general
  * average, and how many students fall in each DepEd descriptor band. The SUGGESTED

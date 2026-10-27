@@ -11,11 +11,10 @@ use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 
 /**
- * Estudyante: gumawa ng one-time code / QR para sa magulang.
+ * Students: create a one-time code / QR for their parent.
  *
- * B6-4: dati page ang ibinabalik ng POST — ang refresh / "Confirm resubmission" ay gumagawa ng
- * BAGONG code at binubura ang nauna (na baka na-scan na ng magulang). Ngayon: POST → redirect → GET.
- * Ang code ay nasa flash lang (isang request) — ipinapakita nang isang beses, saka nawawala.
+ * POST → redirect → GET: the code travels in the flash data for one request, so it is shown
+ * once and a refresh never creates a new code (which would cancel one the parent may have scanned).
  */
 class ParentLinkController extends Controller
 {

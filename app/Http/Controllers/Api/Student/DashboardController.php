@@ -117,7 +117,7 @@ class DashboardController extends Controller
         return response()->json($items);
     }
 
-    /** POST /api/student/enroll — parehong rules at tsek sa web (EnrollmentService) */
+    /** POST /api/student/enroll — same rules and checks as the web (EnrollmentService) */
     public function enroll(Request $request, EnrollmentService $enrollments)
     {
         $data = $request->validate(EnrollmentService::rules(), EnrollmentService::messages());

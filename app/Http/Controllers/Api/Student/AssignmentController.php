@@ -72,8 +72,8 @@ class AssignmentController extends Controller
             'submission'   => $sub ? [
                 'id'           => $sub->id,
                 'file_url'     => $sub->file_path ? Storage::disk('public')->url($sub->file_path) : null,
-                'remarks'      => $sub->remarks,   // sagot ng estudyante
-                'feedback'     => $sub->feedback,  // komento ng teacher (bago)
+                'remarks'      => $sub->remarks,   // the student's answer
+                'feedback'     => $sub->feedback,  // the teacher's comment
                 'score'        => $sub->score,
                 'status'       => $sub->status,
                 'submitted_at' => $sub->submitted_at?->toDateTimeString(),

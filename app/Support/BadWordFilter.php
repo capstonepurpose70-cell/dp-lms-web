@@ -3,13 +3,12 @@
 namespace App\Support;
 
 /**
- * Bad-word filter para sa chat at comments.
+ * Bad-word filter for chat and comments.
  *
- * Dati: tinatanggal ang lahat ng espasyo at substring ang tsek — kaya
- * nahaharang ang "gagawin" (gaga), "computation" (puta), "tangan" (tanga).
- * Ngayon: BUONG salita, pero nahuhuli pa rin ang karaniwang panlilinlang:
- *   leetspeak  g@g0 → gago        paulit-ulit  putaaaa → puta
- *   may tuldok p.u.t.a → puta     may espasyo  p u t a → puta
+ * Checks WHOLE words, not substrings — so "gagawin" (gaga), "computation" (puta)
+ * and "tangan" (tanga) are not blocked — but still catches the usual tricks:
+ *   leetspeak  g@g0 → gago        repeated     putaaaa → puta
+ *   dotted     p.u.t.a → puta     spaced       p u t a → puta
  */
 class BadWordFilter
 {
@@ -61,7 +60,7 @@ class BadWordFilter
         return false;
     }
 
-    /** lowercase, walang accent, leetspeak → letra, ibang karakter → espasyo */
+    /** lowercase, no accents, leetspeak → letters, anything else → space */
     private static function normalizeText(string $text): string
     {
         $text = mb_strtolower($text, 'UTF-8');
@@ -69,7 +68,7 @@ class BadWordFilter
         $text = strtr($text, self::LEET);
         $text = preg_replace('/[^a-z.\s]/', ' ', $text);
 
-        // "p.u.t.a" → "puta" (tuldok sa pagitan ng mga letra)
+        // "p.u.t.a" → "puta" (dots between letters)
         $text = preg_replace('/(?<=[a-z])\.(?=[a-z])/', '', $text);
         $text = str_replace('.', ' ', $text);
 
@@ -77,8 +76,8 @@ class BadWordFilter
     }
 
     /**
-     * Mga salitang susuriin: bawat salita (pinaikli ang paulit-ulit na letra),
-     * at ang mga magkakasunod na iisang-letra ("p u t a") na pinagdugtong.
+     * Words to check: every word (repeated letters collapsed), plus runs of
+     * single letters ("p u t a") joined together.
      */
     private static function candidateWords(string $normalized): array
     {
@@ -106,8 +105,8 @@ class BadWordFilter
     }
 
     /**
-     * "putaaaa" → "puta", "fuuuck" → "fuck" (magkakasunod na parehong letra → 1).
-     * Ginagawa sa PAREHONG panig (mensahe at listahan), kaya "asshole" = "ashole".
+     * "putaaaa" → "puta", "fuuuck" → "fuck" (repeated letters → 1).
+     * Applied to BOTH sides (message and list), so "asshole" = "ashole".
      */
     private static function collapse(string $word): string
     {

@@ -6,8 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Single "Add Teacher". Only fields that are actually STORED are asked for
- * (dati: department, position, education, atbp. — hindi naise-save kahit saan).
+ * Single "Add Teacher". Only fields that are actually STORED are asked for.
  * No password: the teacher sets it through their activation link.
  */
 class StoreTeacherRequest extends FormRequest

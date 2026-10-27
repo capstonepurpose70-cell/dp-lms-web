@@ -7,11 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Kung may existing faculty accounts, gawing teacher muna (para hindi ma-orphan).
-        // (Karaniwan ay wala, dahil bago pa lang ang system — pero safe ito.)
+        // Existing faculty accounts become teachers first (so nothing is orphaned).
+        // (Usually there are none since the system is new — but this is safe.)
         DB::table('users')->where('role', 'faculty')->update(['role' => 'teacher']);
 
-        // Tanggalin na ang 'faculty' sa role enum.
+        // Remove 'faculty' from the role enum.
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('student','teacher','parent') NOT NULL");
     }
 

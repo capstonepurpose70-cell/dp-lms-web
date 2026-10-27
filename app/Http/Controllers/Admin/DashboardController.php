@@ -18,13 +18,11 @@ class DashboardController extends Controller
         $today = now()->toDateString();
 
         // ── Chart data ───────────────────────────────────────────────────
-        // Dati: kinukuha ang LAHAT ng audit log rows ng buong taon nang 3 beses
-        // (weekly/monthly/yearly) at binibilang sa PHP — bumabagal habang
-        // dumarami ang logins. Ngayon: ISANG grouped query (≤ ~370 rows),
-        // parehong mga patakaran sa pagbilang gaya ng dati:
-        //   log = nagsisimula sa "login" pero hindi "blocked" (hindi kasama ang "Failed login")
-        //   apr = may "approve"
-        //   reg = "account activated" / nagsisimula sa "parent linked" / may "registration"
+        // One grouped query (≤ ~370 rows) instead of loading every audit log row
+        // of the year three times and counting in PHP. Counting rules:
+        //   log = starts with "login" but not "blocked" ("Failed login" is not counted)
+        //   apr = contains "approve"
+        //   reg = "account activated" / starts with "parent linked" / contains "registration"
         $weekStart = now()->startOfWeek();
         $weekEnd   = now()->endOfWeek();
         $from      = $weekStart->copy()->min(now()->startOfYear());   // week may start in last year
@@ -112,7 +110,7 @@ class DashboardController extends Controller
             'pendingUsers'     => User::where('status', 'pending')->whereNull('invite_token')->latest()->take(5)->get(),
             'recentLogs'       => AuditLog::latest()->take(8)->get(),
 
-            // "Needs attention" — mga dapat aksyunan ng admin
+            // "Needs attention" — things the admin has to act on
             'pendingEnrollments'  => EnrollmentRequest::where('status', 'pending')->count(),
             'sectionsNoAdviser'   => Section::where('is_active', true)->whereNull('adviser_id')->count(),
             'availableLrns'       => OfficialLrn::whereNull('claimed_by')->count(),

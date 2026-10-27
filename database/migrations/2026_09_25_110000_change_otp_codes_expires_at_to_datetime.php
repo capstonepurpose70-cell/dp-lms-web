@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\Schema;
 /**
  * otp_codes.expires_at: timestamp → dateTime.
  *
- * Sa MariaDB na explicit_defaults_for_timestamp=OFF (XAMPP), naging
- * ON UPDATE CURRENT_TIMESTAMP ang column na ito — nare-reset ang expiry
- * tuwing may update sa row (hal. kapag minarkahang used). Tinatanggal
- * ito ng ->change() dahil buong column definition ang muling isinusulat.
+ * On MariaDB with explicit_defaults_for_timestamp=OFF (XAMPP) this column
+ * became ON UPDATE CURRENT_TIMESTAMP — the expiry reset whenever the row was
+ * updated (e.g. when marked used). ->change() rewrites the whole column
+ * definition, which drops that.
  */
 return new class extends Migration
 {

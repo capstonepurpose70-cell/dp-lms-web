@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class ClassScheduleController extends Controller
 {
-    /** Weekly schedule ng napiling section. */
+    /** Weekly schedule of the selected section. */
     public function index(Request $request)
     {
         $sections = Section::where('is_active', true)
@@ -23,8 +23,8 @@ class ClassScheduleController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Mula lang sa active list — kapag mali/inactive ang section_id, unang
-        // section ang ipapakita (dati "Create a section first" ang lumalabas).
+        // Only from the active list — an unknown or inactive section_id falls back
+        // to the first section instead of "Create a section first".
         $section = $sections->firstWhere('id', $request->integer('section_id')) ?? $sections->first();
 
         $schedules = collect();
@@ -38,7 +38,7 @@ class ClassScheduleController extends Controller
                 ->get()
                 ->groupBy('day_of_week');
 
-            // Ang subject ay dapat tugma sa grade level ng section
+            // The subject must match the section's grade level
             $subjects = Subject::where('is_active', true)
                 ->where('grade_level', $section->grade_level)
                 ->orderBy('name')
@@ -104,9 +104,9 @@ class ClassScheduleController extends Controller
 
     // ─── Teaching load (teacher_subjects) ─────────────────────────────────────
     //
-    // teacher_subjects ang ginagamit ng gradebook, materials, assignments at ng
-    // "My Subjects" ng estudyante — pero walang screen na gumagawa nito. Ngayon:
-    // ang pag-assign ng teacher sa isang klase dito ang nagbibigay ng load.
+    // teacher_subjects drives the gradebook, materials, assignments and the
+    // student's "My Subjects", and no other screen creates it — assigning a
+    // teacher to a class here is what gives them the teaching load.
 
     private function grantLoad(ClassSchedule $s): void
     {
@@ -158,7 +158,7 @@ class ClassScheduleController extends Controller
         $section = Section::findOrFail($data['section_id']);
         $subject = Subject::findOrFail($data['subject_id']);
 
-        // Dapat tugma ang grade level — walang Grade 7 Math sa Grade 10 section
+        // Grade levels must match — no Grade 7 Math in a Grade 10 section
         if ((string) $subject->grade_level !== (string) $section->grade_level) {
             throw ValidationException::withMessages([
                 'subject_id' => "\"{$subject->name}\" is a Grade {$subject->grade_level} subject "
@@ -166,7 +166,7 @@ class ClassScheduleController extends Controller
             ]);
         }
 
-        // Dapat guro talaga ang napili
+        // The selected user must really be a teacher
         if (!empty($data['teacher_id'])) {
             $isTeacher = User::where('id', $data['teacher_id'])->where('role', 'teacher')->exists();
             if (!$isTeacher) {
@@ -185,7 +185,7 @@ class ClassScheduleController extends Controller
         return $data;
     }
 
-    /** Ihinto ang pag-save kung may sumasapaw na klase. */
+    /** Stop the save when another class overlaps. */
     private function guardAgainstConflicts(array $data, ?int $ignoreId = null): void
     {
         $conflict = ClassSchedule::findConflict($data, $ignoreId);

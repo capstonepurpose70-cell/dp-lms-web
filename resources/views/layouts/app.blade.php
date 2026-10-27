@@ -425,7 +425,7 @@ body.collapsed .sidebar-nav {
             body.mobile-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
         }
         /* ══════════════════════════════════════════════════════
-           GLOBAL CONTENT RESPONSIVENESS — sakop LAHAT ng student/parent pages
+           GLOBAL CONTENT RESPONSIVENESS — every student/parent page
         ══════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
             /* Tables: naka-horizontal scroll sa phone imbes na sumabog */
@@ -463,7 +463,7 @@ body.collapsed .sidebar-nav {
 
         @media (max-width: 480px) {
             .main-content { padding: 14px 12px !important; }
-            /* 16px inputs = walang iOS auto-zoom; touch-friendly */
+            /* 16px inputs = no iOS auto-zoom; touch-friendly */
             .main-content input,
             .main-content select,
             .main-content textarea { font-size: 16px !important; min-height: 44px; }
@@ -489,7 +489,7 @@ body.collapsed .sidebar-nav {
         :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         .sidebar :focus-visible, .nav-brand-zone :focus-visible { outline-color: #93C5FD; }
 
-        /* Reduced motion (dati wala sa layout na ito) */
+        /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
             * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
         }
@@ -620,7 +620,7 @@ body.collapsed .sidebar-nav {
                 {{ session('error') }}
             </div>
         @endif
-        {{-- Info (hal. "Your enrollment is pending review.") — dati hindi ipinapakita --}}
+        {{-- Info (e.g. "Your enrollment is pending review.") --}}
         @if(session('info'))
             <div class="flash flash-info" role="status">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -798,7 +798,7 @@ const NAV_ITEMS = [
             document.querySelectorAll('#sidebarNav a').forEach(l => l.classList.remove('active'));
             this.classList.add('active');
         });
-        // Prefetch on hover — parang SPA: preloaded na ang page bago pa i-click
+        // Prefetch on hover — the page is already loading before the click
         a.addEventListener('pointerenter', function () {
             if (this.dataset.prefetched) return;
             this.dataset.prefetched = '1';
@@ -847,11 +847,11 @@ const notifBadge    = document.getElementById('notifBadge');
 const notifList     = document.getElementById('notifList');
 const notifEmpty    = document.getElementById('notifEmpty');
 
-// I-escape ang text bago ilagay sa innerHTML — galing sa teacher ang mga
-// title (material/quiz); dati puwedeng tumakbo ang naka-embed na <script>/onerror.
+// Escape text before it goes into innerHTML — material/quiz titles come
+// from teachers, and an embedded <script>/onerror must never run.
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
-// url(): gumagana rin kapag naka-serve sa XAMPP subfolder (dati absolute "/notifications/...")
+// url(): also works when served from an XAMPP subfolder (not an absolute "/notifications/...")
 const APP_BASE  = @json(rtrim(url('/'), '/'));
 const NOTIF_URL = {
     data:    @json(url('notifications/data')),
@@ -924,8 +924,8 @@ function loadNotifs() {
                     </div>
                 `;
                 el.addEventListener('click', () => {
-                    // keepalive: the link navigates away at once — dati kinakansela ng browser ang
-                    // request kaya hindi kailanman nami-mark as read (laging may pulang badge)
+                    // keepalive: the link navigates away at once, and without it the browser
+                    // cancels the request — the notification would never be marked read
                     fetch(NOTIF_URL.read.replace('__ID__', encodeURIComponent(n.id)), {
                         method: 'POST',
                         keepalive: true,
@@ -935,7 +935,7 @@ function loadNotifs() {
                 notifList.appendChild(el);
             });
         })
-        .catch(() => {});   // session expired / offline — dati unhandled error kada 30 segundo
+        .catch(() => {});   // session expired / offline — ignore; the next poll tries again
 }
 
 // Toggle dropdown

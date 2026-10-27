@@ -14,16 +14,16 @@ class OtpService
 {
     public function send(User $user, string $purpose): void
     {
-        // Walang email = walang mapagpapadalhan. Ang tumatawag (LoginController)
-        // ang dapat humawak nito — trusted device o parent recovery code.
+        // No email = nowhere to send the code. The caller (LoginController)
+        // handles that case — trusted device or parent recovery code.
         if (empty($user->email)) {
             throw new \RuntimeException('User has no email address for OTP delivery.');
         }
 
         $key = 'otp:' . $user->id;
 
-        // 5 code kada oras. ActionNotAllowed para masalo ng tumatawag (dati generic
-        // \Exception na hindi sinasalo ng LoginController → 500 Server Error).
+        // 5 codes per hour. ActionNotAllowed so the caller can catch it and show
+        // a message instead of a 500.
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $minutes = max(1, (int) ceil(RateLimiter::availableIn($key) / 60));
             throw new ActionNotAllowed(
@@ -51,8 +51,8 @@ class OtpService
 
         RateLimiter::hit($key, 3600);
 
-        // HUWAG i-log ang OTP — makikita ito ng sinumang may access sa server logs.
-        // Sa local dev, gamitin ang MAIL_MAILER=log: nasa storage/logs ang buong email.
+        // NEVER log the OTP — anyone with access to the server logs would see it.
+        // For local dev use MAIL_MAILER=log: the whole email lands in storage/logs.
 
         // Try to email it, but don't crash if mail is unavailable (e.g. SMTP blocked on host)
         try {

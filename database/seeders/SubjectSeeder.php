@@ -36,9 +36,8 @@ class SubjectSeeder extends Seeder
     }
 
     /**
-     * Hanapin gamit ang name + grade (hindi code). Dati: code = unang 4 letra
-     * + grade, kaya "Core English/Filipino/Math/Science" ay lahat "CORE11" —
-     * isa lang ang nagagawa. Ngayon unique ang code kahit magkapareho ang simula.
+     * Looked up by name + grade (not code). Codes stay unique even when names
+     * start the same ("Core English/Filipino/Math/Science" are not all "CORE11").
      */
     private function ensure(string $name, string $grade): void
     {

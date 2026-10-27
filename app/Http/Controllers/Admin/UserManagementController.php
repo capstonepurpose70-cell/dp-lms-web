@@ -16,9 +16,8 @@ use Illuminate\Support\Facades\Mail;
 class UserManagementController extends Controller
 {
     /**
-     * Search sa name/email/LRN/mobile — NAKA-GROUP sa iisang (…) .
-     * Dati: `role = x AND name LIKE … OR email LIKE …` — dahil sa OR,
-     * lumalabas ang ibang role sa tab at nalalampasan ang status filter.
+     * Search name/email/LRN/mobile — GROUPED inside one (…), otherwise the OR
+     * would let other roles into the tab and bypass the status filter.
      */
     private function search($query, string $term)
     {
@@ -63,12 +62,12 @@ class UserManagementController extends Controller
             ->latest()
             ->paginate(15, ['*'], 'parent_page');
 
-        // Advisory section(s) ng bawat teacher sa page na ito (para sa Teachers tab)
+        // Advisory section(s) of each teacher on this page (Teachers tab)
         $advisories = Section::whereIn('adviser_id', $teachers->pluck('id'))
             ->get(['id', 'name', 'grade_level', 'adviser_id'])
             ->groupBy('adviser_id');
 
-        // Bilang ng naghihintay ng approval kada role (badge sa tabs)
+        // Number waiting for approval per role (tab badges)
         $pendingCounts = User::where('status', 'pending')
             ->whereNull('invite_token') // imported teachers awaiting their own activation aren't approvals
             ->whereIn('role', ['student', 'teacher', 'parent'])
@@ -78,7 +77,7 @@ class UserManagementController extends Controller
 
         $data = compact('students', 'teachers', 'parents', 'tab', 'sectionsByGrade', 'advisories', 'pendingCounts');
 
-        // AJAX — i-return ang JSON + rendered partial
+        // AJAX — return JSON + the rendered partial
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
             return response()->json([
                 'html' => view('admin.users._partials.table', $data)->render(),
@@ -134,7 +133,7 @@ class UserManagementController extends Controller
             return back()->withErrors(['student_id' => 'Selected account is not a student.']);
         }
 
-        // Isang magulang kada anak — dati tahimik na napapalitan ang dating naka-link.
+        // One parent per child — never silently replace an existing link.
         if ($student->parent_id !== null && (int) $student->parent_id !== (int) $user->id) {
             return back()->withErrors(['student_id' => "{$student->name} is already linked to another parent. Unlink them first."]);
         }
@@ -161,7 +160,7 @@ class UserManagementController extends Controller
     {
         $user->update(['status' => 'approved']);
 
-        // Magulang na walang email — laktawan ang email (dati: exception na nilulunok)
+        // Parents may have no email — skip the email instead of throwing
         if ($user->email) {
             try {
                 Mail::send(
@@ -192,8 +191,8 @@ class UserManagementController extends Controller
     {
         $user->update(['status' => 'rejected']);
 
-        // Rejected na magulang — tanggalin ang link para makagawa ulit ng
-        // bagong parent code ang anak.
+        // Rejected parent — remove the link so the child can create
+        // a new parent code.
         if ($user->role === 'parent') {
             $user->children()->update(['parent_id' => null]);
         }
@@ -204,9 +203,9 @@ class UserManagementController extends Controller
 
     // ── Reset student account (pekeng activation) ─────────────────
     /**
-     * Kapag may nag-report na "hindi ako ang nag-activate": idi-disable ang
-     * account na ito at ibabalik ang LRN para ma-activate ng totoong may-ari.
-     * Hindi binubura ang account — nananatili para sa audit.
+     * For reports of "I did not activate this account": disables this account
+     * and frees the LRN so the real owner can activate it.
+     * The account is kept (not deleted) for the audit trail.
      */
     public function releaseLrn(User $user)
     {
@@ -289,9 +288,8 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Single teacher — same activation-link flow as Import Teachers.
-     * Dati: temporary password na ipinapakita sa admin + approved agad + gumagana
-     * sa mobile login nang hindi napapalitan. Ngayon: pending hanggang i-activate.
+     * Single teacher — same activation-link flow as Import Teachers:
+     * the account stays pending until the teacher activates it (no temporary password).
      */
     public function storeTeacher(StoreTeacherRequest $request, \App\Services\TeacherRosterService $roster)
     {

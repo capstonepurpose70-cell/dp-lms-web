@@ -223,7 +223,6 @@
             transition: color 0.2s;
         }
 
-        /* PALITAN */
 
         .pw-toggle svg { width: 18px; height: 18px; }
         .icon-eye-off { display: none; }
@@ -643,14 +642,13 @@ document.addEventListener("DOMContentLoaded", () => {
 const alertMsg  = document.getElementById('alert-msg');
 const isLocked  = alertMsg && alertMsg.textContent.toLowerCase().includes('too many attempts');
 
-// ── DAGDAG: check kung naka-lockout pa rin mula sa nakaraang session ──
+// ── Still locked out from an earlier page load? ──
 const storedEnd = sessionStorage.getItem('lockout_end');
 const stillLocked = storedEnd && (parseInt(storedEnd) - Date.now()) > 0;
 
 if (isLocked || stillLocked) {
     activateLockout();
 }
-// PALITAN ITONG BUONG FUNCTION
 function activateLockout() {
     const formItems  = document.querySelectorAll('.gsap-form-item');
     const submitBtn  = document.querySelector('.gsap-btn-submit');
@@ -658,7 +656,7 @@ function activateLockout() {
     const alertBox   = document.getElementById('alert-box');
     const TOTAL_SECS = 45; 
 
-    // ── Check kung reload mid-lockout ──
+    // ── Reload during a lockout ──
     const storedEnd = sessionStorage.getItem('lockout_end');
     const isReload  = storedEnd && (parseInt(storedEnd) - Date.now()) > 0;
 
@@ -694,7 +692,7 @@ function startCountdown(totalSecs) {
     let remaining = totalSecs;
 
     const stored = sessionStorage.getItem('lockout_end');
-    // ── DAGDAG: i-store ang total para sa progress bar ──
+    // ── Keep the total for the progress bar ──
     const storedTotal = sessionStorage.getItem('lockout_total');
 
     if (stored) {
@@ -720,7 +718,7 @@ function startCountdown(totalSecs) {
         const secs = String(remaining % 60).padStart(2, '0');
         display.textContent = `${mins}:${secs}`;
 
-        const pct = (remaining / total) * 100; // ← BAGO: total, hindi totalSecs
+        const pct = (remaining / total) * 100; // relative to the stored total
         bar.style.width = pct + '%';
 
         remaining--;

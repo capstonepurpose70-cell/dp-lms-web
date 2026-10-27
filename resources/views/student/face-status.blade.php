@@ -6,7 +6,7 @@
     $status = $registration->status ?? null;   // approved | pending | rejected | null
 @endphp
 <style>
-    /* B6-13: layout tokens; no extra side padding (the layout already pads the page) */
+    /* layout tokens; no side padding of its own (the layout already pads the page) */
     .fs-wrap { max-width:640px; margin:0 auto; padding:0 0 40px; }
     .fs-h1 { font-size:24px; font-weight:800; color:var(--text-1); }
     .fs-sub { font-size:13.5px; color:var(--text-2); margin:4px 0 20px; line-height:1.5; }

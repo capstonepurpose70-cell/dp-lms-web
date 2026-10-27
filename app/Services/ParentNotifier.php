@@ -8,15 +8,15 @@ use App\Notifications\ChildArrived;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Notifications sa magulang.
- * HINDI kailanman nagtatapon ng error — ang attendance ay naka-save na
- * bago tawagin ito, kaya hindi masisira ng palyadong push ang scan.
+ * Notifications to parents.
+ * NEVER throws — the attendance is already saved before this is called,
+ * so a failed push can never break the scan.
  */
 class ParentNotifier
 {
     public function __construct(private PushNotificationService $push) {}
 
-    /** Raspberry Pi scan → "Juan arrived at school · 7:12 AM" sa magulang. */
+    /** Raspberry Pi scan → "Juan arrived at school · 7:12 AM" to the parent. */
     public function childArrived(User $student, Attendance $attendance): void
     {
         try {
@@ -51,7 +51,7 @@ class ParentNotifier
 
     /**
      * Teacher announcement for parents ("All" or "Parents only") → push to the approved
-     * parents of these students. Dati walang natatanggap ang magulang kahit "Parents only".
+     * parents of these students.
      */
     public function announcement(iterable $studentIds, string $title, string $body, int $id, string $teacherName): void
     {

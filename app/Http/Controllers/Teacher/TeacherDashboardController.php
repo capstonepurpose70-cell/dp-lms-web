@@ -14,7 +14,7 @@ class TeacherDashboardController extends Controller
         $teacher    = auth()->user();
         $sectionIds = $teacher->teachingSectionIds();
 
-        // Each class = subject + section (dati: isang subject lang ang lumalabas kahit 3 section ang tinuturuan)
+        // Each class = subject + section (a subject taught in 3 sections is 3 classes)
         $classList = $classes->teacherClasses($teacher);
 
         $students = User::whereIn('id', User::studentIdsInSections($sectionIds))
@@ -31,7 +31,7 @@ class TeacherDashboardController extends Controller
             'students'     => $students,
             'studentCount' => $students->count(),
             'subjectCount' => $classList->unique('subject_id')->count(),
-            // Same sections as "My Students" (subject classes + advisory) — dati teacher_subjects lang
+            // Same sections as "My Students" (subject classes + advisory)
             'sectionCount' => $sectionIds->count(),
         ]);
     }

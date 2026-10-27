@@ -46,7 +46,7 @@ class Section extends Model
         return $this->hasMany(Announcement::class);
     }
 
-    /** Ang adviser (teacher) na hawak ng section na ito. */
+    /** The adviser (teacher) of this section. */
     public function adviser()
     {
         return $this->belongsTo(User::class, 'adviser_id');

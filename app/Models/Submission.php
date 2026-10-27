@@ -10,8 +10,8 @@ class Submission extends Model
         'assignment_id',
         'user_id',
         'file_path',
-        'remarks',   // sagot / note ng ESTUDYANTE
-        'feedback',  // komento ng TEACHER (hiwalay para hindi mapalitan ang sagot)
+        'remarks',   // the STUDENT's answer / note
+        'feedback',  // the TEACHER's comment (separate so it never overwrites the answer)
         'score',
         'status',
         'submitted_at',

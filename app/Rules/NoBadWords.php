@@ -7,8 +7,8 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * Validation rule para sa chat at comments: tinatanggihan ang mura.
- * Gamit: 'body' => ['required', 'string', new NoBadWords]
+ * Validation rule for chat and comments: rejects profanity.
+ * Usage: 'body' => ['required', 'string', new NoBadWords]
  */
 class NoBadWords implements ValidationRule
 {

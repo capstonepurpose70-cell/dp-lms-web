@@ -24,9 +24,9 @@ public function submit(Request $request)
         'password' => 'required',
     ]);
 
-    // ── 1. Rate limit check MUNA (kada IP at kada email) ──
-    // Dati: hit($key, 45) = 45 SEGUNDO lang ang lock kahit "30 minutes" ang
-    // mensahe → 5 hula ng admin password kada 45 segundo.
+    // ── 1. Rate limit check FIRST (per IP and per email) ──
+    // The lock must last as long as the message says (30 minutes),
+    // otherwise the admin password can be guessed 5 times every few seconds.
     $key      = 'admin-login:' . $request->ip();
     $emailKey = 'admin-login-email:' . mb_strtolower((string) $request->email);
 
@@ -35,7 +35,7 @@ public function submit(Request $request)
         return back()->with('error', 'Too many attempts. Please try again in 30 minutes.');
     }
 
-    // ── 2. Tapos na query at password check ──
+    // ── 2. Then the lookup and password check ──
     $admin = Admin::where('email', $request->email)->first();
 
     if (!$admin || !Hash::check($request->password, $admin->password)) {

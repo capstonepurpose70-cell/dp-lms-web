@@ -45,7 +45,7 @@
 @php
     $isGraded = $submission && $submission->status === 'graded';
     $isClosed = $assignment->isOverdue();
-    // asset(): dati Storage::url() — nakadepende sa APP_URL, kaya sira kapag iba ang host/subfolder
+    // asset(), not Storage::url(): does not depend on APP_URL, so it works on any host/subfolder
     $fileUrl  = fn ($path) => asset('storage/' . ltrim($path, '/'));
 @endphp
 
@@ -103,7 +103,7 @@
             </div>
         @endif
 
-        {{-- Dati: error ng file lang ang lumalabas; tahimik ang error ng typed answer --}}
+        {{-- Errors for the typed answer as well as the file --}}
         @if($errors->any())
             <div class="qs-errors" role="alert">
                 <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>

@@ -20,7 +20,7 @@ class AnnouncementController extends Controller
             ->where('user_id', auth()->id())
             ->latest()->paginate(10);
 
-        // Para sa "Send to" — dati walang section selector, kaya laging school-wide
+        // For "Send to" — one section or all of the teacher's sections
         $sections = Section::whereIn('id', auth()->user()->teachingSectionIds())
             ->orderByRaw('CAST(grade_level AS UNSIGNED)')->orderBy('name')
             ->get(['id', 'name', 'grade_level']);
@@ -36,7 +36,7 @@ class AnnouncementController extends Controller
             'title'      => 'required|string|max:255',
             'body'       => 'required|string|max:20000',
             'audience'   => 'required|in:all,students,parents',
-            // Sariling section lang ang puwedeng i-target
+            // Only the teacher's own sections can be targeted
             'section_id' => ['nullable', 'integer', Rule::in($teachingIds->all())],
         ], ['section_id.in' => 'You can only post to your own sections.']);
 

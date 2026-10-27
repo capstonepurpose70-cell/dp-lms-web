@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Dummy data para sa manual testing sa localhost LANG (APP_ENV=local):
+ * Dummy data for manual testing on localhost ONLY (APP_ENV=local):
  * 1 teacher (adviser + 2 classes), 1 section, 1 LRN, 1 student.
- * Dumadaan sa totoong EnrollmentService para pareho sa tunay na flow ang data.
+ * Goes through the real EnrollmentService so the data matches the real flow.
  */
 class LocalDemoData extends Command
 {
@@ -48,7 +48,7 @@ class LocalDemoData extends Command
 
     public function handle(EnrollmentService $enrollments): int
     {
-        // Hindi kailanman sa Railway / production
+        // Never on Railway / production
         if (! app()->environment('local')) {
             $this->error('demo:local only runs when APP_ENV=local.');
             return self::FAILURE;
@@ -100,7 +100,7 @@ class LocalDemoData extends Command
             return self::FAILURE;
         }
 
-        config(['mail.default' => 'array']);   // walang totoong email na lalabas
+        config(['mail.default' => 'array']);   // no real email goes out
         $fresh = (bool) $this->option('fresh');
 
         $student = DB::transaction(function () use ($sy, $subjects, $fresh, $enrollments, $teacherEmail, $studentEmail) {

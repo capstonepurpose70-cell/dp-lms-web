@@ -8,9 +8,9 @@ use App\Services\StudentActivationService;
 use Illuminate\Http\Request;
 
 /**
- * Mobile (Flutter) na bersyon ng student activation.
- * Walang session sa API, kaya ibinabalik ang `activation_token` sa step 1
- * at ipinapasa ulit ng app sa verify/resend.
+ * Mobile (Flutter) version of student activation.
+ * The API has no session, so step 1 returns an `activation_token`
+ * that the app sends back to verify/resend.
  */
 class StudentActivationController extends Controller
 {
@@ -28,7 +28,7 @@ class StudentActivationController extends Controller
         ], 201);
     }
 
-    /** POST /api/activate/verify — parehong hugis ng response sa /api/login */
+    /** POST /api/activate/verify — same response shape as /api/login */
     public function verify(Request $request, StudentActivationService $activation)
     {
         $request->validate([

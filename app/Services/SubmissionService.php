@@ -10,19 +10,18 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Pag-submit ng sagot (estudyante) at pag-grade (teacher) — web + mobile API.
+ * Submitting answers (student) and grading (teacher) — web + mobile API.
  *
- * Inayos:
- *  - Web: walang deadline check (API lang ang may "auto-close").
- *  - Score na lampas sa max_score (hal. 500/100) — tinatanggihan na.
- *  - Feedback ng teacher → `feedback` column. Dati pinapalitan nito ang
- *    `remarks` = SAGOT ng estudyante, kaya nawawala ang sagot pagka-grade.
+ *  - The deadline is enforced on the web as well as the API.
+ *  - A score above max_score (e.g. 500/100) is rejected.
+ *  - Teacher feedback goes to the `feedback` column; `remarks` holds the
+ *    STUDENT's answer and is never overwritten by grading.
  */
 class SubmissionService
 {
     public function __construct(private StudentNotifier $notifier) {}
 
-    /** Para sa student list/detail: published + nasa section ng estudyante. */
+    /** For the student list/detail: published + in the student's section. */
     public static function visibleTo(Assignment $assignment, User $student): bool
     {
         return $assignment->is_published

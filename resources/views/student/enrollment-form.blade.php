@@ -2,8 +2,8 @@
 @section('title', 'Enrollment Form')
 
 @section('content')
-{{-- B6-5/B6-6/B6-7: plain CSS (max-w-2xl / mb-5 were missing from the build), responsive grid,
-     real radio buttons for Student Type, labels tied to fields, readable errors, English hints. --}}
+{{-- Plain CSS (the Tailwind build is stale), real radio buttons for Student Type,
+     labels tied to their fields. --}}
 <style>
     .ef-wrap { max-width: 720px; margin: 0 auto; }
     .ef-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
@@ -33,7 +33,7 @@
     .ef-hint { font-size: 12px; color: var(--text-3); margin-top: 5px; line-height: 1.45; }
     .ef-error { font-size: 12.5px; color: #B91C1C; margin-top: 5px; font-weight: 600; }
 
-    /* Student type: real radios (dati <div onclick> — hindi maaabot ng keyboard) */
+    /* Student type: real radios, so the keyboard and screen readers can use them */
     .ef-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border: 0; padding: 0; margin: 0 0 14px; }
     .ef-types legend { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; padding: 0; }
     .ef-type { position: relative; }
@@ -223,7 +223,7 @@
         i.addEventListener('input', function () { const v = i.value.replace(/[0-9]/g, ''); if (v !== i.value) i.value = v; });
     });
 
-    // Age from birthdate (B6-7) — still editable
+    // Age from birthdate — still editable
     const bd = document.getElementById('ef-birthdate'), age = document.getElementById('ef-age');
     function fillAge() {
         if (!bd.value) return;

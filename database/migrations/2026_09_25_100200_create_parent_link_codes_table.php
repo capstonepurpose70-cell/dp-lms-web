@@ -5,14 +5,14 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * One-time code / QR na ginagawa ng ESTUDYANTE para ma-link ang magulang.
+ * One-time code / QR the STUDENT creates to link their parent.
  *
- * - purpose 'link'    → paggawa ng parent account
- * - purpose 'recover' → reset ng password / bagong device ng naka-link nang magulang
+ * - purpose 'link'    → creates the parent account
+ * - purpose 'recover' → password reset / new device for an already linked parent
  *
- * Isang aktibong code lang kada estudyante (unique student_id): binubura
- * ang luma tuwing gagawa ng bago. SHA-256 ang naka-store, hindi bcrypt,
- * kaya isang indexed lookup lang ang pag-verify — hindi scan ng buong table.
+ * One active code per student (unique student_id): the old one is deleted
+ * whenever a new one is made. Stored as SHA-256, not bcrypt, so verifying is
+ * a single indexed lookup instead of a scan of the whole table.
  */
 return new class extends Migration
 {
@@ -27,9 +27,9 @@ return new class extends Migration
             $table->char('code_hash', 64)->unique();
             $table->string('purpose', 10)->default('link');
 
-            // dateTime, hindi timestamp: sa MariaDB na explicit_defaults_for_timestamp=OFF
-            // (XAMPP), ang unang NOT NULL timestamp ay nagiging ON UPDATE CURRENT_TIMESTAMP —
-            // mare-reset ang expiry tuwing may update sa row.
+            // dateTime, not timestamp: on MariaDB with explicit_defaults_for_timestamp=OFF
+            // (XAMPP) the first NOT NULL timestamp becomes ON UPDATE CURRENT_TIMESTAMP —
+            // the expiry would reset on every update of the row.
             $table->dateTime('expires_at');
             $table->timestamp('used_at')->nullable();
 

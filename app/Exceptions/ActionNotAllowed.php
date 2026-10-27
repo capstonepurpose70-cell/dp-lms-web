@@ -5,11 +5,11 @@ namespace App\Exceptions;
 use RuntimeException;
 
 /**
- * Itinatapon ng mga service kapag hindi puwede ang isang aksyon
- * (hal. hindi mo estudyante, sarado na ang quiz, lampas sa max score).
+ * Thrown by services when an action is not allowed
+ * (e.g. not your student, the quiz is closed, score above the maximum).
  *
  * Web controller → back()->withErrors(...)
- * API controller → JSON { ok: false, message } na may $status (403 / 422)
+ * API controller → JSON { ok: false, message } with $status (403 / 422)
  */
 class ActionNotAllowed extends RuntimeException
 {
@@ -18,7 +18,7 @@ class ActionNotAllowed extends RuntimeException
         parent::__construct($message);
     }
 
-    /** JSON na kapareho ng dating hugis ng mga API response. */
+    /** Same JSON shape the API already returned for these errors. */
     public function toJson()
     {
         return response()->json(['ok' => false, 'message' => $this->getMessage()], $this->status);

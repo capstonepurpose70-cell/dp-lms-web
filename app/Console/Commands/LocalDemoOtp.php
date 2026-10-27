@@ -8,9 +8,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Localhost LANG: kapag hindi gumagana ang email (o @dplms.test ang demo account),
- * dito kunin ang 6-digit login code. Pareho sa OtpService::send() pero
- * sa terminal ipinapakita, hindi ini-email. Hindi tatakbo sa production.
+ * Localhost ONLY: when email does not work (or the demo account uses @dplms.test),
+ * get the 6-digit login code here. Same as OtpService::send() but printed in the
+ * terminal instead of emailed. Refuses to run in production.
  */
 class LocalDemoOtp extends Command
 {

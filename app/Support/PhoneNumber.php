@@ -3,14 +3,14 @@
 namespace App\Support;
 
 /**
- * PH mobile number — iisang format sa database: 09XXXXXXXXX.
+ * PH mobile number — one format in the database: 09XXXXXXXXX.
  */
 final class PhoneNumber
 {
     /**
      * "+63 917-123-4567" / "639171234567" / "9171234567" / "0917 123 4567" → "09171234567".
-     * NULL kapag hindi PH mobile, o may ibang karakter bukod sa digits, espasyo,
-     * gitling, panaklong at "+" (para hindi mapagkamalang numero ang email).
+     * NULL when it is not a PH mobile number, or has characters other than digits, spaces,
+     * dashes, parentheses and "+" (so an email is never mistaken for a number).
      */
     public static function normalize(?string $input): ?string
     {

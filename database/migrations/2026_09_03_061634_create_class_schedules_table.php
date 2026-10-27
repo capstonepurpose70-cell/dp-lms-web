@@ -5,12 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Class schedule — Lunes hanggang Biyernes.
+ * Class schedule — Monday to Friday.
  *
- * Nakakabit sa SECTION, hindi sa bawat estudyante. Iisa ang schedule
- * ng buong section, kaya awtomatikong nakikita ito ng bawat estudyante
- * sa pamamagitan ng section niya. Hindi na kailangang gumawa ulit
- * kapag may bagong na-enroll.
+ * Attached to the SECTION, not to each student. The whole section shares one
+ * schedule, so every student sees it through their section automatically —
+ * nothing to create again when a new student enrolls.
  */
 return new class extends Migration
 {
@@ -22,7 +21,7 @@ return new class extends Migration
             $table->foreignId('section_id')->constrained()->cascadeOnDelete();
             $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
 
-            // Pwedeng wala pang guro sa umpisa — itatakda mamaya.
+            // May have no teacher at first — assigned later.
             $table->foreignId('teacher_id')->nullable()
                   ->constrained('users')->nullOnDelete();
 
@@ -37,7 +36,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Para mabilis ang paghahanap ng banggaan (overlap check)
+            // Speeds up the clash search (overlap check)
             $table->index(['section_id', 'day_of_week']);
             $table->index(['teacher_id', 'day_of_week']);
             $table->index(['room', 'day_of_week']);

@@ -17,8 +17,8 @@ class OtpController extends Controller
 {
     public function show()
     {
-        // Countdown mula sa totoong expiry ng code — dati laging 5:00 kada reload,
-        // kahit lumang code (hal. pagkatapos ng rate-limit redirect).
+        // Countdown from the code's real expiry, not a fresh 5:00 on every reload
+        // (e.g. after the rate-limit redirect the old code is still the one that counts).
         $expiresAt = OtpCode::where('user_id', session('otp_user_id'))
             ->where('purpose', 'login')
             ->where('used', false)
@@ -72,7 +72,7 @@ RateLimiter::hit($key, 300);
         $request->session()->regenerate();
         RateLimiter::clear($key);
 
-        // "Tandaan ang device na ito" — hindi na hihingan ng OTP sa loob ng 30 araw
+        // "Remember this device" — no OTP on it for 30 days
         if ($request->boolean('trust_device')) {
             $devices->trust($user, $request);
         }

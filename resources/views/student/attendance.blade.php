@@ -4,7 +4,7 @@
 @section('content')
 @php $chip = ['present' => ['g', 'Present'], 'late' => ['y', 'Late'], 'absent' => ['r', 'Absent']]; @endphp
 <style>
-    /* B6-12: no extra side padding — the layout already pads the page (dati makitid ang code field sa phone) */
+    /* no side padding of its own — the layout already pads the page */
     .sa-wrap { max-width:760px; margin:0 auto; padding:0 0 40px; }
     .sa-h1 { font-size:26px; font-weight:800; color:#0F172A; }
     .sa-sub { font-size:13.5px; color:#64748B; margin:3px 0 20px; line-height:1.5; }
@@ -128,7 +128,7 @@
         });
     });
 
-    // B6-12: the Back button restored the page with the button stuck on "Checking…"
+    // Back/Forward restores the page from cache: reset the button and the timer
     window.addEventListener('pageshow', function (e) {
         if (!e.persisted) return;
         document.querySelectorAll('.js-btn').forEach(function (b) { b.disabled = false; });

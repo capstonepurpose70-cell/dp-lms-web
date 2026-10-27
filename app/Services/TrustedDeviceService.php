@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 
 /**
- * "Tandaan ang device na ito" — nilalaktawan ang OTP sa login.
+ * "Remember this device" — skips the OTP at login.
  *
- * Random token sa (encrypted) cookie; SHA-256 lang ang nasa database.
- * Hiwalay ang cookie kada user (dp_td_{id}) dahil madalas iisang phone
- * ang gamit ng magulang at anak.
+ * Random token in an (encrypted) cookie; only its SHA-256 is in the database.
+ * One cookie per user (dp_td_{id}) because a parent and child often share
+ * one phone.
  */
 class TrustedDeviceService
 {
@@ -71,7 +71,7 @@ class TrustedDeviceService
         ));
     }
 
-    /** Burahin lahat — gamitin kapag pinalitan ang password. */
+    /** Forget every device — used when the password changes. */
     public function forgetAll(User $user): void
     {
         $user->trustedDevices()->delete();

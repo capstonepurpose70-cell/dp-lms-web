@@ -73,8 +73,8 @@ class TeacherMessageController extends Controller
         $activeUser = null;
         $messages   = collect();
 
-        // Only people this teacher may talk to: own students, or someone already in the inbox.
-        // Dati kahit anong user ID (admin, parent, ibang teacher) nabubuksan → nakikita ang pangalan.
+        // Only people this teacher may talk to: own students, or someone already in the inbox —
+        // any other user id (admin, parent, another teacher) would expose that person's name.
         $allowedIds = $this->allowedStudentIds($me);
         if ($activeId && ctype_digit((string) $activeId)
             && ($allowedIds->contains((int) $activeId) || isset($threads[(int) $activeId]))) {

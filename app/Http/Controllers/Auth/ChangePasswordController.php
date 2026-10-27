@@ -28,7 +28,7 @@ class ChangePasswordController extends Controller
             'must_change_password' => false,
         ]);
 
-        // Bagong password = hindi na pinagkakatiwalaan ang mga dating device
+        // New password = previously trusted devices are no longer trusted
         app(TrustedDeviceService::class)->forgetAll($user);
 
         AuditLogService::log('Teacher changed password', 'Auth');

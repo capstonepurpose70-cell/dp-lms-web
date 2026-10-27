@@ -9,23 +9,23 @@ use App\Support\NameMatcher;
 use Illuminate\Database\Seeder;
 
 /**
- * Advisory sections + advisers ng Sto. Domingo NHS
- * (galing sa class schedule ng paaralan, SY 2025-2026 2nd sem).
+ * Advisory sections + advisers of Sto. Domingo NHS
+ * (from the school's class schedule, SY 2025-2026 2nd sem).
  *
- * Patakbuhin nang mano-mano (hindi kasama sa DatabaseSeeder):
+ * Run by hand (not part of DatabaseSeeder):
  *   php artisan db:seed --class=AdvisorySectionSeeder
  *
- * Ginagawa:
- *  1. Nire-RENAME ang SHS placeholder (ABM-A / HUMSS-A) sa tunay na pangalan —
- *     rename, hindi delete, para hindi maputol ang nakakabit na records.
- *  2. Ginagawa ang mga advisory section na wala pa.
- *  3. Ikinakabit ang adviser KUNG may approved teacher account na tugma ang
- *     pangalan at WALA pang adviser ang section. Hindi gumagawa ng teacher
- *     account — kailangan ng tunay na email (invite + temporary password),
- *     kaya sa Admin > User Management > Create Teacher iyon ginagawa.
+ * What it does:
+ *  1. RENAMES the SHS placeholders (ABM-A / HUMSS-A) to their real names —
+ *     rename, not delete, so attached records stay connected.
+ *  2. Creates the advisory sections that do not exist yet.
+ *  3. Attaches the adviser IF an approved teacher account matches the name
+ *     and the section has NO adviser yet. It does not create teacher
+ *     accounts — those need a real email, so they are made in
+ *     Admin > User Management.
  *
- * Ligtas patakbuhin nang paulit-ulit: walang binubura, walang dine-deactivate,
- * at hindi pinapalitan ang adviser na naitakda na.
+ * Safe to run more than once: nothing is deleted or deactivated, and an
+ * adviser that is already set is never replaced.
  */
 class AdvisorySectionSeeder extends Seeder
 {
@@ -54,7 +54,7 @@ class AdvisorySectionSeeder extends Seeder
         ['12', 'SMAW CHAMPION',  'Benjamin L. Hidalgo Jr.'],
     ];
 
-    /** Placeholder (galing SectionSeeder) => tunay na pangalan. [grade, old, new] */
+    /** Placeholder (from SectionSeeder) => real name. [grade, old, new] */
     private const RENAMES = [
         ['11', 'ABM-A',   'ABM INNOVATOR'],
         ['12', 'ABM-A',   'ABM SPECIALIST'],
@@ -94,7 +94,7 @@ class AdvisorySectionSeeder extends Seeder
             }
 
             if ($section->adviser_id) {
-                continue; // huwag palitan ang naitakda na ng admin
+                continue; // never replace what the admin already set
             }
 
             $teacher = $this->findTeacher($teachers, $adviserName);
@@ -121,8 +121,8 @@ class AdvisorySectionSeeder extends Seeder
     }
 
     /**
-     * Isang teacher lang na tugma ang apelyido AT hindi bababa sa 2 token
-     * (NameMatcher). Kapag 2+ ang tugma, walang ikinakabit — iwas maling adviser.
+     * Exactly one teacher whose surname matches AND at least 2 tokens match
+     * (NameMatcher). With 2+ matches nothing is attached — no wrong adviser.
      */
     private function findTeacher($teachers, string $adviserName): ?User
     {

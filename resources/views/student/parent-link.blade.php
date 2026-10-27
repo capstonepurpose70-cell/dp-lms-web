@@ -3,7 +3,7 @@
 
 @section('content')
 <style>
-    /* Design tokens ng layouts/app.blade.php — walang bagong Tailwind class. */
+    /* Design tokens from layouts/app.blade.php — no new Tailwind classes. */
     .pl-wrap { max-width: 720px; margin: 0 auto; }
     .pl-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--text-1); }
     .pl-sub   { font-size: 13.5px; color: var(--text-2); margin: 4px 0 22px; line-height: 1.6; }
@@ -148,7 +148,7 @@
         </div>
     @endif
 </div>
-{{-- B6-4: one click = one code (a double click used to make two, the second replacing the first) --}}
+{{-- One click = one code: a double click would create two, the second replacing the first --}}
 <script>
     document.querySelectorAll('form[data-once]').forEach(function (f) {
         var b = f.querySelector('button[type="submit"]'), label = b.textContent;

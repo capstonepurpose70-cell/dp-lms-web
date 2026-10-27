@@ -88,7 +88,7 @@
                 </div>
                 <div style="flex:1">
                     <label>Feedback (optional)</label>
-                    {{-- `feedback` — hindi na pinapalitan ang sagot ng estudyante (`remarks`) --}}
+                    {{-- `feedback` — never overwrites the student's answer (`remarks`) --}}
                     <input type="text" name="feedback" class="sb-remarks" value="{{ $s->feedback }}" maxlength="5000" placeholder="Feedback for the student...">
                 </div>
                 <button type="submit" class="sb-save">Save Grade</button>

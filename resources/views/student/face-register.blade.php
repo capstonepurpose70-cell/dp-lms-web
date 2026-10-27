@@ -3,8 +3,7 @@
 
 @section('content')
 <style>
-    /* B6-8: plain CSS — 22 Tailwind classes here were missing from the build (Start button white-on-white,
-       no guide circle, no progress bar). Only used when FACE_SELF_UPLOAD=true. */
+    /* Plain CSS (the Tailwind build is stale). Only used when FACE_SELF_UPLOAD=true. */
     .fr-wrap { max-width: 680px; margin: 0 auto; }
     .fr-wrap .hidden { display: none !important; }
     .fr-title { font-size: 24px; font-weight: 800; color: var(--text-1); }
@@ -119,9 +118,9 @@
         'https://justadudewhohacks.github.io/face-api.js/models'
     ];
 
-    // tuning — pinaluwag: adaptive blink + auto-verify pag steady ang mukha
+    // tuning — lenient: adaptive blink + auto-verify once the face is steady
     const EAR_CLOSED = 0.25, EAR_OPEN = 0.27, BLINKS_REQUIRED = 1;
-    const HOLD_VERIFY_MS = 3200;   // steady face for ~3.2s = verified (kahit di mahuli ang blink)
+    const HOLD_VERIFY_MS = 3200;   // steady face for ~3.2s = verified (even if the blink is missed)
     const MIN_FACE_RATIO = 0.26, CENTER_TOL = 0.24, MIN_SCORE = 0.45;
 
     const video    = document.getElementById('cam');
@@ -233,14 +232,14 @@
         if (!liveness) {
             const lm = det.landmarks;
             const e = (ear(lm.getLeftEye()) + ear(lm.getRightEye())) / 2;
-            // Adaptive: baseline = pinakamataas na "open eyes" ng TAONG ITO —
-            // kaya gumagana kahit maliit ang mata, may salamin, o malayo.
+            // Adaptive: baseline = the widest "open eyes" seen for THIS person —
+            // so it works with small eyes, glasses, or from a distance.
             if (e > earBase) earBase = e;
             const closeTh = Math.max(earBase * 0.80, EAR_CLOSED);
             if (e < closeTh) eyeClosed = true;
             else if (eyeClosed && e > closeTh + 0.015) { eyeClosed = false; blinkCount++; }
-            // Fallback: kapag steady at malinaw ang mukha nang ~3s, tuloy na —
-            // hinding-hindi na maiipit sa "please blink".
+            // Fallback: a steady, clear face for ~3s passes —
+            // it never gets stuck on "please blink".
             if (!goodSince) goodSince = Date.now();
             if (blinkCount >= BLINKS_REQUIRED || (Date.now() - goodSince) >= HOLD_VERIFY_MS) {
                 liveness = true;
@@ -329,7 +328,7 @@
         const fd = new FormData();
         captures.forEach(function (blob, i) { fd.append('images[]', blob, 'img_' + (i + 1) + '.jpg'); });
         try {
-            // B6-9: ask for JSON — without it a validation error came back as an HTML redirect and showed "Network error"
+            // Ask for JSON: otherwise a validation error comes back as an HTML redirect
             const res = await fetch(POST_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }, body: fd });
             const data = await res.json().catch(function () { return {}; });
             if (data.ok) {

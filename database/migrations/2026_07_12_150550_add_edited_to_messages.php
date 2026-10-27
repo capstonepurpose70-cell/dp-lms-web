@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            // Kailan huling in-edit (null = hindi pa na-e-edit).
+            // When it was last edited (null = never edited).
             $table->timestamp('edited_at')->nullable()->after('reply_to_id');
         });
     }

@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 /**
- * In-app notifications (bell icon) — student at teacher.
- * Dati: magkaparehong closure sa routes/web.php para sa bawat role; ang sa
- * student ay walang `?? ''` kaya nag-e-error sa notification na kulang ang key.
+ * In-app notifications (bell icon) — students and teachers.
+ * One controller for every role; missing keys in a notification's data are tolerated.
  */
 class NotificationController extends Controller
 {
@@ -28,8 +27,8 @@ class NotificationController extends Controller
     }
 
     /**
-     * GET /api/notifications — para sa Flutter: huling 50 (nabasa man o hindi),
-     * kasama ang buong `data` (hal. arrival: student_name, status, attended_at).
+     * GET /api/notifications — for Flutter: the last 50 (read or not), with
+     * the full `data` (e.g. arrival: student_name, status, attended_at).
      */
     public function index()
     {

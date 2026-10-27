@@ -10,7 +10,7 @@ class Attendance extends Model
         'user_id',
         'student_id',
         'student_name',
-        'section_id',   // dati wala rito → tahimik na hindi nase-save ang section ng scan
+        'section_id',   // without it the scan's section is silently dropped
         'status',
         'source',
         'attended_at',

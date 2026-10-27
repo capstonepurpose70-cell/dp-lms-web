@@ -10,16 +10,15 @@ use App\Services\EnrollmentService;
 use Illuminate\Http\Request;
 
 /**
- * Enrollment review — ADVISER-driven (DepEd setup, walang HR/Faculty).
+ * Enrollment review — ADVISER-driven (DepEd setup, no HR/Faculty).
  *
- * Ang isang teacher na naka-assign bilang ADVISER ng isang section ang
- * mag-rereview ng mga enrollment request. Dahil ang bagong student ay
- * wala pang section, lahat ng adviser ay nakikita ang "unassigned" pool;
- * kapag inaprubahan, doon ilalagay ang student sa section ng adviser.
+ * A teacher assigned as a section's ADVISER reviews the enrollment requests.
+ * New students have no section yet, so every adviser sees the "unassigned"
+ * pool; on approval the student is placed in the adviser's section.
  */
 class EnrollmentController extends Controller
 {
-    /** Ang mga section IDs na inaadvise ng kasalukuyang teacher. */
+    /** Section ids the current teacher is adviser of. */
     private function myAdvisorySectionIds(): array
     {
         return Section::where('adviser_id', auth()->id())
@@ -33,15 +32,15 @@ class EnrollmentController extends Controller
         $mySectionIds = $this->myAdvisorySectionIds();
         $tab = $request->query('tab', 'pending'); // pending | approved | rejected
 
-        // Pending: ipakita ang mga request na (a) walang section pa (bagong
-        // student sa pool) O (b) nasa grade level ng aking advisory section.
+        // Pending: requests that (a) have no section yet (new student in the
+        // pool) OR (b) are in the grade level of my advisory section.
         $myGrades = Section::whereIn('id', $mySectionIds)->pluck('grade_level')->unique()->all();
 
         $enrollments = EnrollmentRequest::with('student')
             ->when($tab === 'pending', function ($q) use ($myGrades) {
                 $q->where('status', 'pending');
-                // Adviser lang ang nagre-review (ayon sa principal). Walang advisory =
-                // walang makikitang request (dati lahat ng pending, pero hindi rin nila mabuksan).
+                // Only advisers review (the principal's rule). No advisory class =
+                // no requests listed, since they could not open them anyway.
                 $q->whereIn('grade_level', $myGrades ?: ['__none__']);
             })
             ->when($tab === 'approved', fn($q) =>
@@ -75,9 +74,8 @@ class EnrollmentController extends Controller
     }
 
     /**
-     * Advisers lang, at ng grade na hawak nila (kung alam ang grade ng request).
-     * Dati: kahit sinong teacher ay nakakabukas ng kahit anong request sa URL
-     * (address, magulang, birthdate ng estudyante).
+     * Advisers only, and only for the grade they handle (when the request's grade is known) —
+     * a request holds the student's address, parents and birthdate.
      */
     private function authorizeReview(EnrollmentRequest $enrollment): void
     {
@@ -99,14 +97,14 @@ class EnrollmentController extends Controller
         $this->authorizeReview($enrollment);
         $enrollment->load('student');
 
-        // Ang mga section na pwedeng pagpilian — advisory ng teacher, tugma sa grade.
+        // Sections to choose from — the teacher's advisory sections that match the grade.
         $mySections = Section::where('adviser_id', auth()->id())
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        // Section balancing: lahat ng section ng grade na ito (para makita ang buong hati),
-        // at ang mungkahing section — sa buong grade, at sa loob ng sariling advisory.
+        // Section balancing: every section of this grade (to show the whole split),
+        // and the suggested section — across the grade, and within the teacher's own advisory.
         $grade = in_array((string) $enrollment->grade_level, ['7', '8', '9', '10', '11', '12'], true)
             ? (string) $enrollment->grade_level
             : (string) ($mySections->first()->grade_level ?? '');
@@ -117,19 +115,19 @@ class EnrollmentController extends Controller
         return view('teacher.enrollments.show', compact('enrollment', 'mySections', 'balanceStats', 'bestOverall', 'bestMine', 'grade'));
     }
 
-    // ── APPROVE — ilagay ang student sa section + email ──────────────────────
+    // ── APPROVE — place the student in a section + email ─────────────────────
     public function approve(Request $request, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
         $data = $request->validate([
             'section_id' => 'required|exists:sections,id',
         ]);
 
-        // Seguridad: ang napiling section ay dapat advisory ng teacher na ito.
+        // Security: the chosen section must be this teacher's advisory section.
         $section = Section::where('id', $data['section_id'])
             ->where('adviser_id', auth()->id())
             ->firstOrFail();
 
-        // Pending lang + tugma ang grade — nasa EnrollmentService
+        // Pending only + matching grade — checked in EnrollmentService
         $student = $enrollments->approve($enrollment, $section, auth()->id());
 
         AuditLogService::log(
@@ -145,8 +143,8 @@ class EnrollmentController extends Controller
     // ── REJECT ────────────────────────────────────────────────────────────────
     public function reject(Request $request, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
-        // Dati: kahit sinong teacher (kahit hindi adviser) ay kayang mag-reject.
-        // Ngayon: adviser lang, at ng grade na hawak niya.
+        // Only the adviser can reject, and only for the grade they handle
+        // (not any teacher who knows the URL).
         $this->authorizeReview($enrollment);
 
         $data = $request->validate([

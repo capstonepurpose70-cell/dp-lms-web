@@ -8,11 +8,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Pag-save ng face images (web camera + mobile app).
+ * Saves face images (web camera + mobile app).
  *
- * Inayos: ang web ay binubura MUNA ang lumang photos bago i-save ang bago —
- * kapag pumalya sa gitna, nawawala ang approved photos na binabasa ng
- * Raspberry Pi. Ngayon iisa ang paraan: temp folder → swap.
+ * New photos go to a temp folder first and are swapped in only when complete,
+ * so a failure halfway never loses the approved photos the Raspberry Pi reads.
  */
 class FaceRegistrationService
 {
@@ -30,7 +29,7 @@ class FaceRegistrationService
         }
     }
 
-    /** Pareho ang tsek sa web at API bago tumanggap ng images. */
+    /** Same checks for web and API before accepting images. */
     public function assertCanRegister(User $user): void
     {
         if ($user->studentSectionId() === null) {
@@ -46,7 +45,7 @@ class FaceRegistrationService
      * @param \Illuminate\Http\UploadedFile[] $files
      * @param bool $approved true = captured at the school kiosk with a staff-issued QR
      *                       (no admin review needed); false = self-upload, waits for admin
-     * @return int ilang image ang na-save
+     * @return int number of images saved
      */
     public function replaceImages(User $user, array $files, bool $approved = false): int
     {
@@ -63,7 +62,7 @@ class FaceRegistrationService
                 $count++;
             }
 
-            // Saka lang buburahin ang luma kapag kumpleto na ang bago.
+            // Only delete the old photos once the new set is complete.
             $disk->deleteDirectory($finalDir);
             foreach ($disk->files($tmpDir) as $path) {
                 $disk->move($path, "{$finalDir}/" . basename($path));
@@ -75,7 +74,7 @@ class FaceRegistrationService
             throw new ActionNotAllowed('Could not save your photos. Please try again.', 500);
         }
 
-        // Pinakabagong attempt lang ang itinatago.
+        // Only the latest attempt is kept.
         FaceRegistration::where('user_id', $user->id)->delete();
         FaceRegistration::create([
             'user_id'      => $user->id,

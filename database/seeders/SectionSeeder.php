@@ -7,13 +7,10 @@ use App\Models\SchoolYear;
 use Illuminate\Database\Seeder;
 
 /**
- * Tunay na sections ng Sto. Domingo NHS — S.Y. 2026-2027.
+ * Real sections of Sto. Domingo NHS — S.Y. 2026-2027,
+ * taken from the school's class lists.
  *
- * Dating naglalaman ito ng mga panakip-butas na pangalan (Sampaguita,
- * Rosal, Narra, Rizal, STEM-A...). Pinalitan na ng aktwal na sections
- * mula sa class lists ng paaralan.
- *
- * Grade 11-12: placeholder muna (STEM-A/ABM-A/HUMSS-A).
+ * Grade 11-12: placeholders for now (STEM-A/ABM-A/HUMSS-A).
  */
 class SectionSeeder extends Seeder
 {
@@ -31,9 +28,9 @@ class SectionSeeder extends Seeder
             ['10', 'FABRO'],
             ['10', 'NICOLAS'],
 
-            // Grade 11-12 — PANSAMANTALANG pangalan habang hindi pa alam
-            // ang tunay. Palitan sa Admin > Sections & Advisers gamit ang
-            // EDIT (rename), hindi delete — cascade delete ang pagbura.
+            // Grade 11-12 — TEMPORARY names until the real ones are
+            // known. Change them in Admin > Sections & Advisers with
+            // EDIT (rename), not delete — deleting cascades.
             ['11', 'STEM-A'],
             ['11', 'ABM-A'],
             ['11', 'HUMSS-A'],

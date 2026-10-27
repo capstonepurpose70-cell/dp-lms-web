@@ -8,10 +8,10 @@ use Illuminate\Notifications\Notification;
 
 /**
  * "Your child arrived at school" — in-app (bell + /api/notifications).
- * Ang push (FCM) ay ipinapadala ng ParentNotifier kasabay nito.
+ * The push (FCM) is sent by ParentNotifier at the same time.
  *
- * Ang title/subject/instructor/type/url ay parehong hugis ng ActivityAssigned
- * para gumana sa iisang bell UI; ang ibang key ay para sa Flutter app.
+ * title/subject/instructor/type/url have the same shape as ActivityAssigned
+ * so the one bell UI works; the other keys are for the Flutter app.
  */
 class ChildArrived extends Notification
 {
@@ -30,14 +30,14 @@ class ChildArrived extends Notification
         $at = $this->attendance->attended_at;
 
         return [
-            // Bell UI (kapareho ng ActivityAssigned)
+            // Bell UI (same as ActivityAssigned)
             'title'        => "{$this->student->name} arrived at school",
             'subject'      => $this->attendance->status === 'late' ? 'Late' : 'On time',
             'instructor'   => $at?->format('M j, Y g:i A'),
             'type'         => 'arrival',
             'url'          => '/parent/child-records',
 
-            // Para sa Flutter
+            // For Flutter
             'student_id'   => $this->student->id,
             'student_name' => $this->student->name,
             'status'       => $this->attendance->status,

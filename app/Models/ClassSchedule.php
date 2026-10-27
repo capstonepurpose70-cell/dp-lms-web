@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Isang class period sa weekly schedule ng isang section.
+ * One class period in a section's weekly schedule.
  */
 class ClassSchedule extends Model
 {
@@ -64,7 +64,7 @@ class ClassSchedule extends Model
         return self::formatTime($this->start_time) . ' – ' . self::formatTime($this->end_time);
     }
 
-    /** Tanggapin ang "08:00", "08:00:00" o Carbon; ilabas ang "8:00 AM". */
+    /** Accepts "08:00", "08:00:00" or Carbon; returns "8:00 AM". */
     public static function formatTime($time): string
     {
         if (empty($time)) {
@@ -80,14 +80,13 @@ class ClassSchedule extends Model
     // ─── Overlap detection ────────────────────────────────────────────────────
 
     /**
-     * Nagsasapawan ba ang dalawang time range?
+     * Do two time ranges overlap?
      *
-     * Ang tamang tuntunin ay:  bagoStart < lumaEnd  AT  bagoEnd > lumaStart
+     * The rule is:  newStart < oldEnd  AND  newEnd > oldStart
      *
-     * HINDI sapat ang paghahambing ng eksaktong oras lamang. Ang klaseng
-     * 8:00–9:00 ay sumasapaw sa 8:30–9:30 kahit walang magkaparehong oras.
-     * Pansinin din na ang 8:00–9:00 at 9:00–10:00 ay HINDI magkasapaw —
-     * magkasunod lang sila, kaya `<` at `>` ang ginagamit, hindi `<=`.
+     * Comparing exact times is NOT enough: 8:00–9:00 overlaps 8:30–9:30
+     * even though no time is the same. And 8:00–9:00 and 9:00–10:00 do NOT
+     * overlap — they are back to back — so it is `<` and `>`, not `<=`.
      */
     public function scopeOverlapping(Builder $q, string $start, string $end): Builder
     {
@@ -96,8 +95,8 @@ class ClassSchedule extends Model
     }
 
     /**
-     * Hanapin ang unang sagabal para sa isang bagong (o ina-update na) entry.
-     * Ibabalik ang isang tao/bagay na abala, o null kung malinis.
+     * Find the first conflict for a new (or updated) entry.
+     * Returns who/what is already booked, or null when it is clear.
      *
      * @return array{type:string, schedule:ClassSchedule}|null
      */
@@ -110,19 +109,19 @@ class ClassSchedule extends Model
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->with(['subject', 'section', 'teacher']);
 
-        // 1. Hindi mahahati sa dalawa ang isang section
+        // 1. A section cannot be in two classes at once
         if ($hit = $base()->where('section_id', $data['section_id'])->first()) {
             return ['type' => 'section', 'schedule' => $hit];
         }
 
-        // 2. Hindi makakapunta sa dalawang silid ang isang guro
+        // 2. A teacher cannot be in two rooms at once
         if (!empty($data['teacher_id'])) {
             if ($hit = $base()->where('teacher_id', $data['teacher_id'])->first()) {
                 return ['type' => 'teacher', 'schedule' => $hit];
             }
         }
 
-        // 3. Hindi pwedeng dalawang klase sa iisang silid
+        // 3. A room cannot hold two classes at once
         if (!empty($data['room'])) {
             if ($hit = $base()->where('room', $data['room'])->first()) {
                 return ['type' => 'room', 'schedule' => $hit];

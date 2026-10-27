@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Storage;
 class AttendanceController extends Controller
 {
     /**
-     * Device authentication — X-Device-Key dapat tugma sa ATTENDANCE_DEVICE_KEY.
-     * Walang key sa .env: bukas LANG sa local (XAMPP testing). Sa production,
-     * SARADO (dati bukas — kahit sino ay makakapag-post ng pekeng attendance
-     * at makaka-download ng lahat ng face photos).
+     * Device authentication — X-Device-Key must match ATTENDANCE_DEVICE_KEY.
+     * No key in .env: open ONLY on local (XAMPP testing). In production it is
+     * CLOSED — otherwise anyone could post fake attendance and download
+     * every face photo.
      */
     private function deviceAllowed(Request $request): bool
     {
@@ -32,7 +32,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'student_id'   => 'required|string|max:255',
             'student_name' => 'nullable|string|max:255',
-            // Dati walang `exists` — maling ID mula sa device = FK error (500)
+            // exists: an unknown id from the device would otherwise fail on the foreign key (500)
             'section_id'   => 'nullable|integer|exists:sections,id',
         ]);
 
@@ -47,8 +47,8 @@ class AttendanceController extends Controller
             })
             ->first();
 
-        // Isang record lang kada estudyante kada araw — dati bawat scan ay
-        // bagong row (10 scan = 10 "present" sa listahan).
+        // One record per student per day — repeated scans must not add
+        // another "present" row each time.
         $already = Attendance::whereDate('attended_at', today())
             ->where(function ($q) use ($user, $key) {
                 $q->where('student_id', $key);
@@ -82,9 +82,9 @@ class AttendanceController extends Controller
             'attended_at'  => $attendedAt,
         ]);
 
-        // 🔔 "Juan arrived at school · 7:12 AM" sa magulang (in-app + FCM push).
-        // Unang scan lang ng araw ang umaabot dito (may dedupe sa itaas),
-        // kaya isang notification lang kada araw. Hindi masisira ng palyadong push ang scan.
+        // 🔔 "Juan arrived at school · 7:12 AM" to the parent (in-app + FCM push).
+        // Only the first scan of the day gets here (deduped above), so one
+        // notification per day. A failed push never breaks the scan.
         if ($user) {
             $notifier->childArrived($user, $attendance);
         }
@@ -101,9 +101,9 @@ class AttendanceController extends Controller
     //  Teacher\ClassAttendanceController. Gate scans still notify parents via store().)
 
     /**
-     * GET /api/attendance — huling 50 scan para sa device display.
-     * Dati: walang auth at ibinabalik ang BUONG User (email, LRN, contact,
-     * birthdate…) sa kahit sinong nasa internet. Ngayon: device key + piling field.
+     * GET /api/attendance — last 50 scans for the device display.
+     * Device key required, and only the fields the display needs (no email,
+     * LRN, contact number or birthdate).
      */
     public function index(Request $request)
     {

@@ -135,7 +135,7 @@ class MessageController extends Controller
                     : null,
                 'reply_mine'    => $m->replyTo ? $m->replyTo->sender_id === $me->id : null,
                 'edited'        => $m->edited_at !== null,
-                // Pwede pang i-edit: sariling message at wala pang 15 minuto.
+                // Still editable: own message and less than 15 minutes old.
                 'can_edit'      => $m->sender_id === $me->id
                     && $m->created_at !== null
                     && $m->created_at->gt(now()->subMinutes(15)),
@@ -236,7 +236,7 @@ class MessageController extends Controller
         ]);
     }
 
-    /** PATCH /api/messages/{message} — i-edit ang sariling message (15-min limit) */
+    /** PATCH /api/messages/{message} — edit your own message (15-minute limit) */
     public function update(Request $request, $messageId)
     {
         $me  = $request->user();
@@ -244,7 +244,7 @@ class MessageController extends Controller
             ->where('sender_id', $me->id)
             ->firstOrFail();
 
-        // ⏱️ 15-minute edit window lang.
+        // ⏱️ 15-minute edit window only.
         if ($msg->created_at === null || $msg->created_at->lte(now()->subMinutes(15))) {
             return response()->json([
                 'ok'      => false,
@@ -271,7 +271,7 @@ class MessageController extends Controller
         ]);
     }
 
-    /** DELETE /api/messages/{message} — i-unsend ang sariling message */
+    /** DELETE /api/messages/{message} — unsend your own message */
     public function destroy(Request $request, $messageId)
     {
         $me  = $request->user();

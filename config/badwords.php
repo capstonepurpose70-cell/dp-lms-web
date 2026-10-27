@@ -1,11 +1,11 @@
 <?php
 
 /*
-| Bad-word filter (App\Support\BadWordFilter) — chat at comments.
+| Bad-word filter (App\Support\BadWordFilter) — chat and comments.
 |
-| Buong SALITA ang tsine-check, hindi substring — kaya hindi nahaharang ang
-| "gagawin" (gaga), "computation" (puta), "tangan" (tanga).
-| Nahuhuli pa rin: g@g0, p.u.t.a, p u t a, putaaaa, at -ng (gagong, tangang).
+| Checks whole WORDS, not substrings — so "gagawin" (gaga), "computation" (puta)
+| and "tangan" (tanga) are not blocked.
+| Still caught: g@g0, p.u.t.a, p u t a, putaaaa, and -ng (gagong, tangang).
 */
 
 return [
@@ -18,7 +18,7 @@ return [
         'dick', 'slut', 'whore', 'bastard', 'cunt', 'asshole',
     ],
 
-    // Simula ng salita (fuck → fucking, fucked; shit → shitty)
+    // Word starts (fuck → fucking, fucked; shit → shitty)
     'stems' => [
         'fuck', 'motherfuck', 'shit', 'bitch', 'retard',
     ],
@@ -28,7 +28,7 @@ return [
         'hayop ka',
     ],
 
-    // Hindi mura kahit may masamang salita sa loob
+    // Not profanity even though a bad word is inside
     'allow' => [
         'leche flan',
         'shiitake',

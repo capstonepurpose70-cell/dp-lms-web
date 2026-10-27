@@ -51,9 +51,7 @@ class Announcement extends Model
      *  - posted to one of these sections, or
      *  - posted to "all my sections" (section_id = null) by a teacher of one of these sections.
      *
-     * Dati: lahat ng walang section ay school-wide — at walang section selector ang form,
-     * kaya bawat announcement ng bawat teacher ay lumalabas sa buong paaralan.
-     * Teachers lang ang gumagawa ng announcement (walang school-wide na feature).
+     * Only teachers post announcements, so there is no school-wide audience.
      */
     public function scopeVisibleToSections($query, iterable $sectionIds)
     {

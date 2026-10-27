@@ -2,8 +2,8 @@
 @section('title', 'Teacher Dashboard')
 
 @section('content')
-{{-- Plain CSS + layout tokens (the Tailwind build is stale: gap-5 / p-4 / min-w-0 were missing).
-     Class names are prefixed td- so they never clash with the layout (dati .nav-icon → sidebar). --}}
+{{-- Plain CSS + layout tokens (the Tailwind build is stale).
+     Class names are prefixed td- so they never clash with the layout's classes. --}}
 <style>
     .td-wrap { max-width: 1040px; margin: 0 auto; }
 

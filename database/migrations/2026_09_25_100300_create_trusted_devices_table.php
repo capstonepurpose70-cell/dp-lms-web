@@ -5,11 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * "Tandaan ang device na ito" — nilalaktawan ang OTP sa login kapag may
- * valid na trusted-device cookie. Ang cookie ay may random token; SHA-256
- * lang nito ang naka-store dito (indexed lookup).
+ * "Remember this device" — skips the OTP at login when a valid
+ * trusted-device cookie is present. The cookie holds a random token; only
+ * its SHA-256 is stored here (indexed lookup).
  *
- * Para sa lahat ng role, pero pinakamahalaga sa magulang na walang email.
+ * For every role, but it matters most for parents without an email.
  */
 return new class extends Migration
 {
@@ -25,12 +25,12 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
 
             $table->timestamp('last_used_at')->nullable();
-            // dateTime, hindi timestamp — tingnan ang paliwanag sa parent_link_codes migration.
+            // dateTime, not timestamp — see the note in the parent_link_codes migration.
             $table->dateTime('expires_at');
 
             $table->timestamps();
 
-            // Para sa pag-prune ng mga expired (model:prune)
+            // For pruning expired rows (model:prune)
             $table->index('expires_at');
         });
     }

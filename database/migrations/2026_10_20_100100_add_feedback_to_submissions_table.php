@@ -5,11 +5,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Hiwalay na column para sa feedback ng teacher.
+ * Separate column for the teacher's feedback.
  *
- * Dati iisang column (`remarks`) ang gamit sa SAGOT ng estudyante at sa
- * FEEDBACK ng teacher — kaya pagka-grade, napapalitan ang sagot ng estudyante.
- * Ngayon: remarks = sagot ng estudyante, feedback = komento ng teacher.
+ * remarks = the student's answer, feedback = the teacher's comment, so
+ * grading never overwrites what the student submitted.
  */
 return new class extends Migration
 {

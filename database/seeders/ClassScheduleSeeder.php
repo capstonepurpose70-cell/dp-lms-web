@@ -10,22 +10,21 @@ use App\Models\TeacherSubject;
 use Illuminate\Database\Seeder;
 
 /**
- * PANSAMANTALANG class schedule para sa lahat ng aktibong section.
+ * TEMPORARY class schedule for every active section.
  *
- * ⚠️ HULA LANG ANG MGA ORAS DITO. Ginawa ito para may makita agad ang
- * mga estudyante habang hinihintay ang tunay na timetable mula sa
- * paaralan. Palitan sa Admin > Class Schedules kapag alam na ang totoo.
+ * ⚠️ THE TIMES HERE ARE GUESSES. This exists so students see something
+ * while the school's real timetable is pending. Replace it in
+ * Admin > Class Schedules once the real one is known.
  *
- * Paraan: bawat subject ng section ay binibigyan ng isang period kada
- * araw ng linggo, paikot — kaya walang nagsasapawan kailanman.
+ * Method: each subject of a section gets one period per weekday, in
+ * rotation — so nothing ever overlaps.
  *
- * Ligtas patakbuhin nang paulit-ulit (idempotent) — nilalaktawan ang
- * anumang section na may schedule na, para hindi mabura ang tunay na
- * naitakda na ng admin.
+ * Safe to run more than once (idempotent) — any section that already has
+ * a schedule is skipped, so what the admin set is never wiped.
  */
 class ClassScheduleSeeder extends Seeder
 {
-    /** Mga period — 8:00 AM hanggang 3:00 PM, may recess at lunch. */
+    /** Periods — 8:00 AM to 3:00 PM, with recess and lunch. */
     private const PERIODS = [
         ['08:00', '09:00'],
         ['09:00', '10:00'],
@@ -49,7 +48,7 @@ class ClassScheduleSeeder extends Seeder
             ->get();
 
         foreach ($sections as $section) {
-            // Huwag galawin ang section na may schedule na.
+            // Leave sections that already have a schedule alone.
             if (ClassSchedule::where('section_id', $section->id)->exists()) {
                 $this->command?->line("  Nilaktawan (may schedule na): Grade {$section->grade_level} - {$section->name}");
                 continue;
@@ -65,23 +64,23 @@ class ClassScheduleSeeder extends Seeder
                 continue;
             }
 
-            // Sino ang nagtuturo ng bawat subject sa section na ito?
+            // Who teaches each subject in this section?
             $teacherBySubject = TeacherSubject::where('section_id', $section->id)
                 ->pluck('user_id', 'subject_id');
 
             $created    = 0;
             $unassigned = 0;
-            $slot       = 0; // tumatakbo sa lahat ng (araw x period)
+            $slot       = 0; // walks through every (day x period)
 
             foreach ($subjects as $subject) {
-                // Ikalat muna sa buong linggo bago dumagdag ng period, para
-                // may klase ang bawat araw. (Kung period muna ang pupunuin,
-                // mapupuno ang Lunes bago pa magsimula ang Martes.)
+                // Spread across the week before adding periods, so every day
+                // has classes. (Filling periods first would fill Monday
+                // before Tuesday even starts.)
                 $dayIndex    = $slot % count(self::DAYS);
                 $periodIndex = intdiv($slot, count(self::DAYS));
                 $slot++;
 
-                // Kung naubos na ang lahat ng period, tumigil.
+                // Stop once every period is used.
                 if ($periodIndex >= count(self::PERIODS)) {
                     break;
                 }
@@ -95,16 +94,15 @@ class ClassScheduleSeeder extends Seeder
                     'day_of_week' => self::DAYS[$dayIndex],
                     'start_time'  => $start,
                     'end_time'    => $end,
-                    'room'        => null, // itatakda ng admin
+                    'room'        => null, // set by the admin
                     'school_year' => $schoolYear,
                 ];
 
-                // Iisang guro ay maaaring humawak ng maraming section. Dahil
-                // pare-parehong 8:00 ng Lunes ang simula ng bawat section,
-                // posibleng doble ang booking ng guro. Kung abala siya sa
-                // oras na ito, iwanang WALANG guro ang period — mas mabuti
-                // ang butas na pupunan ng admin kaysa sa datos na labag sa
-                // sariling panuntunan ng system.
+                // One teacher can handle several sections. Since every
+                // section starts at 8:00 on Monday, the teacher could be
+                // double-booked. If they are busy at this time, leave the
+                // period WITHOUT a teacher — a gap the admin fills in is
+                // better than data that breaks the system's own rules.
                 if (!empty($row['teacher_id']) && ClassSchedule::findConflict($row)) {
                     $row['teacher_id'] = null;
                     $unassigned++;

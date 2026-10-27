@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * One-time code na ginagawa ng estudyante para sa magulang niya.
- * Ang plaintext na code ay HINDI naka-store — SHA-256 lang (code_hash).
+ * One-time code a student creates for their parent.
+ * The plaintext code is NOT stored — only its SHA-256 (code_hash).
  */
 class ParentLinkCode extends Model
 {
@@ -25,7 +25,7 @@ class ParentLinkCode extends Model
         return $this->belongsTo(User::class, 'student_id');
     }
 
-    /** Hindi pa nagagamit at hindi pa expired. */
+    /** Not used yet and not expired. */
     public function isUsable(): bool
     {
         return $this->used_at === null && $this->expires_at->isFuture();

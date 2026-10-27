@@ -5,29 +5,28 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Palitan ang mga DUMMY section ng TUNAY na section ng Sto. Domingo NHS
- * para sa S.Y. 2026-2027.
+ * Replaces the DUMMY sections with the REAL sections of Sto. Domingo NHS
+ * for S.Y. 2026-2027.
  *
- * Ang mga dating section (Sampaguita, Rosal, Narra, Rizal, STEM-A, atbp.)
- * ay galing sa SectionSeeder — panakip-butas lang habang binubuo ang system.
+ * The old sections (Sampaguita, Rosal, Narra, Rizal, STEM-A, etc.) came from
+ * SectionSeeder — placeholders while the system was being built.
  *
- * ⚠️ MAHALAGA — bakit hindi basta-basta binubura:
- * Ang sections ay may cascadeOnDelete sa enrollments, student_enrollments,
- * assignments, quizzes, teacher_subjects, at teacher_assignments. Kapag
- * binura ang isang section, KASAMA nitong mabubura ang lahat ng record
- * na nakakabit dito. Kaya bago burahin ang bawat dummy, tinitingnan muna
- * kung may nakakabit dito. Kung meron, HINDI ito binubura — ide-deactivate
- * lang (is_active = false) para hindi na ito lumabas sa mga dropdown.
+ * ⚠️ IMPORTANT — why they are not simply deleted:
+ * sections cascade on delete into enrollments, student_enrollments,
+ * assignments, quizzes, teacher_subjects and teacher_assignments. Deleting a
+ * section deletes every record attached to it. So each dummy is checked
+ * first: if anything is attached it is NOT deleted, only deactivated
+ * (is_active = false) so it no longer shows in dropdowns.
  *
- * Grade 11-12: pinapanatili ang STEM-A / ABM-A / HUMSS-A bilang
- * PANSAMANTALANG pangalan. Palitan sa admin panel (RENAME, hindi
- * delete) kapag alam na ang tunay na pangalan.
+ * Grade 11-12: STEM-A / ABM-A / HUMSS-A stay as TEMPORARY names.
+ * Change them in the admin panel (RENAME, not delete) once the real
+ * names are known.
  *
- * Ligtas patakbuhin nang paulit-ulit (idempotent).
+ * Safe to run more than once (idempotent).
  */
 return new class extends Migration
 {
-    /** Tunay na sections — Sto. Domingo NHS, S.Y. 2026-2027 */
+    /** Real sections — Sto. Domingo NHS, S.Y. 2026-2027 */
     private const REAL_SECTIONS = [
         ['grade' => '7',  'name' => 'CALIMLIM'],
         ['grade' => '7',  'name' => 'GUTIERREZ'],
@@ -39,7 +38,7 @@ return new class extends Migration
         ['grade' => '10', 'name' => 'NICOLAS'],
     ];
 
-    /** Mga dummy na galing sa SectionSeeder */
+    /** Dummies created by SectionSeeder */
     private const DUMMY_SECTIONS = [
         ['7',  'Sampaguita'], ['7',  'Rosal'],   ['7',  'Jasmine'],
         ['8',  'Narra'],      ['8',  'Molave'],  ['8',  'Acacia'],
@@ -48,17 +47,16 @@ return new class extends Migration
     ];
 
     /**
-     * SENIOR HIGH — PANSAMANTALANG PANGALAN.
+     * SENIOR HIGH — TEMPORARY NAMES.
      *
-     * Hindi pa alam ang tunay na pangalan ng SHS sections, kaya
-     * pinapanatili ang mga strand-based na pangalan bilang placeholder
-     * para may mapaglagyan ang mga Grade 11-12 na estudyante.
+     * The real SHS section names are not known yet, so the strand-based
+     * names stay as placeholders so Grade 11-12 students have a section.
      *
-     * KAPAG ALAM NA ANG TUNAY NA PANGALAN:
-     * I-EDIT lang sa Admin > Sections & Advisers — HUWAG burahin at
-     * gumawa ng bago. Ang pag-rename ay nananatili sa parehong row,
-     * kaya hindi mapuputol ang mga naka-attach na enrollment,
-     * assignment, quiz, at attendance. Ang pagbura ay cascade delete.
+     * ONCE THE REAL NAMES ARE KNOWN:
+     * just EDIT them in Admin > Sections & Advisers — do NOT delete and
+     * create new ones. A rename keeps the same row, so the attached
+     * enrollments, assignments, quizzes and attendance stay connected.
+     * Deleting cascades.
      */
     private const PLACEHOLDER_SHS = [
         ['grade' => '11', 'name' => 'STEM-A'],
@@ -69,7 +67,7 @@ return new class extends Migration
         ['grade' => '12', 'name' => 'HUMSS-A'],
     ];
 
-    /** Mga table na kailangang i-check bago magbura ng section */
+    /** Tables to check before deleting a section */
     private const DEPENDENTS = [
         'users'                => 'section_id',
         'enrollments'          => 'section_id',
@@ -88,7 +86,7 @@ return new class extends Migration
             ->where('is_active', true)
             ->value('label') ?? '2026-2027';
 
-        // ── 1. Gawin ang tunay na sections ──────────────────────────────
+        // ── 1. Create the real sections ───────────────────────────────────
         foreach (array_merge(self::REAL_SECTIONS, self::PLACEHOLDER_SHS) as $s) {
             $exists = DB::table('sections')
                 ->where('name', $s['name'])
@@ -96,7 +94,7 @@ return new class extends Migration
                 ->exists();
 
             if ($exists) {
-                // Siguraduhing aktibo at tama ang school year
+                // Make sure it is active and has the right school year
                 DB::table('sections')
                     ->where('name', $s['name'])
                     ->where('grade_level', $s['grade'])
@@ -118,7 +116,7 @@ return new class extends Migration
             ]);
         }
 
-        // ── 2. Alisin ang mga dummy — ligtas na paraan ──────────────────
+        // ── 2. Remove the dummies — the safe way ──────────────────────────
         foreach (self::DUMMY_SECTIONS as [$grade, $name]) {
             $section = DB::table('sections')
                 ->where('name', $name)
@@ -130,19 +128,19 @@ return new class extends Migration
             }
 
             if ($this->hasDependents($section->id)) {
-                // May nakakabit na data — HUWAG burahin, i-deactivate lang.
+                // Data is attached — do NOT delete, only deactivate.
                 DB::table('sections')
                     ->where('id', $section->id)
                     ->update(['is_active' => false, 'updated_at' => now()]);
                 continue;
             }
 
-            // Walang nakakabit — ligtas nang burahin.
+            // Nothing attached — safe to delete.
             DB::table('sections')->where('id', $section->id)->delete();
         }
     }
 
-    /** May record ba sa kahit anong table na nakakabit sa section na ito? */
+    /** Does any table have a record attached to this section? */
     private function hasDependents(int $sectionId): bool
     {
         foreach (self::DEPENDENTS as $table => $column) {
@@ -158,8 +156,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Ibalik ang mga dummy na na-deactivate. Hindi ibinabalik ang mga
-        // nabura dahil wala naman silang laman noong binura sila.
+        // Re-activate the deactivated dummies. Deleted ones are not restored —
+        // they were empty when they were deleted.
         foreach (self::DUMMY_SECTIONS as [$grade, $name]) {
             DB::table('sections')
                 ->where('name', $name)
@@ -167,7 +165,7 @@ return new class extends Migration
                 ->update(['is_active' => true, 'updated_at' => now()]);
         }
 
-        // Alisin ang tunay na sections — kung wala lang silang laman.
+        // Remove the real sections — only while they are empty.
         foreach (array_merge(self::REAL_SECTIONS, self::PLACEHOLDER_SHS) as $s) {
             $section = DB::table('sections')
                 ->where('name', $s['name'])

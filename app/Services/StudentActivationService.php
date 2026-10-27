@@ -18,19 +18,19 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Self-activation ng estudyante (pamalit sa /register).
+ * Student self-activation (replaces /register).
  *
- *   1. start()  — LRN + pangalan (tugma sa SF1 masterlist) + birthdate + email +
- *                 password → 6-digit code sa email. WALA pang account at HINDI
- *                 pa naka-claim ang LRN; nasa (encrypted) cache lang ang datos.
- *   2. verify() — tamang code → gagawin ang account (approved) + claim ng LRN.
+ *   1. start()  — LRN + name (matching the SF1 masterlist) + birthdate + email +
+ *                 password → 6-digit code by email. NO account yet and the LRN is
+ *                 NOT claimed; the data only sits in the (encrypted) cache.
+ *   2. verify() — correct code → creates the account (approved) + claims the LRN.
  *
- * Ang tunay na security gate ay ang enrollment approval ng adviser: bago iyon,
- * walang section ang estudyante kaya walang grades/modules na nakikita.
+ * The real security gate is the adviser's enrollment approval: before it the
+ * student has no section, so no grades or modules are visible.
  *
- * Proteksyon: iisang error (walang LRN enumeration), per-LRN lockout
- * (5/oras, 10/araw — kahit sa LRN na wala sa listahan), email OTP bago
- * gawin ang account, at row lock sa claim para walang dobleng activation.
+ * Protection: one generic error (no LRN enumeration), per-LRN lockout
+ * (5/hour, 10/day — even for LRNs not on the list), email OTP before the
+ * account exists, and a row lock on the claim so there is no double activation.
  */
 class StudentActivationService
 {
@@ -47,7 +47,7 @@ class StudentActivationService
         . 'report it to your adviser or the school admin right away.';
     private const EXPIRED = 'This activation has expired. Please start again.';
 
-    // ─── Validation rules (iisa para sa web at API) ───────────────────────────
+    // ─── Validation rules (shared by web and API) ─────────────────────────────
 
     public static function rules(): array
     {
@@ -74,15 +74,15 @@ class StudentActivationService
     // ─── Step 1 ───────────────────────────────────────────────────────────────
 
     /**
-     * @param array $data validated gamit ang rules()
+     * @param array $data validated with rules()
      * @return array{token: string, email_masked: string, expires_at: Carbon}
      */
     public function start(array $data): array
     {
         $lrn = $data['lrn'];
 
-        // Lockout kada LRN — binibilang din ang LRN na wala sa listahan, kaya
-        // hindi rin ito nagbubunyag kung umiiral ang LRN.
+        // Lockout per LRN — LRNs that are not on the list count too, so this
+        // never reveals whether an LRN exists.
         if ($this->isLocked($lrn)) {
             throw ValidationException::withMessages([
                 'lrn' => 'Too many attempts for this LRN. Please try again later or ask your adviser.',
@@ -91,14 +91,14 @@ class StudentActivationService
 
         $official = OfficialLrn::where('lrn', $lrn)->first();
 
-        // Mahigpit: kailangan ng pangalan sa masterlist. Kung wala, data fix ng
-        // admin ang solusyon — hindi LRN-lang na activation.
+        // Strict: a name is required in the masterlist. If it is missing, the admin
+        // fixes the data — there is no LRN-only activation.
         if (!$official || !NameMatcher::matches($official->student_name, $data['name'])) {
             $this->recordFailure($lrn);
             throw ValidationException::withMessages(['lrn' => self::NO_MATCH]);
         }
 
-        // Lalabas LANG ito kapag tama ang LRN + pangalan, kaya hindi oracle.
+        // Only shown once the LRN + name are correct, so it is not an oracle.
         if ($official->claimed_by !== null || User::where('lrn', $lrn)->exists()) {
             AuditLogService::log('Activation blocked — LRN already activated', 'Auth', "LRN: {$lrn}");
             throw ValidationException::withMessages(['lrn' => self::ALREADY_ACTIVE]);
@@ -167,8 +167,8 @@ class StudentActivationService
         }
 
         $user = DB::transaction(function () use ($payload) {
-            // Row lock: kapag dalawang tao ang sabay nag-verify para sa iisang
-            // LRN, isa lang ang mananalo.
+            // Row lock: when two people verify the same LRN at the same time,
+            // only one wins.
             $official = OfficialLrn::where('lrn', $payload['lrn'])->lockForUpdate()->first();
 
             if (!$official || $official->claimed_by !== null || User::where('lrn', $payload['lrn'])->exists()) {
@@ -182,7 +182,7 @@ class StudentActivationService
             $user = User::create([
                 'name'        => $payload['name'],
                 'email'       => $payload['email'],
-                'password'    => $payload['password_hash'],   // naka-hash na; hindi na iha-hash ulit ng cast
+                'password'    => $payload['password_hash'],   // already hashed; the cast must not hash it again
                 'role'        => 'student',
                 'status'      => 'approved',
                 'lrn'         => $payload['lrn'],

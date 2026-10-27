@@ -21,7 +21,7 @@ class EnrollmentController extends Controller
 
         $enrollments = EnrollmentRequest::with(['student.section'])
             ->when($status, fn($q) => $q->where('status', $status))
-            // Pangalan sa form, pangalan ng account, o LRN
+            // Name on the form, account name, or LRN
             ->when($search !== '', fn($q) =>
                 $q->where(fn($w) =>
                     $w->where('full_name', 'like', "%{$search}%")
@@ -30,7 +30,7 @@ class EnrollmentController extends Controller
                              ->orWhere('lrn', 'like', "%{$search}%"))
                 )
             )
-            // Pending muna sa itaas — iyon ang kailangang aksyunan
+            // Pending first — those need action
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->latest()
             ->paginate(15)
@@ -69,15 +69,15 @@ class EnrollmentController extends Controller
     // ── Approve an enrollment request + place the student in a section ──
     public function approve(Request $httpRequest, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
-        // Active section lang — ang inactive ay hindi na dapat lagyan ng bagong student
+        // Active sections only — inactive ones should not get new students
         $httpRequest->validate([
             'section_id' => ['required', Rule::exists('sections', 'id')->where('is_active', true)],
         ], ['section_id.exists' => 'Please choose an active section.']);
 
         $section = Section::findOrFail($httpRequest->section_id);
 
-        // reviewed_by = null: ang admin ay nasa hiwalay na `admins` table
-        // (dati auth()->id() ng WEB guard — mali o null).
+        // reviewed_by = null: admins live in the separate `admins` table,
+        // so the web guard's auth()->id() is not an admin id.
         $student = $enrollments->approve($enrollment, $section, null);
         $grade   = $student->grade_level;
 

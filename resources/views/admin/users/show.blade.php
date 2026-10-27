@@ -496,7 +496,7 @@
 </div>
 @endif
 
-{{-- Reset account — kapag may nag-report na hindi siya ang nag-activate ng LRN --}}
+{{-- Reset account — for reports that someone else activated this LRN --}}
 @if($user->role === 'student' && $user->lrn)
 <form method="POST" action="{{ route('admin.users.release-lrn', $user) }}"
       onsubmit="return confirm('Reset this account?\n\nThe account will be disabled and LRN {{ $user->lrn }} will be released so its real owner can activate it. Only do this when someone reports they did not activate it.');"
@@ -601,7 +601,7 @@
                     <div style="min-width:0;">
                         <div class="up-student-name">{{ $child->name }}</div>
                         <div class="up-student-section">{{ $child->section->name ?? 'No section' }} · {{ $child->email }}</div>
-                        {{-- Para sa desisyon sa pending na magulang: ikumpara sa enrollment form ng anak --}}
+                        {{-- For deciding on a pending parent: compare with the child's enrollment form --}}
                         @if($user->status === 'pending' && ($p = $child->studentProfile))
                         <div class="up-student-section" style="margin-top:4px;">
                             On enrollment form —

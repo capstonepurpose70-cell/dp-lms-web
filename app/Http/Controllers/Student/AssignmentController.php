@@ -17,7 +17,7 @@ class AssignmentController extends Controller
 
         $assignments = collect();
         if ($sectionId) {
-            // Own submission eager-loaded (dati isang query kada quiz)
+            // Own submission eager-loaded (not one query per quiz)
             $rank = ['todo' => 0, 'submitted' => 1, 'graded' => 2, 'missed' => 3];
 
             $assignments = Assignment::with(['subject', 'submissions' => fn ($q) => $q->where('user_id', $user->id)])

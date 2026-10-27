@@ -111,7 +111,7 @@
             <span class="dpnav-label">Login</span>
         </a>
 
-        {{-- Activate (pamalit sa Register — wala nang public registration) --}}
+        {{-- Activate (replaces Register — there is no public registration) --}}
         <a href="{{ route('activate') }}"
            class="dpnav-link {{ request()->routeIs('activate*') ? 'is-active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"

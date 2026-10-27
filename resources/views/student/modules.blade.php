@@ -2,7 +2,7 @@
 @section('title', 'Learning Modules')
 
 @section('content')
-{{-- Layout tokens (dati hardcoded #9ca3af na kulay — 2.5:1, mahirap basahin) --}}
+{{-- Layout tokens for text colors (readable contrast) --}}
 <style>
     .sm-wrap { max-width: 900px; margin: 0 auto; }
     .sm-head { margin-bottom: 22px; }

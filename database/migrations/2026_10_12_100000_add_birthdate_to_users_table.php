@@ -5,11 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Birthdate na inilagay ng estudyante sa ACTIVATION.
+ * Birthdate the student entered at ACTIVATION.
  *
- * Walang birthdate sa records ng paaralan, kaya hindi ito pang-verify sa
- * activation. Ginagamit ito sa CROSS-CHECK: ikinukumpara ng adviser sa
- * birthdate sa enrollment form. Kapag magkaiba → babala (posibleng impostor).
+ * The school records have no birthdate, so it cannot verify the activation.
+ * It is used as a CROSS-CHECK: the adviser compares it with the birthdate on
+ * the enrollment form. A mismatch shows a warning (possible impostor).
  */
 return new class extends Migration
 {

@@ -4,15 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Idagdag at gawing aktibo ang S.Y. 2026-2027.
+ * Adds S.Y. 2026-2027 and makes it the active school year.
  *
- * Bakit kailangan: ang seeder noong una ay 2025-2026 lang ang ginawa, at
- * walang admin UI para makagawa ng bagong school year. Ang lahat ng bagong
- * section, enrollment, at teacher assignment ay kinukuha ang school year
- * mula sa SchoolYear::current() — kaya kung mali ito, mali rin lahat ng
- * mabubuong record.
+ * Why: the first seeder only created 2025-2026, and there is no admin UI to
+ * create a new school year. Every new section, enrollment and teacher
+ * assignment takes its school year from SchoolYear::current() — so if that
+ * is wrong, every new record is wrong too.
  *
- * Ligtas patakbuhin nang paulit-ulit (idempotent).
+ * Safe to run more than once (idempotent).
  */
 return new class extends Migration
 {
@@ -33,9 +32,9 @@ return new class extends Migration
             ]);
         }
 
-        // Iisa lang dapat ang aktibo — ang SchoolYear::current() ay
-        // ->where('is_active', true)->first(), kaya kung dalawa ang aktibo,
-        // hindi matitiyak kung alin ang makukuha.
+        // Only one may be active — SchoolYear::current() is
+        // ->where('is_active', true)->first(), so with two active ones
+        // there is no telling which one is returned.
         DB::table('school_years')->update(['is_active' => false, 'updated_at' => now()]);
 
         DB::table('school_years')
@@ -45,8 +44,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Ibalik ang dating aktibo. Hindi binubura ang 2026-2027 dahil
-        // maaaring may mga record nang nakakabit dito.
+        // Re-activate the previous year. 2026-2027 is not deleted because
+        // records may already point to it.
         DB::table('school_years')->update(['is_active' => false, 'updated_at' => now()]);
 
         $fallback = DB::table('school_years')

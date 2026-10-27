@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Inaayos ang "schema drift": mga migration na naka-markang "Ran" pero kulang
- * ang column sa database (na-edit ang migration file PAGKATAPOS itong tumakbo).
+ * Repairs "schema drift": migrations marked "Ran" while the database is
+ * missing columns (the migration file was edited AFTER it ran).
  *
- * Idempotent — kung kumpleto na ang schema (hal. sa bagong deploy), walang
- * ginagawa. Kaya ligtas patakbuhin kahit saan.
+ * Idempotent — when the schema is already complete (e.g. a fresh deploy) it
+ * does nothing, so it is safe to run anywhere.
  *
- * Mga sintomas na inaayos nito:
- *  - fcm_tokens: walang user_id/token/platform → sira ang push notifications
- *  - messages.edited_at: wala → sira ang pag-edit ng chat message
- *  - users.role: may natirang 'faculty' sa enum at mga user na 'faculty' ang role
+ * Symptoms it fixes:
+ *  - fcm_tokens: no user_id/token/platform → push notifications broken
+ *  - messages.edited_at: missing → editing chat messages broken
+ *  - users.role: 'faculty' left in the enum and users still on the 'faculty' role
  */
 return new class extends Migration
 {
@@ -23,7 +23,7 @@ return new class extends Migration
     {
         // ── fcm_tokens ────────────────────────────────────────────────────────
         if (!Schema::hasColumn('fcm_tokens', 'token')) {
-            // Walang silbi ang token row na walang user/token — ligtas burahin.
+            // A token row without a user/token is useless — safe to delete.
             DB::table('fcm_tokens')->delete();
 
             Schema::table('fcm_tokens', function (Blueprint $table) {
@@ -41,7 +41,7 @@ return new class extends Migration
             });
         }
 
-        // ── users.role: tanggalin ang 'faculty' (MySQL/MariaDB lang) ──────────
+        // ── users.role: drop 'faculty' (MySQL/MariaDB only) ──────────────────
         if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
             DB::table('users')->where('role', 'faculty')->update(['role' => 'teacher']);
 
@@ -58,6 +58,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Pag-aayos lang ito ng drift — walang ibabalik.
+        // This only repairs drift — nothing to roll back.
     }
 };

@@ -103,7 +103,7 @@ class DashboardController extends Controller
     {
         $teacher = auth()->user();
 
-        // Dati: subject sections lang — hindi kasama ang advisory class
+        // Subject sections and the advisory class
         $students = User::whereIn('id', User::studentIdsInSections($teacher->teachingSectionIds()))
             ->where('status', 'approved')
             ->with('section')
@@ -327,7 +327,7 @@ class DashboardController extends Controller
             'title'      => 'required|string|max:255',
             'body'       => 'required|string|max:20000',
             'audience'   => 'required|in:all,students,parents',
-            // Sariling section lang ang puwedeng i-target
+            // Only the teacher's own sections can be targeted
             'section_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::in($teachingIds->all())],
         ], ['section_id.in' => 'You can only post to your own sections.']);
 
@@ -342,8 +342,8 @@ class DashboardController extends Controller
             'is_published' => true,
         ]);
 
-        // 🔔 Push (FCM) to students in the teacher's section(s). Never breaks posting
-        // (dati walang try/catch dito — 500 kahit naka-save na ang announcement).
+        // 🔔 Push (FCM) to students in the teacher's section(s). Never breaks posting:
+        // the announcement is already saved, so a push failure must not return 500.
         $studentIds = User::studentIdsInSections($sectionIds);
         if ($request->audience !== 'parents') {
             $notifier->announcement(

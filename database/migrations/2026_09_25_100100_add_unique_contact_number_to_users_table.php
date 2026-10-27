@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Unique index sa users.contact_number — para magamit ang mobile number
- * bilang login identifier (User::resolveByIdentifier).
+ * Unique index on users.contact_number — so the mobile number can be used
+ * as a login identifier (User::resolveByIdentifier).
  *
- * 1. Ginagawang iisang format (09XXXXXXXXX) ang mga lumang numero.
- *    Ang hindi ma-normalize ay iniiwan kung ano sila — hindi binubura.
- * 2. Kapag may duplicate pa rin, TITIGIL ang migration at ililista ang
- *    mga numero. Walang awtomatikong pagbura; tao ang magpapasya.
+ * 1. Old numbers are rewritten in one format (09XXXXXXXXX).
+ *    Numbers that cannot be normalized are left as they are — never deleted.
+ * 2. If duplicates remain, the migration STOPS and lists the numbers.
+ *    Nothing is deleted automatically; a person decides.
  */
 return new class extends Migration
 {
@@ -61,7 +61,7 @@ return new class extends Migration
         });
     }
 
-    /** "+63 917-123-4567" / "639171234567" / "9171234567" → "09171234567"; null kung hindi PH mobile. */
+    /** "+63 917-123-4567" / "639171234567" / "9171234567" → "09171234567"; null when not a PH mobile number. */
     private static function normalize(string $number): ?string
     {
         $digits = preg_replace('/\D/', '', $number);

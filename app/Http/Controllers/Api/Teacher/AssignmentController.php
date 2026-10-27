@@ -120,8 +120,8 @@ class AssignmentController extends Controller
                 'student_id'      => $s->user_id,
                 'student_name'    => $s->student?->name,
                 'file_url'        => $s->file_path ? Storage::disk('public')->url($s->file_path) : null,
-                'remarks'         => $s->remarks,   // sagot ng estudyante
-                'feedback'        => $s->feedback,  // komento ng teacher (bago)
+                'remarks'         => $s->remarks,   // the student's answer
+                'feedback'        => $s->feedback,  // the teacher's comment
                 'score'           => $s->score,
                 'status'          => $s->status,
                 'submitted_at'    => $s->submitted_at?->toDateTimeString(),
@@ -144,9 +144,9 @@ class AssignmentController extends Controller
 
     /** POST /api/teacher/submissions/{id}/grade — grade a student submission */
     /**
-     * Body: { score, feedback? }. Tinatanggap pa rin ang lumang `remarks` bilang
-     * feedback para hindi masira ang naka-deploy na app — pero sa `feedback`
-     * column na ito nase-save, hindi na pinapalitan ang sagot ng estudyante.
+     * Body: { score, feedback? }. The old `remarks` field is still accepted as
+     * feedback so the deployed app keeps working — it is saved to `feedback`
+     * and never overwrites the student's answer.
      */
     public function grade(Request $request, $id, SubmissionService $submissions)
     {

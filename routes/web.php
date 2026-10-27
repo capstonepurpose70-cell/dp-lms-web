@@ -58,10 +58,10 @@ Route::middleware('guest')->group(function () {
     // Auth
     Route::get('/login',     [LoginController::class,    'show'])->name('login');
     Route::post('/login',    [LoginController::class,    'submit'])->name('login.submit');
-    // Wala nang public registration — lumang link → activation
+    // No public registration — old links go to activation
     Route::redirect('/register', '/activate', 301);
 
-    // Student activation (unang beses): LRN + pangalan + email code
+    // Student activation (first time): LRN + name + email code
     Route::get('/activate',         [StudentActivationController::class, 'show'])->name('activate');
     Route::post('/activate',        [StudentActivationController::class, 'start'])
         ->middleware('throttle:20,1')->name('activate.start');
@@ -86,16 +86,15 @@ Route::middleware('guest')->group(function () {
         [ForgotPasswordController::class, 'reset'])->name('password.update');
 
             // ── INVITE / ACCOUNT ACTIVATION ─────────────────────────────
-   // PALITAN NG:
 Route::get('/invite/{token}',  [App\Http\Controllers\Auth\InviteController::class, 'show'])
     ->name('invite.show');
  
 Route::post('/invite/{token}', [App\Http\Controllers\Auth\InviteController::class, 'accept'])
     ->name('invite.accept');
 
-    // ── PARENT ACTIVATION / RECOVERY (code mula sa account ng anak) ──
-    // Throttle kada IP. Maluwag (30/min) dahil maraming magulang ang puwedeng
-    // nasa iisang school Wi-Fi; sapat na ang 8-character code laban sa hula.
+    // ── PARENT ACTIVATION / RECOVERY (code from the child's account) ──
+    // Throttled per IP. Generous (30/min) because many parents may share
+    // one school Wi-Fi; the 8-character code is enough against guessing.
     Route::get('/parent/activate',  [ParentActivationController::class, 'showActivate'])->name('parent.activate');
     Route::post('/parent/activate', [ParentActivationController::class, 'activate'])
         ->middleware('throttle:30,1')->name('parent.activate.submit');
@@ -122,9 +121,9 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth');
 
 // ═════════════════════════════════════════════════════════════════════════════
-// NOTIFICATIONS (bell) — student at parent (layouts/app.blade.php).
-// Dati: tinatawag ng layout ang /notifications/* pero /student/notifications/*
-// lang ang may route → 404, hindi gumagana ang bell; walang route ang parent.
+// NOTIFICATIONS (bell) — students and parents (layouts/app.blade.php).
+// The layout calls /notifications/*, so these routes serve every role
+// that uses it (students and parents alike).
 // ═════════════════════════════════════════════════════════════════════════════
 Route::middleware(['auth', 'approved'])->group(function () {
     Route::get('/notifications/data',       [NotificationController::class, 'data']);
@@ -149,7 +148,7 @@ Route::middleware(['auth', 'role:student', 'approved'])
     ->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
         Route::get('/modules',   [StudentDashboardController::class, 'modules'])->name('modules');
-        // Opens the file and counts the view for the teacher (dati mobile lang ang nabibilang)
+        // Opens the file and counts the view for the teacher
         Route::get('/modules/{material}/open', [StudentDashboardController::class, 'openMaterial'])
             ->whereNumber('material')->name('modules.open');
         Route::get('/quizzes',                    [App\Http\Controllers\Student\AssignmentController::class, 'index'])->name('quizzes');
@@ -163,7 +162,7 @@ Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name(
         Route::get('/enroll',    [StudentDashboardController::class, 'enrollmentForm'])->name('enroll');
         Route::post('/enroll',   [StudentDashboardController::class, 'submitEnrollment'])->name('enroll.submit');
 
-        // Parent link — one-time code / QR para sa magulang
+        // Parent link — one-time code / QR for the parent
         Route::get('/parent-link',  [StudentParentLinkController::class, 'show'])->name('parent-link');
         Route::post('/parent-link', [StudentParentLinkController::class, 'store'])
             ->middleware('throttle:10,10')->name('parent-link.store');
@@ -196,7 +195,7 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
     ->name('teacher.')
     ->group(function () {
         Route::get('/dashboard',         [TeacherDashboardController::class, 'index'])->name('dashboard');
-        // Class attendance (teacher-posted, student enters the class code). Dati: listahan ng gate scans.
+        // Class attendance (posted by the teacher, the student enters the class code).
         Route::get('/attendance',                    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'index'])->name('attendance.index');
         Route::post('/attendance',                   [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'store'])->name('attendance.store');
         Route::get('/attendance/{session}',          [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'show'])->whereNumber('session')->name('attendance.show');
@@ -216,7 +215,7 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
         Route::get('/enrollments/{enrollment}',        [TeacherEnrollmentController::class, 'show'])->name('enrollments.show');
         Route::post('/enrollments/{enrollment}/approve',[TeacherEnrollmentController::class, 'approve'])->name('enrollments.approve');
         Route::post('/enrollments/{enrollment}/reject', [TeacherEnrollmentController::class, 'reject'])->name('enrollments.reject');
-        // ->only(): dati 7 route bawat isa pero ilang method lang ang meron → 500
+        // ->only(): just the routes that have controller methods
         Route::resource('gradebook',     GradebookController::class)->only(['index', 'store']);
         Route::resource('materials',     MaterialController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
         Route::patch('/materials/{material}/publish', [MaterialController::class, 'togglePublish'])->name('materials.publish');
@@ -266,7 +265,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
     // ── Protected admin area ──────────────────────────────────────
-    // AuthenticateSession: kapag pinalitan ang admin password, nala-logout ang ibang device/session.
+    // AuthenticateSession: changing the admin password logs out the other devices/sessions.
     Route::middleware(['auth:admin', \Illuminate\Session\Middleware\AuthenticateSession::class])->group(function () {
         // Notifications
         Route::get('/notifications', fn() => response()->json([
@@ -364,8 +363,8 @@ Route::patch('/profile/update-password',
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-// IOT ATTENDANCE API — ESP32-CAM / Raspberry Pi. Walang user login at CSRF;
-// X-Device-Key ang patunay (ATTENDANCE_DEVICE_KEY). Throttled kada IP.
+// IOT ATTENDANCE API — ESP32-CAM / Raspberry Pi. No user login and no CSRF;
+// X-Device-Key is the proof (ATTENDANCE_DEVICE_KEY). Throttled per IP.
 // ═════════════════════════════════════════════════════════════════════════════
 Route::middleware('throttle:120,1')->group(function () {
     Route::post('/api/attendance',    [App\Http\Controllers\AttendanceController::class, 'store']);

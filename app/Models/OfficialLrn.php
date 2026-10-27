@@ -14,7 +14,7 @@ class OfficialLrn extends Model
         'claimed_by',
     ];
 
-    /** Ang user account na naka-claim ng LRN na ito (null = hindi pa nagagamit). */
+    /** The user account that claimed this LRN (null = not used yet). */
     public function claimedBy()
     {
         return $this->belongsTo(User::class, 'claimed_by');
@@ -29,16 +29,16 @@ class OfficialLrn extends Model
     }
 
     /**
-     * Tugma ba ang pangalan ng nagrerehistro sa nasa masterlist?
+     * Does the registering student's name match the masterlist?
      *
-     * TRUE kapag: (a) walang student_name sa masterlist — walang maikukumpara,
-     * kaya pinapayagan (admin approval pa rin ang huling harang); o
-     * (b) hindi bababa sa 2 token ang magkatugma (karaniwan: pangalan + apelyido).
-     * Kung isang token lang ang nasa masterlist, sapat na ang 1 tugma.
+     * TRUE when: (a) the masterlist has no student_name — nothing to compare,
+     * so it is allowed (admin approval is still the last check); or
+     * (b) at least 2 tokens match (usually first name + surname).
+     * When the masterlist has a single token, 1 match is enough.
      */
     public function matchesName(?string $registrantName): bool
     {
-        // Walang pangalan sa masterlist — hindi ito maaaring i-verify.
+        // No name in the masterlist — this cannot be verified.
         if (count(NameMatcher::tokens($this->student_name)) === 0) {
             return true;
         }

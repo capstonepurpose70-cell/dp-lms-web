@@ -473,7 +473,7 @@
             .form-panel { padding: 92px 16px 24px; }
             .form-header h1 { font-size: 26px; }
             .form-header .eyebrow { font-size: 10px; letter-spacing: 2px; }
-            /* 16px = hindi nagzu-zoom ang iOS pag nag-focus; 46px = touch-friendly */
+            /* 16px = no iOS zoom on focus; 46px = touch-friendly */
             input[type="text"], input[type="email"], input[type="password"] {
                 font-size: 16px;
                 min-height: 46px;
@@ -484,7 +484,7 @@
             .form-panel { padding: 88px 12px 20px; }
             .form-header h1 { font-size: 23px; }
         }
-        /* maiksing screen (landscape phone): huwag i-center para di maputol ang taas */
+        /* short screens (landscape phone): do not center, or the top gets cut off */
         @media (max-height: 640px) and (max-width: 960px) {
             .form-panel { justify-content: flex-start; }
         }
@@ -719,9 +719,9 @@ function setStatus(el, text, ok) {
 ───────────────────────────────────────────── */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LRN_RE   = /^\d{12}$/;
-/* PH mobile: 09XXXXXXXXX o +63 9XX… (puwedeng may espasyo/gitling) — kapareho ng App\Support\PhoneNumber */
+/* PH mobile: 09XXXXXXXXX or +63 9XX… (spaces/dashes allowed) — same as App\Support\PhoneNumber */
 const isMobile = (v) => /^[\d\s\-+()]+$/.test(v) && /^(0|\+?63)9\d{9}$/.test(v.replace(/[\s\-()]/g, ''));
-/* Puro digits = sinusubukang mag-LRN; ipakita ang tulong para sa 12 digits. */
+/* Digits only = probably an LRN; show the 12-digit hint. */
 const DIGITS_ONLY_RE = /^\d+$/;
 
 document.getElementById('emailInput').addEventListener('input', function() {

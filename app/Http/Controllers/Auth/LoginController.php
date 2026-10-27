@@ -21,8 +21,8 @@ class LoginController extends Controller
 
     public function submit(Request $request, TrustedDeviceService $devices)
     {
-        // Tinatanggap ang EMAIL, LRN, o MOBILE sa iisang field. Pinanatili ang field
-        // name na "email" para hindi masira ang mga existing na form/app.
+        // Accepts an EMAIL, LRN or MOBILE number in one field. The field keeps the
+        // name "email" so existing forms and the app keep working.
         $request->validate([
             'email'    => 'required|string|max:254',
             'password' => 'required',
@@ -32,10 +32,10 @@ class LoginController extends Controller
 
         $identifier = trim((string) $request->email);
 
-        // Dalawang limit:
-        //  - kada ACCOUNT + IP (5 / 30 min) — panlaban sa paghula ng password
-        //  - kada IP (50 / 30 min) — panlaban sa bot; maluwag dahil iisang IP
-        //    ang buong school Wi-Fi (dati: 5 mali ng isang bata = lock ang klase)
+        // Two limits:
+        //  - per ACCOUNT + IP (5 / 30 min) — against password guessing
+        //  - per IP (50 / 30 min) — against bots; generous because the whole
+        //    school Wi-Fi shares one IP (one child's 5 mistakes must not lock the class)
         $key   = 'login:' . sha1(mb_strtolower($identifier) . '|' . $request->ip());
         $ipKey = 'login-ip:' . $request->ip();
 
@@ -63,7 +63,7 @@ class LoginController extends Controller
 
         RateLimiter::clear($key);
 
-        // Trusted device — laktaw ang OTP
+        // Trusted device — skip the OTP
         if ($devices->isTrusted($user, $request)) {
             auth()->login($user, $request->boolean('remember'));
             $request->session()->regenerate();
@@ -72,8 +72,8 @@ class LoginController extends Controller
             return redirect()->route($user->homeRoute());
         }
 
-        // Walang email (hal. magulang) at bagong device — walang mapagpapadalhan
-        // ng OTP. Ang recovery code mula sa anak ang patunay.
+        // No email (e.g. a parent) on a new device — there is nowhere to send
+        // an OTP. The recovery code from the child is the proof instead.
         if (empty($user->email)) {
             AuditLogService::log('Login blocked — new device, no email', 'Auth', $identifier);
             return back()->withInput()->with('error',
@@ -92,7 +92,7 @@ class LoginController extends Controller
         try {
             app(OtpService::class)->send($user, 'login');
         } catch (ActionNotAllowed $e) {
-            // Naka-limit ang pagpapadala — gumagana pa ang huling code sa email hangga't hindi expired.
+            // Sending is rate limited — the last emailed code still works until it expires.
             AuditLogService::log('Login code not sent — rate limit', 'Auth', $identifier);
             return redirect()->route('otp.show')->with('error', $e->getMessage());
         }

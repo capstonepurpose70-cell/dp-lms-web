@@ -11,17 +11,17 @@ use App\Notifications\ActivityAssigned;
 use Illuminate\Support\Facades\Log;
 
 /**
- * In-app (database) + FCM push notifications sa mga estudyante.
+ * In-app (database) + FCM push notifications to students.
  *
- * Iisang lugar para sa web at mobile API (dati magkakahiwalay na kopya).
- * HINDI kailanman nagtatapon ng error: kapag pumalya ang notification,
- * naka-save pa rin ang material / quiz / grade.
+ * One place for the web and the mobile API.
+ * NEVER throws: when a notification fails, the material / quiz / grade
+ * is still saved.
  */
 class StudentNotifier
 {
     public function __construct(private PushNotificationService $push) {}
 
-    /** Bagong learning material — lahat ng enrolled sa grade level ng subject. */
+    /** New learning material — everyone enrolled in the subject's grade level. */
     public function newMaterial(LearningMaterial $material, Subject $subject, User $teacher): void
     {
         $this->safely('Material', function () use ($material, $subject, $teacher) {
@@ -39,7 +39,7 @@ class StudentNotifier
         });
     }
 
-    /** Bagong quiz/assignment — mga estudyante ng section. */
+    /** New quiz/assignment — the students of the section. */
     public function newAssignment(Assignment $assignment, User $teacher): void
     {
         $this->safely('Quiz', function () use ($assignment, $teacher) {
@@ -57,7 +57,7 @@ class StudentNotifier
         });
     }
 
-    /** Na-grade ang submission — ang estudyante lang. */
+    /** Submission graded — that student only. */
     public function graded(Submission $submission, User $teacher): void
     {
         $this->safely('Grade', function () use ($submission, $teacher) {
@@ -77,7 +77,7 @@ class StudentNotifier
         });
     }
 
-    /** Push lang (walang in-app) para sa announcement. */
+    /** Push only (no in-app) for an announcement. */
     public function announcement(iterable $studentIds, string $title, string $body, int $id, string $teacherName): void
     {
         $this->safely('Announcement', function () use ($studentIds, $title, $body, $id, $teacherName) {
@@ -101,7 +101,7 @@ class StudentNotifier
             $student->notify($notification);
         }
 
-        // FCM v1: lahat ng data value ay dapat string (ginagawa ng PushNotificationService)
+        // FCM v1: every data value must be a string (PushNotificationService converts them)
         $this->push->sendToUsers($students->pluck('id')->all(), $title, $body, $data);
     }
 

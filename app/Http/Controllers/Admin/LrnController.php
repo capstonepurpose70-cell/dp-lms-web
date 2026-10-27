@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 
 /**
  * Official LRN Master List.
- * Dito idinadagdag ng admin ang mga LRN ng estudyante (bulk o isa-isa —
- * hal. para sa BAGONG student/transferee) bago sila makapag-activate.
+ * The admin adds student LRNs here (in bulk or one at a time — e.g. for a
+ * NEW student/transferee) before they can activate their account.
  */
 class LrnController extends Controller
 {
@@ -42,13 +42,13 @@ class LrnController extends Controller
         ]);
     }
 
-    /** Magdagdag ng ISANG LRN — para sa bagong student/transferee. */
+    /** Add ONE LRN — for a new student/transferee. */
     public function store(Request $request)
     {
         $data = $request->validate([
             'lrn'          => 'required|digits:12|unique:official_lrns,lrn',
-            // Required na: ang activation ay nangangailangan ng pangalang tugma
-            // sa masterlist — ang LRN na walang pangalan ay hindi ma-a-activate.
+            // Required: activation needs a name that matches the masterlist,
+            // so an LRN without a name could never be activated.
             'student_name' => 'required|string|max:255',
             'grade_level'  => 'nullable|string|in:7,8,9,10,11,12',
         ], [
@@ -64,8 +64,8 @@ class LrnController extends Controller
     }
 
     /**
-     * Bulk import — i-paste ang listahan, isang LRN bawat linya.
-     * Tinatanggap: "123456789012" o "123456789012,Dela Cruz Juan" o "...,Juan,11".
+     * Bulk import — paste the list, one LRN per line.
+     * Accepts: "123456789012" or "123456789012,Dela Cruz Juan" or "...,Juan,11".
      */
     public function bulkImport(Request $request)
     {
@@ -120,7 +120,7 @@ class LrnController extends Controller
         return back()->with('success', $msg);
     }
 
-    /** Burahin — kung HINDI pa claimed (protektado ang may account na). */
+    /** Delete — only while NOT claimed (an LRN with an account is protected). */
     public function destroy(OfficialLrn $lrn)
     {
         if ($lrn->claimed_by !== null) {

@@ -7,9 +7,9 @@ use App\Services\PasswordResetService;
 use Illuminate\Http\Request;
 
 /**
- * Web forgot-password: email → 6-digit code → bagong password.
- * Ang lohika (expiry, limit sa paghula, walang enumeration) ay nasa
- * PasswordResetService — iisa para sa web at mobile API.
+ * Web forgot-password: email → 6-digit code → new password.
+ * The rules (expiry, guess limit, no enumeration) live in
+ * PasswordResetService, shared with the mobile API.
  */
 class ForgotPasswordController extends Controller
 {

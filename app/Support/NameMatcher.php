@@ -3,11 +3,11 @@
 namespace App\Support;
 
 /**
- * Paghahambing ng pangalan na hindi apektado ng laki ng letra, kuwit, tuldok,
- * gitnang pangalan, pagkakasunod ("Dela Cruz, Juan" == "Juan Dela Cruz"),
- * accent (Peña == Pena), at suffix (Jr., III).
+ * Name comparison that ignores case, commas, periods, middle names,
+ * order ("Dela Cruz, Juan" == "Juan Dela Cruz"), accents (Peña == Pena)
+ * and suffixes (Jr., III).
  *
- * Ginagamit ng LRN gate (OfficialLrn::matchesName) at ng parent linking.
+ * Used by the LRN gate (OfficialLrn::matchesName) and parent linking.
  */
 final class NameMatcher
 {
@@ -27,7 +27,7 @@ final class NameMatcher
         'ñ' => 'n', 'Ñ' => 'N', 'ç' => 'c', 'Ç' => 'C',
     ];
 
-    /** Hatiin ang pangalan sa malilinis na tokens para maikumpara. */
+    /** Split a name into clean tokens for comparison. */
     public static function tokens(?string $name): array
     {
         $name = trim((string) $name);
@@ -35,11 +35,11 @@ final class NameMatcher
             return [];
         }
 
-        // Alisin ang accents. Tahasang mapa muna: sa Windows (XAMPP), ang iconv
-        // TRANSLIT ay gumagawa ng "Pe~na" imbes na "Pena", kaya nahahati ang token.
+        // Strip accents. Explicit map first: on Windows (XAMPP) iconv's TRANSLIT
+        // produces "Pe~na" instead of "Pena", which splits the token.
         $name = strtr($name, self::ACCENTS);
 
-        // Fallback para sa ibang karakter na wala sa mapa
+        // Fallback for characters that are not in the map
         if (function_exists('iconv')) {
             $converted = @iconv('UTF-8', 'ASCII//TRANSLIT', $name);
             if ($converted !== false) {
@@ -48,12 +48,12 @@ final class NameMatcher
         }
 
         $name = mb_strtoupper($name, 'UTF-8');
-        // Bantas -> espasyo (kasama ang kuwit at tuldok ng initial)
+        // Punctuation -> space (including commas and initials' periods)
         $name = preg_replace('/[^A-Z0-9\s]/', ' ', $name);
 
         $tokens = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
-        // Alisin ang suffix at nag-iisang letra (middle initial)
+        // Drop suffixes and single letters (middle initials)
         return array_values(array_unique(array_filter(
             $tokens,
             fn ($t) => mb_strlen($t) > 1 && !in_array($t, self::IGNORED, true)
@@ -61,9 +61,9 @@ final class NameMatcher
     }
 
     /**
-     * TRUE kapag hindi bababa sa 2 token ang magkatugma (karaniwan: pangalan +
-     * apelyido). Kung isang token lang ang opisyal, sapat na ang 1 tugma.
-     * FALSE kapag walang opisyal na pangalan — walang maikukumpara.
+     * TRUE when at least 2 tokens match (usually first name + surname).
+     * When the official name has a single token, 1 match is enough.
+     * FALSE when there is no official name — nothing to compare.
      */
     public static function matches(?string $official, ?string $given): bool
     {
@@ -78,7 +78,7 @@ final class NameMatcher
         return $overlap >= min(2, count($officialTokens));
     }
 
-    /** Tugma ba ang $given sa KAHIT ISA sa mga pangalan sa $candidates? */
+    /** Does $given match ANY of the names in $candidates? */
     public static function matchesAny(?string $given, array $candidates): bool
     {
         foreach ($candidates as $candidate) {

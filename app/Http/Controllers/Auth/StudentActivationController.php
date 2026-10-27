@@ -9,8 +9,8 @@ use App\Services\TrustedDeviceService;
 use Illuminate\Http\Request;
 
 /**
- * Estudyante: unang beses na pag-activate ng account (pamalit sa /register).
- * Ang activation token ay nasa session — hindi sa URL.
+ * Students: first-time account activation (replaces /register).
+ * The activation token lives in the session — never in the URL.
  */
 class StudentActivationController extends Controller
 {
@@ -21,7 +21,7 @@ class StudentActivationController extends Controller
 
     public function start(Request $request, StudentActivationService $activation)
     {
-        // Honeypot — tao ay hindi makakakita sa field na ito
+        // Honeypot — people never see this field
         if (filled($request->input('website'))) {
             AuditLogService::log('Activation blocked — honeypot', 'Auth', $request->ip());
             return back()->with('error', 'We could not process your request. Please try again.');

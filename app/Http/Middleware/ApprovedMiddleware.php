@@ -13,8 +13,8 @@ class ApprovedMiddleware
         $user = $request->user();
 
         if ($user && $user->status !== 'approved') {
-            // Mobile (Sanctum): dati walang tsek sa API — gumagana pa ang token ng na-reject
-            // o na-ban. Buburahin ang token (hindi ang session cookie) para mag-login ulit.
+            // Mobile (Sanctum): a rejected or banned account must lose its token too.
+            // Delete the token (not the session cookie) so the app has to sign in again.
             if ($request->is('api/*')) {
                 $token = $user->currentAccessToken();
                 if ($token instanceof PersonalAccessToken) {

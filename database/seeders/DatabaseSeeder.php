@@ -8,20 +8,18 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * `php artisan db:seed` — ligtas patakbuhin ulit (pati sa production).
-     *
-     * Dati gumagawa ito ng "Test User" (test@example.com / password) — default na
-     * login na hindi dapat umiiral sa live na system.
+     * `php artisan db:seed` — safe to run again (production included).
+     * It creates no default login (no test@example.com / password).
      */
     public function run(): void
     {
         $this->call([
-            AdminSeeder::class,     // skipped kapag may admin na
+            AdminSeeder::class,     // skipped when an admin exists
             SubjectSeeder::class,   // keyed by name + grade
         ]);
 
-        // SectionSeeder gumagawa ng SHS placeholders na nire-rename ng AdvisorySectionSeeder;
-        // kapag pinatakbo ulit, babalik ang placeholders. Kaya sa bagong database lang.
+        // SectionSeeder creates SHS placeholders that AdvisorySectionSeeder renames;
+        // running it again would bring the placeholders back. So: fresh databases only.
         if (Section::count() === 0) {
             $this->call([SectionSeeder::class, AdvisorySectionSeeder::class]);
         } else {

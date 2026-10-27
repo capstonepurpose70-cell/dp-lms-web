@@ -77,7 +77,7 @@
     <section class="ta-card ta-form" aria-labelledby="ta-form-title">
         <h2 class="ta-form-title" id="ta-form-title">New announcement</h2>
 
-        {{-- Dati walang error display — tahimik na bumabalik ang form kapag invalid --}}
+        {{-- Validation errors, so an invalid form does not come back silently --}}
         @if($errors->any())
             <div class="ta-errors" role="alert">
                 <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>

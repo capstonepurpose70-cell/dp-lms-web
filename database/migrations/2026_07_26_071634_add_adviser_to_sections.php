@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sections', function (Blueprint $table) {
-            // Ang adviser (teacher) na hawak ng section na ito.
-            // Sila ang mag-rereview ng enrollment ng students sa section nila.
+            // The adviser (teacher) of this section.
+            // They review the enrollment requests of students in their section.
             $table->unsignedBigInteger('adviser_id')->nullable()->after('grade_level');
             $table->index('adviser_id');
         });

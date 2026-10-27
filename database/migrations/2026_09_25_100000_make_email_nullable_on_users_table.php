@@ -5,11 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Pinapayagan nang walang email ang user.
+ * Allows users without an email.
  *
- * Para ito sa mga magulang na walang (o hindi gumagamit ng) email —
- * mobile number o LRN ng anak ang gagamitin nila. Nananatili ang UNIQUE
- * index: sa MySQL at SQLite, puwedeng maraming NULL sa unique column.
+ * For parents who have (or use) no email — they sign in with a mobile
+ * number instead. The UNIQUE index stays: MySQL and SQLite allow many
+ * NULLs in a unique column.
  */
 return new class extends Migration
 {
@@ -22,8 +22,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Babagsak ito kung may user nang walang email — sinadya, para hindi
-        // tahimik na mabura o mapalitan ang datos. Ayusin muna ang mga row.
+        // This fails if a user already has no email — on purpose, so data is never
+        // silently deleted or replaced. Fix those rows first.
         Schema::table('users', function (Blueprint $table) {
             $table->string('email')->nullable(false)->change();
         });

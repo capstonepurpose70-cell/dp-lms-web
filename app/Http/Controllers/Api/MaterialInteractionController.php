@@ -20,10 +20,9 @@ use Illuminate\Http\Request;
 class MaterialInteractionController extends Controller
 {
     /**
-     * Material na nakikita ng estudyante: published + subject na itinuturo sa
-     * section niya (kapareho ng /api/student/modules). Dati `findOrFail($id)`
-     * lang — kayang i-like/comment-an ang kahit anong material (pati
-     * unpublished o ng ibang section) basta alam ang ID.
+     * A material the student can see: published, and its subject is taught in
+     * the student's section (same as /api/student/modules) — so likes and
+     * comments cannot reach unpublished or other sections' materials by id.
      */
     private function studentMaterial($id): LearningMaterial
     {

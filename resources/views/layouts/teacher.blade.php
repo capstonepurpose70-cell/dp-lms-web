@@ -495,7 +495,7 @@ body.collapsed .sidebar-nav {
 
         /* Honor reduced-motion preferences */
         /* ══════════════════════════════════════════════════════
-           GLOBAL CONTENT RESPONSIVENESS — sakop LAHAT ng teacher pages
+           GLOBAL CONTENT RESPONSIVENESS — every teacher page
         ══════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
             /* Tables: naka-horizontal scroll sa phone imbes na sumabog */
@@ -514,7 +514,7 @@ body.collapsed .sidebar-nav {
             .main-content [style*="repeat(4, 1fr)"] {
                 grid-template-columns: 1fr !important;
             }
-            /* "sidebar + content" grids (hal. 320px 1fr) → patong-patong */
+            /* "sidebar + content" grids (e.g. 320px 1fr) → stacked */
             .main-content [style*="320px 1fr"] {
                 grid-template-columns: 1fr !important;
             }
@@ -527,14 +527,14 @@ body.collapsed .sidebar-nav {
                 gap: 10px;
             }
 
-            /* Mahahabang salita/links: huwag lumagpas */
+            /* Long words/links: never overflow */
             .main-content { overflow-x: hidden; }
             .main-content img, .main-content video { max-width: 100%; height: auto; }
         }
 
         @media (max-width: 480px) {
             .main-content { padding: 14px 12px !important; }
-            /* 16px inputs = walang iOS auto-zoom; touch-friendly */
+            /* 16px inputs = no iOS auto-zoom; touch-friendly */
             .main-content input,
             .main-content select,
             .main-content textarea { font-size: 16px !important; min-height: 44px; }
@@ -848,9 +848,9 @@ const NAV_ITEMS = [
     /* ─────────────────────────────────────────────────────────────
        In-page navigation: fetch the page, swap only .main-content.
        Falls back to a normal page load whenever the answer is not a
-       teacher page (session expired → login, error, JSON) — dati
-       naiiwan sa skeleton. Back/Forward uses the same loader so the
-       page's scripts run (dati innerHTML → patay ang JS ng page).
+       teacher page (session expired → login, error, JSON), so it never
+       hangs on the skeleton. Back/Forward uses the same loader so the
+       page's scripts run.
     ───────────────────────────────────────────────────────────── */
     let navSeq = 0;
 
@@ -989,13 +989,13 @@ const notifDropdown = document.getElementById('notifDropdown');
 const notifBadge    = document.getElementById('notifBadge');
 const notifList     = document.getElementById('notifList');
 const notifEmpty    = document.getElementById('notifEmpty');
-// url(): gumagana rin kapag naka-serve sa XAMPP subfolder (dati absolute "/teacher/...")
+// url(): also works when served from an XAMPP subfolder (not an absolute "/teacher/...")
 const NOTIF_URL = {
     data:    @json(url('teacher/notifications/data')),
     read:    @json(url('teacher/notifications/__ID__/read')),
     readAll: @json(url('teacher/notifications/read-all')),
 };
-// Escape bago ilagay sa innerHTML (XSS) — kapareho ng layouts/app.blade.php
+// Escape before it goes into innerHTML (XSS) — same as layouts/app.blade.php
 const tEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 const TYPE_ICONS = {

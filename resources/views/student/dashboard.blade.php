@@ -5,10 +5,10 @@
 <style>
     /* ═══════════════════════════════════════════════════════════
        STUDENT DASHBOARD
-       Ginagamit ang design tokens ng layouts/app.blade.php
+       Uses the design tokens of layouts/app.blade.php
        (--accent, --text-1..3, --border, --r-*, --shadow-*)
-       para tugma sa buong sistema. Walang bagong Tailwind class —
-       plain CSS lang, kaya hindi apektado ng build state.
+       to match the rest of the system. Plain CSS only, no new
+       Tailwind classes, so the build state does not matter.
     ═══════════════════════════════════════════════════════════ */
 
     .sd-wrap { max-width: 1080px; margin: 0 auto; }
@@ -55,7 +55,7 @@
         width: 6px; height: 6px; border-radius: 50%; background: var(--green);
     }
 
-    /* ─── Notice (hindi pa enrolled) ──────────────────────────── */
+    /* ─── Notice (not enrolled yet) ───────────────────────────── */
     .sd-notice {
         display: flex; gap: 12px; align-items: flex-start;
         background: #FFFBEB; border: 1px solid #FDE68A;
@@ -205,8 +205,7 @@
         </h1>
         <p class="sd-date">{{ now()->format('l, F j, Y') }}</p>
 
-        {{-- Not enrolled yet: the real next step (dati laging "wait for the administrator",
-             kahit hindi pa nasasagutan ang enrollment form) --}}
+        {{-- Not enrolled yet: show the real next step (form / waiting for review / returned) --}}
         @unless($enrollment)
         <div class="sd-notice" role="status">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309"
@@ -341,7 +340,7 @@
         <h2 class="sd-section-title" style="margin-bottom:12px;">Quick Actions</h2>
         <div class="sd-grid sd-grid-2">
 
-            {{-- Most-used daily action (dati wala sa dashboard) --}}
+            {{-- Most-used daily action --}}
             <a href="{{ route('student.attendance') }}" class="sd-nav">
                 <span class="sd-ico" aria-hidden="true">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"

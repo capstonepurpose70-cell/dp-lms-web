@@ -150,7 +150,7 @@
     }
     .stu-meta { font-size: 12px; color: var(--text-3); margin-top: 1px; }
 
-    /* Page shell (dati Tailwind: max-w-5xl, text-2xl, min-w-0 — wala ang min-w-0 sa build) */
+    /* Page shell */
     .stu-wrap { max-width: 1040px; margin: 0 auto; }
     .stu-head { margin-bottom: 22px; }
     .stu-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }

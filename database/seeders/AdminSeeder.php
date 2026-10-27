@@ -11,9 +11,9 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // PUBLIC ang repo — HUWAG maglagay ng password dito.
-        // Itakda ang ADMIN_SEED_PASSWORD sa .env (o Railway variables). Kung wala,
-        // gagawa ng random na password at ipapakita LANG sa console nang isang beses.
+        // The repo is PUBLIC — NEVER put a password here.
+        // Set ADMIN_SEED_PASSWORD in .env (or the Railway variables). Without it
+        // a random password is generated and shown ONCE in the console.
         $email    = env('ADMIN_SEED_EMAIL', 'admin@sdnhs.edu.ph');
         $password = env('ADMIN_SEED_PASSWORD');
 

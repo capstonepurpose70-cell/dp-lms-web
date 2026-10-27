@@ -113,8 +113,8 @@ class MaterialController extends Controller
             'Learning Materials'
         );
 
-        // 🔔 Notify students if published (in-app + FCM). Dati walang try/catch
-        // dito — 500 ang nakikita ng teacher kahit naka-save na ang material.
+        // 🔔 Notify students if published (in-app + FCM). Inside try/catch: the material
+        // is already saved, so a failed push must not show the teacher a 500.
         if ($material->is_published) {
             $notifier->newMaterial($material, $subject, auth()->user());
         }
@@ -124,7 +124,7 @@ class MaterialController extends Controller
     }
 
     // PATCH /teacher/materials/{material}/publish — draft ↔ published.
-    // Dati walang paraan para i-publish ang draft, kaya hindi na ito makikita ng students.
+    // Without this a draft could never reach the students.
     public function togglePublish(LearningMaterial $material, StudentNotifier $notifier)
     {
         abort_if((int) $material->user_id !== (int) auth()->id(), 403, 'You can only change your own materials.');

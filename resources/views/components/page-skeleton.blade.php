@@ -1,4 +1,4 @@
-{{-- Generic page skeleton — ipapakita habang naglo-load ang content --}}
+{{-- Generic page skeleton — shown while the content loads --}}
 <div id="pageSkeletonWrapper">
 
     {{-- Stats row (4 metric cards) --}}

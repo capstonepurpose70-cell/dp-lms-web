@@ -2,8 +2,7 @@
 @section('title', 'Messages')
 
 @section('content')
-{{-- B6-1/B6-2/B6-3: one conversation per teacher, oldest → newest, marked read when opened,
-     attachments shown. Dati: iisang halo-halong listahan para sa lahat ng teacher. --}}
+{{-- One conversation per teacher, oldest → newest; opening it marks the teacher's messages read. --}}
 <style>
     .ms-wrap { max-width: 1040px; margin: 0 auto; }
     .ms-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }

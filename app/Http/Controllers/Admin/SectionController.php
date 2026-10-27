@@ -13,8 +13,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * Admin — Sections & Advisers.
- * Dito ginagawa ng admin ang sections at ina-assign ang ADVISER (teacher)
- * ng bawat section. Ang adviser ang mag-rereview ng enrollment ng section nila.
+ * The admin creates sections here and assigns each section's ADVISER (teacher).
+ * The adviser reviews the enrollment requests of their section.
  */
 class SectionController extends Controller
 {
@@ -27,7 +27,7 @@ class SectionController extends Controller
             ->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, mb_strtolower($s->name)))
             ->values();
 
-        // Mga teacher na pwedeng maging adviser
+        // Teachers who can be advisers
         $teachers = User::where('role', 'teacher')
             ->where('status', 'approved')
             ->orderBy('name')
@@ -38,13 +38,13 @@ class SectionController extends Controller
         return view('admin.sections.index', compact('sections', 'teachers', 'grades'));
     }
 
-    /** Dapat teacher ang adviser (dati sa update lang may tsek — nalalampasan sa create). */
+    /** The adviser must be a teacher — checked on create as well as update. */
     private function adviserRule(): array
     {
         return ['nullable', Rule::exists('users', 'id')->where('role', 'teacher')];
     }
 
-    /** Bawal ang dalawang section na pareho ang pangalan sa iisang grade. */
+    /** No two sections with the same name in one grade. */
     private function uniqueNameRule(Request $request, ?Section $ignore = null)
     {
         $rule = Rule::unique('sections', 'name')->where('grade_level', (string) $request->input('grade_level'));
@@ -77,8 +77,8 @@ class SectionController extends Controller
     {
         $request->merge(['name' => trim((string) $request->input('name'))]);
 
-        // Unique check lang kapag pinalitan ang pangalan/grade — para hindi
-        // ma-block ang pag-save ng adviser sa lumang duplicate na row.
+        // Unique check only when the name/grade changes — so an old duplicate row
+        // does not block saving its adviser.
         $nameRules = ['required', 'string', 'max:100'];
         if ($request->input('name') !== $section->name || (string) $request->input('grade_level') !== (string) $section->grade_level) {
             $nameRules[] = $this->uniqueNameRule($request, $section);
@@ -105,9 +105,9 @@ class SectionController extends Controller
 
     public function destroy(Section $section)
     {
-        // Dati users.section_id lang ang tsine-check — pero cascadeOnDelete ang
-        // sections sa 7 table: tahimik na nabubura ang enrollments, quizzes,
-        // schedules, atbp. Ngayon: hindi mabubura hangga't may kaugnay na datos.
+        // Sections cascade on delete into 7 tables (enrollments, quizzes, schedules…),
+        // so a section is only deleted when nothing refers to it any more —
+        // checking users.section_id alone would silently wipe that data.
         $inUse = [
             'students'             => User::where('section_id', $section->id)->count(),
             'enrollments'          => DB::table('student_enrollments')->where('section_id', $section->id)->count()

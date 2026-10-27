@@ -33,7 +33,7 @@
     <button type="submit" class="ac-btn" data-busy="Checking…">Verify code</button>
 </form>
 
-{{-- Real resend (same email, same rate limit) — dati link lang pabalik sa form --}}
+{{-- Real resend (same email, same rate limit) --}}
 <form method="POST" action="{{ route('password.email') }}" data-once style="text-align:center;margin-top:8px;">
     @csrf
     <input type="hidden" name="email" value="{{ session('reset_email') }}">

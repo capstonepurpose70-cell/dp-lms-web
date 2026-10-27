@@ -375,7 +375,7 @@
                 @forelse($pendingUsers as $user)
                 <div class="pending-row">
                     <div class="pending-avatar">
-                        {{-- preg_split: dati $w[0] sa "Juan  Cruz" (dobleng space) = 500 error --}}
+                        {{-- preg_split: a double space ("Juan  Cruz") must not leave an empty first word --}}
                         {{ collect(preg_split('/\s+/', trim($user->name), -1, PREG_SPLIT_NO_EMPTY))->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(2)->join('') ?: '?' }}
                     </div>
                     <div class="pending-info">

@@ -71,7 +71,7 @@
             --font-ui:      'Plus Jakarta Sans', sans-serif;
             --font-display: 'Outfit', sans-serif;
 
-            /* Idagdag sa :root ng admin.blade.php */
+            /* User management palette */
 --um-blue-500:   #2478e4;
 --um-blue-600:   #1a62be;
 --um-blue-50:    #f0f6ff;
@@ -995,7 +995,7 @@
     animation: skeletonShimmer 1.5s infinite;
 }
 
-/* Wrapper na nagtatago ng actual content */
+/* Wrapper that hides the real content while loading */
 #pageSkeletonWrapper {
     padding: 0;
 }
@@ -1826,7 +1826,6 @@ function skeletonDefault() {
 }
 
 
-// PALITAN ANG BUONG skeletonAuditLogs() NG GANITO:
 function skeletonAuditLogs() {
     return `<div style="max-width:100%;">
         <div style="margin-bottom:1.5rem;">

@@ -14,9 +14,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Enrollment: pag-submit ng estudyante (web + API) at pag-approve/reject
- * (admin + adviser). Dati magkakahiwalay na kopya sa 4 na controller —
- * at magkakaiba ang validation at mga tsek.
+ * Enrollment: student submission (web + API) and approve/reject
+ * (admin + adviser). One copy of the validation and checks for every caller.
  */
 class EnrollmentService
 {
@@ -25,7 +24,7 @@ class EnrollmentService
     public static function rules(): array
     {
         return [
-            // grade_level at school_year: SERVER ang nagtatakda, hindi ang estudyante
+            // grade_level and school_year are set by the SERVER, not the student
             'student_type'         => 'required|in:new,old,transfer',
             'full_name'            => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
             'age'                  => 'required|integer|min:10|max:25',
@@ -63,12 +62,12 @@ class EnrollmentService
 
     // ─── Student ──────────────────────────────────────────────────────────────
 
-    /** @param array $data validated gamit ang rules() */
+    /** @param array $data validated with rules() */
     public function submit(User $student, array $data): EnrollmentRequest
     {
         $schoolYear = static::currentSchoolYear();
 
-        // Dati: form lang ang may tsek — kayang mag-POST nang direkta ang enrolled na.
+        // Checked here, not only on the form — an enrolled student could POST directly.
         $alreadyApproved = EnrollmentRequest::where('user_id', $student->id)
             ->where('status', 'approved')
             ->where('school_year', $schoolYear)
@@ -93,14 +92,14 @@ class EnrollmentService
     // ─── Reviewer (admin o adviser) ───────────────────────────────────────────
 
     /**
-     * @param int|null $reviewerUserId users.id ng adviser; NULL kapag admin
-     *                                 (hiwalay na `admins` table ang admin)
+     * @param int|null $reviewerUserId the adviser's users.id; NULL for an admin
+     *                                 (admins live in the separate `admins` table)
      */
     public function approve(EnrollmentRequest $request, Section $section, ?int $reviewerUserId): User
     {
         $student = $this->assertReviewable($request);
 
-        // Tugma ang grade ng section sa grade ng request (kung alam ang grade).
+        // The section's grade must match the request's grade (when the grade is known).
         $requestGrade = in_array((string) $request->grade_level, ['7', '8', '9', '10', '11', '12'], true)
             ? (string) $request->grade_level
             : null;
@@ -175,8 +174,8 @@ class EnrollmentService
             'remarks'     => $remarks,
         ]);
 
-        // Dati: 'reason' ang ipinapasa ng adviser pero `$remarks` ang gamit ng
-        // template → error na nilulunok → hindi kailanman naipapadala ang email.
+        // The template expects `$remarks` — passing it under another name throws inside
+        // the mailer and the email is never sent.
         $this->mail('emails.enrollment-rejected', $student, 'Enrollment Update — DP-LMS', [
             'student' => $student,
             'remarks' => $remarks,
@@ -190,7 +189,7 @@ class EnrollmentService
         return in_array((string) $grade, ['11', '12'], true) ? 9 : 8;
     }
 
-    /** Pending lang ang puwedeng i-review — hindi na mababago ang tapos na. */
+    /** Only pending requests can be reviewed — a decision cannot be changed. */
     private function assertReviewable(EnrollmentRequest $request): User
     {
         if ($request->status !== 'pending') {

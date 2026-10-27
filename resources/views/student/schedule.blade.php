@@ -3,8 +3,8 @@
 
 @section('content')
 <style>
-    /* Gumagamit ng design tokens ng layouts/app.blade.php — walang bagong
-       Tailwind class, kaya hindi apektado ng estado ng CSS build. */
+    /* Uses the design tokens of layouts/app.blade.php — no new
+       Tailwind classes, so the CSS build state does not matter. */
 
     .sch-wrap { max-width: 1080px; margin: 0 auto; }
 
@@ -91,7 +91,7 @@
 </style>
 
 @php
-    // Lunes = 1 ... Biyernes = 5. Sabado/Linggo -> walang naka-highlight.
+    // Monday = 1 ... Friday = 5. Saturday/Sunday → nothing highlighted.
     $todayNum = (int) now()->dayOfWeekIso;
 @endphp
 
@@ -103,7 +103,7 @@
     </header>
 
     @if(!$section)
-        {{-- Hindi pa naka-enroll o walang section --}}
+        {{-- Not enrolled yet or no section --}}
         <div class="sch-card sch-in">
             <div class="sch-empty">
                 <div class="sch-empty-ico" aria-hidden="true">
@@ -184,7 +184,7 @@
                                         {{ $p->teacher?->name ?? 'Teacher to be assigned' }}
                                     </p>
                                     @if($p->room)
-                                        {{-- B6-10: free text (hal. "ALS Room 7") — "Room " lang kapag numero --}}
+                                        {{-- Room is free text (e.g. "ALS Room 7") — prefix "Room " only for a bare number --}}
                                         <span class="sch-room">{{ ctype_digit((string) $p->room) ? 'Room ' . $p->room : $p->room }}</span>
                                     @endif
                                 </article>

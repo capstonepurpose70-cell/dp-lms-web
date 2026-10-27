@@ -3,33 +3,33 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// ── Public: Login & Register ───────────────────────────────────────────
-// Throttle kada IP — dati walang limit ang mobile login (bukas sa brute force)
+// ── Public: Login ─────────────────────────────────────────────────────
+// Throttled per IP — the mobile login must not be open to brute force
 Route::post('/login',    [App\Http\Controllers\Api\AuthController::class, 'login'])->middleware('throttle:20,1');
-// 410 Gone — pinalitan ng /activate (estudyante) at /parent/activate (magulang)
+// 410 Gone — replaced by /activate (students) and /parent/activate (parents)
 Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 
-// ── Public: Student activation (LRN + pangalan + email code) ──
+// ── Public: Student activation (LRN + name + email code) ──
 Route::post('/activate',        [App\Http\Controllers\Api\StudentActivationController::class, 'start'])->middleware('throttle:20,1');
 Route::post('/activate/verify', [App\Http\Controllers\Api\StudentActivationController::class, 'verify'])->middleware('throttle:20,1');
 Route::post('/activate/resend', [App\Http\Controllers\Api\StudentActivationController::class, 'resend'])->middleware('throttle:5,10');
 Route::post('/forgot-password',       [App\Http\Controllers\Api\AuthController::class, 'forgotPassword'])->middleware('throttle:10,1');
 Route::post('/forgot-password/reset', [App\Http\Controllers\Api\AuthController::class, 'resetPassword'])->middleware('throttle:20,1');
 
-// ── Public: Parent activation / recovery (code mula sa account ng anak) ──
+// ── Public: Parent activation / recovery (code from the child's account) ──
 Route::middleware('throttle:30,1')->group(function () {
     Route::post('/parent/activate', [App\Http\Controllers\Api\ParentLinkController::class, 'activate']);
     Route::post('/parent/recover',  [App\Http\Controllers\Api\ParentLinkController::class, 'recover']);
 });
 
 // ── Protected (Sanctum token)
-// approved: na-reject / na-ban habang naka-login sa app → 403 + burado ang token
+// approved: rejected / banned while signed in to the app → 403 + token deleted
 Route::middleware(['auth:sanctum', 'approved'])->group(function () {
 
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/user',    fn(Request $r) => $r->user());
 
-    // ── In-app notifications (lahat ng role) — hal. "Juan arrived at school" ──
+    // ── In-app notifications (every role) — e.g. "Juan arrived at school" ──
     Route::get('/notifications',                [App\Http\Controllers\NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read',     [App\Http\Controllers\NotificationController::class, 'read']);
     Route::post('/notifications/read-all',      [App\Http\Controllers\NotificationController::class, 'readAll']);
@@ -58,7 +58,7 @@ Route::middleware(['auth:sanctum', 'approved'])->group(function () {
         Route::post('/assignments/{id}/submit', [App\Http\Controllers\Api\Student\AssignmentController::class, 'submit']);
         Route::post('/enroll',       [App\Http\Controllers\Api\Student\DashboardController::class, 'enroll']);
 
-        // Parent link — one-time code (ang app ang magre-render ng QR)
+        // Parent link — one-time code (the app renders the QR)
         Route::post('/parent-link', [App\Http\Controllers\Api\ParentLinkController::class, 'generate'])
             ->middleware('throttle:10,10');
 
@@ -116,7 +116,7 @@ Route::middleware(['auth:sanctum', 'approved'])->group(function () {
         Route::get('/contacts',       [App\Http\Controllers\Api\MessageController::class, 'contacts']);
         Route::get('/thread/{user}',  [App\Http\Controllers\Api\MessageController::class, 'thread']);
         Route::post('/thread/{user}', [App\Http\Controllers\Api\MessageController::class, 'send']);
-        // Dati: may method sa controller pero walang route → 404 ang edit/unsend/typing sa app
+        // Edit / unsend / typing for the app's chat
         Route::post('/typing/{user}',    [App\Http\Controllers\Api\MessageController::class, 'typing'])->middleware('throttle:60,1');
         Route::patch('/{message}',       [App\Http\Controllers\Api\MessageController::class, 'update'])->whereNumber('message');
         Route::delete('/{message}',      [App\Http\Controllers\Api\MessageController::class, 'destroy'])->whereNumber('message');

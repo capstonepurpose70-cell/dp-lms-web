@@ -14,8 +14,8 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        // Field name "email" pa rin (HUWAG palitan — gamit ng naka-deploy na app),
-        // pero tumatanggap na ng email, LRN, o mobile number, kapareho ng web.
+        // The field is still named "email" (do NOT rename — the deployed app sends it),
+        // but it accepts an email, LRN or mobile number, same as the web.
         $request->validate([
             'email'    => 'required|string|max:254',
             'password' => 'required',
@@ -33,8 +33,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'Account not yet approved.'], 403);
         }
 
-        // Temporary password (old single "Create Teacher" accounts): dati nakakakuha ng
-        // mobile token at hindi kailanman napipilitang palitan. Sa website muna palitan.
+        // Temporary password (old single "Create Teacher" accounts): no mobile token
+        // until it is changed on the website.
         if ($user->must_change_password) {
             AuditLogService::log('Login blocked (temporary password)', 'Auth', $user->email, $user);
             return response()->json([
@@ -68,9 +68,9 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        // Wala nang public registration.
-        // Estudyante: /api/activate (LRN + pangalan + email code).
-        // Magulang:   /api/parent/activate (code mula sa account ng anak).
+        // No public registration.
+        // Students: /api/activate (LRN + name + email code).
+        // Parents:  /api/parent/activate (code from the child's account).
         return response()->json([
             'message' => 'Registration has been replaced. Students: use /api/activate. '
                 . "Parents: use the code from your child's account at /api/parent/activate.",
@@ -79,8 +79,7 @@ class AuthController extends Controller
 
     /**
      * POST /api/forgot-password  { email }
-     * Dati: stub na nagsasabing "sent" pero walang ipinapadala.
-     * Parehong sagot may account man o wala (walang enumeration).
+     * Same answer whether or not the account exists (no enumeration).
      */
     public function forgotPassword(Request $request, PasswordResetService $resets)
     {

@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    {{-- Same rule as the server (PasswordResetService::passwordRules) — dati "Minimum 8 characters" lang ang nakasulat --}}
+    {{-- Same rule as the server (PasswordResetService::passwordRules) --}}
     <ul class="ac-rules" id="pw-rules" data-pw-rules="password" data-pw-confirm="password_confirmation" aria-label="Password requirements">
         <li data-rule="length">At least 8 characters</li>
         <li data-rule="mixed">Upper and lowercase letters</li>

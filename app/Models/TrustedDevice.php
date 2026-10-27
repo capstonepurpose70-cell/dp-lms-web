@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 
 /**
- * Device na hindi na hihingan ng OTP hanggang expires_at.
- * SHA-256 lang ng cookie token ang naka-store (token_hash).
+ * A device that is not asked for an OTP until expires_at.
+ * Only the SHA-256 of the cookie token is stored (token_hash).
  */
 class TrustedDevice extends Model
 {
@@ -26,7 +26,7 @@ class TrustedDevice extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** Binubura ng `php artisan model:prune` ang mga expired na. */
+    /** `php artisan model:prune` deletes the expired ones. */
     public function prunable(): Builder
     {
         return static::where('expires_at', '<', now());

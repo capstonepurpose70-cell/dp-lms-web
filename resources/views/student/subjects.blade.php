@@ -2,8 +2,7 @@
 @section('title', 'My Subjects')
 
 @section('content')
-{{-- B6-11: one accent color (dati rainbow covers), cards link to the subject's modules,
-     readable text (dati #9ca3af), no inline onmouseover. --}}
+{{-- One accent color; each card links to that subject's modules. --}}
 <style>
     .ss-wrap { max-width: 1040px; margin: 0 auto; }
     .ss-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }

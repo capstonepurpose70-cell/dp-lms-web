@@ -13,7 +13,7 @@ class AuditLogController extends Controller
         $search = trim((string) $request->search);
         $role   = (string) $request->role;
         $module = (string) $request->module;
-        // Valid Y-m-d lang ang tinatanggap (dati: kahit anong text ay ipinapasa sa whereDate)
+        // Only a valid Y-m-d reaches whereDate()
         $date   = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->date) ? (string) $request->date : '';
 
         $filtered = fn () => AuditLog::query()
@@ -25,7 +25,7 @@ class AuditLogController extends Controller
 
         $logs = $filtered()->latest()->paginate(20)->withQueryString();
 
-        // Dati: binibilang lang ang 20 row ng kasalukuyang page. Ngayon: buong filtered set.
+        // Counts the whole filtered set, not just the current page.
         $stats = [
             'total'      => $logs->total(),
             'auth'       => $filtered()->where('module', 'Auth')->count(),
@@ -37,7 +37,7 @@ class AuditLogController extends Controller
             'users'      => $filtered()->whereNotNull('user_name')->distinct()->count('user_name'),
         ];
 
-        // Mga module na talagang nasa logs (dati naka-hardcode, kulang)
+        // Modules that actually appear in the logs
         $modules = AuditLog::query()->whereNotNull('module')->distinct()->orderBy('module')->pluck('module');
 
         return view('admin.audit-logs.index', compact('logs', 'stats', 'modules', 'search', 'role', 'module', 'date'));
