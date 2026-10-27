@@ -22,7 +22,7 @@
             --sb-active:        #2563EB;
             --sb-active-glow:   rgba(37,99,235,.30);
             --sb-border:        rgba(255,255,255,.06);
-            --sb-text:          #64748B;
+            --sb-text:          #94A3B8;   /* #64748B was 3.7:1 on the navy sidebar */
             --sb-text-hover:    #CBD5E1;
             --sb-text-active:   #FFFFFF;
             --sb-icon-bg:       rgba(255,255,255,.06);
@@ -43,7 +43,7 @@
             /* Text */
             --text-1:           #0F172A;
             --text-2:           #475569;
-            --text-3:           #94A3B8;
+            --text-3:           #64748B;   /* #94A3B8 was 2.6:1 on white — too faint for small text */
 
             /* Status */
             --danger:           #EF4444;
@@ -142,7 +142,7 @@
 
         .brand-text { line-height: 1.2; }
         .brand-title { font-size: 12px; font-weight: 800; color: #FFFFFF; letter-spacing: .01em; }
-        .brand-sub   { font-size: 9.5px; font-weight: 500; color: #475569; }
+        .brand-sub   { font-size: 9.5px; font-weight: 500; color: #94A3B8; }
 
         /* Nav right */
         .nav-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
@@ -209,7 +209,7 @@ body.collapsed .sidebar-nav {
         .sidebar-section-label {
             padding: 18px 14px 6px;
             font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
-            color: #374151; text-transform: uppercase;
+            color: #64748B; text-transform: uppercase;
             white-space: nowrap; overflow: hidden;
             transition: opacity .22s;
         }
@@ -542,6 +542,20 @@ body.collapsed .sidebar-nav {
             .main-content .btn { min-height: 44px; }
         }
 
+        /* Log out: <button> centers its text by default — align with the links above */
+        .logout-btn { text-align: left; }
+
+        /* Phones: avatar only in the top bar (the name overflowed past the screen edge) */
+        @media (max-width: 600px) {
+            .top-nav { padding-right: 12px; }
+            .user-chip { padding: 3px; }
+            .user-chip > div:last-child { display: none; }
+        }
+
+        /* Keyboard focus — visible on the dark sidebar and on the light content */
+        :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        .sidebar :focus-visible, .nav-brand-zone :focus-visible { outline-color: #93C5FD; }
+
         @media (prefers-reduced-motion: reduce) {
             * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
         }
@@ -585,7 +599,7 @@ body.collapsed .sidebar-nav {
 
     <div class="nav-right">
      <div style="position:relative;" id="notifWrapper">
-    <button class="nav-icon-btn" id="notifBtn" title="Notifications">
+    <button class="nav-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -705,7 +719,7 @@ body.collapsed .sidebar-nav {
     ───────────────────────────────────────────────────────────── */
 const NAV_ITEMS = [
     {
-        href : '/teacher/dashboard',
+        href : '{{ route('teacher.dashboard') }}',
         label: 'Dashboard',
         icon : `<rect x="3" y="3" width="7" height="7" rx="1.5"/>
                 <rect x="14" y="3" width="7" height="7" rx="1.5"/>
@@ -713,7 +727,7 @@ const NAV_ITEMS = [
                 <rect x="14" y="14" width="7" height="7" rx="1.5"/>`
     },
      {
-        href : '/teacher/gradebook',
+        href : '{{ route('teacher.gradebook.index') }}',
         label: 'Gradebook',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0
@@ -721,14 +735,14 @@ const NAV_ITEMS = [
                      V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>`
     },
      {
-        href : '/teacher/materials',
+        href : '{{ route('teacher.materials.index') }}',
         label: 'Materials',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1
                      1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>`
     },
     {
-        href : '/teacher/assignments',
+        href : '{{ route('teacher.assignments.index') }}',
         label: 'Quizzes',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
@@ -736,7 +750,7 @@ const NAV_ITEMS = [
                      m-3 7h3m-3 4h3m-5-4h.01M9 16h.01"/>`
     },
     {
-        href : '/teacher/announcements',
+        href : '{{ route('teacher.announcements.index') }}',
         label: 'Announcements',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 16h2a2 2 0
@@ -745,7 +759,7 @@ const NAV_ITEMS = [
     },
 
     {
-    href : '/teacher/students',
+    href : '{{ route('teacher.students.index') }}',
     label: 'Students',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
@@ -754,7 +768,7 @@ const NAV_ITEMS = [
 },
 
     {
-    href : '/teacher/enrollments',
+    href : '{{ route('teacher.enrollments.index') }}',
     label: 'Enrollments',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0
@@ -762,7 +776,7 @@ const NAV_ITEMS = [
 },
 
 {
-    href : '/teacher/attendance',
+    href : '{{ route('teacher.attendance.index') }}',
     label: 'Attendance',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0
@@ -771,7 +785,7 @@ const NAV_ITEMS = [
 },
 
 {
-    href : '/teacher/face-kiosk',
+    href : '{{ route('teacher.face-kiosk.index') }}',
     label: 'Face Registration',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2
@@ -779,7 +793,7 @@ const NAV_ITEMS = [
 },
 
 {
-    href : '/teacher/messages',
+    href : '{{ route('teacher.messages') }}',
     label: 'Messages',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0
@@ -789,17 +803,20 @@ const NAV_ITEMS = [
 
 ];
     /* Build links */
-    const nav     = document.getElementById('sidebarNav');
-    const curPath = window.location.pathname.replace(/\/$/, '');
+    const nav = document.getElementById('sidebarNav');
+    const pathOf = (u) => new URL(u, window.location.href).pathname.replace(/\/$/, '');
+
+    function syncActive() {
+        const cur = pathOf(window.location.href);
+        document.querySelectorAll('#sidebarNav a').forEach(l => {
+            const href = pathOf(l.href);
+            l.classList.toggle('active', cur === href || cur.startsWith(href + '/'));
+        });
+    }
 
     NAV_ITEMS.forEach(item => {
-        const cleanHref = item.href.replace(/\/$/, '');
-        const isActive  = curPath === cleanHref || curPath.startsWith(cleanHref + '/');
-
-        const a         = document.createElement('a');
-        a.href          = item.href;
-
-        if (isActive) a.classList.add('active');
+        const a = document.createElement('a');
+        a.href  = item.href;
 
         a.innerHTML = `
             <span class="nav-icon">
@@ -812,23 +829,78 @@ const NAV_ITEMS = [
             <span class="sb-tooltip">${item.label}</span>
         `;
 
-       /* REPLACE with: */
-a.addEventListener('click', function (e) {
-    e.preventDefault();
-    const url = this.href;
+        a.addEventListener('click', function (e) {
+            // Ctrl/Cmd/Shift/middle click → let the browser open a new tab/window
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
 
-    // ✅ Full navigation for pages with forms (create, edit)
-    const isFormPage = url.includes('/create') || url.includes('/edit');
-    if (isFormPage) {
-        window.location.href = url;
-        return;
+            // Full navigation for pages with forms (create, edit)
+            if (this.href.includes('/create') || this.href.includes('/edit')) {
+                window.location.href = this.href;
+                return;
+            }
+            loadPage(this.href, true);
+        });
+        nav.appendChild(a);
+    });
+    syncActive();
+
+    /* ─────────────────────────────────────────────────────────────
+       In-page navigation: fetch the page, swap only .main-content.
+       Falls back to a normal page load whenever the answer is not a
+       teacher page (session expired → login, error, JSON) — dati
+       naiiwan sa skeleton. Back/Forward uses the same loader so the
+       page's scripts run (dati innerHTML → patay ang JS ng page).
+    ───────────────────────────────────────────────────────────── */
+    let navSeq = 0;
+
+    function loadPage(url, push) {
+        const seq     = ++navSeq;
+        const curMain = document.querySelector('.main-content');
+        if (push) {
+            document.querySelectorAll('#sidebarNav a').forEach(l => l.classList.toggle('active', l.href === url));
+        }
+        showSkeleton(curMain);
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(r => {
+                if (!r.ok || r.redirected) throw new Error('not a page');
+                return r.text();
+            })
+            .then(html => {
+                if (seq !== navSeq) return;   // a newer click won
+                const doc     = new DOMParser().parseFromString(html, 'text/html');
+                const newMain = doc.querySelector('.main-content');
+                if (!newMain) throw new Error('not a page');
+
+                // Each inline script in its own block: a second visit would otherwise
+                // throw "Identifier has already been declared" on top-level const/let.
+                newMain.querySelectorAll('script:not([src])').forEach(s => {
+                    if (!s.type || s.type === 'text/javascript') s.textContent = '{\n' + s.textContent + '\n}';
+                });
+
+                if (push) history.pushState(null, '', url);
+                if (doc.title) document.title = doc.title;
+
+                curMain.style.transition = 'none';
+                curMain.style.opacity = '0';
+                curMain.innerHTML = '';
+                const range = document.createRange();
+                range.selectNode(curMain);
+                curMain.appendChild(range.createContextualFragment(newMain.innerHTML));   // runs the page's scripts
+                syncActive();
+                window.scrollTo(0, 0);
+                requestAnimationFrame(() => {
+                    curMain.style.transition = 'opacity .18s ease';
+                    curMain.style.opacity    = '1';
+                });
+            })
+            .catch(() => { if (seq === navSeq) window.location.href = url; });
     }
 
-    document.querySelectorAll('#sidebarNav a').forEach(l => l.classList.remove('active'));
-    this.classList.add('active');
-    history.pushState(null, '', url);
+    window.addEventListener('popstate', () => loadPage(window.location.href, false));
 
-    const curMain = document.querySelector('.main-content');
+    function showSkeleton(curMain) {
     curMain.style.opacity = '0';
     curMain.style.transition = 'none';
 
@@ -861,51 +933,7 @@ a.addEventListener('click', function (e) {
         </div>
     `;
     curMain.style.opacity = '1';
-
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.text())
-        .then(html => {
-            const parser  = new DOMParser();
-            const doc     = parser.parseFromString(html, 'text/html');
-            const newMain = doc.querySelector('.main-content');
-            if (newMain && curMain) {
-                curMain.style.opacity = '0';
-                curMain.style.transition = 'none';
-                curMain.innerHTML = '';
-                const range = document.createRange();
-                range.selectNode(curMain);
-                curMain.appendChild(range.createContextualFragment(newMain.innerHTML));
-                requestAnimationFrame(() => {
-                    curMain.style.transition = 'opacity .18s ease';
-                    curMain.style.opacity    = '1';
-                });
-            }
-        })
-        .catch(() => { window.location.href = url; });
-});
-        nav.appendChild(a);
-    });
-
-    // Handle browser back/forward
-    window.addEventListener('popstate', () => {
-        const url = window.location.pathname;
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.text())
-            .then(html => {
-                const parser  = new DOMParser();
-                const doc     = parser.parseFromString(html, 'text/html');
-                const newMain = doc.querySelector('.main-content');
-                const curMain = document.querySelector('.main-content');
-                if (newMain && curMain) curMain.innerHTML = newMain.innerHTML;
-
-                // Sync active link
-                const curPath = window.location.pathname.replace(/\/$/, '');
-                document.querySelectorAll('#sidebarNav a').forEach(l => {
-                    const href = l.getAttribute('href').replace(/\/$/, '');
-                    l.classList.toggle('active', curPath === href || curPath.startsWith(href + '/'));
-                });
-            });
-    });
+    }
 
     /* Collapse toggle */
     const body = document.body;
@@ -935,9 +963,12 @@ a.addEventListener('click', function (e) {
     modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('open'); });
 
-    /* GSAP entrance */
-    window.addEventListener('load', () => {
-        if (typeof gsap === 'undefined') {
+    /* GSAP entrance — on DOMContentLoaded (deferred GSAP / its fallback are ready by then), not
+       window "load", which kept the page blank until every image and font finished.
+       Reduced motion: just show it. */
+    document.addEventListener('DOMContentLoaded', () => {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduce || typeof gsap === 'undefined') {
             body.style.opacity = '1';
             document.querySelector('.main-content').style.opacity = '1';
             return;
@@ -958,6 +989,12 @@ const notifDropdown = document.getElementById('notifDropdown');
 const notifBadge    = document.getElementById('notifBadge');
 const notifList     = document.getElementById('notifList');
 const notifEmpty    = document.getElementById('notifEmpty');
+// url(): gumagana rin kapag naka-serve sa XAMPP subfolder (dati absolute "/teacher/...")
+const NOTIF_URL = {
+    data:    @json(url('teacher/notifications/data')),
+    read:    @json(url('teacher/notifications/__ID__/read')),
+    readAll: @json(url('teacher/notifications/read-all')),
+};
 // Escape bago ilagay sa innerHTML (XSS) — kapareho ng layouts/app.blade.php
 const tEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
@@ -968,7 +1005,7 @@ const TYPE_ICONS = {
 };
 
 function loadNotifs() {
-    fetch('/teacher/notifications/data')
+    fetch(NOTIF_URL.data, { headers: { 'Accept': 'application/json' } })
         .then(r => r.json())
         .then(({ unread, items }) => {
             // Badge
@@ -1023,7 +1060,7 @@ function loadNotifs() {
                     </div>
                 `;
                 el.addEventListener('click', () => {
-                   fetch(`/teacher/notifications/${n.id}/read`,{
+                   fetch(NOTIF_URL.read.replace('__ID__', encodeURIComponent(n.id)), {
                         method: 'POST',
                         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                     });
@@ -1037,6 +1074,7 @@ function loadNotifs() {
 notifBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = notifDropdown.style.display === 'block';
+    notifBtn.setAttribute('aria-expanded', open ? 'false' : 'true');
     if (open) {
         notifDropdown.style.display = 'none';
     } else {
@@ -1050,12 +1088,13 @@ notifBtn.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
     if (!document.getElementById('notifWrapper').contains(e.target)) {
         notifDropdown.style.display = 'none';
+        notifBtn.setAttribute('aria-expanded', 'false');
     }
 });
 
 // Mark all read
 document.getElementById('markAllRead').addEventListener('click', () => {
-    fetch('/teacher/notifications/read-all',{
+    fetch(NOTIF_URL.readAll, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
     }).then(() => loadNotifs());
