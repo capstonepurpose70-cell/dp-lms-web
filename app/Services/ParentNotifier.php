@@ -48,4 +48,32 @@ class ParentNotifier
             Log::warning('Arrival notification failed (attendance still saved): ' . $e->getMessage());
         }
     }
+
+    /**
+     * Teacher announcement for parents ("All" or "Parents only") → push to the approved
+     * parents of these students. Dati walang natatanggap ang magulang kahit "Parents only".
+     */
+    public function announcement(iterable $studentIds, string $title, string $body, int $id, string $teacherName): void
+    {
+        try {
+            $parentIds = User::whereIn('id', collect($studentIds)->all())
+                ->whereNotNull('parent_id')
+                ->pluck('parent_id');
+
+            $approved = User::whereIn('id', $parentIds)
+                ->where('role', 'parent')
+                ->where('status', 'approved')
+                ->pluck('id')
+                ->all();
+
+            $this->push->sendToUsers(
+                $approved,
+                '📢 ' . $title,
+                'From ' . $teacherName . ': ' . $body,
+                ['type' => 'announcement', 'id' => $id, 'teacher' => $teacherName],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Announcement notification to parents failed (announcement still posted): ' . $e->getMessage());
+        }
+    }
 }

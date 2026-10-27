@@ -319,7 +319,7 @@ class DashboardController extends Controller
 
     // ── POST /api/teacher/announcements ───────────────────────────────────────
     // Body: { title, body, audience, section_id? }
-    public function storeAnnouncement(Request $request, StudentNotifier $notifier)
+    public function storeAnnouncement(Request $request, StudentNotifier $notifier, \App\Services\ParentNotifier $parents)
     {
         $teachingIds = auth()->user()->teachingSectionIds();
 
@@ -344,14 +344,19 @@ class DashboardController extends Controller
 
         // 🔔 Push (FCM) to students in the teacher's section(s). Never breaks posting
         // (dati walang try/catch dito — 500 kahit naka-save na ang announcement).
+        $studentIds = User::studentIdsInSections($sectionIds);
         if ($request->audience !== 'parents') {
             $notifier->announcement(
-                User::studentIdsInSections($sectionIds),
+                $studentIds,
                 $announcement->title,
                 $announcement->body,
                 $announcement->id,
                 auth()->user()->name,
             );
+        }
+        // Same as web: parents get a push for "all" / "parents" announcements
+        if ($request->audience !== 'students') {
+            $parents->announcement($studentIds, $announcement->title, $announcement->body, $announcement->id, auth()->user()->name);
         }
 
         AuditLogService::log(

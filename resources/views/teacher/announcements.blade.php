@@ -1,247 +1,195 @@
-@extends('layouts.teacher') 
+@extends('layouts.teacher')
 @section('title', 'Announcements')
 
-@section('sidebar')
-    <a href="{{ route('teacher.dashboard') }}"
-        class="{{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
-        Dashboard
-    </a>
-    <a href="{{ route('teacher.gradebook.index') }}"
-        class="{{ request()->routeIs('teacher.gradebook.*') ? 'active' : '' }}">
-        Gradebook
-    </a>
-    <a href="{{ route('teacher.materials.index') }}"
-        class="{{ request()->routeIs('teacher.materials.*') ? 'active' : '' }}">
-        Learning Materials
-    </a>
-    <a href="{{ route('teacher.announcements.index') }}"
-        class="{{ request()->routeIs('teacher.announcements.*') ? 'active' : '' }}">
-        Announcements
-    </a>
-@endsection
-
 @section('content')
+{{-- Plain CSS + layout tokens (the Tailwind build is stale: sm:col-span-2 / py-14 / w-14 were missing). --}}
 <style>
-    .page-card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1.5px solid #f1f5f9;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-        animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    .ta-wrap { max-width: 880px; margin: 0 auto; }
+    .ta-head { margin-bottom: 20px; }
+    .ta-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
+    .ta-sub { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+
+    .ta-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+    .ta-form { padding: 20px; margin-bottom: 20px; }
+    .ta-form-title { font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 14px; }
+
+    .ta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .ta-span { grid-column: 1 / -1; }
+    .ta-field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+    .ta-input {
+        width: 100%; min-height: 42px; border: 1.5px solid var(--border); border-radius: 10px;
+        padding: 9px 12px; font-size: 14px; color: var(--text-1); background: #fbfcff;
+        font-family: inherit; outline: none; transition: border-color .15s, box-shadow .15s;
     }
+    .ta-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #fff; }
+    .ta-input.is-error { border-color: #f87171; }
+    textarea.ta-input { min-height: 110px; resize: vertical; line-height: 1.55; }
+    .ta-hint { font-size: 12px; color: var(--text-3); margin-top: 5px; line-height: 1.5; }
 
-    @keyframes fadeUp {
-        from { opacity:0; transform:translateY(12px); }
-        to   { opacity:1; transform:translateY(0); }
+    .ta-errors { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; }
+    .ta-errors ul { padding-left: 18px; }
+    .ta-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+
+    .ta-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .ta-btn {
+        min-height: 42px; padding: 0 20px; border: none; border-radius: 10px; cursor: pointer;
+        background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; font-family: inherit;
+        box-shadow: 0 4px 12px var(--accent-glow); transition: background .15s;
     }
+    .ta-btn:hover { background: var(--accent-dark); }
+    .ta-btn[disabled] { opacity: .55; cursor: not-allowed; }
 
-    .form-card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1.5px solid #f1f5f9;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-        padding: 20px;
-        margin-bottom: 20px;
-        animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
+    .ta-list-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .ta-list-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+    .ta-count { font-size: 12px; color: var(--text-3); }
+
+    .ta-item { display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .ta-item:last-child { border-bottom: none; }
+    .ta-item-main { flex: 1; min-width: 0; }
+    .ta-item-title { font-size: 14px; font-weight: 700; color: var(--text-1); overflow-wrap: anywhere; }
+    .ta-item-body {
+        font-size: 13px; color: var(--text-2); margin-top: 4px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere;
+        display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
     }
+    .ta-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--text-3); }
+    .ta-chip { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--accent-lt); color: var(--accent-dark); }
 
-    .field-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: #6b7280;
-        margin-bottom: 5px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+    .ta-del {
+        width: 40px; height: 40px; flex-shrink: 0; border: none; border-radius: 10px; cursor: pointer;
+        display: grid; place-items: center; background: #fef2f2; color: #dc2626; transition: background .15s;
     }
+    .ta-del:hover { background: #fee2e2; }
 
-    .field-input {
-        width: 100%;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 9px;
-        padding: 9px 12px;
-        font-size: 13px;
-        color: #111827;
-        background: #fafafa;
-        outline: none;
-        font-family: inherit;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
+    .ta-empty { padding: 48px 20px; text-align: center; color: var(--text-3); font-size: 13px; line-height: 1.6; }
+    .ta-pages { margin-top: 16px; }
 
-    .field-input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        background: #fff;
-    }
-
-    textarea.field-input {
-        resize: none;
-        min-height: 80px;
-    }
-
-    .post-btn {
-        background: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 9px;
-        padding: 9px 20px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
-        box-shadow: 0 3px 10px rgba(37,99,235,0.25);
-    }
-
-    .post-btn:hover {
-        background: #1d4ed8;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(37,99,235,0.35);
-    }
-
-    .post-btn:active { transform: scale(0.97); }
-
-    .announce-item {
-        padding: 16px 20px;
-        border-bottom: 1px solid #f3f4f6;
-        transition: background 0.15s ease;
-    }
-
-    .announce-item:last-child { border-bottom: none; }
-    .announce-item:hover { background: #f8faff; }
-
-    .delete-btn {
-        background: #fef2f2;
-        color: #dc2626;
-        border: none;
-        border-radius: 8px;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: background 0.15s ease, transform 0.15s ease;
-    }
-
-    .delete-btn:hover {
-        background: #fee2e2;
-        transform: scale(1.08);
-    }
-
-    .delete-btn:active { transform: scale(0.92); }
+    @media (max-width: 600px) { .ta-grid { grid-template-columns: 1fr; } .ta-actions .ta-btn { width: 100%; } }
 </style>
 
-<div class="max-w-4xl mx-auto">
+<div class="ta-wrap">
 
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Announcements</h1>
-        <p class="text-sm text-gray-400 mt-1">Post announcements for your students and parents.</p>
+    <div class="ta-head">
+        <h1 class="ta-title">Announcements</h1>
+        <p class="ta-sub">Post updates for the students and parents of your sections.</p>
     </div>
 
-    {{-- Post Form --}}
-    <div class="form-card">
-        <h2 class="text-sm font-bold text-gray-700 mb-4">Post New Announcement</h2>
+    {{-- Post form --}}
+    <section class="ta-card ta-form" aria-labelledby="ta-form-title">
+        <h2 class="ta-form-title" id="ta-form-title">New announcement</h2>
 
-        <form method="POST" action="{{ route('teacher.announcements.store') }}">
+        {{-- Dati walang error display — tahimik na bumabalik ang form kapag invalid --}}
+        @if($errors->any())
+            <div class="ta-errors" role="alert">
+                <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            </div>
+        @endif
+
+        @if($sections->isEmpty())
+            <div class="ta-warn">
+                You don't have any sections yet, so an announcement would not reach anyone.
+                The school admin assigns your classes in Class Schedules.
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('teacher.announcements.store') }}" id="taForm">
             @csrf
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                <div class="sm:col-span-2">
-                    <label class="field-label">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}"
-                        placeholder="Announcement title" required
-                        class="field-input">
+            <div class="ta-grid">
+                <div class="ta-field ta-span">
+                    <label for="ta-title-input">Title</label>
+                    <input type="text" id="ta-title-input" name="title" value="{{ old('title') }}" maxlength="255" required
+                           class="ta-input @error('title') is-error @enderror" placeholder="e.g. No classes on Friday"
+                           @error('title') aria-invalid="true" @enderror>
                 </div>
-                <div>
-                    <label class="field-label">Audience</label>
-                    <select name="audience" class="field-input">
-                        <option value="all">All</option>
-                        <option value="students">Students only</option>
-                        <option value="parents">Parents only</option>
-                      
+
+                <div class="ta-field">
+                    <label for="ta-section">Send to</label>
+                    <select id="ta-section" name="section_id" class="ta-input @error('section_id') is-error @enderror">
+                        <option value="">All my sections</option>
+                        @foreach($sections as $sec)
+                            <option value="{{ $sec->id }}" @selected((string) old('section_id') === (string) $sec->id)>
+                                Grade {{ $sec->grade_level }} – {{ $sec->name }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
+
+                <div class="ta-field">
+                    <label for="ta-audience">Who can see it</label>
+                    <select id="ta-audience" name="audience" class="ta-input" aria-describedby="ta-audience-hint">
+                        <option value="all" @selected(old('audience', 'all') === 'all')>Students and parents</option>
+                        <option value="students" @selected(old('audience') === 'students')>Students only</option>
+                        <option value="parents" @selected(old('audience') === 'parents')>Parents only</option>
+                    </select>
+                </div>
+
+                <div class="ta-field ta-span">
+                    <label for="ta-body">Message</label>
+                    <textarea id="ta-body" name="body" maxlength="20000" required
+                              class="ta-input @error('body') is-error @enderror" placeholder="Write your announcement…"
+                              @error('body') aria-invalid="true" @enderror>{{ old('body') }}</textarea>
+                    <p class="ta-hint" id="ta-audience-hint">Everyone you choose gets a phone notification in the DP-LMS app.</p>
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label class="field-label">Message</label>
-                <textarea name="body" placeholder="Write your announcement..."
-                    required class="field-input">{{ old('body') }}</textarea>
+            <div class="ta-actions">
+                <button type="submit" class="ta-btn" @disabled($sections->isEmpty())>Post announcement</button>
             </div>
-
-            <button type="submit" class="post-btn">
-                Post Announcement
-            </button>
         </form>
-    </div>
+    </section>
 
-    {{-- Announcements List --}}
-    <div class="page-card">
-        <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 class="text-sm font-bold text-gray-700">Posted Announcements</h2>
-            <span class="text-xs text-gray-400">{{ $announcements->total() }} total</span>
+    {{-- Posted list --}}
+    <section class="ta-card" aria-labelledby="ta-list-title">
+        <div class="ta-list-head">
+            <h2 class="ta-list-title" id="ta-list-title">Posted announcements</h2>
+            <span class="ta-count">{{ $announcements->total() }} total</span>
         </div>
 
         @forelse($announcements as $announcement)
-        <div class="announce-item">
-            <div class="flex justify-between items-start gap-4">
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-gray-800">
-                        {{ $announcement->title }}
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1 line-clamp-2">
-                        {{ $announcement->body }}
-                    </p>
+            <article class="ta-item">
+                <div class="ta-item-main">
+                    <h3 class="ta-item-title">{{ $announcement->title }}</h3>
+                    <p class="ta-item-body">{{ $announcement->body }}</p>
+                    <div class="ta-meta">
+                        <span class="ta-chip">{{ $announcement->target_label }}</span>
+                        <span>{{ ['all' => 'Students and parents', 'students' => 'Students only', 'parents' => 'Parents only'][$announcement->audience] ?? ucfirst($announcement->audience) }}</span>
+                        <time datetime="{{ $announcement->created_at->toIso8601String() }}" title="{{ $announcement->created_at->format('M j, Y g:i A') }}">
+                            {{ $announcement->created_at->diffForHumans() }}
+                        </time>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                        {{ ucfirst($announcement->audience) }}
-                    </span>
-                    <span class="text-xs text-gray-400">
-                        {{ $announcement->created_at->diffForHumans() }}
-                    </span>
 
-                    {{-- Delete button (hard delete — mawawala rin sa students) --}}
-                    <form method="POST"
-                        action="{{ route('teacher.announcements.destroy', $announcement->id) }}"
-                        onsubmit="return confirm('Delete this announcement? Students will no longer see it.');"
-                        class="flex-shrink-0">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="delete-btn" title="Delete announcement">
-                            <svg width="16" height="16" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0
-                                       01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0
-                                       00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
+                <form method="POST" action="{{ route('teacher.announcements.destroy', $announcement->id) }}"
+                      onsubmit="return confirm('Delete this announcement? Students and parents will no longer see it.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="ta-del" aria-label="Delete “{{ $announcement->title }}”" title="Delete">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </form>
+            </article>
         @empty
-        <div class="py-14 text-center">
-            <div class="w-14 h-14 bg-gray-50 rounded-full mx-auto mb-4"
-                style="display:flex;align-items:center;justify-content:center;">
-                <svg width="24" height="24" fill="none" stroke="#d1d5db"
-                    stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18
-                           16h2a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11
-                           5.882A2 2 0 0112.83 4h.842a2 2 0 011.995
-                           1.858L17 16H8.343M11 5.882L8.343 16"/>
-                </svg>
-            </div>
-            <p class="text-gray-400 text-sm font-medium">No announcements yet.</p>
-            <p class="text-gray-300 text-xs mt-1">Post your first announcement above.</p>
-        </div>
+            <div class="ta-empty">No announcements yet.<br>Post your first one above.</div>
         @endforelse
-    </div>
+    </section>
 
-    @if($announcements->count())
-    <div class="mt-4">{{ $announcements->links() }}</div>
+    @if($announcements->hasPages())
+        <div class="ta-pages">{{ $announcements->links() }}</div>
     @endif
 </div>
+
+<script>
+    // Prevent a double post on a slow connection; the Back button restores the page with it re-enabled
+    (function () {
+        const form = document.getElementById('taForm');
+        const btn  = form.querySelector('button[type="submit"]');
+        const canPost = !btn.disabled;
+        form.addEventListener('submit', function () {
+            btn.disabled = true;
+            btn.textContent = 'Posting…';
+        });
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted && canPost) { btn.disabled = false; btn.textContent = 'Post announcement'; }
+        });
+    })();
+</script>
 @endsection
