@@ -13,26 +13,30 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Pag-link ng magulang sa estudyante gamit ang one-time code na ginagawa ng
- * ESTUDYANTE mismo (walang adviser/admin na namimigay ng code).
+ * Links a parent to a student with a one-time code that the STUDENT creates
+ * (no adviser/admin hands out codes).
  *
- *   link    → gagawa ng parent account; approved agad kapag tugma ang pangalan
- *             sa mother/father/guardian ng StudentProfile, kung hindi → pending
- *   recover → reset ng password ng naka-link nang magulang (bagong device /
- *             nakalimutan ang password) — pamalit sa SMS OTP
+ *   link    → creates the parent account; approved at once when the name matches
+ *             the StudentProfile's mother/father/guardian, otherwise pending
+ *   recover → resets the password of an already linked parent (new device /
+ *             forgotten password) — used instead of an SMS OTP
  *
- * Ang mga error ay ValidationException para iisang handling sa web (redirect
- * back + errors) at API (422 JSON).
+ * Errors are ValidationExceptions so the web (redirect back + errors) and the
+ * API (422 JSON) handle them the same way.
  */
 class ParentLinkService
 {
     public const TTL_HOURS = 24;
 
-    // Walang 0/O, 1/I/L — madaling basahin at i-type
+    // No 0/O, 1/I/L — easy to read and type
     private const ALPHABET    = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
     private const CODE_LENGTH = 8;
 
-    // ─── Validation rules (iisa para sa web at API) ───────────────────────────
+    public function __construct(private SessionRevoker $sessions)
+    {
+    }
+
+    // ─── Validation rules (shared by web and API) ─────────────────────────────
 
     public static function activationRules(): array
     {
@@ -68,7 +72,7 @@ class ParentLinkService
         ];
     }
 
-    /** I-normalize ang mobile number BAGO i-validate (para tanggapin ang +63 at may espasyo). */
+    /** Normalize the mobile number BEFORE validation (accepts +63 and spaces). */
     public static function prepareInput(array $input): array
     {
         if (isset($input['contact_number'])) {
@@ -100,11 +104,11 @@ class ParentLinkService
         return hash('sha256', static::normalizeCode($input));
     }
 
-    // ─── Generate (estudyante) ────────────────────────────────────────────────
+    // ─── Generate (student) ───────────────────────────────────────────────────
 
     /**
-     * Gagawa ng bagong code para sa estudyante; binubura ang dati.
-     * Ang plaintext na code ay ibinabalik NGAYON LANG — hindi ito naka-store.
+     * Creates a new code for the student and deletes the previous one.
+     * The plaintext code is returned ONLY now — it is never stored.
      *
      * @return array{code: string, purpose: string, expires_at: Carbon}
      */
@@ -153,9 +157,9 @@ class ParentLinkService
         ];
     }
 
-    // ─── Activate (magulang, bagong account) ──────────────────────────────────
+    // ─── Activate (parent, new account) ───────────────────────────────────────
 
-    /** @param array $data validated gamit ang activationRules() */
+    /** @param array $data validated with activationRules() */
     public function activate(array $data): User
     {
         return DB::transaction(function () use ($data) {
@@ -195,9 +199,9 @@ class ParentLinkService
         });
     }
 
-    // ─── Recover (magulang, naka-link na) ─────────────────────────────────────
+    // ─── Recover (parent, already linked) ─────────────────────────────────────
 
-    /** @param array $data validated gamit ang recoveryRules() */
+    /** @param array $data validated with recoveryRules() */
     public function recover(array $data): User
     {
         return DB::transaction(function () use ($data) {
@@ -205,14 +209,15 @@ class ParentLinkService
             $student = User::find($link->student_id);
             $parent  = $student?->parent;
 
-            // Iisang mensahe para sa maling code at maling numero — walang
-            // ibinubunyag kung alin ang mali.
+            // One message for a wrong code and a wrong number — never reveal
+            // which of the two was wrong.
             if (!$parent || $parent->contact_number !== $data['contact_number']) {
                 throw ValidationException::withMessages(['code' => 'The code is invalid or expired, or the mobile number does not match.']);
             }
 
             $parent->update(['password' => Hash::make($data['password'])]);
             $link->update(['used_at' => now()]);
+            $this->sessions->revokeAll($parent);
 
             AuditLogService::log('Parent password reset via child code', 'Parent Link', "Parent: {$parent->name}");
 

@@ -13,12 +13,12 @@ use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Rules\NoBadWords;
 use App\Services\EnrollmentService;
+use App\Services\GradeService;
 use Illuminate\Http\Request;
 
 /*
- * Dati: lahat ng page dito ay may "Cache-Control: private, max-age=30" — hanggang 30 segundong
- * lumang data (hal. pagkatapos mag-attendance/mag-submit), at nakikita pa ang page pagkatapos
- * mag-logout sa shared na computer. Tinanggal; ang default ng Laravel (no-cache) na ang gamit.
+ * No page here sets its own Cache-Control: Laravel's default (no-cache) keeps data fresh after
+ * attendance/submissions and stops pages from showing again after logout on a shared computer.
  */
 class StudentDashboardController extends Controller
 {
@@ -36,7 +36,7 @@ class StudentDashboardController extends Controller
                 ->unique('subject_id')
             : collect();
 
-        // Published, still open, and not yet submitted (dati laging 0)
+        // Published, still open, and not yet submitted
         $sectionId = $user->studentSectionId();
         $pendingAssignments = $sectionId
             ? Assignment::where('section_id', $sectionId)
@@ -49,7 +49,7 @@ class StudentDashboardController extends Controller
         return view('student.dashboard', [
             'user'               => $user,
             'enrollment'         => $enrollment,
-            // Para sa tamang susunod na hakbang: sagutan ang form / hintayin ang adviser / na-reject
+            // Decides the next step shown: fill in the form / wait for the adviser / returned
             'enrollmentRequest'  => $enrollment ? null : $user->enrollmentRequest,
             'section'            => $section,
             'grade'              => $grade,
@@ -74,7 +74,7 @@ class StudentDashboardController extends Controller
         $section    = $enrollment?->section ?? $user->section;
 
         $teacherSubjects = $section
-            ? TeacherSubject::with(['subject', 'teacher'])   // teacher: dati isang query kada subject
+            ? TeacherSubject::with(['subject', 'teacher'])   // teacher eager-loaded (not one query per subject)
                 ->where('section_id', $section->id)
                 ->get()
                 ->unique('subject_id')
@@ -92,8 +92,7 @@ class StudentDashboardController extends Controller
     }
 
     /**
-     * Open a material's file and count the view for the teacher.
-     * Dati: ang "Views" sa teacher ay galing lang sa mobile app — hindi nabibilang ang web.
+     * Open a material's file and count the view for the teacher (web views count too, not only the app).
      */
     public function openMaterial(LearningMaterial $material)
     {
@@ -111,10 +110,10 @@ class StudentDashboardController extends Controller
     }
 
     /**
-     * Class schedule ng estudyante — Lunes hanggang Biyernes.
+     * The student's class schedule — Monday to Friday.
      *
-     * Nakuha sa pamamagitan ng SECTION, kaya awtomatiko itong lumalabas
-     * kapag na-enroll na siya at may naitalagang section.
+     * Read through the SECTION, so it appears on its own once the student
+     * is enrolled and placed in a section.
      */
     public function schedule()
     {
@@ -122,7 +121,7 @@ class StudentDashboardController extends Controller
         $enrollment = $user->studentEnrollment;
         $section    = $enrollment?->section ?? $user->section;
 
-        $section?->loadMissing('adviser:id,name');   // B6-10: ginagamit ng view
+        $section?->loadMissing('adviser:id,name');   // used by the view
 
         $schedules = $section
             ? ClassSchedule::with(['subject', 'teacher'])
@@ -141,48 +140,20 @@ class StudentDashboardController extends Controller
         ]);
     }
 
-    /**
-     * Grades per school year (newest first) → per subject: Q1–Q4, average of the recorded
-     * quarters, and a general average. Dati: walang average, at ibang hitsura sa ibang page.
-     */
+    /** Grades per school year (newest first): Q1–Q4 and an average per subject, plus a general average. */
     public function grades()
     {
-        $years = auth()->user()
-            ->grades()
-            ->with('subject:id,name,code')
-            ->get()
-            ->groupBy(fn ($g) => $g->school_year ?: 'Unspecified')
-            ->sortKeysDesc()
-            ->map(function ($yearGrades) {
-                $subjects = $yearGrades->groupBy('subject_id')->map(function ($rows) {
-                    $byQuarter = $rows->keyBy('quarter');
-                    $finals    = $rows->pluck('final_grade')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
-                    $average   = $finals->isNotEmpty() ? round($finals->avg(), 2) : null;
+        $grades = auth()->user()->grades()->with('subject:id,name,code')->get();
 
-                    return [
-                        'subject'  => $rows->first()->subject,
-                        'quarters' => collect(['Q1', 'Q2', 'Q3', 'Q4'])->mapWithKeys(fn ($q) => [$q => $byQuarter->get($q)]),
-                        'average'  => $average,
-                        'complete' => $finals->count() === 4,
-                        'passed'   => $average !== null && $average >= Grade::PASSING,
-                    ];
-                })->sortBy(fn ($s) => mb_strtolower($s['subject']?->name ?? ''))->values();
-
-                $averages = $subjects->pluck('average')->filter(fn ($v) => $v !== null);
-
-                return [
-                    'subjects' => $subjects,
-                    'general'  => $averages->isNotEmpty() ? round($averages->avg(), 2) : null,
-                    'complete' => $subjects->isNotEmpty() && $subjects->every(fn ($s) => $s['complete']),
-                ];
-            });
-
-        return view('student.grades', ['years' => $years, 'passing' => Grade::PASSING]);
+        return view('student.grades', [
+            'years'   => GradeService::reportCard($grades),
+            'passing' => Grade::PASSING,
+        ]);
     }
 
     /**
-     * One conversation per teacher (B6-2). Dati: iisang halo-halong listahan para sa lahat ng teacher,
-     * bago→luma, at hindi kailanman nami-mark as read sa web (B6-1) — kaya hindi nababawasan ang "Unread".
+     * One conversation per teacher, oldest message first. Opening a conversation marks
+     * that teacher's messages as read, so the dashboard's unread count goes down.
      */
     public function messages(Request $request)
     {
@@ -195,7 +166,7 @@ class StudentDashboardController extends Controller
             ->get();
         $threads = $all->groupBy(fn ($m) => (int) ((int) $m->sender_id === $me ? $m->receiver_id : $m->sender_id));
 
-        // My teachers + any teacher I already talked to (hal. dating teacher — mababasa pa, hindi na masasagot)
+        // My teachers + any teacher I already talked to (e.g. a former teacher: readable, but no replies)
         $contacts = User::whereIn('id', $allowed->merge($threads->keys())->unique())
             ->where('role', 'teacher')
             ->get(['id', 'name'])
@@ -248,7 +219,7 @@ class StudentDashboardController extends Controller
             'is_read'     => false,
         ]);
 
-        // Back to the same conversation (B6-2)
+        // Back to the same conversation
         return redirect()->route('student.messages', ['with' => $data['teacher_id']]);
     }
 
@@ -273,8 +244,8 @@ class StudentDashboardController extends Controller
         $user    = auth()->user();
         $request = $user->enrollmentRequest;
 
-        // Pending — or approved for THIS school year. Dati: kahit approved noong nakaraang taon ay
-        // "You are already enrolled", kaya hindi na makaka-enroll sa susunod na school year.
+        // Pending — or approved for THIS school year. An approval from last year must not
+        // block enrolling for the next school year.
         $currentSy = EnrollmentService::currentSchoolYear();
         if ($request && ($request->status === 'pending'
                 || ($request->status === 'approved' && $request->school_year === $currentSy))) {
@@ -287,7 +258,7 @@ class StudentDashboardController extends Controller
         return view('student.enrollment-form', [
             'user'      => $user,
             'request'   => $request,
-            // Awtomatiko: aktibong school year + grade mula sa LRN masterlist
+            // Set by the server: active school year + grade from the LRN masterlist
             'activeSy'  => \App\Models\SchoolYear::active()->first(),
             'userGrade' => $user->grade_level,
         ]);
@@ -295,7 +266,7 @@ class StudentDashboardController extends Controller
 
     public function submitEnrollment(Request $request, EnrollmentService $enrollments)
     {
-        // Iisang rules para sa web at API (EnrollmentService)
+        // Same rules for web and API (EnrollmentService)
         $data = $request->validate(EnrollmentService::rules(), EnrollmentService::messages());
 
         $enrollments->submit(auth()->user(), $data);

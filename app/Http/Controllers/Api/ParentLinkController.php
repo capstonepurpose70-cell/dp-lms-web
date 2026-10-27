@@ -9,12 +9,12 @@ use App\Services\ParentLinkService;
 use Illuminate\Http\Request;
 
 /**
- * Mobile (Flutter) na bersyon ng parent linking.
- * Ang app ang magre-render ng QR mula sa `activate_url`.
+ * Mobile (Flutter) version of parent linking.
+ * The app renders the QR code from `activate_url`.
  */
 class ParentLinkController extends Controller
 {
-    /** POST /api/student/parent-link — estudyante */
+    /** POST /api/student/parent-link — student */
     public function generate(Request $request, ParentLinkService $links)
     {
         $result = $links->generate($request->user());
@@ -44,15 +44,12 @@ class ParentLinkController extends Controller
     {
         $request->merge(ParentLinkService::prepareInput($request->only('contact_number')));
         $data   = $request->validate(ParentLinkService::recoveryRules(), ParentLinkService::messages());
-        $parent = $links->recover($data);
-
-        // Bagong password = patayin ang mga dating mobile session
-        $parent->tokens()->delete();
+        $parent = $links->recover($data);   // also signs the account out everywhere
 
         return $this->respond($parent, 'Password updated.');
     }
 
-    /** Parehong hugis ng response sa /api/login kapag aprubado. */
+    /** Same response shape as /api/login when approved. */
     private function respond(User $parent, string $message)
     {
         if ($parent->status !== 'approved') {

@@ -3,48 +3,38 @@
 namespace App\Http\Controllers\Api\ParentPortal;
 
 use App\Http\Controllers\Controller;
-use App\Models\Announcement;
+use App\Models\User;
+use App\Services\GradeService;
+use App\Services\ParentPortalService;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    public function __construct(private ParentPortalService $portal)
+    {
+    }
+
     // ── GET /api/parent/dashboard ─────────────────────────────────────────────
     public function index()
     {
-        $parent = auth()->user();
+        $parent      = auth()->user();
+        $childModels = $this->portal->children($parent);
 
-        $childModels = $parent->children()
-            ->with([
-                'grades.subject',
-                'section',
-                'studentEnrollment.section',
-            ])
-            ->get();
-
-        $children = $childModels->map(fn($child) => $this->formatChild($child, withGrades: true));
-
-        // School-wide + para sa section ng mga anak lang (dati lahat ng section)
-        $announcements = Announcement::published()
-            ->forAudience('parent')
-            ->visibleToSections($childModels->map(fn ($c) => $c->studentSectionId()))
-            ->with('author')
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(fn($a) => [
-                'id'       => $a->id,
-                'title'    => $a->title,
-                'body'     => $a->body,
-                'author'   => $a->author?->name,
-                'date'     => $a->created_at?->toDateString(),
-                'time_ago' => $a->created_at?->diffForHumans(),
-            ]);
+        $announcements = $this->portal->announcements($childModels)->map(fn ($a) => [
+            'id'       => $a->id,
+            'title'    => $a->title,
+            'body'     => $a->body,
+            'author'   => $a->author?->name,
+            'date'     => $a->created_at?->toDateString(),
+            'time_ago' => $a->created_at?->diffForHumans(),
+        ]);
 
         return response()->json([
             'parent' => [
                 'id'   => $parent->id,
                 'name' => $parent->name,
             ],
-            'children'      => $children,
+            'children'      => $childModels->map(fn ($child) => $this->formatChild($child, withGrades: true)),
             'announcements' => $announcements,
         ]);
     }
@@ -52,52 +42,30 @@ class DashboardController extends Controller
     // ── GET /api/parent/child-records ─────────────────────────────────────────
     public function childRecords()
     {
-        $children = auth()->user()
-            ->children()
-            ->with([
-                'grades.subject',
-                'section',
-                'studentEnrollment.section',
-                'studentProfile',
-            ])
-            ->get()
-            ->map(fn($child) => $this->formatChild($child, withGrades: true, withProfile: true));
+        $children = $this->portal->children(auth()->user(), ['studentProfile'])
+            ->map(fn ($child) => $this->formatChild($child, withGrades: true, withProfile: true));
 
         return response()->json($children);
     }
 
     // ── GET /api/parent/attendance?days=30 ────────────────────────────────────
-    // Arrival history ng mga anak (mula sa Raspberry Pi scans).
-    public function attendance(\Illuminate\Http\Request $request)
+    // Gate arrivals of the children (face kiosk / scanner).
+    public function attendance(Request $request)
     {
-        $days     = min(max((int) $request->query('days', 30), 1), 180);
-        $children = auth()->user()->children()->get(['id', 'name', 'email']);
-
-        $records = \App\Models\Attendance::where(function ($q) use ($children) {
-                $q->whereIn('user_id', $children->pluck('id'));
-                $emails = $children->pluck('email')->filter();
-                if ($emails->isNotEmpty()) {
-                    $q->orWhereIn('student_id', $emails);
-                }
-            })
-            ->where('attended_at', '>=', now()->subDays($days)->startOfDay())
-            ->orderByDesc('attended_at')
-            ->get();
+        $days     = ParentPortalService::clampDays($request->query('days'));
+        $children = auth()->user()->children()->orderBy('name')->get(['id', 'name', 'email']);
+        $arrivals = $this->portal->arrivals($children, $days);
 
         return response()->json($children->map(fn ($child) => [
             'student_id'   => $child->id,
             'student_name' => $child->name,
-            'records'      => $records
-                ->filter(fn ($a) => (int) $a->user_id === (int) $child->id
-                    || ($child->email && $a->student_id === $child->email))
-                ->values()
-                ->map(fn ($a) => [
-                    'id'          => $a->id,
-                    'status'      => $a->status,          // present | late
-                    'attended_at' => $a->attended_at?->toIso8601String(),
-                    'date'        => $a->attended_at?->toDateString(),
-                    'time'        => $a->attended_at?->format('g:i A'),
-                ]),
+            'records'      => $arrivals[$child->id]->map(fn ($a) => [
+                'id'          => $a->id,
+                'status'      => $a->status,          // present | late
+                'attended_at' => $a->attended_at?->toIso8601String(),
+                'date'        => $a->attended_at?->toDateString(),
+                'time'        => $a->attended_at?->format('g:i A'),
+            ]),
         ])->values());
     }
 
@@ -105,22 +73,16 @@ class DashboardController extends Controller
      * GET /api/parent/class-attendance?days=30 — per-class results (present / late / absent)
      * taken by the subject teachers. (Gate arrivals are /api/parent/attendance.)
      */
-    public function classAttendance(\Illuminate\Http\Request $request)
+    public function classAttendance(Request $request)
     {
-        $days     = min(max((int) $request->query('days', 30), 1), 180);
-        $children = auth()->user()->children()->get(['id', 'name']);
-
-        $records = \App\Models\ClassAttendanceRecord::with(['session.subject:id,name', 'session.teacher:id,name'])
-            ->whereIn('student_id', $children->pluck('id'))
-            ->where('created_at', '>=', now()->subDays($days)->startOfDay())
-            ->latest('id')
-            ->get()
-            ->groupBy('student_id');
+        $days     = ParentPortalService::clampDays($request->query('days'));
+        $children = auth()->user()->children()->orderBy('name')->get(['id', 'name']);
+        $records  = $this->portal->classAttendance($children, $days);
 
         return response()->json($children->map(fn ($child) => [
             'student_id'   => $child->id,
             'student_name' => $child->name,
-            'records'      => ($records[$child->id] ?? collect())->map(fn ($r) => [
+            'records'      => $records[$child->id]->map(fn ($r) => [
                 'session_id'   => $r->session_id,
                 'subject_name' => $r->session?->subject?->name,
                 'teacher_name' => $r->session?->teacher?->name,
@@ -132,7 +94,7 @@ class DashboardController extends Controller
     }
 
     // ── Private helper ─────────────────────────────────────────────────────────
-    private function formatChild($child, bool $withGrades = false, bool $withProfile = false): array
+    private function formatChild(User $child, bool $withGrades = false, bool $withProfile = false): array
     {
         $enrollment = $child->studentEnrollment;
 
@@ -149,8 +111,7 @@ class DashboardController extends Controller
         ];
 
         if ($withGrades) {
-            // Group grades by subject and quarter
-            $grades = $child->grades->map(fn($g) => [
+            $data['grades'] = $child->grades->map(fn ($g) => [
                 'subject'              => $g->subject?->name,
                 'subject_id'           => $g->subject?->id,
                 'quarter'              => $g->quarter,
@@ -162,16 +123,13 @@ class DashboardController extends Controller
                 'passed'               => $g->isPassed(),
             ]);
 
-            // Compute general average across all quarters with final grades
-            $gradedQuarters = $child->grades->filter(fn($g) => $g->final_grade !== null);
-            $generalAverage = $gradedQuarters->count() > 0
-                ? round($gradedQuarters->avg('final_grade'), 2)
-                : null;
+            // Same figures as the student's Grades page: this school year only, averaged per subject
+            $graded = $child->grades->where('school_year', GradeService::currentSchoolYear())
+                ->filter(fn ($g) => $g->final_grade !== null);
 
-            $data['grades']          = $grades;
-            $data['general_average'] = $generalAverage;
-            $data['passing_count']   = $gradedQuarters->filter(fn($g) => $g->isPassed())->count();
-            $data['failing_count']   = $gradedQuarters->filter(fn($g) => !$g->isPassed())->count();
+            $data['general_average'] = $this->portal->currentYearCard($child)['general'] ?? null;
+            $data['passing_count']   = $graded->filter(fn ($g) => $g->isPassed())->count();
+            $data['failing_count']   = $graded->reject(fn ($g) => $g->isPassed())->count();
         }
 
         if ($withProfile && $child->relationLoaded('studentProfile') && $child->studentProfile) {

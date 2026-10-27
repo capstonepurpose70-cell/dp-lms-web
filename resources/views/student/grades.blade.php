@@ -47,7 +47,7 @@
                 <h2 class="sg-year-title" id="sy-{{ $loop->index }}">School Year {{ $schoolYear }}</h2>
                 @if($year['general'] !== null)
                     <div class="sg-general">
-                        <span>General average{{ $year['complete'] ? '' : ' (so far)' }}</span>
+                        <span>General average{{ $year['complete'] || !$year['current'] ? '' : ' (so far)' }}</span>
                         <b class="{{ $year['general'] >= $passing ? 'sg-pass' : 'sg-fail' }}">{{ number_format($year['general'], 2) }}</b>
                     </div>
                 @endif
@@ -90,7 +90,7 @@
                                     @if($s['average'] === null)
                                         <span class="sg-none">—</span>
                                     @elseif(!$s['complete'])
-                                        <span class="sg-pill wip">In progress</span>
+                                        <span class="sg-pill wip">{{ $year['current'] ? 'In progress' : 'Incomplete' }}</span>
                                     @else
                                         <span class="sg-pill {{ $s['passed'] ? 'pass' : 'fail' }}">{{ $s['passed'] ? 'Passed' : 'Failed' }}</span>
                                     @endif

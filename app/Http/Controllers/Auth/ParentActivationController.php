@@ -9,8 +9,8 @@ use App\Services\TrustedDeviceService;
 use Illuminate\Http\Request;
 
 /**
- * Magulang: gumawa ng account (activate) o mag-reset ng password / bagong
- * device (recover) gamit ang code mula sa account ng anak.
+ * Parents: create an account (activate) or reset the password / sign in on
+ * a new device (recover) with a code from the child's account.
  */
 class ParentActivationController extends Controller
 {
@@ -49,10 +49,7 @@ class ParentActivationController extends Controller
     {
         $request->merge(ParentLinkService::prepareInput($request->only('contact_number')));
         $data   = $request->validate(ParentLinkService::recoveryRules(), ParentLinkService::messages());
-        $parent = $links->recover($data);
-
-        // Bagong password = burahin ang lahat ng dating trusted device
-        $devices->forgetAll($parent);
+        $parent = $links->recover($data);   // also signs the account out everywhere
 
         if ($parent->status !== 'approved') {
             return redirect()->route('login')->with('success',

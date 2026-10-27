@@ -3,50 +3,46 @@
 namespace App\Http\Controllers\ParentPortal;
 
 use App\Http\Controllers\Controller;
-use App\Models\Announcement;
+use App\Models\Grade;
+use App\Services\GradeService;
+use App\Services\ParentPortalService;
 
 class ParentDashboardController extends Controller
 {
+    private const RECORD_DAYS = 30;
+
+    public function __construct(private ParentPortalService $portal)
+    {
+    }
+
     public function index()
     {
-        $children = auth()->user()
-            ->children()
-            ->with([
-                'grades.subject',
-                'section',
-                'studentEnrollment.section',
-            ])
-            ->get();
+        $children = $this->portal->children(auth()->user());
 
-        // School-wide + para sa section ng mga anak lang (dati lahat ng section)
-        $announcements = Announcement::published()
-            ->forAudience('parent')
-            ->visibleToSections($children->map(fn ($c) => $c->studentSectionId()))
-            ->with('author')
-            ->latest()
-            ->take(5)
-            ->get();
-
-        return view('parent.dashboard', compact('children', 'announcements'));
+        return view('parent.dashboard', [
+            'children'      => $children,
+            'cards'         => $children->mapWithKeys(fn ($c) => [$c->id => $this->portal->currentYearCard($c)]),
+            'states'        => $children->mapWithKeys(fn ($c) => [$c->id => $this->portal->enrollmentState($c)]),
+            'announcements' => $this->portal->announcements($children),
+            'schoolYear'    => GradeService::currentSchoolYear(),
+            'passing'       => Grade::PASSING,
+        ]);
     }
 
     public function childRecords()
     {
-        $children = auth()->user()
-            ->children()
-            ->with([
-                'grades.subject',
-                'section',
-                'studentEnrollment.section',
-            ])
-            ->get();
+        $children = $this->portal->children(auth()->user());
 
-        // Class attendance (subject teachers), last 30 days, per child
-        $classAttendance = \App\Models\ClassAttendanceRecord::with(['session.subject:id,name'])
-            ->whereIn('student_id', $children->pluck('id'))
-            ->where('created_at', '>=', now()->subDays(30)->startOfDay())
-            ->latest('id')->get()->groupBy('student_id');
-
-        return view('parent.child-records', compact('children', 'classAttendance'));
+        return view('parent.child-records', [
+            'children'        => $children,
+            'reportCards'     => $children->mapWithKeys(fn ($c) => [$c->id => GradeService::reportCard($c->grades)]),
+            'states'          => $children->mapWithKeys(fn ($c) => [$c->id => $this->portal->enrollmentState($c)]),
+            'arrivals'        => $this->portal->arrivals($children, self::RECORD_DAYS),
+            'classAttendance' => $this->portal->classAttendance($children, self::RECORD_DAYS),
+            'days'            => self::RECORD_DAYS,
+            'schoolYear'      => GradeService::currentSchoolYear(),
+            'passing'         => Grade::PASSING,
+            'weights'         => Grade::WEIGHTS,
+        ]);
     }
 }

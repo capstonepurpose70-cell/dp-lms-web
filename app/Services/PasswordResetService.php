@@ -11,13 +11,11 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 
 /**
- * Forgot password gamit ang 6-digit code sa email — iisa para sa web at mobile.
+ * Forgot password with a 6-digit code by email — shared by web and mobile.
  *
- * Inayos:
- *  - Hindi nag-e-expire ang code (Carbon 3: negatibo ang diffInMinutes).
- *  - Walang limit sa paghula ng code (brute force ng 1,000,000).
- *  - Sinasabi kung may account ang email (enumeration).
- *  - Mobile: stub na nagsasabing "sent" pero walang ginagawa.
+ *  - The code expires after CODE_MINUTES.
+ *  - Wrong guesses are limited (MAX_WRONG), so the code cannot be brute-forced.
+ *  - The answer is the same whether or not the email has an account (no enumeration).
  */
 class PasswordResetService
 {
@@ -34,7 +32,7 @@ class PasswordResetService
         return mb_strtolower(trim($email));
     }
 
-    /** @return bool false kapag naka-rate-limit (3 kada 5 minuto kada email) */
+    /** @return bool false when rate limited (3 per 5 minutes per email) */
     public function sendCode(string $email): bool
     {
         $email = static::normalize($email);
@@ -45,7 +43,7 @@ class PasswordResetService
         }
         RateLimiter::hit($key, 300);
 
-        // Tahimik kapag walang account — parehong sagot sa caller (walang enumeration).
+        // Silent when there is no account — the caller gets the same answer (no enumeration).
         if (!User::where('email', $email)->exists()) {
             return true;
         }
@@ -73,7 +71,7 @@ class PasswordResetService
     }
 
     /**
-     * @return string|null null = tama; kung hindi, ang error message
+     * @return string|null null = correct; otherwise the error message
      */
     public function checkCode(string $email, string $code): ?string
     {
@@ -101,7 +99,7 @@ class PasswordResetService
         return null;
     }
 
-    /** Palitan ang password + patayin ang lahat ng dating session/device. */
+    /** Change the password and sign the account out everywhere. */
     public function reset(string $email, string $password): ?User
     {
         $email = static::normalize($email);
@@ -112,8 +110,7 @@ class PasswordResetService
         }
 
         $user->update(['password' => Hash::make($password)]);
-        app(TrustedDeviceService::class)->forgetAll($user);
-        $user->tokens()->delete();
+        app(SessionRevoker::class)->revokeAll($user);
 
         DB::table('password_reset_tokens')->where('email', $email)->delete();
         AuditLogService::log('Password reset successful', 'Auth', $email);

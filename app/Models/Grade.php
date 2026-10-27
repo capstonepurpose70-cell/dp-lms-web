@@ -41,17 +41,26 @@ class Grade extends Model
 
     public const PASSING = 75;
 
+    /** Component weights of a quarter grade. Views read these for their labels. */
+    public const WEIGHTS = [
+        'written_works'        => 0.25,
+        'performance_tasks'    => 0.50,
+        'quarterly_assessment' => 0.25,
+    ];
+
     public function isPassed(): bool
     {
         return $this->final_grade !== null && $this->final_grade >= self::PASSING;
     }
 
-    /**
-     * Final grade: WW 25% + PT 50% + QA 25%.
-     * Iisang formula para sa web gradebook at mobile API (GradeService).
-     */
+    /** Quarter grade from its components. Shared by the web gradebook and the API (GradeService). */
     public static function computeFinal(?float $ww, ?float $pt, ?float $qa): float
     {
-        return round(($ww ?? 0) * 0.25 + ($pt ?? 0) * 0.50 + ($qa ?? 0) * 0.25, 2);
+        return round(
+            ($ww ?? 0) * self::WEIGHTS['written_works']
+            + ($pt ?? 0) * self::WEIGHTS['performance_tasks']
+            + ($qa ?? 0) * self::WEIGHTS['quarterly_assessment'],
+            2
+        );
     }
 }
