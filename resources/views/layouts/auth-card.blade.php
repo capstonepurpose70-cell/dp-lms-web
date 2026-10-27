@@ -110,6 +110,11 @@
         .ac-rules li.is-met { color: var(--ok-dk); }
         .ac-rules li.is-met::before { content: '✓'; font-weight: 700; }
 
+        /* Code expiry countdown (<span data-countdown="seconds">) */
+        .ac-timer { text-align: center; font-size: 13px; color: var(--text-2); margin: -4px 0 16px; }
+        .ac-timer [data-countdown] { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+        .ac-timer .is-expired { color: var(--danger); }
+
         .ac-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text-2); margin: 2px 0 16px; cursor: pointer; line-height: 1.5; }
         .ac-check input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--accent); flex-shrink: 0; }
 
@@ -238,6 +243,17 @@
             var clean = input.value.replace(/\D/g, '');
             if (clean !== input.value) input.value = clean;
         });
+    });
+
+    // Countdown to a code's expiry. Clock-based, so a throttled background tab stays accurate.
+    document.querySelectorAll('[data-countdown]').forEach(function (el) {
+        var end = Date.now() + (parseInt(el.getAttribute('data-countdown'), 10) || 0) * 1000;
+        (function tick() {
+            var s = Math.max(0, Math.round((end - Date.now()) / 1000));
+            el.textContent = s > 0 ? Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) : 'expired';
+            el.classList.toggle('is-expired', s === 0);
+            if (s > 0) setTimeout(tick, 1000);
+        })();
     });
 
     // Prevent double submit

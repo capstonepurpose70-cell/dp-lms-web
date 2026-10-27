@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
+use App\Models\OtpCode;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\OtpService;
@@ -16,7 +17,17 @@ class OtpController extends Controller
 {
     public function show()
     {
-        return view('auth.otp');
+        // Countdown mula sa totoong expiry ng code — dati laging 5:00 kada reload,
+        // kahit lumang code (hal. pagkatapos ng rate-limit redirect).
+        $expiresAt = OtpCode::where('user_id', session('otp_user_id'))
+            ->where('purpose', 'login')
+            ->where('used', false)
+            ->latest()
+            ->first()?->expires_at;
+
+        return view('auth.otp', [
+            'secondsLeft' => $expiresAt ? (int) max(0, now()->diffInSeconds($expiresAt, false)) : 0,
+        ]);
     }
 
     public function verify(Request $request, TrustedDeviceService $devices)

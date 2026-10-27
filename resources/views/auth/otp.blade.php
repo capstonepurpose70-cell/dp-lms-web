@@ -1,107 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP Verification — DP-LMS</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center px-4">
+@extends('layouts.auth-card')
 
-    <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span class="text-white text-2xl font-bold">DP</span>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-800">Verify Your Identity</h1>
-            <p class="text-sm text-gray-500 mt-1">Two-factor authentication</p>
-        </div>
+@section('title', 'Verify Sign-in')
 
-        <div class="bg-white rounded-2xl shadow-lg p-8">
-            <div class="text-center mb-6">
-                <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <p class="text-sm text-gray-600">
-                    A 6-digit code was sent to<br>
-                    <span class="font-semibold text-gray-800">{{ session('otp_email') }}</span>
-                </p>
-                <p class="text-xs text-gray-400 mt-1">
-                    Expires in <span id="countdown" class="font-semibold text-blue-600">5:00</span>
-                </p>
-            </div>
+@section('steps')
+    <li class="ac-step is-done"><span class="ac-step-dot">✓</span> Password</li>
+    <li class="ac-step-line" aria-hidden="true"></li>
+    <li class="ac-step is-active" aria-current="step"><span class="ac-step-dot">2</span> Email code</li>
+@endsection
 
-            @if(session('error'))
-                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
-                    {{ session('error') }}
-                </div>
-            @endif
+@section('heading', 'Check your email')
+@section('desc')
+    We sent a 6-digit sign-in code to <strong>{{ session('otp_email') }}</strong>.
+@endsection
 
-            <form method="POST" action="{{ route('otp.verify') }}">
-                @csrf
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2 text-center">
-                        Enter verification code
-                    </label>
-                    <input type="text" name="otp" maxlength="6" required
-                        placeholder="• • • • • •"
-                        class="w-full border-2 border-gray-300 rounded-xl px-4 py-3
-                               text-center text-2xl font-bold tracking-widest
-                               focus:outline-none focus:border-blue-500 transition
-                               @error('otp') border-red-400 @enderror">
-                    @error('otp')
-                        <p class="text-red-500 text-xs mt-1 text-center">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Trusted device (inline style — walang bagong Tailwind class) --}}
-                <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#6b7280;margin:-8px 0 18px;cursor:pointer;line-height:1.5;">
-                    <input type="checkbox" name="trust_device" value="1"
-                           style="width:18px;height:18px;margin-top:1px;accent-color:#2563eb;flex-shrink:0;">
-                    <span>Remember this device for 30 days (no code needed on login). <strong>Don't check</strong> on shared or internet-café computers.</span>
-                </label>
-
-                <button type="submit"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium
-                           rounded-lg py-2.5 text-sm transition duration-150">
-                    Verify Code
-                </button>
-            </form>
-
-            <form method="POST" action="{{ route('otp.resend') }}" class="mt-3">
-                @csrf
-                <button type="submit"
-                    class="w-full text-sm text-gray-500 hover:text-blue-600 py-2 transition">
-                    Didn't receive a code? Resend
-                </button>
-            </form>
-
-            <div class="mt-4 text-center">
-                <a href="{{ route('login') }}" class="text-xs text-gray-400 hover:text-gray-600">
-                    Back to login
-                </a>
-            </div>
-        </div>
+@section('content')
+<form method="POST" action="{{ route('otp.verify') }}" data-once>
+    @csrf
+    <div class="ac-group">
+        <label for="otp">Sign-in code</label>
+        <input class="ac-input ac-code @error('otp') is-error @enderror" type="text" id="otp" name="otp"
+               inputmode="numeric" pattern="\d{6}" maxlength="6" data-digits autocomplete="one-time-code"
+               placeholder="••••••" aria-describedby="otp-timer" @error('otp') aria-invalid="true" @enderror required autofocus>
     </div>
 
-    <script>
-        let seconds = 300;
-        const el = document.getElementById('countdown');
-        const timer = setInterval(() => {
-            seconds--;
-            const m = Math.floor(seconds / 60);
-            const s = seconds % 60;
-            el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-            if (seconds <= 0) {
-                clearInterval(timer);
-                el.textContent = 'Expired';
-                el.classList.replace('text-blue-600', 'text-red-500');
-            }
-        }, 1000);
-    </script>
+    <p class="ac-timer" id="otp-timer">
+        @if($secondsLeft > 0)
+            Code expires in <span data-countdown="{{ $secondsLeft }}">{{ intdiv($secondsLeft, 60) }}:{{ str_pad($secondsLeft % 60, 2, '0', STR_PAD_LEFT) }}</span>
+        @else
+            This code has expired — send a new one below.
+        @endif
+    </p>
 
-</body>
-</html>
+    <label class="ac-check">
+        <input type="checkbox" name="trust_device" value="1">
+        <span>Remember this device for 30 days (no code needed when signing in). <strong>Don't check</strong> on shared or internet-café computers.</span>
+    </label>
+
+    <button type="submit" class="ac-btn" data-busy="Verifying…">Verify and sign in</button>
+</form>
+
+<form method="POST" action="{{ route('otp.resend') }}" data-once style="text-align:center;margin-top:8px;">
+    @csrf
+    <span style="font-size:13.5px;color:var(--text-2);">Didn't get the code? Check your spam folder, or</span>
+    <button type="submit" class="ac-btn-link" data-busy="Sending…">Send a new code</button>
+</form>
+@endsection
+
+@section('footer')
+    <span>Not you? <a href="{{ route('login') }}">Back to sign in</a></span>
+@endsection
