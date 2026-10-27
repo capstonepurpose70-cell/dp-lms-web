@@ -1,300 +1,408 @@
 # FIX BUGS — DP-LMS
 
-Talaan ng lahat ng bug na nahanap at inayos habang pinapakinis ang system (branch `feature/ui-refresh`).
-Bawat bug ay may: **Problema** (ano ang nakikita ng user) → **Saan** (file at method) → **Ayos** (ano ang
-binago) → **Nasubukan** (paano napatunayang gumagana).
+Log of every bug found and fixed while polishing the system (branch `feature/ui-refresh`).
+Each entry has: **Problem** (what the user sees) → **Where** (file and method) → **Fix** (what changed) →
+**Tested** (how it was proven to work).
 
-| Tanda | Ibig sabihin |
+| Mark | Meaning |
 |---|---|
-| ✅ | Naayos at nasubukan |
-| 🔧 | Plano — inaayos pa |
+| ✅ | Fixed and tested |
+| 🔧 | Planned — not fixed yet |
 
-> Nasubukan sa localhost (XAMPP + `php artisan serve`) gamit ang `php artisan demo:local` na data.
-> Walang totoong email na naipadala sa testing (`MAIL_MAILER=array`), at binura ang lahat ng test data pagkatapos.
+> Tested on localhost (XAMPP + `php artisan serve`) with `php artisan demo:local` data.
+> No real email was sent while testing (`MAIL_MAILER=array`), and all test data was removed afterwards.
 
 ---
 
-## Buod
+## Summary
 
-| Batch | Saklaw | Commit | Bugs |
+| Batch | Scope | Commit | Bugs |
 |---|---|---|---|
 | [1](#batch-1--security) | Security (mobile API, OTP) | `0d662e5` | 2 |
-| [2](#batch-2--login-at-activate) | Login, Activate, Parent activate/recover | `6099ff7` | 7 |
-| [3](#batch-3--otp-at-forgot--reset-password) | OTP, Forgot / Reset password | `7dc6571` | 5 |
+| [2](#batch-2--login-and-activate) | Login, Activate, Parent activate/recover | `6099ff7` | 7 |
+| [3](#batch-3--otp-and-forgot--reset-password) | OTP, Forgot / Reset password | `7dc6571` | 5 |
 | [4](#batch-4--teacher-pages) | Teacher layout, Dashboard, Students, Announcements | `0c245c5` `34f31cc` `00cc6fd` | 14 |
 | [5](#batch-5--student-pages-part-1) | Student layout, Dashboard, Modules, Quizzes, Grades | `e6e3dde` `c7857ea` | 16 |
-| [6](#batch-6--student-pages-part-2) | Subjects, Schedule, Attendance, Messages, Enrollment form, Face, Parent link | — | 13 |
+| [6](#batch-6--student-pages-part-2) | Subjects, Schedule, Attendance, Messages, Enrollment form, Face, Parent link | `787a205` | 13 |
+| [7](#batch-7--parent-portal) | Parent portal, account recovery, report card | — | 10 |
+| [—](#code-comments) | Code comments in English | — | — |
 
 ---
 
 ## Batch 1 — Security
 
-### B1-1 ✅ Gumagana pa ang mobile app ng na-reject o na-ban na account
-- **Problema:** Kapag ni-reject ng admin ang isang user o na-ban (3 maling face upload), natatanggal siya sa
-  website pero gumagana pa rin ang mobile app niya — nababasa pa ang grades, messages, atbp.
-- **Saan:** `routes/api.php` (protected group — `auth:sanctum` + `role:` lang, walang `approved`);
+### B1-1 ✅ A rejected or banned account could still use the mobile app
+- **Problem:** after the admin rejected a user, or they were banned (3 bad face uploads), the website signed
+  them out but the mobile app kept working — grades, messages, etc. were still readable.
+- **Where:** `routes/api.php` (protected group had only `auth:sanctum` + `role:`, no `approved`);
   `app/Http/Middleware/ApprovedMiddleware.php`.
-- **Ayos:** Idinagdag ang `approved` sa protected API group. Sa `api/*`, ang middleware ay sumasagot ng
-  `403 { "message": "Your account is not active…" }` at binubura ang token (sa website: logout + redirect, gaya ng dati).
-  Naidagdag sa `docs/FLUTTER_HANDOFF.md` ang bagong 403.
-- **Nasubukan:** approved → `200`; ni-reject → `403` at 0 na ang token; sunod na request → `401`.
-  Web: approved → `200`, rejected → logout + redirect sa `/login`.
+- **Fix:** added `approved` to the protected API group. On `api/*` the middleware answers
+  `403 { "message": "Your account is not active…" }` and deletes the token (on the web: logout + redirect, as before).
+  The new 403 is documented in `docs/FLUTTER_HANDOFF.md`.
+- **Tested:** approved → `200`; rejected → `403` and 0 tokens left; next request → `401`.
+  Web: approved → `200`, rejected → logout + redirect to `/login`.
 
-### B1-2 ✅ "500 Server Error" sa login
-- **Problema:** Pagkatapos ng 5 login code sa loob ng isang oras, nag-e-error ang buong login page.
-- **Saan:** `app/Services/OtpService.php` → `send()`; `app/Http/Controllers/Auth/LoginController.php` → `submit()`.
-- **Ayos:** Ang limit ay `ActionNotAllowed` na (may bilang ng minuto) na sinasalo ng `LoginController`
-  at `OtpController::resend()` → dinadala sa OTP page na may malinaw na mensahe.
-- **Nasubukan:** inubos ang limit → `302 → /otp` na may "Too many codes… try again in 60 minutes."
-
----
-
-## Batch 2 — Login at Activate
-
-### B2-1 ✅ Back button: nakapirming "Please wait…" / blangkong login page
-- **Problema:** Pag-Back sa login o activate, nananatiling disabled ang button; pag-alis sa login gamit ang
-  "Activate your account", blangko ang login pagbalik.
-- **Saan:** `resources/views/auth/login.blade.php` (script), `resources/views/layouts/auth-card.blade.php` (`data-once`).
-- **Ayos:** `pageshow` reset ng button at ng mga panel kapag galing sa back/forward cache.
-
-### B2-2 ✅ Hindi lumalabas ang "Remember me / Forgot" kapag walang JavaScript
-- **Saan:** `login.blade.php` → `<noscript>` style. **Ayos:** idinagdag ang `.login-row`; inayos ang pagka-center ng logo.
-
-### B2-3 ✅ Sirang background kapag nasa XAMPP subfolder
-- **Saan:** `auth-card.blade.php` → `/images/bg.jpg`. **Ayos:** `asset()`; fixed layer (gumagana rin sa iPhone).
-
-### B2-4 ✅ Naputol na LRN / code kapag nag-paste ng may espasyo
-- **Problema:** "1234 5678 9012" → naputol ng `maxlength` bago natanggal ang espasyo.
-- **Saan:** `auth-card.blade.php`, `activate.blade.php`, `activate-verify.blade.php`. **Ayos:** `data-digits` (digits lang, pati sa paste).
-
-### B2-5 ✅ Accessibility ng login
-- **Saan:** `login.blade.php`. **Ayos:** label ng Password nakakabit na; ang show-password ay naaabot na ng
-  keyboard (dati `tabindex=-1`, 17px); contrast ng error/hint/button; `aria-invalid`/`aria-describedby`;
-  focus outline; reduced motion (GSAP at particles).
-
-### B2-6 ✅ Hindi magkatugma ang hitsura ng login at activate
-- **Ayos:** iisang berdeng tema, font, navbar at card para sa activate, verify, parent activate/recover.
-
-### B2-7 ✅ Phone: naputol na "S" at malaking puwang sa itaas ng login
-- **Saan:** `login.blade.php` (`.login-card { overflow }`, mobile layout). **Nasubukan:** screenshot sa 390px.
+### B1-2 ✅ "500 Server Error" on login
+- **Problem:** after 5 login codes within an hour, the whole login page crashed.
+- **Where:** `app/Services/OtpService.php` → `send()`; `app/Http/Controllers/Auth/LoginController.php` → `submit()`.
+- **Fix:** the limit now throws `ActionNotAllowed` (with the minutes left), caught by `LoginController`
+  and `OtpController::resend()` → the OTP page with a clear message.
+- **Tested:** limit used up → `302 → /otp` with "Too many codes… try again in 60 minutes."
 
 ---
 
-## Batch 3 — OTP at Forgot / Reset password
+## Batch 2 — Login and Activate
 
-### B3-1 ✅ "Send Reset Link" pero code ang ipinapadala
-- **Saan:** `resources/views/auth/forgot-password.blade.php`. **Ayos:** "Send code" + tamang paliwanag.
+### B2-1 ✅ Back button: stuck "Please wait…" / blank login page
+- **Problem:** going Back to login or activate left the button disabled; leaving login through
+  "Activate your account" and coming back showed a blank login.
+- **Where:** `resources/views/auth/login.blade.php` (script), `resources/views/layouts/auth-card.blade.php` (`data-once`).
+- **Fix:** `pageshow` resets the button and panels when the page comes from the back/forward cache.
 
-### B3-2 ✅ Hindi totoong "Resend code"
-- **Problema:** link lang pabalik sa form; kailangang i-type ulit ang email.
-- **Saan:** `forgot-verify.blade.php`. **Ayos:** totoong POST resend sa parehong email (may rate limit pa rin).
+### B2-2 ✅ "Remember me / Forgot" missing without JavaScript
+- **Where:** `login.blade.php` → `<noscript>` style. **Fix:** added `.login-row`; fixed the logo centering.
 
-### B3-3 ✅ "Minimum 8 characters" lang ang hint sa reset
-- **Problema:** laging babagsak ang sumusunod sa hint (kailangan din ng malaki/maliit na letra, numero, simbolo).
-- **Saan:** `reset-password.blade.php`. **Ayos:** live checklist ng lahat ng patakaran (kapareho ng server).
+### B2-3 ✅ Broken background when served from an XAMPP subfolder
+- **Where:** `auth-card.blade.php` → `/images/bg.jpg`. **Fix:** `asset()`; fixed layer (also works on iPhone).
 
-### B3-4 ✅ Laging 5:00 ang OTP countdown
-- **Saan:** `app/Http/Controllers/Auth/OtpController.php` → `show()`; `otp.blade.php`.
-- **Ayos:** countdown mula sa totoong `expires_at` ng code.
+### B2-4 ✅ LRN / code cut off when pasted with spaces
+- **Problem:** "1234 5678 9012" was cut by `maxlength` before the spaces were removed.
+- **Where:** `auth-card.blade.php`, `activate.blade.php`, `activate-verify.blade.php`. **Fix:** `data-digits` (digits only, paste included).
 
-### B3-5 ✅ OTP page na Tailwind sa lumang CSS build
-- **Ayos:** lahat ng apat na page ay `layouts.auth-card` na (minana ang lahat ng ayos ng Batch 2).
-- **Nasubukan (Batch 3):** buong forgot flow (email → resend → maling/tamang code → mahinang/tamang password → login)
-  at OTP flow (maling/tamang code → dashboard).
+### B2-5 ✅ Login accessibility
+- **Where:** `login.blade.php`. **Fix:** the Password label is tied to its field; show-password is reachable by
+  keyboard (was `tabindex=-1`, 17px); contrast of error/hint/button; `aria-invalid`/`aria-describedby`;
+  focus outline; reduced motion (GSAP and particles).
+
+### B2-6 ✅ Login and activate pages did not match
+- **Fix:** one green theme, font, navbar and card for activate, verify, parent activate/recover.
+
+### B2-7 ✅ Phone: clipped "S" and a large gap above the login
+- **Where:** `login.blade.php` (`.login-card { overflow }`, mobile layout). **Tested:** screenshot at 390px.
+
+---
+
+## Batch 3 — OTP and Forgot / Reset password
+
+### B3-1 ✅ "Send Reset Link" while a code is sent
+- **Where:** `resources/views/auth/forgot-password.blade.php`. **Fix:** "Send code" + the right explanation.
+
+### B3-2 ✅ "Resend code" was not a real resend
+- **Problem:** only a link back to the form; the email had to be typed again.
+- **Where:** `forgot-verify.blade.php`. **Fix:** a real POST resend to the same email (still rate limited).
+
+### B3-3 ✅ The reset hint said only "Minimum 8 characters"
+- **Problem:** following the hint always failed (upper/lower case, a number and a symbol are also required).
+- **Where:** `reset-password.blade.php`. **Fix:** live checklist of every rule (same as the server).
+
+### B3-4 ✅ The OTP countdown always started at 5:00
+- **Where:** `app/Http/Controllers/Auth/OtpController.php` → `show()`; `otp.blade.php`.
+- **Fix:** counts down from the code's real `expires_at`.
+
+### B3-5 ✅ OTP page used Tailwind classes missing from the old CSS build
+- **Fix:** all four pages use `layouts.auth-card` (inheriting every Batch 2 fix).
+- **Tested (Batch 3):** the whole forgot flow (email → resend → wrong/right code → weak/good password → login)
+  and the OTP flow (wrong/right code → dashboard).
 
 ---
 
 ## Batch 4 — Teacher pages
 
-### B4-1 ✅ Naiipit sa "loading" kapag expired ang session
-- **Problema:** Sidebar click → skeleton habambuhay.
-- **Saan:** `resources/views/layouts/teacher.blade.php` → sidebar loader (`loadPage`).
-- **Ayos:** full page load kapag hindi teacher page ang sagot (redirect / 401 / JSON) → napupunta sa login.
+### B4-1 ✅ Stuck "loading" when the session expired
+- **Problem:** a sidebar click showed the skeleton forever.
+- **Where:** `resources/views/layouts/teacher.blade.php` → sidebar loader (`loadPage`).
+- **Fix:** a full page load whenever the answer is not a teacher page (redirect / 401 / JSON) → ends on login.
 
-### B4-2 ✅ Patay ang JavaScript ng page pagkatapos ng Back/Forward
-- **Problema:** hal. hindi bumubukas ang student modal pagkatapos mag-Back.
-- **Ayos:** iisang loader para sa click at Back/Forward na nagpapatakbo ng script ng page.
+### B4-2 ✅ Page JavaScript dead after Back/Forward
+- **Problem:** e.g. the student modal would not open after going Back.
+- **Fix:** one loader for clicks and Back/Forward that runs the page's scripts.
 
-### B4-3 ✅ Error sa ikalawang bukas ng Materials
-- **Problema:** `SyntaxError: Identifier has already been declared` → patay ang upload button.
-- **Ayos:** bawat inline script ng page ay pinapatakbo sa sariling block `{ … }`.
+### B4-3 ✅ Error on the second visit to Materials
+- **Problem:** `SyntaxError: Identifier has already been declared` → the upload button stopped working.
+- **Fix:** each inline page script runs in its own block `{ … }`.
 
-### B4-4 ✅ Iba pa sa teacher layout
-- Hindi nagbabago ang title ng tab; hindi gumagana ang Ctrl+click (new tab); absolute URLs (`/teacher/…`)
-  → `route()`/`url()`; malabong sidebar text; walang focus outline; nakatago ang page hanggang ma-load ang
-  lahat ng image; nakagitna ang "Log out"; naputol na pangalan sa top bar sa phone.
+### B4-4 ✅ Other teacher layout issues
+- Tab title never changed; Ctrl+click (new tab) did not work; absolute URLs (`/teacher/…`) → `route()`/`url()`;
+  faint sidebar text; no focus outline; the page stayed hidden until every image loaded; "Log out" centered;
+  the name in the top bar was cut off on phones.
 
-### B4-5 ✅ Announcement ng teacher → lumalabas sa BUONG paaralan
-- **Problema:** walang section selector ang form, at ang walang section ay itinuturing na school-wide.
-- **Saan:** `app/Models/Announcement.php` → `scopeVisibleToSections()`; `Teacher/AnnouncementController.php`;
+### B4-5 ✅ Teacher announcements reached the WHOLE school
+- **Problem:** the form had no section selector, and an announcement without a section counted as school-wide.
+- **Where:** `app/Models/Announcement.php` → `scopeVisibleToSections()`; `Teacher/AnnouncementController.php`;
   `resources/views/teacher/announcements.blade.php`; `Api/Teacher/DashboardController.php` → `storeAnnouncement()`.
-- **Ayos:** may "Send to" na; ang "All my sections" ay para lang sa mga section ng nag-post na teacher (web at API,
-  student at parent).
-- **Nasubukan:** demo section → 1, ibang section → 0, walang section → 0, parent → 1.
+- **Fix:** a "Send to" field; "All my sections" only reaches the posting teacher's sections (web and API,
+  students and parents).
+- **Tested:** demo section → 1, another section → 0, no section → 0, parent → 1.
 
-### B4-6 ✅ Walang error message sa announcement form · B4-7 ✅ Walang push sa magulang
-- **Saan:** `announcements.blade.php`; `app/Services/ParentNotifier.php` → `announcement()` (bago).
+### B4-6 ✅ No error messages on the announcement form · B4-7 ✅ No push to parents
+- **Where:** `announcements.blade.php`; `app/Services/ParentNotifier.php` → `announcement()` (new).
 
-### B4-8 ✅ Nasisira ang sidebar icons sa teacher dashboard
-- **Saan:** `teacher/dashboard.blade.php` → `.nav-icon` (kapareho ng class ng layout). **Ayos:** prefix `td-`.
+### B4-8 ✅ Sidebar icons broken on the teacher dashboard
+- **Where:** `teacher/dashboard.blade.php` → `.nav-icon` (same class as the layout). **Fix:** `td-` prefix.
 
-### B4-9 ✅ Mali ang "My Subjects" / "My Sections" sa teacher dashboard
-- **Saan:** `Teacher/TeacherDashboardController.php`. **Ayos:** bawat klase (subject + section); kasama ang advisory section.
+### B4-9 ✅ Wrong "My Subjects" / "My Sections" on the teacher dashboard
+- **Where:** `Teacher/TeacherDashboardController.php`. **Fix:** one entry per class (subject + section); advisory section included.
 
-### B4-10 ✅ Laging "No grades recorded yet" sa student modal ng teacher
-- **Saan:** `Teacher/TeacherStudentController.php`; `teacher/students/index.blade.php`.
-- **Ayos:** kasalukuyang SY; adviser = lahat ng subject, subject teacher = sariling subject; tamang average.
+### B4-10 ✅ Teacher's student modal always said "No grades recorded yet"
+- **Where:** `Teacher/TeacherStudentController.php`; `teacher/students/index.blade.php`.
+- **Fix:** current SY; adviser = every subject, subject teacher = own subject only; correct average.
 
-### B4-11 ✅ Tahimik na sirang layout (6 na Tailwind class na wala sa build)
-- `gap-5`, `p-4`, `min-w-0`, `sm:col-span-2`, `py-14`, `w-14` → plain CSS ang tatlong teacher page.
+### B4-11 ✅ Silently broken layout (6 Tailwind classes missing from the build)
+- `gap-5`, `p-4`, `min-w-0`, `sm:col-span-2`, `py-14`, `w-14` → plain CSS on the three teacher pages.
 
-### B4-12 ✅ Iba pa: LRN search, naka-escape na HTML, N+1 query, phone layout
-- **Nasubukan (Batch 4):** headless Edge 18/18 (SPA, Back/Forward, Materials ×2, expired session), walang JS error.
+### B4-12 ✅ Others: LRN search, escaped HTML, N+1 query, phone layout
+- **Tested (Batch 4):** headless Edge 18/18 (SPA, Back/Forward, Materials ×2, expired session), no JS errors.
 
 ---
 
 ## Batch 5 — Student pages (part 1)
 
-### B5-1 ✅ Hindi nami-mark as read ang notification kapag kinlik
-- **Problema:** laging may pulang badge — kinakansela ng browser ang request dahil umaalis agad ang page.
-- **Saan:** `resources/views/layouts/app.blade.php` → notifications script. **Ayos:** `fetch(..., { keepalive: true })`.
-- **Nasubukan:** click sa notification → `unread=0`.
+### B5-1 ✅ Clicking a notification never marked it read
+- **Problem:** the red badge never cleared — the browser cancelled the request because the page left at once.
+- **Where:** `resources/views/layouts/app.blade.php` → notifications script. **Fix:** `fetch(..., { keepalive: true })`.
+- **Tested:** click a notification → `unread=0`.
 
-### B5-2 ✅ Absolute URLs at error kada 30 segundo sa student/parent layout
-- **Ayos:** `route()`/`url()`; base URL sa link ng notification; `.catch()` sa polling.
+### B5-2 ✅ Absolute URLs and an error every 30 seconds in the student/parent layout
+- **Fix:** `route()`/`url()`; base URL on notification links; `.catch()` on polling.
 
-### B5-3 ✅ Laging "0" ang Assignments sa student dashboard
-- **Saan:** `Student/StudentDashboardController.php` → `index()`. **Ayos:** bukas na quiz na hindi pa naipapasa.
+### B5-3 ✅ "Assignments" always 0 on the student dashboard
+- **Where:** `Student/StudentDashboardController.php` → `index()`. **Fix:** open quizzes not yet submitted.
 
-### B5-4 ✅ Maling payo sa hindi pa enrolled
-- **Ayos:** form / pending / rejected (may dahilan) — may tamang button.
+### B5-4 ✅ Wrong advice for students not enrolled yet
+- **Fix:** form / pending / rejected (with the reason) — each with the right button.
 
-### B5-5 ✅ Hindi makaka-enroll sa susunod na school year
-- **Saan:** `StudentDashboardController.php` → `enrollmentForm()`. **Ayos:** kasalukuyang SY lang ang tinitingnan.
+### B5-5 ✅ Could not enroll for the next school year
+- **Where:** `StudentDashboardController.php` → `enrollmentForm()`. **Fix:** only the current SY is checked.
 
-### B5-6 ✅ Lumang data / nakikita pagkatapos mag-logout
-- **Problema:** `Cache-Control: private, max-age=30` sa lahat ng student page. **Ayos:** tinanggal.
+### B5-6 ✅ Stale data / pages visible after logout
+- **Problem:** `Cache-Control: private, max-age=30` on every student page. **Fix:** removed.
 
-### B5-7 ✅ Hindi nabibilang ang material views mula sa web
-- **Saan:** bagong route `student.modules.open` → `StudentDashboardController::openMaterial()`.
-- **Ayos:** binibilang ang view at sinisigurong sa klase mo ang material (`404` kung hindi).
+### B5-7 ✅ Material views from the web were not counted
+- **Where:** new route `student.modules.open` → `StudentDashboardController::openMaterial()`.
+- **Fix:** counts the view and checks the material belongs to your class (`404` otherwise).
 
-### B5-8 ✅ Sirang file link ng quiz kapag mali ang `APP_URL`
-- **Saan:** `student/quiz-show.blade.php` (`Storage::url()` → `asset()`).
+### B5-8 ✅ Broken quiz file link when `APP_URL` is wrong
+- **Where:** `student/quiz-show.blade.php` (`Storage::url()` → `asset()`).
 
-### B5-9 ✅ Quizzes: double submit, walang "Missed", walang error ng typed answer
-- **Saan:** `Student/AssignmentController.php` → `index()`; `quizzes.blade.php`; `quiz-show.blade.php`.
+### B5-9 ✅ Quizzes: double submit, no "Missed", no error for typed answers
+- **Where:** `Student/AssignmentController.php` → `index()`; `quizzes.blade.php`; `quiz-show.blade.php`.
 
-### B5-10 ✅ Walang average sa My Grades
-- **Saan:** `StudentDashboardController.php` → `grades()`; `student/grades.blade.php`.
-- **Ayos:** Q1–Q4, average kada subject, general average ("so far" hangga't kulang ang quarter).
+### B5-10 ✅ No averages on My Grades
+- **Where:** `StudentDashboardController.php` → `grades()`; `student/grades.blade.php`.
+- **Fix:** Q1–Q4, average per subject, general average ("so far" while quarters are missing).
 
-### B5-11 ✅ Iba pa: contrast, focus, reduced motion, phone layout, N+1 query
-- **Nasubukan (Batch 5):** in-process 5/5; headless Edge 19/19 (lahat ng 12 student page), walang JS error.
+### B5-11 ✅ Others: contrast, focus, reduced motion, phone layout, N+1 query
+- **Tested (Batch 5):** in-process 5/5; headless Edge 19/19 (all 12 student pages), no JS errors.
 
-### Local setup (hindi code)
-- **Problema:** `403` ang lahat ng upload sa localhost. **Dahilan:** walang `public/storage` link.
-- **Ayos:** `php artisan storage:link` (sa Railway: nasa `docs/DEPLOY_CHECKLIST.md`).
+### Local setup (not code)
+- **Problem:** every upload returned `403` on localhost. **Cause:** no `public/storage` link.
+- **Fix:** `php artisan storage:link` (Railway: listed in `docs/DEPLOY_CHECKLIST.md`).
 
 ---
 
 ## Batch 6 — Student pages (part 2)
 
-### B6-1 ✅ Hindi nababawasan ang "Unread messages"
-- **Problema:** Hindi kailanman mina-mark as read ng website ang mga mensahe ng teacher (sa mobile app lang),
-  kaya habambuhay ang bilang sa dashboard.
-- **Saan:** `app/Http/Controllers/Student/StudentDashboardController.php` → `messages()`.
-- **Ayos:** kapag binuksan ang usapan sa isang teacher, ang mga mensahe **niya lang** ang mina-mark as read
-  (`is_read = true`, `read_at = now()`). Hindi nagagalaw ang unread ng ibang teacher.
-- **Nasubukan:** dashboard "2" unread → buksan ang Messages → dashboard "0"; DB `unread=0`.
+### B6-1 ✅ "Unread messages" never went down
+- **Problem:** the website never marked a teacher's messages as read (only the mobile app did),
+  so the dashboard count stayed forever.
+- **Where:** `app/Http/Controllers/Student/StudentDashboardController.php` → `messages()`.
+- **Fix:** opening the conversation with a teacher marks **only that teacher's** messages as read
+  (`is_read = true`, `read_at = now()`).
+- **Tested:** dashboard "2" unread → open Messages → dashboard "0"; DB `unread=0`.
 
-### B6-2 ✅ Pinaghahalo ang lahat ng teacher sa iisang "Conversation"
-- **Problema:** iisang listahan para sa lahat ng teacher, bago→luma ang ayos, at "You" lang ang nakasulat —
-  hindi alam kung kanino ipinadala.
-- **Saan:** `StudentDashboardController.php` → `messages()`, `storeMessage()`; `resources/views/student/messages.blade.php`.
-- **Ayos:**
-  - Kaliwa: listahan ng teacher = mga teacher ng section mo + mga dating nakausap, may huling mensahe at
-    bilang ng unread, nakaayos ayon sa pinakabagong usapan. Kanan: usapan sa napiling teacher (`?with=<id>`),
-    luma→bago, may "Today / Yesterday / petsa", "seen" at "edited".
-  - Ang sagot ay napupunta sa napiling teacher; pagkatapos mag-send, bumabalik sa **parehong** usapan.
-  - Kung hindi na teacher ng section mo, mababasa pa rin ang usapan pero hindi na makakasagot (gaya ng
-    patakaran ng `storeMessage()` dati).
-  - Enter = send, Shift+Enter = bagong linya; double-submit guard. Sa phone, chips ang listahan ng teacher.
-- **Nasubukan:** isang contact + aktibong usapan; luma ang una; Enter → nasa parehong usapan, sa huli ang
-  mensahe ko; DB `sent_by_student=1`; walang horizontal scroll sa phone (390px).
+### B6-2 ✅ Every teacher mixed into one "Conversation"
+- **Problem:** one list for all teachers, newest first, labelled only "You" — no way to tell who a message went to.
+- **Where:** `StudentDashboardController.php` → `messages()`, `storeMessage()`; `resources/views/student/messages.blade.php`.
+- **Fix:**
+  - Left: list of teachers = the section's teachers + past conversation partners, with the last message and
+    unread count, sorted by latest activity. Right: the conversation with the selected teacher (`?with=<id>`),
+    oldest first, with "Today / Yesterday / date", "seen" and "edited".
+  - A reply goes to the selected teacher; after sending, the **same** conversation opens again.
+  - A teacher who no longer handles the section can still be read but not answered (same rule as `storeMessage()`).
+  - Enter = send, Shift+Enter = new line; double-submit guard. On phones the teacher list becomes chips.
+- **Tested:** one contact + active conversation; oldest first; Enter → same conversation, my message last;
+  DB `sent_by_student=1`; no sideways scroll on a phone (390px).
 
-### B6-3 ✅ Walang laman ang mensaheng may attachment
-- **Problema:** kapag file ang ipinadala ng teacher mula sa mobile app, walang lumalabas na link.
-- **Saan:** `messages.blade.php`. **Ayos:** link ng file (📎 pangalan ng file) + "edited" kapag na-edit.
-- **Nasubukan:** lumalabas ang link papunta sa `/storage/chat_files/…pdf`.
+### B6-3 ✅ Messages with an attachment were empty
+- **Problem:** a file sent by the teacher from the mobile app showed no link.
+- **Where:** `messages.blade.php`. **Fix:** file link (📎 file name) + "edited" when edited.
+- **Tested:** the link points to `/storage/chat_files/…pdf`.
 
-### B6-4 ✅ Bagong code ang nagagawa kapag ni-refresh ang Parent page
-- **Problema:** page ang ibinabalik ng `POST` na gumagawa ng code. Pag-refresh / "Confirm resubmission" →
-  bagong code at **nabubura ang nauna**, na maaaring nai-scan na ng magulang.
-- **Saan:** `app/Http/Controllers/Student/ParentLinkController.php` → `store()`, `show()`;
+### B6-4 ✅ Refreshing the Parent page created a new code
+- **Problem:** the `POST` that creates the code returned a page. Refresh / "Confirm resubmission" →
+  a new code that **cancelled the previous one**, which the parent may already have scanned.
+- **Where:** `app/Http/Controllers/Student/ParentLinkController.php` → `store()`, `show()`;
   `resources/views/student/parent-link.blade.php`.
-- **Ayos:** POST → redirect → GET. Ang code ay dinadala ng session nang isang beses (`session('parent_link')`),
-  at ginagawa ulit ang QR mula sa URL. May paalala na isang beses lang ito makikita; "Creating…" + disabled
-  ang button para hindi madoble ang click.
-- **Nasubukan:** click → GET page na may code; reload → wala nang code at walang bagong nagawa (DB `parent_codes=1`).
+- **Fix:** POST → redirect → GET. The code travels once in the session (`session('parent_link')`) and the QR is
+  rebuilt from the URL. A note says it is shown only once; the button shows "Creating…" and is disabled
+  against double clicks.
+- **Tested:** click → GET page with the code; reload → no code and nothing new created (DB `parent_codes=1`).
 
-### B6-5 ✅ Enrollment form: umaabot sa buong lapad / siksik sa phone
-- **Problema:** wala sa build ang `max-w-2xl` at `mb-5`; ang Age/Birthdate/Gender ay 3 column kahit sa phone.
-- **Saan:** `resources/views/student/enrollment-form.blade.php`.
-- **Ayos:** plain CSS (`.ef-*`), max 720px ang lapad; 1 column sa ≤640px.
-- **Nasubukan:** lapad ng form ≤ 721px sa 1366px na screen.
+### B6-5 ✅ Enrollment form: full width / cramped on phones
+- **Problem:** `max-w-2xl` and `mb-5` were missing from the build; Age/Birthdate/Gender stayed 3 columns on phones.
+- **Where:** `resources/views/student/enrollment-form.blade.php`.
+- **Fix:** plain CSS (`.ef-*`), max 720px wide; 1 column at ≤640px.
+- **Tested:** form width ≤ 721px on a 1366px screen.
 
-### B6-6 ✅ Enrollment form: hindi magagamit ng keyboard ang "Student Type"
-- **Problema:** `<div onclick>` ang tatlong pagpipilian — hindi maaabot ng Tab / hindi mabasa ng screen reader.
-- **Ayos:** totoong radio buttons (`fieldset`) na may parehong hitsura; lumalabas ang transfer fields kapag "Transferee".
-- **Nasubukan:** arrow keys → "Transferee" napili at lumabas ang transfer fields; na-submit bilang `type=transfer`.
+### B6-6 ✅ Enrollment form: "Student Type" unusable by keyboard
+- **Problem:** the three choices were `<div onclick>` — unreachable by Tab, unreadable by screen readers.
+- **Fix:** real radio buttons (`fieldset`) with the same look; the transfer fields appear for "Transferee".
+- **Tested:** arrow keys → "Transferee" selected and transfer fields shown; submitted as `type=transfer`.
 
-### B6-7 ✅ Enrollment form: iba pa
-- **Problema:** walang `for` ang mga label; 10px at malabong error text; Tagalog na hint sa English na UI; walang
-  double-submit guard; patay na `@section('sidebar')`.
-- **Ayos:** lahat ng input may `id` + `label for`; 12.5px na error; English na hint; bawal ang numero sa pangalan;
-  awtomatikong Age mula sa Birthdate (puwede pa ring baguhin); double-submit guard; tinanggal ang patay na section.
-  **Hindi binago** ang mga pangalan ng field — pareho pa rin ang validation sa controller.
-- **Nasubukan:** lahat ng field may label; Age = tamang edad mula 2012-03-15; submit → dashboard "Enrollment form
+### B6-7 ✅ Enrollment form: other issues
+- **Problem:** labels without `for`; 10px faint error text; Tagalog hints in an English UI; no
+  double-submit guard; a dead `@section('sidebar')`.
+- **Fix:** every input has an `id` + `label for`; 12.5px errors; English hints; no digits in names;
+  Age filled from Birthdate (still editable); double-submit guard; dead section removed.
+  Field names are **unchanged** — the controller's validation is the same.
+- **Tested:** every field has a label; Age correct for 2012-03-15; submit → dashboard "Enrollment form
   submitted", DB `enrollment=pending`.
 
-### B6-8 ✅ Face self-upload: sira ang page kapag naka-on ang `FACE_SELF_UPLOAD`
-- **Problema:** 22 Tailwind class ang wala sa build → walang kulay ang Start button (puti sa puti), hindi
-  lumalabas ang bilog na gabay at ang progress bar, walang padding ang mga alert.
-- **Saan:** `resources/views/student/face-register.blade.php` (naka-off sa default — kiosk ang gamit).
-- **Ayos:** plain CSS (`.fr-*`); `ring()` ay nagpapalit na ng class na `ring-idle/ok/warn`. Hindi ginalaw ang logic ng camera.
-- **Nasubukan (in-process, naka-on ang flag):** may kulay na Start button at bilog; walang Tailwind class.
+### B6-8 ✅ Face self-upload page broken when `FACE_SELF_UPLOAD` is on
+- **Problem:** 22 Tailwind classes missing from the build → white-on-white Start button, no guide circle,
+  no progress bar, alerts without padding.
+- **Where:** `resources/views/student/face-register.blade.php` (off by default — the kiosk is used instead).
+- **Fix:** plain CSS (`.fr-*`); `ring()` switches `ring-idle/ok/warn` classes. Camera logic untouched.
+- **Tested (in-process, flag on):** coloured Start button and circle; no Tailwind classes.
 
-### B6-9 ✅ Face self-upload: "Network error" kahit validation error
-- **Problema:** walang `Accept: application/json` ang upload, kaya HTML redirect ang natatanggap at
-  nagkakamali ang `res.json()`.
-- **Saan:** `face-register.blade.php` → `upload()`. **Ayos:** `Accept: application/json` + `res.json().catch()`,
-  kaya ang mensahe ng server ang lumalabas.
-- **Nasubukan:** kulang na larawan → `422` na JSON (`message` + `errors.images`).
+### B6-9 ✅ Face self-upload: "Network error" on a validation error
+- **Problem:** the upload sent no `Accept: application/json`, so it received an HTML redirect and
+  `res.json()` failed.
+- **Where:** `face-register.blade.php` → `upload()`. **Fix:** `Accept: application/json` + `res.json().catch()`,
+  so the server's message is shown.
+- **Tested:** missing images → `422` JSON (`message` + `errors.images`).
 
-### B6-10 ✅ "Room Room 5" sa schedule
-- **Problema:** laging dinadagdagan ng "Room " ang room, pero malayang text ito (hal. "ALS Room 7").
-- **Saan:** `resources/views/student/schedule.blade.php`; `StudentDashboardController.php` → `schedule()`.
-- **Ayos:** "Room " lang kapag numero ang room; eager-load ang adviser (isang query na lang).
-- **Nasubukan:** lumalabas ang "Room 5" at "ALS Room 7"; walang "Room Room".
+### B6-10 ✅ "Room Room 5" on the schedule
+- **Problem:** "Room " was always prepended, but the room is free text (e.g. "ALS Room 7").
+- **Where:** `resources/views/student/schedule.blade.php`; `StudentDashboardController.php` → `schedule()`.
+- **Fix:** "Room " only for a bare number; adviser eager-loaded (one query).
+- **Tested:** shows "Room 5" and "ALS Room 7"; never "Room Room".
 
-### B6-11 ✅ My Subjects: rainbow cover at hindi maki-click
-- **Saan:** `resources/views/student/subjects.blade.php`.
-- **Ayos:** iisang accent color (design rule); card → link papunta sa modules ng subject (`#subj-<id>`),
-  naka-alpabeto; mas malinaw na text; tinanggal ang inline `onmouseover`; may button ang empty state.
-- **Nasubukan:** click sa card → `/student/modules#subj-…` at nandoon ang heading ng subject.
+### B6-11 ✅ My Subjects: rainbow covers and not clickable
+- **Where:** `resources/views/student/subjects.blade.php`.
+- **Fix:** one accent color (design rule); each card links to that subject's modules (`#subj-<id>`),
+  sorted by name; readable text; no inline `onmouseover`; the empty state has a button.
+- **Tested:** clicking a card → `/student/modules#subj-…` and the subject heading is there.
 
-### B6-12 ✅ Attendance: nakapirming "Checking…" pagkatapos ng Back
-- **Saan:** `resources/views/student/attendance.blade.php` → script.
-- **Ayos:** `pageshow` → bumabalik ang button at nag-a-update ang oras; tamang padding; mas malinaw na empty text.
+### B6-12 ✅ Attendance: stuck "Checking…" after Back
+- **Where:** `resources/views/student/attendance.blade.php` → script.
+- **Fix:** `pageshow` restores the button and refreshes the timer; correct padding; clearer empty text.
 
-### B6-13 ✅ Face status: dobleng padding at hardcoded na kulay
-- **Saan:** `resources/views/student/face-status.blade.php`. **Ayos:** layout tokens, walang dagdag na padding.
+### B6-13 ✅ Face status: double padding and hard-coded colors
+- **Where:** `resources/views/student/face-status.blade.php`. **Fix:** layout tokens, no extra padding.
 
-### Nahuli habang sinusubukan (bago na-commit)
-- Messages: lumalabas ang indent ng template sa loob ng bubble → `pre-wrap` sa text lang (`.ms-text`).
-- Messages: lumiliit ang avatar sa header (masyadong malawak ang `.ms-head span`) → sariling class `.ms-head-role`.
-- Messages: hindi nawawala ang huling mensahe sa chips sa phone (inline `display:block`) → inilipat sa CSS.
+### Caught while testing (before commit)
+- Messages: the template's indentation showed inside the bubble → `pre-wrap` only on the text (`.ms-text`).
+- Messages: the header avatar shrank (`.ms-head span` was too broad) → its own `.ms-head-role` class.
+- Messages: the last-message preview did not hide on phone chips (inline `display:block`) → moved to CSS.
 
-**Nasubukan (Batch 6):** headless Edge 22/22, walang JS error; in-process FaceUpload 2/2; DB state tama;
-binura ang lahat ng test data pagkatapos.
+**Tested (Batch 6):** headless Edge 22/22, no JS errors; in-process FaceUpload 2/2; DB state correct;
+all test data removed afterwards.
+
+---
+
+## Batch 7 — Parent portal
+
+### B7-1 ✅ The parent saw a different (lower) average than the student
+- **Problem:** the parent dashboard, Child's Records and `GET /api/parent/*` averaged every quarter grade the
+  child ever had — all school years mixed, each quarter counted like a subject. With this year's grades
+  (Math 77.75, Science 78.25) and one old 60 from last year, the parent saw **74.4 — below passing**, while
+  the student's Grades page correctly showed **78.00**.
+- **Where:** `ParentPortal/ParentDashboardController.php`; `parent/dashboard.blade.php`, `parent/child-records.blade.php`;
+  `Api/ParentPortal/DashboardController.php` → `formatChild()`; `Student/StudentDashboardController.php` → `grades()`.
+- **Fix:** one report-card calculation, `GradeService::reportCard()` (per school year → average per subject →
+  general average), used by the student Grades page, both parent pages and the parent API. The API keeps
+  the same keys; `general_average`, `passing_count` and `failing_count` now cover the current school year.
+- **Tested:** dashboard and API show 78.00 / 78, same as the student page. API JSON compared before/after:
+  only `general_average` (74.4 → 78) and `failing_count` (3 → 2) changed.
+
+### B7-2 ✅ Account recovery and password reset left old logins signed in
+- **Problem:** (CLAUDE.md §13 #12) recovering a parent account on the website kept the phone app logged in;
+  recovering in the app kept "remembered" browsers (no OTP). Neither ended other open browser sessions,
+  and neither did Forgot password — someone who knew the old password stayed in.
+- **Where:** `Services/ParentLinkService.php` → `recover()`; `Services/PasswordResetService.php` → `reset()`;
+  `Auth/ParentActivationController.php`, `Api/ParentLinkController.php` → `recover()`.
+- **Fix:** new `Services/SessionRevoker.php` — deletes app tokens, trusted devices and database sessions —
+  called inside both services, so web and API do exactly the same thing. The device that recovered is
+  signed in again afterwards.
+- **Tested:** live with two "devices": after device B recovered, device A was sent to login, the old app token
+  got `401`, and only B's session and trusted device remained. In-process: web recovery, API recovery
+  (exactly one new token) and password reset all end with 0 old tokens, sessions and devices.
+
+### B7-3 ✅ Child's Records never showed a pending enrollment
+- **Problem:** the badge read `studentEnrollment`, which only returns *enrolled* rows, so "Pending" could never
+  appear; a submitted or returned form showed as "Not enrolled".
+- **Where:** `ParentPortalService::enrollmentState()`; both parent views.
+- **Fix:** also loads the latest enrollment request: Enrolled · SY / Form under review / Form returned
+  (with the school's reason) / Not enrolled for this SY.
+- **Tested:** each state rendered (in-process, rolled back).
+
+### B7-4 ✅ "Recent grades" were not recent
+- **Problem:** the first 8 grade rows in database order, from any school year.
+- **Where:** `parent/dashboard.blade.php`. **Fix:** this school year's subjects, sorted by name, with their
+  average and which quarters are recorded.
+
+### B7-5 ✅ School arrivals (face kiosk) missing on the website
+- **Problem:** gate arrivals were only available in the app (`/api/parent/attendance`).
+- **Where:** `ParentDashboardController::childRecords()`, `parent/child-records.blade.php`.
+- **Fix:** "School arrivals · last 30 days" (on time / late), using the same query as the API.
+
+### B7-6 ✅ Web and app built the parent data separately
+- **Problem:** the web and API controllers repeated the children, announcements and attendance queries and had
+  already drifted apart (the app showed arrivals, the web did not).
+- **Fix:** `Services/ParentPortalService.php`, used by both controllers, always scoped to the signed-in
+  parent's children. API response shape unchanged (JSON compared before/after).
+
+### B7-7 ✅ Child's Records: missing styles and cramped on phones
+- **Problem:** 5 Tailwind classes missing from the build (`mb-5`, `min-w-0`, `space-y-4`, `p-10`,
+  `hover:text-amber-800`); amber theme and inline styles; the 6-column table was cramped on a phone.
+- **Where:** `parent/child-records.blade.php`.
+- **Fix:** plain CSS with layout tokens; grades per school year (Q1–Q4, average, remarks) with a keyboard-friendly
+  "Score breakdown"; tables scroll inside their card.
+
+### B7-8 ✅ Parent dashboard: off-palette and low contrast
+- **Problem:** its own brown/serif palette; faint text (`#b3a896` on white ≈ 2.3:1, needs 4.5:1); a dead
+  `@section('sidebar')`; passing mark hard-coded as 75; announcements lost their line breaks.
+- **Where:** `parent/dashboard.blade.php`. **Fix:** layout tokens, `Grade::PASSING`, `white-space: pre-line`.
+- **Tested:** lowest text contrast measured in the browser: 4.76:1 on both pages.
+
+### B7-9 ✅ Grade weight labels typed separately from the formula
+- **Problem:** "Written (25%) / Perf. (50%) / Quarterly (25%)" was hard-coded in the view; a formula change
+  (CLAUDE.md §13 #13) would leave the labels wrong.
+- **Where:** `Models/Grade.php`, `parent/child-records.blade.php`. **Fix:** `Grade::WEIGHTS`, used by
+  `computeFinal()` and by the labels. Results identical.
+
+### B7-10 ✅ A past school year showed as "In progress"
+- **Problem:** found while testing — a finished school year with missing quarters showed "In progress" and
+  "General average (so far)" on the student Grades page and in Child's Records.
+- **Where:** `GradeService::reportCard()` (`current` flag); `student/grades.blade.php`; `parent/child-records.blade.php`.
+- **Fix:** past years say "Incomplete" and "General average".
+
+**Tested (Batch 7):** in-process 7/7 (40 assertions, every test rolled back); headless Edge 17/17 on desktop
+and phone, no JS errors; API before/after comparison; live two-device recovery test; student pages 5/5 still pass.
+
+---
+
+## Code comments
+
+- **Problem:** about 450 code comments in 119 files were in Tagalog/Taglish, and several held bug ids
+  (`B6-4`) or "Dati: …" history that belongs in the commit log, not in the code.
+- **Fix:** every comment rewritten in plain English, explaining why the code is the way it is; history and
+  bug ids removed; leftover copy-paste notes ("PALITAN NG:", "DAGDAG:") deleted.
+- **Tested:** for every changed file the code with comments stripped is byte-identical to before
+  (`php_strip_whitespace()` for PHP; comment-stripped compare for Blade/JS). All PHP lints; every inline
+  script on all 24 teacher/student/parent pages parses; teacher SPA 18/18 and parent pages 17/17 in the browser.
+
+---
+
+## Found, not fixed yet
+
+| | Issue | Where |
+|---|---|---|
+| 🔧 | Admin login lockout countdown shows 45 seconds, but the server locks for 30 minutes | `resources/views/admin/login.blade.php` (`TOTAL_SECS = 45`) |
+| 🔧 | `/api/parent/*` `enrollment_status` is still only "enrolled" / "not enrolled" (the web now shows pending/returned) | `Api/ParentPortal/DashboardController.php` — needs a Flutter change first |
+| 🔧 | A parent with two children cannot link the second child themselves (the school office links them) | `ParentLinkService` — feature decision |
+| 🔧 | Grade weights 25/50/25 for every subject (DepEd differs per subject group) | CLAUDE.md §13 #13 — confirm with the school |
+| 🔧 | No "change password" inside the app for students/teachers/parents | CLAUDE.md §13 #14 |
+| 🔧 | `GET /api/messages/thread/{id}` has no contact check | CLAUDE.md §13 #16 |
+| 🔧 | Admin layout not audited yet | `resources/views/layouts/admin.blade.php` |
