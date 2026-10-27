@@ -30,6 +30,7 @@ Backend repo: `dp-lms-web` (Laravel 12), branch `feature/parent-link`.
 |---|---|---|
 | `422` | Validation | `{ "message": "...", "errors": { "field": ["mensahe"] } }` |
 | `401` | Walang/expired na token, o maling login | `{ "message": "..." }` |
+| `403` | **BAGO (2026-10-27):** na-reject o na-ban ang account habang naka-login — sa **kahit anong** protected endpoint. Binubura na ng server ang token → burahin din sa app at bumalik sa login | `{ "message": "Your account is not active. Please contact the school." }` |
 | `403` / `404` / `422` | Bawal ang aksyon (hal. sarado na ang quiz) | `{ "ok": false, "message": "..." }` |
 | `410` | Tinanggal na endpoint (`/register`) | `{ "message": "..." }` |
 | `429` | Rate limit | `{ "message": "Too Many Attempts." }` |

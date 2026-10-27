@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogService;
@@ -88,7 +89,13 @@ class LoginController extends Controller
         ]);
 
         // Send OTP
-        app(OtpService::class)->send($user, 'login');
+        try {
+            app(OtpService::class)->send($user, 'login');
+        } catch (ActionNotAllowed $e) {
+            // Naka-limit ang pagpapadala — gumagana pa ang huling code sa email hangga't hindi expired.
+            AuditLogService::log('Login code not sent — rate limit', 'Auth', $identifier);
+            return redirect()->route('otp.show')->with('error', $e->getMessage());
+        }
 
         return redirect()->route('otp.show');
     }

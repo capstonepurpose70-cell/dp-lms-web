@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ActionNotAllowed;
 use App\Models\OtpCode;
 use App\Models\User;
 use App\Mail\OtpMail;
@@ -21,8 +22,15 @@ class OtpService
 
         $key = 'otp:' . $user->id;
 
+        // 5 code kada oras. ActionNotAllowed para masalo ng tumatawag (dati generic
+        // \Exception na hindi sinasalo ng LoginController → 500 Server Error).
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw new \Exception('Too many OTP requests. Please wait before requesting again.');
+            $minutes = max(1, (int) ceil(RateLimiter::availableIn($key) / 60));
+            throw new ActionNotAllowed(
+                "Too many codes were sent to your email. Use the latest code we sent, or try again in {$minutes} "
+                . ($minutes === 1 ? 'minute.' : 'minutes.'),
+                429
+            );
         }
 
         // Delete previous unused OTPs for this user and purpose

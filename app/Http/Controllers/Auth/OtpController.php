@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 
+use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogService;
@@ -82,6 +83,8 @@ RateLimiter::hit($key, 300);
         try {
             app(OtpService::class)->send($user, 'login');
             return back()->with('success', 'A new OTP has been sent to your email.');
+        } catch (ActionNotAllowed $e) {
+            return back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             return back()->with('error', 'Could not resend OTP. Please wait a moment and try again.');
         }

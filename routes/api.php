@@ -23,7 +23,8 @@ Route::middleware('throttle:30,1')->group(function () {
 });
 
 // ── Protected (Sanctum token)
-Route::middleware('auth:sanctum')->group(function () {
+// approved: na-reject / na-ban habang naka-login sa app → 403 + burado ang token
+Route::middleware(['auth:sanctum', 'approved'])->group(function () {
 
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
     Route::get('/user',    fn(Request $r) => $r->user());
