@@ -8,7 +8,7 @@
     <title>Login — DP-LMS</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Google Fonts (same family as Register, for a consistent brand) -->
+    <!-- Google Fonts (same family as Forgot / Reset password, for a consistent brand) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -96,7 +96,7 @@
             color: var(--green-600);
             margin-bottom: 8px;
         }
-        .form-header h2 {
+        .form-header h1 {
             font-family: 'Cormorant Garamond', serif;
             font-size: 33px;
             font-weight: 700;
@@ -175,7 +175,7 @@
         }
         input:focus {
             border-color: var(--green-500);
-            box-shadow: 0 0 0 3px rgba(22,163,74,0.1);
+            box-shadow: 0 0 0 3px rgba(22,163,74,0.18);
         }
         input.is-error {
             border-color: var(--red-500);
@@ -183,33 +183,40 @@
         }
         input.is-valid { border-color: var(--green-500); }
 
+        /* #b91c1c / green-700: the old #ef4444 / #16a34a were ~3.5:1 on white — too faint for small text */
         .error-msg {
-            font-size: 11px;
-            color: var(--red-500);
+            font-size: 12px;
+            color: #b91c1c;
             margin-top: 4px;
             display: flex;
             align-items: center;
             gap: 4px;
         }
         .email-status {
-            font-size: 11px;
+            font-size: 12px;
             margin-top: 4px;
-            height: 14px;
+            min-height: 15px;
             transition: color 0.2s;
         }
+        .email-status.is-ok  { color: var(--green-700); }
+        .email-status.is-bad { color: #b91c1c; }
 
         /* Password */
         .password-wrapper { position: relative; }
-        .password-wrapper input { padding-right: 42px; }
+        .password-wrapper input { padding-right: 48px; }
         .toggle-pw {
             position: absolute;
-            right: 12px; top: 50%;
+            right: 3px; top: 50%;
             transform: translateY(-50%);
+            width: 40px; height: 40px;           /* was a 17px hit area */
+            border-radius: 6px;
             background: none; border: none;
             cursor: pointer;
-            color: #94a3b8;
+            color: #64748b;
             padding: 0;
             display: flex;
+            align-items: center;
+            justify-content: center;
             transition: color 0.2s;
         }
         .toggle-pw:hover { color: var(--green-600); }
@@ -227,6 +234,7 @@
         }
         .remember {
             display: flex; align-items: center; gap: 8px;
+            min-height: 44px;
             cursor: pointer;
             margin: 0;
             font-size: 12.5px; font-weight: 500;
@@ -239,6 +247,7 @@
             cursor: pointer;
         }
         .login-row a {
+            display: inline-flex; align-items: center; min-height: 44px;
             font-size: 12.5px; color: var(--text-muted);
             text-decoration: none; font-weight: 500;
             transition: color 0.2s;
@@ -249,7 +258,7 @@
         /* Submit */
         .btn-submit {
             width: 100%;
-            background: var(--green-500);
+            background: var(--green-600);        /* white on green-500 was 3.3:1 */
             color: white;
             border: none;
             border-radius: 8px;
@@ -269,7 +278,7 @@
             margin-top: 8px;
             opacity: 0;
         }
-        .btn-submit:hover:not(.loading) { background: var(--green-600); }
+        .btn-submit:hover:not(.loading) { background: var(--green-700); }
         .btn-submit:active:not(.loading) { transform: scale(0.985); }
 
         .btn-spinner {
@@ -304,7 +313,7 @@
         .copyright {
             text-align: center;
             font-size: 11px;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin-top: 18px;
             opacity: 0;
         }
@@ -445,6 +454,7 @@
                 background: transparent;
                 padding: 0;
                 max-width: 468px;
+                overflow: visible;   /* padding 0 + hidden clipped the first letter ("STO.") */
             }
             .login-card::before { display: none; }
         }
@@ -454,9 +464,14 @@
             /* tamang taas sa mobile browsers (address-bar safe) */
             .form-panel { height: auto; min-height: 100vh; min-height: 100svh; }
         }
+        /* Phones: form starts under the navbar instead of mid-screen (no big empty gap,
+           and it doesn't jump when the keyboard opens) */
+        @media (max-width: 600px) {
+            .form-panel { justify-content: flex-start; }
+        }
         @media (max-width: 480px) {
-            .form-panel { padding: 78px 16px 24px; }
-            .form-header h2 { font-size: 26px; }
+            .form-panel { padding: 92px 16px 24px; }
+            .form-header h1 { font-size: 26px; }
             .form-header .eyebrow { font-size: 10px; letter-spacing: 2px; }
             /* 16px = hindi nagzu-zoom ang iOS pag nag-focus; 46px = touch-friendly */
             input[type="text"], input[type="email"], input[type="password"] {
@@ -466,25 +481,38 @@
             .btn-submit { min-height: 48px; font-size: 15px; }
         }
         @media (max-width: 360px) {
-            .form-panel { padding: 74px 12px 20px; }
-            .form-header h2 { font-size: 23px; }
+            .form-panel { padding: 88px 12px 20px; }
+            .form-header h1 { font-size: 23px; }
         }
         /* maiksing screen (landscape phone): huwag i-center para di maputol ang taas */
         @media (max-height: 640px) and (max-width: 960px) {
             .form-panel { justify-content: flex-start; }
         }
 
+        :focus-visible { outline: 3px solid var(--green-600); outline-offset: 2px; }
+        /* text fields already show a green border + ring */
+        input[type="text"]:focus-visible,
+        input[type="email"]:focus-visible,
+        input[type="password"]:focus-visible { outline: none; }
+
+        /* Reduced motion: no entrance animation — show everything at once (the script skips GSAP too).
+           .ip-center keeps its centering transform. */
         @media (prefers-reduced-motion: reduce) {
             .image-panel::after { animation: none; }
+            body, .form-panel, .image-panel, .gsap-card, .ip-bottom, .form-header, .form-group,
+            .login-row, .btn-submit, .card-footer, .copyright,
+            .server-alert { opacity: 1 !important; transform: none !important; }
+            .ip-center { opacity: 1 !important; }
         }
     </style>
 
     <noscript>
         <style>
             body { opacity: 1 !important; }
-            .ip-center, .ip-bottom, .form-header, .form-group,
-            .forgot-wrap, .btn-submit, .card-footer, .copyright,
+            .ip-bottom, .form-header, .form-group,
+            .login-row, .btn-submit, .card-footer, .copyright,
             .server-alert { opacity: 1 !important; transform: none !important; }
+            .ip-center { opacity: 1 !important; }
         </style>
     </noscript>
 </head>
@@ -497,19 +525,19 @@
 
             <div class="form-header gsap-form-header">
                 <p class="eyebrow">Sto. Domingo NHS</p>
-                <h2>Welcome back</h2>
+                <h1>Welcome back</h1>
                 <p>Sign in to continue to your portal.</p>
             </div>
 
             @if(session('success'))
-                <div class="server-alert success gsap-alert">
+                <div class="server-alert success gsap-alert" role="status">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     {{ session('success') }}
                 </div>
             @endif
 
             @if(session('error'))
-                <div class="server-alert error gsap-alert">
+                <div class="server-alert error gsap-alert" role="alert">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                     {{ session('error') }}
                 </div>
@@ -536,28 +564,33 @@
                         spellcheck="false"
                         maxlength="254"
                         class="{{ $errors->has('email') ? 'is-error' : '' }}"
+                        aria-describedby="emailStatus @error('email') emailError @enderror"
+                        @error('email') aria-invalid="true" @enderror
                         required>
-                    <p class="email-status" id="emailStatus"></p>
-                    @error('email')<p class="error-msg">{{ $message }}</p>@enderror
+                    <p class="email-status" id="emailStatus" aria-live="polite"></p>
+                    @error('email')<p class="error-msg" id="emailError">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Password --}}
                 <div class="form-group gsap-field">
-                    <label>Password</label>
+                    <label for="passwordInput">Password</label>
                     <div class="password-wrapper">
                         <input type="password" name="password" id="passwordInput"
                             placeholder="Enter your password"
                             autocomplete="current-password"
                             maxlength="100"
                             class="{{ $errors->has('password') ? 'is-error' : '' }}"
+                            aria-describedby="passwordError @error('password') passwordServerError @enderror"
+                            @error('password') aria-invalid="true" @enderror
                             required>
-                        <button type="button" class="toggle-pw" onclick="togglePw('passwordInput', this)" tabindex="-1" aria-label="Toggle password visibility">
+                        <button type="button" class="toggle-pw" onclick="togglePw('passwordInput', this)"
+                                aria-label="Show password" aria-pressed="false" aria-controls="passwordInput">
                             <svg class="pw-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             <svg class="pw-hide" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
                         </button>
                     </div>
-                    @error('password')<p class="error-msg">{{ $message }}</p>@enderror
-                    <p class="error-msg" id="passwordError" style="display:none;"></p>
+                    @error('password')<p class="error-msg" id="passwordServerError">{{ $message }}</p>@enderror
+                    <p class="error-msg" id="passwordError" role="alert" style="display:none;"></p>
                 </div>
 
                 {{-- Remember me + Forgot --}}
@@ -605,7 +638,7 @@
         <div class="ip-bottom gsap-ip-bottom">
             <div class="ip-bar"></div>
             <p class="ip-welcome">Digital Portal</p>
-            <h1 class="ip-title">DP-LMS</h1>
+            <p class="ip-title">DP-LMS</p>
             <p class="ip-subtitle">
                 Sto. Domingo National High School<br>
                 Learning Management System
@@ -614,24 +647,38 @@
     </div>
 
 <script>
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 /* ─────────────────────────────────────────────
    PARTICLES  (lightweight canvas dots)
+   Only while the photo panel is visible — on phones it is hidden and the
+   loop used to keep running every frame for nothing.
 ───────────────────────────────────────────── */
 (function() {
     const canvas = document.getElementById('particles-canvas');
-    if (!canvas) return;
+    if (!canvas || reduceMotion) return;
     const ctx = canvas.getContext('2d');
-    const W = canvas.width = canvas.offsetWidth;
-    const H = canvas.height = canvas.offsetHeight;
-    const dots = Array.from({ length: 38 }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: Math.random() * 1.6 + 0.4,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        a: Math.random() * 0.4 + 0.15
-    }));
+    let W = 0, H = 0, running = false, dots = [];
+
+    function start() {
+        W = canvas.width = canvas.offsetWidth;
+        H = canvas.height = canvas.offsetHeight;
+        if (running || !W) return;
+        if (!dots.length) {
+            dots = Array.from({ length: 38 }, () => ({
+                x: Math.random() * W,
+                y: Math.random() * H,
+                r: Math.random() * 1.6 + 0.4,
+                vx: (Math.random() - 0.5) * 0.25,
+                vy: (Math.random() - 0.5) * 0.25,
+                a: Math.random() * 0.4 + 0.15
+            }));
+        }
+        running = true;
+        draw();
+    }
     function draw() {
+        if (!canvas.offsetWidth) { running = false; return; }   // panel hidden (narrow screen)
         ctx.clearRect(0, 0, W, H);
         dots.forEach(d => {
             d.x += d.vx; d.y += d.vy;
@@ -644,7 +691,8 @@
         });
         requestAnimationFrame(draw);
     }
-    draw();
+    start();
+    window.addEventListener('resize', start);
 })();
 
 /* ─────────────────────────────────────────────
@@ -652,17 +700,18 @@
 ───────────────────────────────────────────── */
 function togglePw(id, btn) {
     const input = document.getElementById(id);
-    const show = btn.querySelector('.pw-show');
-    const hide = btn.querySelector('.pw-hide');
-    if (input.type === 'password') {
-        input.type = 'text';
-        show.style.display = 'none';
-        hide.style.display = 'block';
-    } else {
-        input.type = 'password';
-        show.style.display = 'block';
-        hide.style.display = 'none';
-    }
+    const reveal = input.type === 'password';
+    input.type = reveal ? 'text' : 'password';
+    btn.querySelector('.pw-show').style.display = reveal ? 'none' : 'block';
+    btn.querySelector('.pw-hide').style.display = reveal ? 'block' : 'none';
+    btn.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+}
+
+/* Status line under the login field: ok = true (green), false (red), null (cleared) */
+function setStatus(el, text, ok) {
+    el.textContent = text;
+    el.classList.toggle('is-ok', ok === true);
+    el.classList.toggle('is-bad', ok === false);
 }
 
 /* ─────────────────────────────────────────────
@@ -678,19 +727,18 @@ const DIGITS_ONLY_RE = /^\d+$/;
 document.getElementById('emailInput').addEventListener('input', function() {
     const val = this.value.trim();
     const status = document.getElementById('emailStatus');
-    if (!val) { status.textContent = ''; this.classList.remove('is-valid','is-error'); return; }
+    if (!val) { setStatus(status, '', null); this.classList.remove('is-valid','is-error'); return; }
 
     if (EMAIL_RE.test(val) || LRN_RE.test(val) || isMobile(val)) {
-        status.textContent = LRN_RE.test(val) ? '✓ Valid LRN format'
-            : (isMobile(val) ? '✓ Valid mobile number' : '✓ Valid email format');
-        status.style.color = '#16a34a';
+        setStatus(status, LRN_RE.test(val) ? '✓ Valid LRN format'
+            : (isMobile(val) ? '✓ Valid mobile number' : '✓ Valid email format'), true);
         this.classList.remove('is-error');
         this.classList.add('is-valid');
+        this.removeAttribute('aria-invalid');
     } else {
-        status.textContent = DIGITS_ONLY_RE.test(val)
+        setStatus(status, DIGITS_ONLY_RE.test(val)
             ? 'LRN = 12 digits; mobile = 09XXXXXXXXX'
-            : 'Enter a valid email, 12-digit LRN, or mobile number';
-        status.style.color = '#ef4444';
+            : 'Enter a valid email, 12-digit LRN, or mobile number', false);
         this.classList.remove('is-valid');
     }
 });
@@ -718,33 +766,35 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     const emailVal = email.value.trim();
     if (emailVal === '') {
         email.classList.add('is-error'); email.classList.remove('is-valid');
-        emailStatus.textContent = 'Email, LRN, or mobile number is required.';
-        emailStatus.style.color = '#ef4444';
+        email.setAttribute('aria-invalid', 'true');
+        setStatus(emailStatus, 'Email, LRN, or mobile number is required.', false);
         valid = false; firstInvalid = firstInvalid || email;
     } else if (!EMAIL_RE.test(emailVal) && !LRN_RE.test(emailVal) && !isMobile(emailVal)) {
         email.classList.add('is-error'); email.classList.remove('is-valid');
-        emailStatus.textContent = DIGITS_ONLY_RE.test(emailVal)
+        email.setAttribute('aria-invalid', 'true');
+        setStatus(emailStatus, DIGITS_ONLY_RE.test(emailVal)
             ? 'LRN = 12 digits; mobile = 09XXXXXXXXX.'
-            : 'Please enter a valid email, 12-digit LRN, or mobile number.';
-        emailStatus.style.color = '#ef4444';
+            : 'Please enter a valid email, 12-digit LRN, or mobile number.', false);
         valid = false; firstInvalid = firstInvalid || email;
     }
 
     if (password.value === '') {
         password.classList.add('is-error');
+        password.setAttribute('aria-invalid', 'true');
         passError.textContent = 'Password is required.';
         passError.style.display = 'flex';
         valid = false; firstInvalid = firstInvalid || password;
     } else {
         passError.style.display = 'none';
         password.classList.remove('is-error');
+        password.removeAttribute('aria-invalid');
     }
 
     if (!valid) {
         e.preventDefault();
         if (firstInvalid) {
             firstInvalid.focus();
-            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
         }
         return;
     }
@@ -757,13 +807,26 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 document.getElementById('passwordInput').addEventListener('input', function() {
     const passError = document.getElementById('passwordError');
     this.classList.remove('is-error');
+    this.removeAttribute('aria-invalid');
     passError.style.display = 'none';
+});
+
+/* Back button: the browser restores this page from its cache exactly as it was left —
+   button still spinning (after Sign in) or both panels faded out (after slideTo). */
+window.addEventListener('pageshow', function(e) {
+    if (!e.persisted) return;
+    const btn = document.getElementById('submitBtn');
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    gsap.set(['.form-panel', '.image-panel'], { x: 0, opacity: 1 });
 });
 
 /* ─────────────────────────────────────────────
    GSAP PAGE ENTRANCE (mirrored: form ← left, image → right)
+   Skipped with reduced motion — the CSS shows everything at once.
 ───────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function() {
+    if (reduceMotion) return;
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
     tl.to('body', { opacity: 1, duration: 0.01 })
@@ -802,9 +865,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* ─────────────────────────────────────────────
-   SLIDE-OUT NAV (to Register)
+   SLIDE-OUT NAV (to Activate)
 ───────────────────────────────────────────── */
 function slideTo(anchor, e) {
+    if (reduceMotion) return;          // plain link
     e.preventDefault();
     const url = anchor.href;
     gsap.to(['.form-panel', '.image-panel'], {
