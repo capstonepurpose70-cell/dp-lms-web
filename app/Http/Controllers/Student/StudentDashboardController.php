@@ -4,14 +4,22 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\Assignment;
 use App\Models\ClassSchedule;
+use App\Models\Grade;
 use App\Models\LearningMaterial;
+use App\Models\MaterialView;
 use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Rules\NoBadWords;
 use App\Services\EnrollmentService;
 use Illuminate\Http\Request;
 
+/*
+ * Dati: lahat ng page dito ay may "Cache-Control: private, max-age=30" — hanggang 30 segundong
+ * lumang data (hal. pagkatapos mag-attendance/mag-submit), at nakikita pa ang page pagkatapos
+ * mag-logout sa shared na computer. Tinanggal; ang default ng Laravel (no-cache) na ang gamit.
+ */
 class StudentDashboardController extends Controller
 {
     public function index()
@@ -21,7 +29,6 @@ class StudentDashboardController extends Controller
         $section    = $enrollment?->section ?? $user->section;
         $grade      = $enrollment?->grade_level ?? $user->grade_level;
 
-        // Get subjects for this student's section
         $subjects = $section
             ? TeacherSubject::with(['subject', 'teacher'])
                 ->where('section_id', $section->id)
@@ -29,18 +36,27 @@ class StudentDashboardController extends Controller
                 ->unique('subject_id')
             : collect();
 
-        $subjectCount = in_array($grade, ['11', '12']) ? 9 : 8;
+        // Published, still open, and not yet submitted (dati laging 0)
+        $sectionId = $user->studentSectionId();
+        $pendingAssignments = $sectionId
+            ? Assignment::where('section_id', $sectionId)
+                ->where('is_published', true)
+                ->where(fn ($q) => $q->whereNull('due_date')->orWhere('due_date', '>', now()))
+                ->whereDoesntHave('submissions', fn ($q) => $q->where('user_id', $user->id))
+                ->count()
+            : 0;
 
-        return response()->view('student.dashboard', [
+        return view('student.dashboard', [
             'user'               => $user,
             'enrollment'         => $enrollment,
+            // Para sa tamang susunod na hakbang: sagutan ang form / hintayin ang adviser / na-reject
+            'enrollmentRequest'  => $enrollment ? null : $user->enrollmentRequest,
             'section'            => $section,
             'grade'              => $grade,
             'subjects'           => $subjects,
             'subjectCount'       => $subjects->count(),
-            'pendingAssignments' => 0,
-            'unreadMessages'     => $user->receivedMessages()
-                                        ->where('is_read', false)->count(),
+            'pendingAssignments' => $pendingAssignments,
+            'unreadMessages'     => $user->receivedMessages()->where('is_read', false)->count(),
             'announcements'      => Announcement::published()
                                         ->forAudience('student')
                                         ->visibleToSections([$section?->id])
@@ -48,7 +64,7 @@ class StudentDashboardController extends Controller
                                         ->latest()
                                         ->take(5)
                                         ->get(),
-        ])->header('Cache-Control', 'private, max-age=30');
+        ]);
     }
 
     public function modules()
@@ -57,33 +73,41 @@ class StudentDashboardController extends Controller
         $enrollment = $user->studentEnrollment;
         $section    = $enrollment?->section ?? $user->section;
 
-        // Get teacher subjects for this section
         $teacherSubjects = $section
-            ? TeacherSubject::with('subject')
+            ? TeacherSubject::with(['subject', 'teacher'])   // teacher: dati isang query kada subject
                 ->where('section_id', $section->id)
                 ->get()
                 ->unique('subject_id')
+                ->sortBy(fn ($ts) => mb_strtolower($ts->subject?->name ?? ''))
             : collect();
 
-        $subjectIds = $teacherSubjects->pluck('subject_id');
-
-        // Get published materials for these subjects
         $materials = LearningMaterial::with(['subject', 'teacher'])
-            ->whereIn('subject_id', $subjectIds)
+            ->whereIn('subject_id', $teacherSubjects->pluck('subject_id'))
             ->where('is_published', true)
             ->latest()
             ->get()
             ->groupBy('subject_id');
 
-        return response()->view('student.modules', compact('materials', 'teacherSubjects', 'section'))
-            ->header('Cache-Control', 'private, max-age=30');
-        
+        return view('student.modules', compact('materials', 'teacherSubjects', 'section'));
     }
 
-    public function quizzes()
+    /**
+     * Open a material's file and count the view for the teacher.
+     * Dati: ang "Views" sa teacher ay galing lang sa mobile app — hindi nabibilang ang web.
+     */
+    public function openMaterial(LearningMaterial $material)
     {
-        return response()->view('student.quizzes')
-            ->header('Cache-Control', 'private, max-age=30');
+        $sectionId  = auth()->user()->studentSectionId();
+        $subjectIds = $sectionId ? TeacherSubject::where('section_id', $sectionId)->pluck('subject_id') : collect();
+
+        abort_unless($material->is_published && $subjectIds->contains($material->subject_id) && $material->file_path, 404);
+
+        MaterialView::firstOrCreate([
+            'learning_material_id' => $material->id,
+            'user_id'              => auth()->id(),
+        ]);
+
+        return redirect()->away(asset('storage/' . $material->file_path));
     }
 
     /**
@@ -107,23 +131,51 @@ class StudentDashboardController extends Controller
                 ->groupBy('day_of_week')
             : collect();
 
-        return response()->view('student.schedule', [
+        return view('student.schedule', [
             'section'    => $section,
             'enrollment' => $enrollment,
             'schedules'  => $schedules,
             'days'       => ClassSchedule::DAYS,
-        ])->header('Cache-Control', 'private, max-age=30');
+        ]);
     }
 
+    /**
+     * Grades per school year (newest first) → per subject: Q1–Q4, average of the recorded
+     * quarters, and a general average. Dati: walang average, at ibang hitsura sa ibang page.
+     */
     public function grades()
     {
-        $grades = auth()->user()
+        $years = auth()->user()
             ->grades()
-            ->with('subject')
-            ->orderBy('quarter')
-            ->get();
-        return response()->view('student.grades', compact('grades'))
-            ->header('Cache-Control', 'private, max-age=30');
+            ->with('subject:id,name,code')
+            ->get()
+            ->groupBy(fn ($g) => $g->school_year ?: 'Unspecified')
+            ->sortKeysDesc()
+            ->map(function ($yearGrades) {
+                $subjects = $yearGrades->groupBy('subject_id')->map(function ($rows) {
+                    $byQuarter = $rows->keyBy('quarter');
+                    $finals    = $rows->pluck('final_grade')->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
+                    $average   = $finals->isNotEmpty() ? round($finals->avg(), 2) : null;
+
+                    return [
+                        'subject'  => $rows->first()->subject,
+                        'quarters' => collect(['Q1', 'Q2', 'Q3', 'Q4'])->mapWithKeys(fn ($q) => [$q => $byQuarter->get($q)]),
+                        'average'  => $average,
+                        'complete' => $finals->count() === 4,
+                        'passed'   => $average !== null && $average >= Grade::PASSING,
+                    ];
+                })->sortBy(fn ($s) => mb_strtolower($s['subject']?->name ?? ''))->values();
+
+                $averages = $subjects->pluck('average')->filter(fn ($v) => $v !== null);
+
+                return [
+                    'subjects' => $subjects,
+                    'general'  => $averages->isNotEmpty() ? round($averages->avg(), 2) : null,
+                    'complete' => $subjects->isNotEmpty() && $subjects->every(fn ($s) => $s['complete']),
+                ];
+            });
+
+        return view('student.grades', ['years' => $years, 'passing' => Grade::PASSING]);
     }
 
     public function messages()
@@ -170,52 +222,54 @@ class StudentDashboardController extends Controller
     }
 
     public function subjects()
-{
-    $user       = auth()->user();
-    $enrollment = $user->studentEnrollment;
-    $section    = $enrollment?->section ?? $user->section;
+    {
+        $user       = auth()->user();
+        $enrollment = $user->studentEnrollment;
+        $section    = $enrollment?->section ?? $user->section;
 
-    $subjects = $section
-        ? TeacherSubject::with(['subject', 'teacher'])
-            ->where('section_id', $section->id)
-            ->get()
-            ->unique('subject_id')
-        : collect();
+        $subjects = $section
+            ? TeacherSubject::with(['subject', 'teacher'])
+                ->where('section_id', $section->id)
+                ->get()
+                ->unique('subject_id')
+            : collect();
 
-    return response()->view('student.subjects', compact('subjects', 'enrollment', 'section'))
-        ->header('Cache-Control', 'private, max-age=30');
-}
-
-public function enrollmentForm()
-{
-    $user    = auth()->user();
-    $request = $user->enrollmentRequest;
-
-    // Already has pending or approved enrollment
-    if ($request && in_array($request->status, ['pending', 'approved'])) {
-        return redirect()->route('student.dashboard')
-            ->with('info', $request->status === 'pending'
-                ? 'Your enrollment is pending review.'
-                : 'You are already enrolled.');
+        return view('student.subjects', compact('subjects', 'enrollment', 'section'));
     }
 
-    return view('student.enrollment-form', [
-    'user'      => $user,
-    'request'   => $request,
-    // Awtomatiko: aktibong school year + grade mula sa LRN masterlist
-    'activeSy'  => \App\Models\SchoolYear::active()->first(),
-    'userGrade' => $user->grade_level,
-]);
-}
+    public function enrollmentForm()
+    {
+        $user    = auth()->user();
+        $request = $user->enrollmentRequest;
 
-public function submitEnrollment(Request $request, EnrollmentService $enrollments)
-{
-    // Iisang rules para sa web at API (EnrollmentService)
-    $data = $request->validate(EnrollmentService::rules(), EnrollmentService::messages());
+        // Pending — or approved for THIS school year. Dati: kahit approved noong nakaraang taon ay
+        // "You are already enrolled", kaya hindi na makaka-enroll sa susunod na school year.
+        $currentSy = EnrollmentService::currentSchoolYear();
+        if ($request && ($request->status === 'pending'
+                || ($request->status === 'approved' && $request->school_year === $currentSy))) {
+            return redirect()->route('student.dashboard')
+                ->with('info', $request->status === 'pending'
+                    ? 'Your enrollment is pending review.'
+                    : 'You are already enrolled.');
+        }
 
-    $enrollments->submit(auth()->user(), $data);
+        return view('student.enrollment-form', [
+            'user'      => $user,
+            'request'   => $request,
+            // Awtomatiko: aktibong school year + grade mula sa LRN masterlist
+            'activeSy'  => \App\Models\SchoolYear::active()->first(),
+            'userGrade' => $user->grade_level,
+        ]);
+    }
 
-    return redirect()->route('student.dashboard')
-        ->with('success', 'Enrollment form submitted! Please wait for faculty review.');
-}
+    public function submitEnrollment(Request $request, EnrollmentService $enrollments)
+    {
+        // Iisang rules para sa web at API (EnrollmentService)
+        $data = $request->validate(EnrollmentService::rules(), EnrollmentService::messages());
+
+        $enrollments->submit(auth()->user(), $data);
+
+        return redirect()->route('student.dashboard')
+            ->with('success', 'Enrollment form submitted! Please wait for faculty review.');
+    }
 }

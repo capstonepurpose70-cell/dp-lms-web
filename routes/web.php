@@ -149,6 +149,9 @@ Route::middleware(['auth', 'role:student', 'approved'])
     ->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
         Route::get('/modules',   [StudentDashboardController::class, 'modules'])->name('modules');
+        // Opens the file and counts the view for the teacher (dati mobile lang ang nabibilang)
+        Route::get('/modules/{material}/open', [StudentDashboardController::class, 'openMaterial'])
+            ->whereNumber('material')->name('modules.open');
         Route::get('/quizzes',                    [App\Http\Controllers\Student\AssignmentController::class, 'index'])->name('quizzes');
         Route::get('/quizzes/{assignment}',       [App\Http\Controllers\Student\AssignmentController::class, 'show'])->name('quizzes.show');
         Route::post('/quizzes/{assignment}/submit',[App\Http\Controllers\Student\AssignmentController::class, 'submit'])->name('quizzes.submit');

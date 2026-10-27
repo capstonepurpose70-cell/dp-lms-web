@@ -17,15 +17,24 @@ class AssignmentController extends Controller
 
         $assignments = collect();
         if ($sectionId) {
-            $assignments = Assignment::with('subject')
+            // Own submission eager-loaded (dati isang query kada quiz)
+            $rank = ['todo' => 0, 'submitted' => 1, 'graded' => 2, 'missed' => 3];
+
+            $assignments = Assignment::with(['subject', 'submissions' => fn ($q) => $q->where('user_id', $user->id)])
                 ->where('section_id', $sectionId)
                 ->where('is_published', true)
                 ->latest()
                 ->get()
-                ->map(function ($a) use ($user) {
-                    $a->mySubmission = $a->submissionByStudent($user->id);
+                ->map(function ($a) {
+                    $a->mySubmission = $a->submissions->first();
+                    $a->state = $a->mySubmission
+                        ? ($a->mySubmission->status === 'graded' ? 'graded' : 'submitted')
+                        : ($a->isOverdue() ? 'missed' : 'todo');
                     return $a;
-                });
+                })
+                // To do first (nearest deadline first), then submitted, graded, missed
+                ->sortBy(fn ($a) => sprintf('%d|%015d', $rank[$a->state], $a->due_date?->timestamp ?? 999999999999999))
+                ->values();
         }
 
         return view('student.quizzes', compact('assignments'));

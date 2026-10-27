@@ -62,7 +62,12 @@
         border-radius: var(--r-md); padding: 14px 16px; margin-top: 14px;
     }
     .sd-notice-title { font-size: 13.5px; font-weight: 700; color: #92400E; }
-    .sd-notice-text  { font-size: 12.5px; color: #A16207; margin-top: 2px; line-height: 1.5; }
+    .sd-notice-text  { font-size: 12.5px; color: #92400E; margin-top: 2px; line-height: 1.5; }   /* #A16207 was 4.3:1 on the yellow */
+    .sd-notice-btn {
+        display: inline-flex; align-items: center; min-height: 40px; margin-top: 10px; padding: 0 16px;
+        border-radius: 10px; background: #B45309; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none;
+    }
+    .sd-notice-btn:hover { background: #92400E; }
 
     /* ─── Grid ────────────────────────────────────────────────── */
     .sd-grid { display: grid; gap: 14px; }
@@ -138,7 +143,7 @@
     .sd-ann-title { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
     .sd-ann-body {
         font-size: 12.5px; color: var(--text-2); margin-top: 3px; line-height: 1.55;
-        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .sd-ann-meta { font-size: 12px; color: var(--text-3); margin-top: 5px; }
     .sd-ann-time { font-size: 12px; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
@@ -169,7 +174,13 @@
         .sd-grid-3, .sd-grid-2 { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 560px) {
-        .sd-grid-3, .sd-grid-2 { grid-template-columns: 1fr; }
+        .sd-grid-2 { grid-template-columns: 1fr; }
+        /* compact 3-up stats instead of three tall cards with one number each */
+        .sd-grid-3 { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .sd-stat { padding: 14px; }
+        .sd-stat .sd-ico, .sd-stat-sub { display: none; }
+        .sd-stat-num { font-size: 24px; margin-top: 6px; }
+        .sd-stat-label { font-size: 12px; }
         .sd-greet { font-size: 21px; }
         .sd-enroll { gap: 18px; }
         .sd-pill { margin-left: 0; }
@@ -194,18 +205,36 @@
         </h1>
         <p class="sd-date">{{ now()->format('l, F j, Y') }}</p>
 
+        {{-- Not enrolled yet: the real next step (dati laging "wait for the administrator",
+             kahit hindi pa nasasagutan ang enrollment form) --}}
         @unless($enrollment)
         <div class="sd-notice" role="status">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706"
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309"
                  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true" style="flex-shrink:0;margin-top:1px;">
                 <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
             </svg>
             <div>
-                <p class="sd-notice-title">Not yet enrolled</p>
-                <p class="sd-notice-text">
-                    Please wait for the administrator to assign your section and grade level.
-                </p>
+                @if($enrollmentRequest?->status === 'pending')
+                    <p class="sd-notice-title">Enrollment form submitted</p>
+                    <p class="sd-notice-text">
+                        Your adviser is reviewing it. Once approved, you'll be placed in a section and your
+                        subjects, modules, and grades will appear here.
+                    </p>
+                @elseif($enrollmentRequest?->status === 'rejected')
+                    <p class="sd-notice-title">Your enrollment was not approved</p>
+                    <p class="sd-notice-text">
+                        @if($enrollmentRequest->remarks) Reason: {{ $enrollmentRequest->remarks }}<br> @endif
+                        Please check your details and submit the form again.
+                    </p>
+                    <a href="{{ route('student.enroll') }}" class="sd-notice-btn">Open enrollment form</a>
+                @else
+                    <p class="sd-notice-title">Next step: fill out the enrollment form</p>
+                    <p class="sd-notice-text">
+                        Your adviser needs it to place you in a section. It takes about 5 minutes.
+                    </p>
+                    <a href="{{ route('student.enroll') }}" class="sd-notice-btn">Fill out the form</a>
+                @endif
             </div>
         </div>
         @endunless
@@ -265,7 +294,7 @@
                 <span class="sd-stat-label">Assignments</span>
             </div>
             <p class="sd-stat-num">{{ $pendingAssignments }}</p>
-            <p class="sd-stat-sub">Pending submission</p>
+            <p class="sd-stat-sub">{{ $pendingAssignments ? 'Still to submit' : 'Nothing due right now' }}</p>
         </div>
 
         <div class="sd-card sd-stat sd-in sd-d3">
@@ -311,6 +340,24 @@
     <section class="sd-mb sd-in sd-d3" aria-label="Quick actions">
         <h2 class="sd-section-title" style="margin-bottom:12px;">Quick Actions</h2>
         <div class="sd-grid sd-grid-2">
+
+            {{-- Most-used daily action (dati wala sa dashboard) --}}
+            <a href="{{ route('student.attendance') }}" class="sd-nav">
+                <span class="sd-ico" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+                        <rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 13h6M9 17h4"/>
+                    </svg>
+                </span>
+                <span class="sd-nav-body">
+                    <span class="sd-nav-title" style="display:block;">Class Attendance</span>
+                    <span class="sd-nav-desc" style="display:block;">Enter the code your teacher shows</span>
+                </span>
+                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
 
             <a href="{{ route('student.modules') }}" class="sd-nav">
                 <span class="sd-ico" aria-hidden="true">
@@ -387,8 +434,8 @@
                     </svg>
                 </span>
                 <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">Register Face</span>
-                    <span class="sd-nav-desc" style="display:block;">Set up attendance camera recognition</span>
+                    <span class="sd-nav-title" style="display:block;">Face Registration</span>
+                    <span class="sd-nav-desc" style="display:block;">Check your gate-camera status</span>
                 </span>
                 <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round"

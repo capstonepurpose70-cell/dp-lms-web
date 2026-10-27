@@ -3,63 +3,86 @@
 
 @section('content')
 <style>
-    .sq-wrap { max-width:920px; margin:0 auto; padding:4px 0 48px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
-    .sq-title { font-size:24px; font-weight:800; color:#0F172A; }
-    .sq-sub { font-size:13px; color:#64748B; margin:2px 0 24px; }
-    .sq-card { display:flex; align-items:center; justify-content:space-between; gap:14px; background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:18px 20px; margin-bottom:13px; box-shadow:0 1px 3px rgba(15,23,42,.05); transition:.2s; }
-    .sq-card:hover { box-shadow:0 8px 24px rgba(15,23,42,.10); transform:translateY(-2px); }
-    .sq-name { font-size:16px; font-weight:700; color:#0F172A; }
-    .sq-meta { font-size:12.5px; color:#64748B; margin-top:3px; }
-    .sq-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
-    .sq-pill { font-size:11px; font-weight:700; padding:4px 11px; border-radius:99px; white-space:nowrap; }
-    .sq-todo { background:#FEF3C7; color:#92400E; }
-    .sq-done { background:#DBEAFE; color:#1D4ED8; }
-    .sq-graded { background:#DCFCE7; color:#166534; }
-    .sq-open { background:#2563EB; color:#fff; font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px; text-decoration:none; white-space:nowrap; }
-    .sq-open:hover { background:#1D4ED8; }
-    .sq-empty { text-align:center; padding:60px 20px; color:#94A3B8; }
-    .sq-empty svg { width:54px; height:54px; margin-bottom:14px; opacity:.5; }
+    .sq-wrap { max-width: 920px; margin: 0 auto; }
+    .sq-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
+    .sq-sub { font-size: 13.5px; color: var(--text-2); margin: 4px 0 22px; }
+
+    .sq-card {
+        display: flex; align-items: center; justify-content: space-between; gap: 14px;
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+        padding: 16px 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm);
+    }
+    .sq-card.is-todo { border-left: 4px solid var(--accent); }
+    .sq-main { min-width: 0; }
+    .sq-name { font-size: 15.5px; font-weight: 700; color: var(--text-1); overflow-wrap: anywhere; }
+    .sq-meta { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
+    .sq-overdue { color: #B91C1C; font-weight: 700; }
+    .sq-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+    .sq-pill { font-size: 11.5px; font-weight: 700; padding: 4px 11px; border-radius: 99px; white-space: nowrap; }
+    .sq-todo      { background: #FEF3C7; color: #92400E; }
+    .sq-submitted { background: #DBEAFE; color: #1E40AF; }
+    .sq-graded    { background: #DCFCE7; color: #166534; }
+    .sq-missed    { background: #FEE2E2; color: #991B1B; }
+
+    .sq-open {
+        display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 10px;
+        background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; text-decoration: none; white-space: nowrap;
+    }
+    .sq-open:hover { background: var(--accent-dark); }
+    .sq-open.is-quiet { background: var(--accent-lt); color: var(--accent-dark); }
+
+    .sq-empty { text-align: center; padding: 56px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); }
+    .sq-empty b { display: block; font-size: 15px; color: var(--text-1); }
+    .sq-empty p { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+    @media (max-width: 600px) {
+        .sq-card { flex-direction: column; align-items: stretch; padding: 14px 16px; }
+        .sq-right { justify-content: space-between; }
+    }
 </style>
 
 <div class="sq-wrap">
-    <div class="sq-title">Quizzes &amp; Assignments</div>
-    <div class="sq-sub">Open a quiz to view it and submit your answer.</div>
+    <h1 class="sq-title">Quizzes &amp; Assignments</h1>
+    <p class="sq-sub">Things to do come first, sorted by deadline. Open one to read it and submit your answer.</p>
 
-    {{-- Success flash: ipinapakita na ng layouts/app.blade.php (dati dalawang beses lumalabas) --}}
-
-    @if($assignments->count())
-        @foreach($assignments as $a)
-            <div class="sq-card">
-                <div>
-                    <div class="sq-name">{{ $a->title }}</div>
-                    <div class="sq-meta">
-                        {{ $a->subject?->name }} •
-                        @if($a->due_date)
-                            Due {{ $a->due_date->format('M d, Y g:i A') }}
-                            @if($a->isOverdue()) <span style="color:#DC2626;font-weight:700">(Overdue)</span> @endif
-                        @else No deadline @endif
-                        • {{ $a->max_score }} pts
-                    </div>
-                </div>
-                <div class="sq-right">
-                    @php $sub = $a->mySubmission; @endphp
-                    @if($sub && $sub->status === 'graded')
-                        <span class="sq-pill sq-graded">Graded: {{ $sub->score }}/{{ $a->max_score }}</span>
-                    @elseif($sub)
-                        <span class="sq-pill sq-done">Submitted</span>
+    @forelse($assignments as $a)
+        @php
+            $sub   = $a->mySubmission;
+            $label = [
+                'todo'      => 'To do',
+                'submitted' => 'Submitted',
+                'graded'    => 'Graded: ' . ($sub->score ?? '') . '/' . $a->max_score,
+                'missed'    => 'Missed',
+            ][$a->state];
+        @endphp
+        <article class="sq-card {{ $a->state === 'todo' ? 'is-todo' : '' }}">
+            <div class="sq-main">
+                <h2 class="sq-name">{{ $a->title }}</h2>
+                <p class="sq-meta">
+                    {{ $a->subject?->name ?? 'Subject' }} ·
+                    @if($a->due_date)
+                        Due {{ $a->due_date->format('M j, Y g:i A') }}
+                        @if($a->isOverdue()) <span class="sq-overdue">(closed)</span>
+                        @elseif($a->state === 'todo') ({{ $a->due_date->diffForHumans() }}) @endif
                     @else
-                        <span class="sq-pill sq-todo">Not submitted</span>
+                        No deadline
                     @endif
-                    <a href="{{ route('student.quizzes.show', $a) }}" class="sq-open">Open</a>
-                </div>
+                    · {{ $a->max_score }} pts
+                </p>
             </div>
-        @endforeach
-    @else
+            <div class="sq-right">
+                <span class="sq-pill sq-{{ $a->state }}">{{ $label }}</span>
+                <a href="{{ route('student.quizzes.show', $a) }}" class="sq-open {{ $a->state === 'todo' ? '' : 'is-quiet' }}">
+                    {{ $a->state === 'todo' ? 'Answer' : 'View' }}<span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);"> {{ $a->title }}</span>
+                </a>
+            </div>
+        </article>
+    @empty
         <div class="sq-empty">
-            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <div style="font-size:15px; font-weight:600; color:#475569">No quizzes available yet</div>
-            <div style="font-size:13px; margin-top:4px">Quizzes from your teachers will show up here.</div>
+            <b>No quizzes yet</b>
+            <p>Quizzes and assignments from your teachers will show up here.</p>
         </div>
-    @endif
+    @endforelse
 </div>
 @endsection

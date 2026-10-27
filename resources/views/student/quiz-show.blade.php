@@ -3,108 +3,148 @@
 
 @section('content')
 <style>
-    .qs-wrap { max-width:720px; margin:0 auto; padding:4px 0 48px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
-    .qs-back { display:inline-flex; align-items:center; gap:6px; color:#94A3B8; font-size:13px; font-weight:500; text-decoration:none; margin-bottom:18px; }
-    .qs-back:hover { color:#2563EB; }
-    .qs-card { background:#fff; border:1px solid #E2E8F0; border-radius:18px; padding:24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
-    .qs-title { font-size:22px; font-weight:800; color:#0F172A; }
-    .qs-meta { font-size:13px; color:#64748B; margin-top:6px; }
-    .qs-instr { font-size:14px; color:#334155; margin-top:16px; line-height:1.6; white-space:pre-wrap; }
-    .qs-file { display:inline-flex; align-items:center; gap:8px; margin-top:16px; background:#EFF6FF; color:#1D4ED8; font-weight:600; font-size:13px; padding:10px 15px; border-radius:10px; text-decoration:none; }
-    .qs-graded { background:#F0FDF4; border:1px solid #86EFAC; border-radius:14px; padding:16px; margin-bottom:20px; }
-    .qs-graded h4 { font-size:13px; font-weight:700; color:#166534; margin-bottom:4px; }
-    .qs-score { font-size:28px; font-weight:800; color:#15803D; }
-    .qs-label { display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:7px; }
-    .qs-textarea { width:100%; border:1.5px solid #E2E8F0; border-radius:11px; padding:12px; font-size:14px; font-family:inherit; min-height:120px; resize:vertical; background:#F8FAFC; box-sizing:border-box; }
-    .qs-textarea:focus { outline:none; border-color:#2563EB; background:#fff; box-shadow:0 0 0 4px rgba(37,99,235,.10); }
-    .qs-input { width:100%; border:1.5px solid #E2E8F0; border-radius:11px; padding:11px; font-size:14px; font-family:inherit; background:#F8FAFC; box-sizing:border-box; }
-    .qs-field { margin-bottom:18px; }
-    .qs-hint { font-size:12px; color:#94A3B8; margin-top:5px; }
-    .qs-err { color:#DC2626; font-size:12.5px; margin-top:5px; }
-    .qs-submit { width:100%; background:#2563EB; color:#fff; font-weight:700; font-size:15px; border:none; padding:14px; border-radius:12px; cursor:pointer; box-shadow:0 6px 16px rgba(37,99,235,.28); transition:.2s; }
-    .qs-submit:hover { background:#1D4ED8; transform:translateY(-1px); }
-    .qs-note { font-size:12.5px; color:#64748B; margin-top:12px; text-align:center; }
-    .qs-current { display:inline-flex; align-items:center; gap:6px; margin-top:8px; color:#2563EB; font-weight:600; font-size:13px; text-decoration:none; }
+    .qs-wrap { max-width: 720px; margin: 0 auto; }
+    .qs-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; color: var(--text-2); font-size: 13px; font-weight: 600; text-decoration: none; margin-bottom: 12px; }
+    .qs-back:hover { color: var(--accent); }
+    .qs-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px 24px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
+    .qs-title { font-size: 22px; font-weight: 800; color: var(--text-1); overflow-wrap: anywhere; }
+    .qs-meta { font-size: 13px; color: var(--text-2); margin-top: 6px; }
+    .qs-closed { color: #B91C1C; font-weight: 700; }
+    .qs-instr { font-size: 14px; color: #334155; margin-top: 16px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .qs-file { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; margin-top: 16px; background: var(--accent-lt); color: var(--accent-dark); font-weight: 700; font-size: 13px; padding: 0 15px; border-radius: 10px; text-decoration: none; }
+    .qs-file:hover { background: #DBEAFE; }
+
+    .qs-graded { background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; }
+    .qs-graded h2 { font-size: 12px; font-weight: 800; letter-spacing: .06em; color: #166534; margin-bottom: 4px; }
+    .qs-score { font-size: 28px; font-weight: 800; color: #15803D; }
+    .qs-score small { font-size: 16px; color: var(--text-2); }
+    .qs-feedback { font-size: 13.5px; color: #334155; margin-top: 6px; line-height: 1.55; white-space: pre-wrap; }
+
+    .qs-h { font-size: 16px; font-weight: 700; color: var(--text-1); margin-bottom: 14px; }
+    .qs-info { background: var(--accent-lt); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #1E40AF; }
+    .qs-info a { color: #1E40AF; font-weight: 700; margin-left: 6px; }
+    .qs-errors { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; }
+    .qs-errors ul { padding-left: 18px; }
+
+    .qs-field { margin-bottom: 18px; }
+    .qs-label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 7px; }
+    .qs-label span { font-weight: 500; color: var(--text-3); }
+    .qs-textarea, .qs-input { width: 100%; border: 1.5px solid var(--border); border-radius: 11px; font-size: 14px; font-family: inherit; background: #F8FAFC; color: var(--text-1); }
+    .qs-textarea { padding: 12px; min-height: 140px; resize: vertical; line-height: 1.55; }
+    .qs-input { padding: 10px; }
+    .qs-textarea:focus, .qs-input:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 4px var(--accent-glow); }
+    .qs-hint { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+
+    .qs-submit { width: 100%; min-height: 48px; background: var(--accent); color: #fff; font-weight: 700; font-size: 15px; border: none; border-radius: 12px; cursor: pointer; font-family: inherit; box-shadow: 0 6px 16px var(--accent-glow); }
+    .qs-submit:hover { background: var(--accent-dark); }
+    .qs-submit[disabled] { opacity: .7; cursor: progress; }
+    .qs-note { font-size: 12.5px; color: var(--text-2); margin-top: 12px; text-align: center; }
+    .qs-locked { background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-size: 13.5px; color: var(--text-2); }
 </style>
+
+@php
+    $isGraded = $submission && $submission->status === 'graded';
+    $isClosed = $assignment->isOverdue();
+    // asset(): dati Storage::url() — nakadepende sa APP_URL, kaya sira kapag iba ang host/subfolder
+    $fileUrl  = fn ($path) => asset('storage/' . ltrim($path, '/'));
+@endphp
 
 <div class="qs-wrap">
     <a href="{{ route('student.quizzes') }}" class="qs-back">← Back to quizzes</a>
 
-    <div class="qs-card">
-        <div class="qs-title">{{ $assignment->title }}</div>
-        <div class="qs-meta">
-            {{ $assignment->subject?->name }} •
+    <section class="qs-card" aria-labelledby="qs-title">
+        <h1 class="qs-title" id="qs-title">{{ $assignment->title }}</h1>
+        <p class="qs-meta">
+            {{ $assignment->subject?->name ?? 'Subject' }} ·
             @if($assignment->due_date)
-                Due {{ $assignment->due_date->format('M d, Y g:i A') }}
-                @if($assignment->isOverdue()) <span style="color:#DC2626;font-weight:700">(Overdue)</span> @endif
-            @else No deadline @endif
-            • {{ $assignment->max_score }} pts
-        </div>
+                Due {{ $assignment->due_date->format('M j, Y g:i A') }}
+                @if($isClosed) <span class="qs-closed">(closed)</span> @else ({{ $assignment->due_date->diffForHumans() }}) @endif
+            @else
+                No deadline
+            @endif
+            · {{ $assignment->max_score }} pts
+        </p>
         @if($assignment->instructions)
             <div class="qs-instr">{{ $assignment->instructions }}</div>
         @endif
         @if($assignment->file_path)
-            <a href="{{ Storage::url($assignment->file_path) }}" target="_blank" class="qs-file">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <a href="{{ $fileUrl($assignment->file_path) }}" target="_blank" rel="noopener" class="qs-file">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 Download quiz file
             </a>
         @endif
-    </div>
+    </section>
 
-    @if($submission && $submission->status === 'graded')
-        <div class="qs-graded">
-            <h4>YOUR GRADE</h4>
-            <div class="qs-score">{{ $submission->score }}<span style="font-size:16px;color:#64748B">/{{ $assignment->max_score }}</span></div>
+    @if($isGraded)
+        <section class="qs-graded" aria-label="Your grade">
+            <h2>YOUR GRADE</h2>
+            <p class="qs-score">{{ $submission->score }}<small>/{{ $assignment->max_score }}</small></p>
             @if($submission->feedback)
-                <div style="font-size:13px; color:#334155; margin-top:6px"><strong>Teacher feedback:</strong> {{ $submission->feedback }}</div>
+                <p class="qs-feedback"><strong>Teacher feedback:</strong> {{ $submission->feedback }}</p>
             @endif
-        </div>
+        </section>
     @endif
 
-    <div class="qs-card">
-        <div style="font-size:16px; font-weight:700; color:#0F172A; margin-bottom:16px">
-            @if(($submission && $submission->status === 'graded') || $assignment->isOverdue())
+    <section class="qs-card" aria-labelledby="qs-answer">
+        <h2 class="qs-h" id="qs-answer">
+            @if($isGraded || $isClosed)
                 {{ $submission ? 'Your submission' : 'Submission closed' }}
             @else
                 {{ $submission ? 'Update your answer' : 'Submit your answer' }}
             @endif
-        </div>
+        </h2>
 
         @if($submission)
-            <div style="background:#EFF6FF; border-radius:10px; padding:10px 14px; margin-bottom:16px; font-size:13px; color:#1D4ED8">
+            <div class="qs-info">
                 You submitted {{ $submission->submitted_at?->diffForHumans() }}.
                 @if($submission->file_path)
-                    <a href="{{ Storage::url($submission->file_path) }}" target="_blank" class="qs-current">View your file</a>
+                    <a href="{{ $fileUrl($submission->file_path) }}" target="_blank" rel="noopener">View your file</a>
                 @endif
             </div>
         @endif
 
-        @php
-            $isGraded = $submission && $submission->status === 'graded';
-            $isClosed = $assignment->isOverdue();
-        @endphp
-
-        @if(!$isGraded && !$isClosed)
-        <form method="POST" action="{{ route('student.quizzes.submit', $assignment) }}" enctype="multipart/form-data">
-            @csrf
-            <div class="qs-field">
-                <label class="qs-label">Your answer (typed) <span style="color:#94A3B8;font-weight:400">— optional if uploading a file</span></label>
-                <textarea name="remarks" class="qs-textarea" placeholder="Type your answer here...">{{ old('remarks', $submission->remarks ?? '') }}</textarea>
-            </div>
-            <div class="qs-field">
-                <label class="qs-label">Or upload your answer file</label>
-                <input type="file" name="file" class="qs-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ppt,.pptx,.xls,.xlsx">
-                <div class="qs-hint">PDF, Word, Image, PowerPoint, or Excel • max 10MB</div>
-                @error('file') <div class="qs-err">{{ $message }}</div> @enderror
-            </div>
-            <button type="submit" class="qs-submit">{{ $submission ? 'Update Submission' : 'Submit Answer' }}</button>
-            <div class="qs-note">You can re-submit anytime before your teacher grades it.</div>
-        </form>
-        @else
-            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:14px; font-size:13.5px; color:#475569">
-                {{ $isGraded ? 'This activity has been graded. Submissions are locked.' : 'This quiz is closed — the deadline has passed.' }}
+        {{-- Dati: error ng file lang ang lumalabas; tahimik ang error ng typed answer --}}
+        @if($errors->any())
+            <div class="qs-errors" role="alert">
+                <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
             </div>
         @endif
-    </div>
+
+        @if(!$isGraded && !$isClosed)
+            <form method="POST" action="{{ route('student.quizzes.submit', $assignment) }}" enctype="multipart/form-data" id="qsForm">
+                @csrf
+                <div class="qs-field">
+                    <label class="qs-label" for="qs-remarks">Your answer <span>— optional if you upload a file</span></label>
+                    <textarea id="qs-remarks" name="remarks" class="qs-textarea" maxlength="20000"
+                              placeholder="Type your answer here…">{{ old('remarks', $submission->remarks ?? '') }}</textarea>
+                </div>
+                <div class="qs-field">
+                    <label class="qs-label" for="qs-file">Or upload your answer file</label>
+                    <input type="file" id="qs-file" name="file" class="qs-input" aria-describedby="qs-file-hint"
+                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ppt,.pptx,.xls,.xlsx">
+                    <p class="qs-hint" id="qs-file-hint">PDF, Word, image, PowerPoint, or Excel · up to 10 MB</p>
+                </div>
+                <button type="submit" class="qs-submit">{{ $submission ? 'Update submission' : 'Submit answer' }}</button>
+                <p class="qs-note">You can change your answer until your teacher grades it{{ $assignment->due_date ? ' or the deadline passes' : '' }}.</p>
+            </form>
+        @else
+            <p class="qs-locked">
+                {{ $isGraded ? 'This activity has been graded. Submissions are locked.' : 'This quiz is closed — the deadline has passed.' }}
+            </p>
+        @endif
+    </section>
 </div>
+
+@if(!$isGraded && !$isClosed)
+<script>
+    // No double submit while a file uploads; the Back button restores the page with it re-enabled
+    (function () {
+        const form = document.getElementById('qsForm');
+        const btn  = form.querySelector('button[type="submit"]');
+        const label = btn.textContent;
+        form.addEventListener('submit', function () { btn.disabled = true; btn.textContent = 'Submitting…'; });
+        window.addEventListener('pageshow', function (e) { if (e.persisted) { btn.disabled = false; btn.textContent = label; } });
+    })();
+</script>
+@endif
 @endsection
