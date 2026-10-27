@@ -22,7 +22,7 @@
             --sb-active:        #2563EB;
             --sb-active-glow:   rgba(37,99,235,.30);
             --sb-border:        rgba(255,255,255,.06);
-            --sb-text:          #64748B;
+            --sb-text:          #94A3B8;   /* #64748B was 3.7:1 on the navy sidebar */
             --sb-text-hover:    #CBD5E1;
             --sb-text-active:   #FFFFFF;
             --sb-icon-bg:       rgba(255,255,255,.06);
@@ -43,7 +43,7 @@
             /* Text */
             --text-1:           #0F172A;
             --text-2:           #475569;
-            --text-3:           #94A3B8;
+            --text-3:           #64748B;   /* #94A3B8 was 2.6:1 on white — too faint for small text */
 
             /* Status */
             --danger:           #EF4444;
@@ -135,7 +135,8 @@
 
         .brand-text { line-height: 1.2; }
         .brand-title { font-size: 12px; font-weight: 800; color: #FFFFFF; letter-spacing: .01em; }
-        .brand-sub   { font-size: 9.5px; font-weight: 500; color: #475569; }
+        .brand-sub   { font-size: 9.5px; font-weight: 500; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; }
+        .brand-text  { min-width: 0; }
 
         /* Nav right */
         .nav-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
@@ -202,7 +203,7 @@ body.collapsed .sidebar-nav {
         .sidebar-section-label {
             padding: 18px 14px 6px;
             font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
-            color: #374151; text-transform: uppercase;
+            color: #64748B; text-transform: uppercase;
             white-space: nowrap; overflow: hidden;
             transition: opacity .22s;
         }
@@ -473,6 +474,25 @@ body.collapsed .sidebar-nav {
         @media (min-width: 769px) {
             .sidebar-backdrop { display: none; }
         }
+
+        /* Log out: <button> centers its text by default — align with the links above */
+        .logout-btn { text-align: left; }
+
+        /* Phones: avatar only in the top bar (the name overflowed past the screen edge) */
+        @media (max-width: 600px) {
+            .top-nav { padding-right: 12px; }
+            .user-chip { padding: 3px; }
+            .user-chip > div:last-child { display: none; }
+        }
+
+        /* Keyboard focus — visible on the dark sidebar and on the light content */
+        :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        .sidebar :focus-visible, .nav-brand-zone :focus-visible { outline-color: #93C5FD; }
+
+        /* Reduced motion (dati wala sa layout na ito) */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+        }
     </style>
 </head>
 <body>
@@ -513,7 +533,7 @@ body.collapsed .sidebar-nav {
 
     <div class="nav-right">
      <div style="position:relative;" id="notifWrapper">
-    <button class="nav-icon-btn" id="notifBtn" title="Notifications">
+    <button class="nav-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -644,18 +664,18 @@ const NAV_ITEMS = [
 @php($navRole = strtolower(trim((string) auth()->user()->role)))
 @if($navRole === 'parent')
     {
-        href : '/parent/dashboard',
+        href : '{{ route('parent.dashboard') }}',
         label: 'Dashboard',
         icon : `<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>`
     },
     {
-        href : '/parent/child-records',
+        href : '{{ route('parent.child-records') }}',
         label: "Child's Records",
         icon : `<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z"/>`
     },
 @else
     {
-        href : '/student/dashboard',
+        href : '{{ route('student.dashboard') }}',
         label: 'Dashboard',
         icon : `<rect x="3" y="3" width="7" height="7" rx="1.5"/>
                 <rect x="14" y="3" width="7" height="7" rx="1.5"/>
@@ -663,7 +683,7 @@ const NAV_ITEMS = [
                 <rect x="14" y="14" width="7" height="7" rx="1.5"/>`
     },
     {
-        href : '/student/modules',
+        href : '{{ route('student.modules') }}',
         label: 'Learning Modules',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13
@@ -672,33 +692,33 @@ const NAV_ITEMS = [
                      C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>`
     },
     {
-    href : '/student/subjects',
+    href : '{{ route('student.subjects') }}',
     label: 'My Subjects',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14
                  0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>`
 },
     {
-        href : '/student/quizzes',
+        href : '{{ route('student.quizzes') }}',
         label: 'Quizzes',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
                      M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>`
     },
     {
-        href : '/student/schedule',
+        href : '{{ route('student.schedule') }}',
         label: 'My Schedule',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/>`
     },
     {
-        href : '/student/attendance',
+        href : '{{ route('student.attendance') }}',
         label: 'Attendance',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>`
     },
     {
-        href : '/student/grades',
+        href : '{{ route('student.grades') }}',
         label: 'My Grades',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0
@@ -706,7 +726,7 @@ const NAV_ITEMS = [
                      V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>`
     },
   {
-    href : '/student/messages',
+    href : '{{ route('student.messages') }}',
     label: 'Messages',
     icon : `<path stroke-linecap="round" stroke-linejoin="round"
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14
@@ -740,7 +760,7 @@ const NAV_ITEMS = [
 
     @if(!auth()->user()->studentEnrollment)
     {
-        href : '/student/enroll',
+        href : '{{ route('student.enroll') }}',
         label: 'Enrollment Form',
         icon : `<path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
@@ -754,7 +774,7 @@ const NAV_ITEMS = [
     const curPath = window.location.pathname.replace(/\/$/, '');
 
     NAV_ITEMS.forEach(item => {
-        const cleanHref = item.href.replace(/\/$/, '');
+        const cleanHref = new URL(item.href, window.location.href).pathname.replace(/\/$/, '');
         const isActive  = curPath === cleanHref || curPath.startsWith(cleanHref + '/');
 
         const a         = document.createElement('a');
@@ -831,7 +851,20 @@ const notifEmpty    = document.getElementById('notifEmpty');
 // title (material/quiz); dati puwedeng tumakbo ang naka-embed na <script>/onerror.
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
+// url(): gumagana rin kapag naka-serve sa XAMPP subfolder (dati absolute "/notifications/...")
+const APP_BASE  = @json(rtrim(url('/'), '/'));
+const NOTIF_URL = {
+    data:    @json(url('notifications/data')),
+    read:    @json(url('notifications/__ID__/read')),
+    readAll: @json(url('notifications/read-all')),
+};
+const CSRF = () => document.querySelector('meta[name=csrf-token]').content;
+// Notification links are stored as "/student/…" — put them under the app's real base URL
+const notifHref = (u) => (typeof u === 'string' && u.startsWith('/') && !u.startsWith('//')) ? APP_BASE + u : '#';
+
 const TYPE_ICONS = {
+    attendance_open:  { bg:'#eff6ff', stroke:'#2563eb', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+    class_attendance: { bg:'#eff6ff', stroke:'#2563eb', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
     arrival:    { bg:'#f0fdf4', stroke:'#16a34a', path:'M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z' },
     quiz:       { bg:'#faf5ff', stroke:'#a855f7', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
     module:     { bg:'#eff6ff', stroke:'#3b82f6', path:'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
@@ -839,8 +872,8 @@ const TYPE_ICONS = {
 };
 
 function loadNotifs() {
-    fetch('/notifications/data')
-        .then(r => r.json())
+    fetch(NOTIF_URL.data, { headers: { 'Accept': 'application/json' } })
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(({ unread, items }) => {
             // Badge
             if (unread > 0) {
@@ -861,7 +894,7 @@ function loadNotifs() {
             items.forEach(n => {
                 const ic = TYPE_ICONS[n.type] || TYPE_ICONS.assignment;
                 const el = document.createElement('a');
-                el.href  = n.url;
+                el.href  = notifHref(n.url);
                 el.style.cssText = `
                     display:flex; align-items:flex-start; gap:12px;
                     padding:12px 16px; text-decoration:none;
@@ -891,14 +924,18 @@ function loadNotifs() {
                     </div>
                 `;
                 el.addEventListener('click', () => {
-                    fetch(`/notifications/${n.id}/read`, {
+                    // keepalive: the link navigates away at once — dati kinakansela ng browser ang
+                    // request kaya hindi kailanman nami-mark as read (laging may pulang badge)
+                    fetch(NOTIF_URL.read.replace('__ID__', encodeURIComponent(n.id)), {
                         method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
-                    });
+                        keepalive: true,
+                        headers: { 'X-CSRF-TOKEN': CSRF() }
+                    }).catch(() => {});
                 });
                 notifList.appendChild(el);
             });
-        });
+        })
+        .catch(() => {});   // session expired / offline — dati unhandled error kada 30 segundo
 }
 
 // Toggle dropdown
@@ -906,6 +943,7 @@ notifBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = notifDropdown.style.display === 'block';
     notifDropdown.style.display = open ? 'none' : 'block';
+    notifBtn.setAttribute('aria-expanded', open ? 'false' : 'true');
     if (!open) loadNotifs();
 });
 
@@ -913,15 +951,16 @@ notifBtn.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
     if (!document.getElementById('notifWrapper').contains(e.target)) {
         notifDropdown.style.display = 'none';
+        notifBtn.setAttribute('aria-expanded', 'false');
     }
 });
 
 // Mark all read
 document.getElementById('markAllRead').addEventListener('click', () => {
-    fetch('/notifications/read-all', {
+    fetch(NOTIF_URL.readAll, {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
-    }).then(() => loadNotifs());
+        headers: { 'X-CSRF-TOKEN': CSRF() }
+    }).then(() => loadNotifs()).catch(() => {});
 });
 
 // Poll every 30s for new notifs
