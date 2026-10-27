@@ -24,8 +24,9 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [4](#batch-4--teacher-pages) | Teacher layout, Dashboard, Students, Announcements | `0c245c5` `34f31cc` `00cc6fd` | 14 |
 | [5](#batch-5--student-pages-part-1) | Student layout, Dashboard, Modules, Quizzes, Grades | `e6e3dde` `c7857ea` | 16 |
 | [6](#batch-6--student-pages-part-2) | Subjects, Schedule, Attendance, Messages, Enrollment form, Face, Parent link | `787a205` | 13 |
-| [7](#batch-7--parent-portal) | Parent portal, account recovery, report card | — | 10 |
-| [—](#code-comments) | Code comments in English | — | — |
+| [7](#batch-7--parent-portal) | Parent portal, account recovery, report card | `69e3561` | 10 |
+| [—](#code-comments) | Code comments in English | `857b7c2` | — |
+| [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 
 ---
 
@@ -392,6 +393,44 @@ and phone, no JS errors; API before/after comparison; live two-device recovery t
 - **Tested:** for every changed file the code with comments stripped is byte-identical to before
   (`php_strip_whitespace()` for PHP; comment-stripped compare for Blade/JS). All PHP lints; every inline
   script on all 24 teacher/student/parent pages parses; teacher SPA 18/18 and parent pages 17/17 in the browser.
+
+---
+
+## Batch 8 — Logout and the login form
+
+### B8-1 ✅ Back after logout showed the typed LRN and password (in plain text)
+- **Problem:** sign in (password shown with the eye icon, Remember me ticked) → logout → Back ×3: the login page
+  came back with the LRN, the **password as plain text** and Remember me still ticked. On a shared school
+  computer the next person could read them.
+- **Where:** browser back/forward cache and form restoration — no page told the browser not to keep it.
+- **Fix:**
+  - `app/Http/Middleware/NoStorePages.php` (new, first in the `web` group): every HTML response, redirects
+    included, is `Cache-Control: no-store, private`, so Back asks the server again. JSON and file downloads keep
+    their own headers. It is *prepended*: Laravel sorts `auth` ahead of appended middleware, and the
+    guest redirect skipped it.
+  - `auth/login.blade.php` → `resetLoginForm()`: on Back/Forward (`pageshow` persisted or `back_forward`) and right
+    after logout the form is reset — identifier back to what the server rendered (empty after logout), password
+    cleared and hidden again, Remember me off, status text and button reset. A failed sign-in still keeps the
+    typed LRN/email (never the password).
+  - Same reset on `admin/login.blade.php`, and `layouts/auth-card.blade.php` clears and hides any password field
+    (activate, reset password, parent activate/recover) on Back/Forward.
+
+### B8-2 ✅ Back after logout showed the signed-in dashboard
+- **Problem:** Back ×1 after logout showed the student's dashboard again (and Forward too) from the browser cache.
+- **Fix:** `no-store` (above) + `layouts/app`, `layouts/teacher`, `layouts/admin`: a page restored from the
+  back/forward cache reloads itself, so the server decides — a signed-out visitor gets the login page.
+
+### B8-3 ✅ Logout did not reset the login page explicitly
+- **Where:** `Auth/LoginController.php` → `logout()`; `Admin/AdminAuthController.php` → `logout()`.
+- **Fix:** after `logout()` + `invalidate()` + `regenerateToken()` (unchanged), the redirect flashes `signed_out`
+  into the new session; the login page shows "You have been signed out." and resets its form. One-time — the
+  next visit is a normal login page.
+
+**Tested (Batch 8):** headless Edge with a real sign-in (typed LRN/email → OTP) for a student and a teacher, then
+logout and Back/Forward ×3: never a signed-in page, form always empty with the password hidden (36/36);
+the client layer alone with a simulated cache restore (5/5); in-process 5/5 (flash is one-time, `no-store` on
+pages and the guest redirect, JSON and CSV downloads untouched, failed sign-in keeps the LRN, admin logout).
+Regression: parent 7/7, student pages 5/5, teacher SPA, all inline scripts on 24 pages parse, no JS errors.
 
 ---
 

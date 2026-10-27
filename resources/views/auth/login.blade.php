@@ -536,6 +536,13 @@
                 </div>
             @endif
 
+            @if(session('signed_out'))
+                <div class="server-alert success gsap-alert" role="status">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    You have been signed out.
+                </div>
+            @endif
+
             @if(session('error'))
                 <div class="server-alert error gsap-alert" role="alert">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
@@ -543,7 +550,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate>
+            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate @if(session('signed_out')) data-signed-out @endif>
                 @csrf
 
                 {{-- Honeypot bot trap. Real users never see or fill this.
@@ -811,14 +818,33 @@ document.getElementById('passwordInput').addEventListener('input', function() {
     passError.style.display = 'none';
 });
 
-/* Back button: the browser restores this page from its cache exactly as it was left —
+/* Empty form, password hidden again. form.reset() goes back to what the server rendered:
+   nothing after a logout, the typed LRN/email (never the password) after a failed sign-in. */
+function resetLoginForm() {
+    const pw = document.getElementById('passwordInput');
+    document.getElementById('loginForm').reset();
+    pw.value = '';
+    if (pw.type !== 'password') togglePw('passwordInput', document.querySelector('.toggle-pw'));
+    document.getElementById('emailInput').classList.remove('is-valid');
+    setStatus(document.getElementById('emailStatus'), '', null);
+    document.getElementById('passwordError').style.display = 'none';
+}
+
+/* Clear the form right after logout, and whenever Back/Forward brings this page back —
+   browsers put the typed LRN and password back into the fields (even shown as text).
+   A page restored from the back/forward cache also comes back exactly as it was left:
    button still spinning (after Sign in) or both panels faded out (after slideTo). */
 window.addEventListener('pageshow', function(e) {
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (e.persisted || (nav && nav.type === 'back_forward')
+        || document.getElementById('loginForm').hasAttribute('data-signed-out')) {
+        resetLoginForm();
+    }
     if (!e.persisted) return;
     const btn = document.getElementById('submitBtn');
     btn.classList.remove('loading');
     btn.disabled = false;
-    gsap.set(['.form-panel', '.image-panel'], { x: 0, opacity: 1 });
+    if (window.gsap) gsap.set(['.form-panel', '.image-panel'], { x: 0, opacity: 1 });
 });
 
 /* ─────────────────────────────────────────────

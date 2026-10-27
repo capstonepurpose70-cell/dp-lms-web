@@ -2217,6 +2217,10 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
         }
     });
 })();
+
+// A signed-in page restored from the back/forward cache may belong to a session that has
+// ended (logout) or show old data — ask the server again; it sends a signed-out visitor to login.
+window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 </script>
 </body>
 </html>

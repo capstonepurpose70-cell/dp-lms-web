@@ -106,6 +106,8 @@ class LoginController extends Controller
         auth()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('login');
+
+        // Flashed into the fresh session: the login page clears its form and says so
+        return redirect()->route('login')->with('signed_out', true);
     }
 }

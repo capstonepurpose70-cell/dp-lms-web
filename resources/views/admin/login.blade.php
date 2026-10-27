@@ -499,7 +499,7 @@
     </div>
 @endif
 
-        <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm">
+        <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm" @if(session('signed_out')) data-signed-out @endif>
             @csrf
 
             {{-- Email --}}
@@ -617,6 +617,18 @@ function toggleAdminPw() {
         eyeOff.style.display = 'none';
     }
 }
+
+/* Clear the form right after logout, and whenever Back/Forward brings this page back with
+   the typed email and password still in it (the password possibly shown as text). */
+window.addEventListener('pageshow', (e) => {
+    const nav  = performance.getEntriesByType('navigation')[0];
+    const form = document.getElementById('adminLoginForm');
+    if (!(e.persisted || (nav && nav.type === 'back_forward') || form.hasAttribute('data-signed-out'))) return;
+    form.reset();
+    const pw = document.getElementById('admin-pw');
+    pw.value = '';
+    if (pw.type !== 'password') toggleAdminPw();
+});
 
 document.addEventListener("DOMContentLoaded", () => {
 

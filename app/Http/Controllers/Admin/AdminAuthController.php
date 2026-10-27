@@ -61,6 +61,7 @@ return redirect()->route('admin.dashboard')
         Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('admin.login');
+
+        return redirect()->route('admin.login')->with('signed_out', true);
     }
 }

@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
         'force.password' => \App\Http\Middleware\ForcePasswordChange::class,
     ]);
 
+    // Prepended so it wraps everything: prioritised middleware (auth, bindings) is sorted ahead of
+    // appended entries, and a guest redirect from auth would otherwise skip it.
+    $middleware->web(prepend: [
+        \App\Http\Middleware\NoStorePages::class,
+    ]);
+
     $middleware->validateCsrfTokens(except: [
         'api/*',
     ]);

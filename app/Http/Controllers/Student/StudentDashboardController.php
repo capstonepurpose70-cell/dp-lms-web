@@ -17,7 +17,7 @@ use App\Services\GradeService;
 use Illuminate\Http\Request;
 
 /*
- * No page here sets its own Cache-Control: Laravel's default (no-cache) keeps data fresh after
+ * No page here sets its own Cache-Control: the NoStorePages middleware keeps data fresh after
  * attendance/submissions and stops pages from showing again after logout on a shared computer.
  */
 class StudentDashboardController extends Controller

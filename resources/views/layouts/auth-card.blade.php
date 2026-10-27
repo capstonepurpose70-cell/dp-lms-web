@@ -269,6 +269,21 @@
             if (e.persisted) { btn.disabled = false; btn.textContent = label; }
         });
     });
+
+    // Back/Forward can bring these pages back with typed passwords still in them (shown as
+    // text if "Show" was used) — hide and clear them.
+    window.addEventListener('pageshow', function (e) {
+        var nav = performance.getEntriesByType('navigation')[0];
+        if (!e.persisted && !(nav && nav.type === 'back_forward')) return;
+        document.querySelectorAll('[data-pw-toggle]').forEach(function (btn) {
+            var input = document.getElementById(btn.getAttribute('data-pw-toggle'));
+            if (input && input.type !== 'password') btn.click();
+        });
+        document.querySelectorAll('input[type="password"]').forEach(function (input) {
+            input.value = '';
+            input.dispatchEvent(new Event('input'));   // refreshes the password checklist
+        });
+    });
 </script>
 </body>
 </html>
