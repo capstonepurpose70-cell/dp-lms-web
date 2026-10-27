@@ -148,7 +148,16 @@
         font-size: 13px; font-weight: 700; color: #0F172A;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .stu-meta { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .stu-meta { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+
+    /* Page shell (dati Tailwind: max-w-5xl, text-2xl, min-w-0 — wala ang min-w-0 sa build) */
+    .stu-wrap { max-width: 1040px; margin: 0 auto; }
+    .stu-head { margin-bottom: 22px; }
+    .stu-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
+    .stu-sub { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+    .stu-row-main { flex: 1; min-width: 0; }
+    .stu-empty-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
+    .stu-empty-sub { font-size: 12.5px; color: var(--text-3); margin-top: 4px; }
 
     .stu-grade-badge {
         padding: 3px 10px; border-radius: 20px;
@@ -264,7 +273,7 @@
         letter-spacing: -.02em; line-height: 1.25;
     }
     #stuModal .sm-hero-sub {
-        font-size: 12px; color: #64748b; margin-top: 5px;
+        font-size: 12px; color: #94a3b8; margin-top: 5px;   /* #64748b was too dark on the navy hero */
         display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
     }
     #stuModal .sm-hero-pills { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
@@ -282,7 +291,7 @@
         width: 33px; height: 33px; border-radius: 10px;
         background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer; flex-shrink: 0; color: #64748b;
+        cursor: pointer; flex-shrink: 0; color: #cbd5e1;
         transition: background .15s, color .15s,
                     transform .15s cubic-bezier(0.34,1.56,0.64,1);
         position: relative; z-index: 1;
@@ -308,7 +317,7 @@
     #stuModal .sm-sect:last-child { border-bottom: none; padding-bottom: 24px; }
     #stuModal .sm-sect-title {
         font-size: 10px; font-weight: 700; letter-spacing: .1em;
-        text-transform: uppercase; color: #94a3b8;
+        text-transform: uppercase; color: #64748b;
         margin-bottom: 12px;
         display: flex; align-items: center; gap: 8px;
     }
@@ -328,7 +337,7 @@
     #stuModal .sm-item:hover { border-color: #dbeafe; }
     #stuModal .sm-item-label {
         font-size: 10px; font-weight: 700; letter-spacing: .06em;
-        text-transform: uppercase; color: #94a3b8; margin-bottom: 4px;
+        text-transform: uppercase; color: #64748b; margin-bottom: 4px;
     }
     #stuModal .sm-item-val {
         font-size: 13px; font-weight: 600; color: #0F172A; word-break: break-word;
@@ -354,10 +363,22 @@
     #stuModal .sm-grade-tbl tbody td { padding: 10px 13px; font-weight: 500; color: #374151; }
     #stuModal .sm-grade-tbl .gp  { color: #15803d; font-weight: 700; } /* passed  */
     #stuModal .sm-grade-tbl .gf  { color: #dc2626; font-weight: 700; } /* failed  */
-    #stuModal .sm-grade-tbl .gnd { color: #d1d5db; }                    /* no data */
+    #stuModal .sm-grade-tbl .gnd { color: #94a3b8; }                    /* no data */
+    #stuModal .sm-grade-tbl .gip { color: #64748b; font-weight: 600; }  /* in progress */
+    #stuModal .sm-note { font-size: 11.5px; color: #64748b; margin-top: 8px; line-height: 1.5; }
 
+    .stu-meta-grade { display: none; }
     @media (max-width: 640px) {
-        .stu-stat-strip { grid-template-columns: 1fr; }
+        /* compact 3-up stats; grade moves into the meta line so the name has room */
+        .stu-stat-strip { gap: 10px; }
+        .stu-stat-card { padding: 14px; flex-direction: column; align-items: flex-start; gap: 4px; }
+        .stu-stat-icon { display: none; }
+        .stu-stat-number { font-size: 22px; }
+        .stu-search-wrap { flex-basis: 100%; }
+        .stu-filter-select { flex: 1 1 140px; }
+        .stu-row { padding: 12px 14px; gap: 12px; }
+        .stu-grade-badge { display: none; }
+        .stu-meta-grade { display: inline; }
         #stuModal .sm-grid    { grid-template-columns: 1fr; }
         #stuModal .sm-grid.cols-3 { grid-template-columns: 1fr 1fr; }
         #stuModal .sm-hero { padding: 18px 20px; }
@@ -369,405 +390,237 @@
     }
 </style>
 
-<div class="max-w-5xl mx-auto">
+<div class="stu-wrap">
 
     {{-- ── Header ── --}}
-    <div class="mb-6 fade-up fade-up-1">
-        <h1 class="text-2xl font-bold text-gray-800">My Students</h1>
-        <p class="text-sm text-gray-400 mt-1">
-            All students enrolled in your sections. Click any row to view full details.
-        </p>
+    <div class="stu-head fade-up fade-up-1">
+        <h1 class="stu-title">My Students</h1>
+        <p class="stu-sub">Students in your classes and advisory section. Select a student to see their details and grades.</p>
     </div>
 
     {{-- ── Stat strip ── --}}
     <div class="stu-stat-strip fade-up fade-up-1">
-
         <div class="stu-stat-card">
-            <div class="stu-stat-icon" style="background:#eff6ff;">
-                <svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
-                           M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857
-                           m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
+            <div class="stu-stat-icon" style="background:var(--accent-lt);color:var(--accent);" aria-hidden="true">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <div>
                 <p class="stu-stat-number">{{ $students->count() }}</p>
-                <p class="stu-stat-label">Total Students</p>
+                <p class="stu-stat-label">Total students</p>
             </div>
         </div>
-
         <div class="stu-stat-card">
-            <div class="stu-stat-icon" style="background:#faf5ff;">
-                <svg width="20" height="20" fill="none" stroke="#a855f7" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5
-                           m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1
-                           0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
+            <div class="stu-stat-icon" style="background:var(--accent-lt);color:var(--accent);" aria-hidden="true">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
             </div>
             <div>
-                <p class="stu-stat-number">{{ $students->pluck('section_id')->unique()->count() }}</p>
+                <p class="stu-stat-number">{{ $students->pluck('section_id')->filter()->unique()->count() }}</p>
                 <p class="stu-stat-label">Sections</p>
             </div>
         </div>
-
         <div class="stu-stat-card">
-            <div class="stu-stat-icon" style="background:#f0fdf4;">
-                <svg width="20" height="20" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0
-                           0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0
-                           0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
+            <div class="stu-stat-icon" style="background:var(--accent-lt);color:var(--accent);" aria-hidden="true">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             </div>
             <div>
-                <p class="stu-stat-number">{{ $students->pluck('grade_level')->unique()->filter()->count() }}</p>
-                <p class="stu-stat-label">Grade Levels</p>
+                <p class="stu-stat-number">{{ $students->pluck('grade_level')->filter()->unique()->count() }}</p>
+                <p class="stu-stat-label">Grade levels</p>
             </div>
         </div>
-
     </div>
 
     {{-- ── Toolbar ── --}}
     <div class="stu-toolbar fade-up fade-up-2">
-
         <div class="stu-search-wrap">
-            <span class="stu-search-icon">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
+            <span class="stu-search-icon" aria-hidden="true">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </span>
-            <input type="text" id="stuSearch" class="stu-search"
-                placeholder="Search by name…" autocomplete="off"
-                oninput="stuFilter()">
+            <input type="search" id="stuSearch" class="stu-search" placeholder="Search by name or LRN…"
+                   autocomplete="off" aria-label="Search students by name or LRN">
         </div>
 
-        {{-- Section filter — built from actual data --}}
-        <select class="stu-filter-select" id="stuSectionFilter" onchange="stuFilter()">
-            <option value="">All Sections</option>
-            @foreach($students->pluck('section')->unique('id')->filter()->sortBy('name') as $sec)
-                <option value="{{ $sec->id }}">{{ $sec->name }}</option>
+        <select class="stu-filter-select" id="stuSectionFilter" aria-label="Filter by section">
+            <option value="">All sections</option>
+            @foreach($students->pluck('section')->filter()->unique('id')->sortBy(fn ($s) => sprintf('%02d|%s', (int) $s->grade_level, $s->name)) as $sec)
+                <option value="{{ $sec->id }}">Grade {{ $sec->grade_level }} – {{ $sec->name }}</option>
             @endforeach
         </select>
 
-        {{-- Grade level filter — built from actual data --}}
-        <select class="stu-filter-select" id="stuGradeFilter" onchange="stuFilter()">
-            <option value="">All Grades</option>
-            @foreach($students->pluck('grade_level')->unique()->filter()->sort()->values() as $gl)
+        <select class="stu-filter-select" id="stuGradeFilter" aria-label="Filter by grade level">
+            <option value="">All grades</option>
+            @foreach($students->pluck('grade_level')->filter()->unique()->sortBy(fn ($g) => (int) $g)->values() as $gl)
                 <option value="{{ $gl }}">Grade {{ $gl }}</option>
             @endforeach
         </select>
 
-        <span class="stu-count-badge" id="stuCountBadge">
+        <span class="stu-count-badge" id="stuCountBadge" aria-live="polite">
             {{ $students->count() }} {{ Str::plural('student', $students->count()) }}
         </span>
-
     </div>
 
     {{-- ── Student list ── --}}
     <div class="stu-table-card fade-up fade-up-3">
-
         @forelse($students as $student)
-        @php
-            $avIdx       = $student->id % 8;
-            $statusLabel = match(strtolower($student->status ?? '')) {
-                'pending'  => 'Pending',
-                'rejected' => 'Rejected',
-                default    => 'Enrolled',
-            };
-            $statusClass = match(strtolower($student->status ?? '')) {
-                'pending'  => 'pill-pending',
-                'rejected' => 'pill-rejected',
-                default    => 'pill-approved',
-            };
-        @endphp
+            <div class="stu-row" role="button" tabindex="0"
+                 data-id="{{ $student->id }}"
+                 data-search="{{ mb_strtolower($student->name . ' ' . $student->lrn) }}"
+                 data-section="{{ $student->section_id }}"
+                 data-grade="{{ $student->grade_level }}"
+                 aria-label="View details for {{ $student->name }}">
 
-        <div class="stu-row"
-             data-id="{{ $student->id }}"
-             data-name="{{ strtolower($student->name) }}"
-             data-section="{{ $student->section_id }}"
-             data-grade="{{ $student->grade_level }}"
-             onclick="stuOpen({{ $student->id }})"
-             onkeydown="if(event.key==='Enter'||event.key===' '){stuOpen({{ $student->id }});event.preventDefault();}"
-             tabindex="0"
-             role="button"
-             aria-label="View details for {{ $student->name }}">
+                <div class="stu-avatar av-{{ $student->id % 8 }}" aria-hidden="true">{{ mb_strtoupper(mb_substr($student->name, 0, 1)) }}</div>
 
-            <div class="stu-avatar av-{{ $avIdx }}">
-                {{ strtoupper(substr($student->name, 0, 1)) }}
+                <div class="stu-row-main">
+                    <p class="stu-name">{{ $student->name }}</p>
+                    <p class="stu-meta">
+                        <span class="stu-meta-grade">Grade {{ $student->grade_level ?? '—' }} &nbsp;·&nbsp;</span>
+                        {{ $student->section->name ?? '—' }}
+                        @if($student->lrn) &nbsp;·&nbsp; LRN {{ $student->lrn }} @endif
+                    </p>
+                </div>
+
+                <span class="stu-grade-badge">Grade {{ $student->grade_level ?? '—' }}</span>
+                @if($details[$student->id]['adviser'] ?? false)
+                    <span class="stu-status-pill pill-approved">My advisory</span>
+                @endif
+
+                <svg class="stu-arrow" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </div>
-
-            <div class="flex-1 min-w-0">
-                <p class="stu-name">{{ $student->name }}</p>
-                <p class="stu-meta">
-                    {{ $student->section->name ?? '—' }}
-                    &nbsp;·&nbsp;
-                    Grade {{ $student->grade_level ?? '—' }}
-                </p>
-            </div>
-
-            <span class="stu-grade-badge">Grade {{ $student->grade_level ?? '—' }}</span>
-            <span class="stu-status-pill {{ $statusClass }}">{{ $statusLabel }}</span>
-
-            <svg class="stu-arrow" width="15" height="15" fill="none"
-                stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
-
-        </div>
         @empty
-        <div class="stu-empty">
-            <div class="stu-empty-icon">
-                <svg width="24" height="24" fill="none" stroke="#d1d5db" stroke-width="1.8" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
-                           M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857
-                           m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
+            <div class="stu-empty">
+                <div class="stu-empty-icon" aria-hidden="true">
+                    <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <p class="stu-empty-title">No students yet.</p>
+                <p class="stu-empty-sub">Students appear here once they are enrolled in your sections.</p>
             </div>
-            <p class="text-gray-400 text-sm font-medium">No students assigned yet.</p>
-            <p class="text-gray-300 text-xs mt-1">Students will appear here once enrolled in your sections.</p>
-        </div>
         @endforelse
 
-        {{-- No search results --}}
         <div id="stuNoResults">
-            <div class="stu-empty-icon" style="margin:0 auto 12px;">
-                <svg width="22" height="22" fill="none" stroke="#d1d5db" stroke-width="1.8" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
+            <div class="stu-empty-icon" style="margin:0 auto 12px;" aria-hidden="true">
+                <svg width="22" height="22" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
-            <p class="text-gray-400 text-sm font-medium">No students match your search.</p>
-            <p class="text-gray-300 text-xs mt-1">Try a different name or filter.</p>
+            <p class="stu-empty-title">No students match your search.</p>
+            <p class="stu-empty-sub">Try a different name, LRN, or filter.</p>
         </div>
-
     </div>
-
-    @if(method_exists($students, 'links') && $students->total() > $students->perPage())
-    <div class="mt-4">{{ $students->links() }}</div>
-    @endif
-
 </div>
 
-{{-- ══════════════════════════════════════════════
-     STUDENT DETAIL MODAL
-     Outside .main-content — AJAX swap safe.
-══════════════════════════════════════════════ --}}
-<div id="stuModal"
-     role="dialog" aria-modal="true" aria-hidden="true"
-     onclick="stuOverlayClick(event)">
-
+{{-- ══════════════ STUDENT DETAIL MODAL ══════════════ --}}
+<div id="stuModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="smName">
     <div class="sm-panel">
-
-        {{-- Hero --}}
         <div class="sm-hero">
-            <div class="sm-big-av av-0" id="smAv">A</div>
+            <div class="sm-big-av av-0" id="smAv" aria-hidden="true">A</div>
             <div class="sm-hero-info">
-                <p class="sm-hero-name" id="smName">—</p>
+                <h2 class="sm-hero-name" id="smName">—</h2>
                 <div class="sm-hero-sub">
                     <span id="smSubSection">—</span>
-                    <span style="color:#334155;">·</span>
+                    <span aria-hidden="true">·</span>
                     <span id="smSubGrade">—</span>
                 </div>
                 <div class="sm-hero-pills" id="smPills"></div>
             </div>
-            <button type="button" class="sm-close" onclick="stuClose()" aria-label="Close">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
+            <button type="button" class="sm-close" id="smClose" aria-label="Close">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
-        {{-- Body --}}
         <div class="sm-body">
-
-            {{-- Enrollment --}}
             <div class="sm-sect">
-                <div class="sm-sect-title">Enrollment</div>
+                <div class="sm-sect-title">Student</div>
                 <div class="sm-grid cols-3">
-                    <div class="sm-item">
-                        <div class="sm-item-label">Section</div>
-                        <div class="sm-item-val" id="smSection">—</div>
-                    </div>
-                    <div class="sm-item">
-                        <div class="sm-item-label">Grade Level</div>
-                        <div class="sm-item-val" id="smGrade">—</div>
-                    </div>
-                    <div class="sm-item">
-                        <div class="sm-item-label">Status</div>
-                        <div class="sm-item-val" id="smStatus">—</div>
-                    </div>
+                    <div class="sm-item"><div class="sm-item-label">LRN</div><div class="sm-item-val" id="smLrn">—</div></div>
+                    <div class="sm-item"><div class="sm-item-label">Section</div><div class="sm-item-val" id="smSection">—</div></div>
+                    <div class="sm-item"><div class="sm-item-label">Grade level</div><div class="sm-item-val" id="smGrade">—</div></div>
                 </div>
             </div>
 
-            {{-- Account info --}}
             <div class="sm-sect">
                 <div class="sm-sect-title">Account</div>
                 <div class="sm-grid">
-                    <div class="sm-item">
-                        <div class="sm-item-label">Email</div>
-                        <div class="sm-item-val" id="smEmail">—</div>
-                    </div>
-                    <div class="sm-item">
-                        <div class="sm-item-label">Registered</div>
-                        <div class="sm-item-val" id="smCreated">—</div>
-                    </div>
+                    <div class="sm-item"><div class="sm-item-label">Email</div><div class="sm-item-val" id="smEmail">—</div></div>
+                    <div class="sm-item"><div class="sm-item-label">Activated</div><div class="sm-item-val" id="smCreated">—</div></div>
                 </div>
             </div>
 
-            {{-- Grade summary --}}
             <div class="sm-sect">
-                <div class="sm-sect-title">Grade Summary</div>
+                <div class="sm-sect-title">Grades · SY {{ $schoolYear }}</div>
                 <div class="sm-grade-wrap">
                     <table class="sm-grade-tbl">
                         <thead>
-                            <tr>
-                                <th>Subject</th>
-                                <th>Q1</th>
-                                <th>Q2</th>
-                                <th>Q3</th>
-                                <th>Q4</th>
-                                <th>Final</th>
-                                <th>Remarks</th>
-                            </tr>
+                            <tr><th scope="col">Subject</th><th scope="col">Q1</th><th scope="col">Q2</th><th scope="col">Q3</th><th scope="col">Q4</th><th scope="col">Average</th><th scope="col">Remarks</th></tr>
                         </thead>
-                        <tbody id="smGradesTbody">
-                            <tr>
-                                <td colspan="7" style="text-align:center;padding:22px;color:#94a3b8;font-size:12px;">
-                                    No grades recorded yet.
-                                </td>
-                            </tr>
-                        </tbody>
+                        <tbody id="smGradesTbody"></tbody>
                     </table>
                 </div>
+                <p class="sm-note" id="smGradesNote"></p>
             </div>
-
-        </div>{{-- /.sm-body --}}
-    </div>{{-- /.sm-panel --}}
-</div>{{-- /#stuModal --}}
-
-{{-- ── Prepare student data in PHP before injecting into JS ── --}}
-@php
-    $studentJson = $students->keyBy('id')->map(function ($s) {
-
-        // Grades grouped by subject name → quarters
-        // Grades not loaded yet (no Grade model data) — safe empty default
-        $gradeMap = [];
-        if ($s->relationLoaded('grades')) {
-            foreach ($s->grades as $g) {
-                $sub = optional($g->subject)->name ?? 'Unknown Subject';
-                if (!isset($gradeMap[$sub])) {
-                    $gradeMap[$sub] = [
-                        'Q1' => null, 'Q2' => null,
-                        'Q3' => null, 'Q4' => null,
-                        'final' => null, 'remarks' => null,
-                    ];
-                }
-                if (isset($gradeMap[$sub][$g->quarter])) {
-                    $gradeMap[$sub][$g->quarter] = $g->final_grade;
-                }
-                $gradeMap[$sub]['final']   = $g->final_grade;
-                $gradeMap[$sub]['remarks'] = $g->remarks;
-            }
-        }
-
-        return [
-            'id'          => $s->id,
-            'name'        => $s->name,
-            'email'       => $s->email,
-            'section'     => optional($s->section)->name ?? '—',
-            'grade_level' => $s->grade_level ?? '—',
-            'status'      => ucfirst($s->status ?? 'enrolled'),
-            'created_at'  => $s->created_at
-                                ? \Carbon\Carbon::parse($s->created_at)->format('M d, Y')
-                                : '—',
-            'grades'      => $gradeMap,
-        ];
-    })->values()->keyBy('id');
-@endphp
+        </div>
+    </div>
+</div>
 
 <script>
 (function () {
+    const DATA  = @json($details);
+    const modal = document.getElementById('stuModal');
+    const PASS  = {{ \App\Models\Grade::PASSING }};
+    let closing = false;
+    let opener  = null;   // row to focus again after closing
 
-    /* ── Data map keyed by student id ── */
-    const DATA = @json($studentJson);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const set = (id, text) => { document.getElementById(id).textContent = text; };
 
-    /* ── Modal refs ── */
-    const modal  = document.getElementById('stuModal');
-    let closing  = false;
-
-    /* ── Open ── */
-    window.stuOpen = function (id) {
+    function open(id, row) {
         const s = DATA[id];
         if (!s) return;
+        opener = row || null;
 
-        /* hero */
         const av = document.getElementById('smAv');
         av.className   = 'sm-big-av av-' + (id % 8);
         av.textContent = s.name.charAt(0).toUpperCase();
 
-        document.getElementById('smName').textContent       = s.name;
-        document.getElementById('smSubSection').textContent = s.section;
-        document.getElementById('smSubGrade').textContent   = 'Grade ' + s.grade_level;
-
-        /* pills */
-        const statusColor = s.status.toLowerCase() === 'approved' || s.status.toLowerCase() === 'enrolled'
-            ? 'green'
-            : s.status.toLowerCase() === 'pending' ? 'yellow' : 'red';
+        set('smName', s.name);
+        set('smSubSection', s.section);
+        set('smSubGrade', 'Grade ' + s.grade_level);
         document.getElementById('smPills').innerHTML =
-            `<span class="sm-pill ${statusColor}">${s.status}</span>`;
+            '<span class="sm-pill green">Enrolled</span>' + (s.adviser ? '<span class="sm-pill">My advisory</span>' : '');
 
-        /* enrollment */
-        document.getElementById('smSection').textContent = s.section;
-        document.getElementById('smGrade').textContent   = 'Grade ' + s.grade_level;
-        document.getElementById('smStatus').textContent  = s.status;
+        set('smLrn', s.lrn || '—');
+        set('smSection', s.section);
+        set('smGrade', 'Grade ' + s.grade_level);
+        set('smEmail', s.email || '—');
+        set('smCreated', s.registered);
 
-        /* account */
-        document.getElementById('smEmail').textContent   = s.email;
-        document.getElementById('smCreated').textContent = s.created_at;
-
-        /* grades */
-        const tbody    = document.getElementById('smGradesTbody');
-        const subjects = Object.keys(s.grades);
-
-        if (!subjects.length) {
-            tbody.innerHTML =
-                `<tr><td colspan="7" style="text-align:center;padding:22px;
-                    color:#94a3b8;font-size:12px;">No grades recorded yet.</td></tr>`;
+        const tbody = document.getElementById('smGradesTbody');
+        if (!s.grades.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:22px;color:#64748b;font-size:12px;">No grades recorded yet this school year.</td></tr>';
         } else {
-            tbody.innerHTML = subjects.map(sub => {
-                const g = s.grades[sub];
-
-                function gcell(val) {
-                    if (val === null || val === undefined)
-                        return `<td class="gnd">—</td>`;
-                    return `<td class="${val >= 75 ? 'gp' : 'gf'}">${val}</td>`;
-                }
-
-                const finalCls = g.final === null ? 'gnd'
-                               : g.final >= 75    ? 'gp' : 'gf';
-                const remCls   = !g.remarks ? 'gnd'
-                               : g.remarks.toLowerCase() === 'passed' ? 'gp' : 'gf';
-
+            const cell = (v) => v === null ? '<td class="gnd">—</td>' : `<td class="${v >= PASS ? 'gp' : 'gf'}">${Number(v).toFixed(2)}</td>`;
+            tbody.innerHTML = s.grades.map(g => {
+                const remarks = g.average === null ? '<td class="gnd">—</td>'
+                    : !g.complete ? '<td class="gip">In progress</td>'
+                    : `<td class="${g.passed ? 'gp' : 'gf'}">${g.passed ? 'Passed' : 'Failed'}</td>`;
                 return `<tr>
-                    <td style="font-weight:600;color:#0F172A;">${sub}</td>
-                    ${gcell(g.Q1)}${gcell(g.Q2)}${gcell(g.Q3)}${gcell(g.Q4)}
-                    <td class="${finalCls}">${g.final ?? '—'}</td>
-                    <td class="${remCls}">${g.remarks ?? '—'}</td>
+                    <td style="font-weight:600;color:#0F172A;">${esc(g.subject)}</td>
+                    ${cell(g.quarters.Q1)}${cell(g.quarters.Q2)}${cell(g.quarters.Q3)}${cell(g.quarters.Q4)}
+                    ${cell(g.average)}${remarks}
                 </tr>`;
             }).join('');
         }
+        set('smGradesNote', s.adviser
+            ? 'All subjects (you are this student\'s adviser). Average = mean of the quarters recorded so far.'
+            : 'Only the subjects you teach this student. Average = mean of the quarters recorded so far.');
 
-        /* open */
         document.body.style.overflow = 'hidden';
         modal.setAttribute('aria-hidden', 'false');
-        requestAnimationFrame(() => modal.classList.add('is-open'));
-    };
+        requestAnimationFrame(() => {
+            modal.classList.add('is-open');
+            document.getElementById('smClose').focus();
+        });
+    }
 
-    /* ── Close ── */
-    window.stuClose = function () {
-        if (closing) return;
+    function close() {
+        if (closing || !modal.classList.contains('is-open')) return;
         closing = true;
         modal.classList.add('is-closing');
         modal.classList.remove('is-open');
@@ -776,42 +629,43 @@
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
             closing = false;
+            if (opener && document.body.contains(opener)) opener.focus();
         }, 160);
-    };
+    }
 
-    window.stuOverlayClick = function (e) {
-        if (e.target === modal) stuClose();
-    };
-
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && modal.classList.contains('is-open')) stuClose();
+    document.querySelectorAll('.stu-row').forEach(row => {
+        const id = Number(row.dataset.id);
+        row.addEventListener('click', () => open(id, row));
+        row.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(id, row); }
+        });
     });
+    document.getElementById('smClose').addEventListener('click', close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
-    /* ── Client-side filter ── */
-    window.stuFilter = function () {
+    /* ── Client-side filter (name or LRN, section, grade) ── */
+    function filter() {
         const q       = document.getElementById('stuSearch').value.toLowerCase().trim();
         const section = document.getElementById('stuSectionFilter').value;
         const grade   = document.getElementById('stuGradeFilter').value;
-
-        const rows = document.querySelectorAll('.stu-row');
-        let visible = 0;
+        const rows    = document.querySelectorAll('.stu-row');
+        let visible   = 0;
 
         rows.forEach(row => {
-            const matchQ = !q       || row.dataset.name.includes(q);
-            const matchS = !section || row.dataset.section === section;
-            const matchG = !grade   || row.dataset.grade   === grade;
-            const show   = matchQ && matchS && matchG;
+            const show = (!q || row.dataset.search.includes(q))
+                && (!section || row.dataset.section === section)
+                && (!grade   || row.dataset.grade   === grade);
             row.style.display = show ? '' : 'none';
             if (show) visible++;
         });
 
-        document.getElementById('stuNoResults').style.display =
-            (rows.length && !visible) ? 'block' : 'none';
-
-        document.getElementById('stuCountBadge').textContent =
-            visible + (visible === 1 ? ' student' : ' students');
-    };
-
+        document.getElementById('stuNoResults').style.display = (rows.length && !visible) ? 'block' : 'none';
+        document.getElementById('stuCountBadge').textContent = visible + (visible === 1 ? ' student' : ' students');
+    }
+    document.getElementById('stuSearch').addEventListener('input', filter);
+    document.getElementById('stuSectionFilter').addEventListener('change', filter);
+    document.getElementById('stuGradeFilter').addEventListener('change', filter);
 })();
 </script>
 @endsection

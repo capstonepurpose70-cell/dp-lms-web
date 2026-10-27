@@ -3,35 +3,36 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
-use App\Models\TeacherSubject;
+use App\Models\Section;
 use App\Models\User;
+use App\Services\ClassAttendanceService;
 
 class TeacherDashboardController extends Controller
 {
-    public function index()
+    public function index(ClassAttendanceService $classes)
     {
-        $teacher = auth()->user();
+        $teacher    = auth()->user();
+        $sectionIds = $teacher->teachingSectionIds();
 
-        // Subject assignments (para sa "My Subjects" cards)
-        $assignments = TeacherSubject::with(['subject', 'section'])
-            ->where('user_id', $teacher->id)
-            ->get();
+        // Each class = subject + section (dati: isang subject lang ang lumalabas kahit 3 section ang tinuturuan)
+        $classList = $classes->teacherClasses($teacher);
 
-        // Students: subject sections + advisory section (dati subject lang —
-        // hindi nakikita ng adviser ang sarili niyang klase)
-        $students = User::whereIn('id', User::studentIdsInSections($teacher->teachingSectionIds()))
+        $students = User::whereIn('id', User::studentIdsInSections($sectionIds))
             ->where('status', 'approved')
             ->with('section')
             ->orderBy('name')
             ->get();
 
         return view('teacher.dashboard', [
-            'teacher'     => $teacher,
-            'assignments' => $assignments,
-            'sections'    => $assignments->groupBy('section_id'),
-            'students'    => $students,
-            'studentCount'=> $students->count(),
-            'subjectCount'=> $assignments->unique('subject_id')->count(),
+            'teacher'      => $teacher,
+            'classList'    => $classList,
+            'advisory'     => Section::where('adviser_id', $teacher->id)->where('is_active', true)
+                                ->orderBy('name')->get(['id', 'name', 'grade_level']),
+            'students'     => $students,
+            'studentCount' => $students->count(),
+            'subjectCount' => $classList->unique('subject_id')->count(),
+            // Same sections as "My Students" (subject classes + advisory) — dati teacher_subjects lang
+            'sectionCount' => $sectionIds->count(),
         ]);
     }
 }
