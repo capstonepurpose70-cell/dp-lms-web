@@ -3,11 +3,7 @@
 
 @section('content')
 <style>
-    .gb-page { max-width:1100px; animation: gb-fade .22s ease both; }
-    @keyframes gb-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-    .gb-title { font-size:22px; font-weight:800; color:var(--text-1); margin:0; }
-    .gb-sub { font-size:13px; color:var(--text-2); margin:4px 0 18px; line-height:1.55; max-width:760px; }
-    .gb-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+    .gb-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-sm); padding:18px; margin-bottom:16px; }
     .gb-card h2 { font-size:15px; font-weight:800; color:var(--text-1); margin:0 0 4px; }
     .gb-muted { font-size:12.5px; color:var(--text-2); margin:0 0 14px; line-height:1.5; }
     .gb-grid { display:grid; grid-template-columns: 1.6fr 1.4fr .7fr; gap:12px; }
@@ -31,31 +27,61 @@
     .gb-filter { display:grid; grid-template-columns: 1.6fr .8fr 1.2fr auto auto; gap:10px; align-items:end; margin-bottom:14px; }
     .gb-scroll { overflow-x:auto; }
     .gb-table { width:100%; border-collapse:collapse; font-size:13px; min-width:760px; }
-    .gb-table th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); padding:9px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .gb-table th { text-align:left; font-size:12.5px; font-weight:700; color:var(--text-2); padding:9px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
     .gb-table td { padding:10px; border-bottom:1px solid var(--border); color:var(--text-1); vertical-align:middle; }
     .gb-table tr:last-child td { border-bottom:0; }
     .gb-table td.num { text-align:right; font-variant-numeric:tabular-nums; }
     .gb-table th.num { text-align:right; }
     .gb-name { font-weight:700; }
-    .gb-small { font-size:11.5px; color:var(--text-3); margin-top:2px; }
-    .gb-pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:11.5px; font-weight:800; }
-    .gb-pill.pass { background:rgba(22,163,74,.12); color:#15803d; }
-    .gb-pill.fail { background:rgba(220,38,38,.10); color:#b91c1c; }
+    .gb-small { display:flex; flex-wrap:wrap; gap:0 10px; font-size:12px; color:var(--text-3); margin-top:2px; }
+    .gb-table td.gb-final-cell { font-weight:800; }
+    .gb-table td.gb-final-cell.pass { color:#15803d; }
+    .gb-table td.gb-final-cell.fail { color:#b91c1c; }
+    .gb-mobile { display:none; }
     .gb-pager { margin-top:14px; }
     @media (max-width: 860px) {
         .gb-grid, .gb-grid3, .gb-filter { grid-template-columns: 1fr; }
+    }
+
+    /* Phones: each grade becomes a compact block instead of a 9-column table that hid the scores and Edit
+       off-screen. Selectors start with .main-content to beat the layout's table rules. */
+    @media (max-width: 760px) {
+        .main-content .gb-scroll { overflow: visible; }
+        .main-content .gb-table { display: block; min-width: 0; overflow: visible; }
+        .main-content .gb-table thead { display: none; }
+        .main-content .gb-table tbody { display: block; }
+        .main-content .gb-table tr {
+            display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px;
+            grid-template-areas: "who final" "subj remark" "scores edit";
+            padding: 12px 0; border-bottom: 1px solid var(--border);
+        }
+        .main-content .gb-table tr:last-child { border-bottom: 0; }
+        .main-content .gb-table td { padding: 0; border: 0; white-space: normal; }
+        .main-content .gb-table .gb-c-ww, .main-content .gb-table .gb-c-pt,
+        .main-content .gb-table .gb-c-qa, .main-content .gb-table .gb-c-q { display: none; }
+        .gb-c-who { grid-area: who; } .gb-c-subj { grid-area: subj; color: var(--text-2); }
+        .main-content .gb-table td.gb-final-cell { grid-area: final; text-align: right; font-size: 16px; }
+        .gb-c-remark { grid-area: remark; text-align: right; }
+        .gb-c-scores { grid-area: scores; font-size: 12.5px; color: var(--text-2); }
+        .main-content .gb-table td.gb-c-edit { grid-area: edit; text-align: right; }
+        .gb-mobile { display: inline; }
     }
 </style>
 
 @php
     $oldClass = old('class_key');
+    $w = collect(\App\Models\Grade::WEIGHTS)->map(fn ($v) => rtrim(rtrim(number_format($v * 100, 1), '0'), '.') . '%');
 @endphp
 
-<div class="gb-page">
-    <h1 class="gb-title">Gradebook</h1>
-    <p class="gb-sub">Encode quarterly grades for your classes (School Year {{ $schoolYear }}).
-        Final grade = Written Works 25% + Performance Tasks 50% + Quarterly Assessment 25%. Passing is
-        {{ \App\Models\Grade::PASSING }}. Saving the same student, subject and quarter again updates the grade.</p>
+<div class="tp-page">
+    <div class="tp-head">
+        <div>
+            <h1 class="tp-title">Gradebook</h1>
+            <p class="tp-sub">Quarterly grades for your classes, school year {{ $schoolYear }}. Final grade = written works {{ $w['written_works'] }}
+                + performance tasks {{ $w['performance_tasks'] }} + quarterly assessment {{ $w['quarterly_assessment'] }}; passing is
+                {{ \App\Models\Grade::PASSING }}. Saving the same student, subject and quarter again updates the grade.</p>
+        </div>
+    </div>
 
     @if ($errors->any())
         <div class="gb-err" role="alert">{{ $errors->first() }}</div>
@@ -67,7 +93,7 @@
         @if ($classList->isEmpty())
             <div class="gb-empty">You have no classes yet. The admin assigns your classes in <b>Class Schedules</b>.</div>
         @else
-            <p class="gb-muted">Choose the class first — the student list shows only that section. Blank scores count as 0.</p>
+            <p class="gb-muted">Choose the class first; the student list then shows only that section. Blank scores count as 0.</p>
             <form method="POST" action="{{ route('teacher.gradebook.store') }}" id="gbForm">
                 @csrf
                 <input type="hidden" name="subject_id" id="f_subject" value="{{ old('subject_id') }}">
@@ -75,7 +101,7 @@
                     <div>
                         <label class="gb-label" for="f_class">Class</label>
                         <select class="gb-in" name="class_key" id="f_class" required>
-                            <option value="">— Choose a class —</option>
+                            <option value="">Choose a class</option>
                             @foreach ($classList as $c)
                                 <option value="{{ $c['key'] }}" data-section="{{ $c['section_id'] }}" data-subject="{{ $c['subject_id'] }}" @selected($oldClass === $c['key'])>{{ $c['label'] }}</option>
                             @endforeach
@@ -98,20 +124,20 @@
                 </div>
                 <div class="gb-grid3">
                     <div>
-                        <label class="gb-label" for="f_ww">Written Works (25%)</label>
+                        <label class="gb-label" for="f_ww">Written works ({{ $w['written_works'] }})</label>
                         <input class="gb-in js-score" type="number" step="0.01" min="0" max="100" inputmode="decimal" name="written_works" id="f_ww" value="{{ old('written_works') }}" placeholder="0–100">
                     </div>
                     <div>
-                        <label class="gb-label" for="f_pt">Performance Tasks (50%)</label>
+                        <label class="gb-label" for="f_pt">Performance tasks ({{ $w['performance_tasks'] }})</label>
                         <input class="gb-in js-score" type="number" step="0.01" min="0" max="100" inputmode="decimal" name="performance_tasks" id="f_pt" value="{{ old('performance_tasks') }}" placeholder="0–100">
                     </div>
                     <div>
-                        <label class="gb-label" for="f_qa">Quarterly Assessment (25%)</label>
+                        <label class="gb-label" for="f_qa">Quarterly assessment ({{ $w['quarterly_assessment'] }})</label>
                         <input class="gb-in js-score" type="number" step="0.01" min="0" max="100" inputmode="decimal" name="quarterly_assessment" id="f_qa" value="{{ old('quarterly_assessment') }}" placeholder="0–100">
                     </div>
                     <div style="display:flex; gap:10px; align-items:end;">
                         <div class="gb-final" id="f_final" aria-live="polite">Final: —</div>
-                        <button type="submit" class="gb-btn">Save grade</button>
+                        <button type="submit" class="tp-btn">Save grade</button>
                     </div>
                 </div>
             </form>
@@ -120,7 +146,7 @@
 
     {{-- ── Grades ── --}}
     <div class="gb-card">
-        <h2>Grades · S.Y. {{ $schoolYear }}</h2>
+        <h2>Grades for school year {{ $schoolYear }}</h2>
         <p class="gb-muted">{{ number_format($grades->total()) }} {{ \Illuminate\Support\Str::plural('grade', $grades->total()) }}{{ array_filter($filters) ? ' match your filters' : '' }}.</p>
 
         <form method="GET" action="{{ route('teacher.gradebook.index') }}" class="gb-filter">
@@ -146,9 +172,9 @@
                 <label class="gb-label" for="flt_q">Student</label>
                 <input class="gb-in" type="search" name="q" id="flt_q" value="{{ $filters['q'] ?? '' }}" placeholder="Name or LRN" maxlength="100">
             </div>
-            <button type="submit" class="gb-btn">Filter</button>
+            <button type="submit" class="tp-btn">Filter</button>
             @if (array_filter($filters))
-                <a href="{{ route('teacher.gradebook.index') }}" class="gb-btn ghost">Clear</a>
+                <a href="{{ route('teacher.gradebook.index') }}" class="tp-btn ghost">Clear</a>
             @endif
         </form>
 
@@ -176,31 +202,31 @@
                                 $editable = $key && $classList->contains('key', $key);
                             @endphp
                             <tr>
-                                <td>
-                                    <div class="gb-name">{{ $grade->student->name ?? '—' }}</div>
+                                <td class="gb-c-who">
+                                    <div class="gb-name">{{ $grade->student->name ?? 'Student removed' }}</div>
                                     <div class="gb-small">
-                                        @if ($grade->student?->lrn) LRN {{ $grade->student->lrn }} @endif
-                                        @if ($grade->student?->section) · {{ $grade->student->section->name }} @endif
+                                        @if ($grade->student?->lrn)<span>LRN {{ $grade->student->lrn }}</span>@endif
+                                        @if ($grade->student?->section)<span>{{ $grade->student->section->name }}</span>@endif
                                     </div>
                                 </td>
-                                <td>{{ $grade->subject->name ?? '—' }}</td>
-                                <td>{{ $grade->quarter }}</td>
-                                <td class="num">{{ $grade->written_works ?? '—' }}</td>
-                                <td class="num">{{ $grade->performance_tasks ?? '—' }}</td>
-                                <td class="num">{{ $grade->quarterly_assessment ?? '—' }}</td>
-                                <td class="num" style="font-weight:800; color:{{ $grade->isPassed() ? '#15803d' : '#b91c1c' }};">{{ $grade->final_grade ?? '—' }}</td>
-                                <td>
+                                <td class="gb-c-subj">{{ $grade->subject->name ?? 'Subject removed' }}<span class="gb-mobile">, {{ $grade->quarter }}</span></td>
+                                <td class="gb-c-q">{{ $grade->quarter }}</td>
+                                <td class="num gb-c-ww">{{ $grade->written_works ?? '—' }}</td>
+                                <td class="num gb-c-pt">{{ $grade->performance_tasks ?? '—' }}</td>
+                                <td class="num gb-c-qa">{{ $grade->quarterly_assessment ?? '—' }}</td>
+                                <td class="gb-c-scores gb-mobile">Written {{ $grade->written_works ?? '—' }}, performance {{ $grade->performance_tasks ?? '—' }}, quarterly {{ $grade->quarterly_assessment ?? '—' }}</td>
+                                <td class="num gb-final-cell {{ $grade->final_grade === null ? '' : ($grade->isPassed() ? 'pass' : 'fail') }}">{{ $grade->final_grade ?? '—' }}</td>
+                                <td class="gb-c-remark">
                                     @if ($grade->final_grade !== null)
-                                        <span class="gb-pill {{ $grade->isPassed() ? 'pass' : 'fail' }}">{{ $grade->isPassed() ? 'Passed' : 'Failed' }}</span>
-                                    @else
-                                        <span style="color:var(--text-3);">—</span>
+                                        <span class="tp-pill {{ $grade->isPassed() ? 'ok' : 'bad' }}">{{ $grade->isPassed() ? 'Passed' : 'Failed' }}</span>
                                     @endif
                                 </td>
-                                <td style="text-align:right;">
+                                <td class="gb-c-edit" style="text-align:right;">
                                     @if ($editable)
-                                        <button type="button" class="gb-btn ghost sm js-edit"
+                                        <button type="button" class="tp-btn ghost sm js-edit"
                                             data-class="{{ $key }}" data-student="{{ $grade->user_id }}" data-quarter="{{ $grade->quarter }}"
-                                            data-ww="{{ $grade->written_works }}" data-pt="{{ $grade->performance_tasks }}" data-qa="{{ $grade->quarterly_assessment }}">Edit</button>
+                                            data-ww="{{ $grade->written_works }}" data-pt="{{ $grade->performance_tasks }}" data-qa="{{ $grade->quarterly_assessment }}"
+                                            aria-label="Edit {{ $grade->quarter }} {{ $grade->subject->name ?? '' }} grade of {{ $grade->student->name ?? 'student' }}">Edit</button>
                                     @endif
                                 </td>
                             </tr>
@@ -221,6 +247,7 @@
     if (!form) return;
     var ROSTER  = @json($roster);
     var PASSING = {{ \App\Models\Grade::PASSING }};
+    var W = @json(\App\Models\Grade::WEIGHTS);   // same weights as Grade::computeFinal() on the server
     var cls = document.getElementById('f_class'), stu = document.getElementById('f_student'), subj = document.getElementById('f_subject');
     var finalBox = document.getElementById('f_final');
     var scores = ['f_ww', 'f_pt', 'f_qa'].map(function (id) { return document.getElementById(id); });
@@ -235,17 +262,17 @@
         }
         subj.value = opt.dataset.subject;
         var list = ROSTER[opt.dataset.section] || [];
-        stu.add(new Option(list.length ? '— Choose a student —' : 'No students in this section yet', ''));
-        list.forEach(function (s) { stu.add(new Option(s.name + (s.lrn ? ' · ' + s.lrn : ''), s.id)); });
+        stu.add(new Option(list.length ? 'Choose a student' : 'No students in this section yet', ''));
+        list.forEach(function (s) { stu.add(new Option(s.name + (s.lrn ? ' (LRN ' + s.lrn + ')' : ''), s.id)); });
         if (selected) stu.value = String(selected);
     }
 
     function updateFinal() {
         var v = scores.map(function (el) { var n = parseFloat(el.value); return isNaN(n) ? 0 : n; });
         var any = scores.some(function (el) { return el.value !== ''; });
-        var f = Math.round((v[0] * 0.25 + v[1] * 0.50 + v[2] * 0.25) * 100) / 100;
+        var f = Math.round((v[0] * W.written_works + v[1] * W.performance_tasks + v[2] * W.quarterly_assessment) * 100) / 100;
         finalBox.className = 'gb-final' + (any ? (f >= PASSING ? ' pass' : ' fail') : '');
-        finalBox.textContent = any ? 'Final: ' + f.toFixed(2) + (f >= PASSING ? ' · Passed' : ' · Failed') : 'Final: —';
+        finalBox.textContent = any ? 'Final ' + f.toFixed(2) + (f >= PASSING ? ', passed' : ', failed') : 'Final: —';
     }
 
     cls.addEventListener('change', function () { fillStudents(null); });

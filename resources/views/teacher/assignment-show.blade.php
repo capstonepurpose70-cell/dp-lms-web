@@ -3,99 +3,131 @@
 
 @section('content')
 <style>
-    .sb-wrap { max-width:980px; margin:0 auto; padding:4px 0 48px; font-family:'Plus Jakarta Sans', system-ui, sans-serif; }
-    .sb-back { display:inline-flex; align-items:center; gap:6px; color:#94A3B8; font-size:13px; font-weight:500; text-decoration:none; margin-bottom:18px; }
-    .sb-back:hover { color:#2563EB; }
-    .sb-flash { background:#F0FDF4; border:1px solid #86EFAC; color:#166534; padding:12px 16px; border-radius:12px; margin-bottom:18px; font-size:14px; font-weight:600; }
-    .sb-head { background:#fff; border:1px solid #E2E8F0; border-radius:18px; padding:22px; margin-bottom:22px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
-    .sb-title { font-size:22px; font-weight:800; color:#0F172A; }
-    .sb-meta { font-size:13px; color:#64748B; margin-top:6px; }
-    .sb-instr { font-size:14px; color:#334155; margin-top:14px; line-height:1.6; white-space:pre-wrap; }
-    .sb-file { display:inline-flex; align-items:center; gap:8px; margin-top:14px; background:#EFF6FF; color:#1D4ED8; font-weight:600; font-size:13px; padding:9px 14px; border-radius:10px; text-decoration:none; }
-    .sb-sec-title { font-size:16px; font-weight:700; color:#0F172A; margin-bottom:14px; }
-    .sb-sub { background:#fff; border:1px solid #E2E8F0; border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(15,23,42,.04); }
-    .sb-sub-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-    .sb-name { font-size:15px; font-weight:700; color:#0F172A; }
-    .sb-when { font-size:12px; color:#94A3B8; }
-    .sb-pill { font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; }
-    .sb-graded { background:#F0FDF4; color:#166534; }
-    .sb-pending { background:#FEF9C3; color:#854D0E; }
-    .sb-ans { font-size:13.5px; color:#475569; margin-top:10px; white-space:pre-wrap; line-height:1.5; }
-    .sb-dl { display:inline-flex; align-items:center; gap:6px; margin-top:10px; color:#2563EB; font-weight:600; font-size:13px; text-decoration:none; }
-    .sb-grade-form { display:flex; align-items:flex-end; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid #F1F5F9; flex-wrap:wrap; }
-    .sb-grade-form label { font-size:12px; font-weight:600; color:#64748B; display:block; margin-bottom:4px; }
-    .sb-score { width:90px; border:1.5px solid #E2E8F0; border-radius:10px; padding:9px; font-size:14px; font-family:inherit; }
-    .sb-remarks { flex:1; min-width:160px; border:1.5px solid #E2E8F0; border-radius:10px; padding:9px; font-size:13px; font-family:inherit; }
-    .sb-save { background:#16A34A; color:#fff; border:none; font-weight:700; font-size:13px; padding:10px 16px; border-radius:10px; cursor:pointer; }
-    .sb-save:hover { background:#15803D; }
-    .sb-empty { text-align:center; padding:50px 20px; color:#94A3B8; background:#fff; border:1px dashed #CBD5E1; border-radius:16px; }
+    .qs-head { padding: 22px; }
+    .qs-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; font-size: 13px; color: var(--text-2); }
+    .qs-instr { font-size: 14px; color: var(--text-2); margin-top: 14px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+    .qs-file { margin-top: 14px; }
+    .qs-err { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 12px 16px; border-radius: var(--r-md); margin-bottom: 14px; font-size: 14px; font-weight: 600; }
+
+    .qs-h2 { display: flex; align-items: baseline; gap: 10px; font-size: 16px; font-weight: 800; color: var(--text-1); margin: 22px 0 12px; }
+    .qs-h2 span { font-size: 13px; font-weight: 600; color: var(--text-2); }
+
+    .qs-sub { padding: 18px; margin-bottom: 12px; }
+    .qs-sub-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+    .qs-name { font-size: 15px; font-weight: 700; color: var(--text-1); }
+    .qs-when { display: block; font-size: 12.5px; color: var(--text-3); margin-top: 2px; }
+    .qs-ans { font-size: 14px; color: var(--text-2); margin-top: 12px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+    .qs-ans b { color: var(--text-1); }
+    .qs-dl { margin-top: 10px; }
+
+    .qs-grade { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .qs-grade label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 5px; }
+    .qs-input { width: 100%; min-height: 44px; border: 1.5px solid var(--border); border-radius: var(--r-md); padding: 0 12px; font-size: 14px; font-family: inherit; color: var(--text-1); background: #F8FAFC; }
+    .qs-input:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    @media (max-width: 600px) {
+        .qs-grade { grid-template-columns: 1fr; }
+    }
 </style>
 
-<div class="sb-wrap">
-    <a href="{{ route('teacher.assignments.index') }}" class="sb-back">← Back to quizzes</a>
+@php $closed = $assignment->due_date && $assignment->due_date->isPast(); @endphp
+
+<div class="tp-page">
+    <a href="{{ route('teacher.assignments.index') }}" class="tp-back">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Quizzes and assignments
+    </a>
 
     @if($errors->any())
-        <div class="sb-flash" role="alert" style="background:#FEF2F2;border-color:#FECACA;color:#B91C1C;">{{ $errors->first() }}</div>
+        <div class="qs-err" role="alert">{{ $errors->first() }}</div>
     @endif
 
-    <div class="sb-head">
-        <div class="sb-title">{{ $assignment->title }}</div>
-        <div class="sb-meta">
-            {{ $assignment->subject?->name }} • {{ $assignment->section?->name }} •
-            @if($assignment->due_date) Due {{ $assignment->due_date->format('M d, Y g:i A') }} @else No deadline @endif
-            • {{ $assignment->max_score }} pts • {{ $assignment->is_published ? 'Published' : 'Draft' }}
-        </div>
+    <section class="tp-card qs-head">
+        <h1 class="tp-title">{{ $assignment->title }}</h1>
+        <p class="qs-meta">
+            <span class="tp-pill {{ $assignment->is_published ? 'ok' : 'muted' }}">{{ $assignment->is_published ? 'Published' : 'Draft' }}</span>
+            @if($closed)<span class="tp-pill muted">Closed</span>@endif
+            <span>{{ $assignment->subject?->name ?? 'Subject removed' }}</span>
+            <span>{{ $assignment->section?->name ?? 'Section removed' }}</span>
+            <span>{{ $assignment->max_score }} points</span>
+            <span>
+                @if(!$assignment->due_date) No deadline
+                @elseif($closed) Closed {{ $assignment->due_date->format('M j, Y g:i A') }}
+                @else Open until {{ $assignment->due_date->format('M j, Y g:i A') }}
+                @endif
+            </span>
+        </p>
         @if($assignment->instructions)
-            <div class="sb-instr">{{ $assignment->instructions }}</div>
+            <p class="qs-instr">{{ $assignment->instructions }}</p>
         @endif
         @if($assignment->file_path)
-            <a href="{{ Storage::url($assignment->file_path) }}" target="_blank" class="sb-file">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Download quiz file
-            </a>
+            <div class="qs-file">
+                <a href="{{ asset('storage/' . ltrim($assignment->file_path, '/')) }}" target="_blank" rel="noopener" class="tp-btn ghost sm">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Quiz file
+                </a>
+            </div>
         @endif
-    </div>
+    </section>
 
-    <div class="sb-sec-title">Submissions ({{ $submissions->count() }})</div>
+    @php $toGrade = $submissions->where('status', '!=', 'graded')->count(); @endphp
+    <h2 class="qs-h2">Submissions <span>{{ $submissions->count() }} received{{ $toGrade ? ", {$toGrade} to grade" : '' }}</span></h2>
 
     @forelse($submissions as $s)
-        <div class="sb-sub">
-            <div class="sb-sub-head">
+        <article class="tp-card qs-sub" aria-label="Submission of {{ $s->student?->name ?? 'a student' }}">
+            <div class="qs-sub-head">
                 <div>
-                    <span class="sb-name">{{ $s->student?->name ?? 'Student' }}</span>
-                    <span class="sb-when">• {{ $s->submitted_at?->diffForHumans() }}</span>
+                    <span class="qs-name">{{ $s->student?->name ?? 'Student' }}</span>
+                    @if($s->submitted_at)
+                        <time class="qs-when" datetime="{{ $s->submitted_at->toIso8601String() }}">Submitted {{ $s->submitted_at->format('M j, g:i A') }}</time>
+                    @endif
                 </div>
-                <span class="sb-pill {{ $s->status === 'graded' ? 'sb-graded' : 'sb-pending' }}">
-                    {{ $s->status === 'graded' ? 'Graded: '.$s->score.'/'.$assignment->max_score : 'Needs grading' }}
+                <span class="tp-pill {{ $s->status === 'graded' ? 'ok' : 'warn' }}">
+                    {{ $s->status === 'graded' ? 'Graded ' . $s->score . ' / ' . $assignment->max_score : 'To grade' }}
                 </span>
             </div>
 
             @if($s->remarks)
-                <div class="sb-ans"><strong>Answer/Note:</strong> {{ $s->remarks }}</div>
+                <p class="qs-ans"><b>Answer:</b> {{ $s->remarks }}</p>
             @endif
             @if($s->file_path)
-                <a href="{{ Storage::url($s->file_path) }}" target="_blank" class="sb-dl">
-                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Download student's file
-                </a>
+                <div class="qs-dl">
+                    <a href="{{ asset('storage/' . ltrim($s->file_path, '/')) }}" target="_blank" rel="noopener" class="tp-btn ghost sm">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Student's file
+                    </a>
+                </div>
             @endif
 
-            <form method="POST" action="{{ route('teacher.submissions.grade', $s) }}" class="sb-grade-form">
+            <form method="POST" action="{{ route('teacher.submissions.grade', $s) }}" class="qs-grade" data-once>
                 @csrf
                 <div>
-                    <label>Score (max {{ $assignment->max_score }})</label>
-                    <input type="number" name="score" class="sb-score" min="0" max="{{ $assignment->max_score }}" value="{{ $s->score }}" required>
+                    <label for="score-{{ $s->id }}">Score (max {{ $assignment->max_score }})</label>
+                    <input type="number" id="score-{{ $s->id }}" name="score" class="qs-input" min="0" max="{{ $assignment->max_score }}" value="{{ $s->score }}" required>
                 </div>
-                <div style="flex:1">
-                    <label>Feedback (optional)</label>
+                <div>
+                    <label for="feedback-{{ $s->id }}">Feedback (optional)</label>
                     {{-- `feedback` — never overwrites the student's answer (`remarks`) --}}
-                    <input type="text" name="feedback" class="sb-remarks" value="{{ $s->feedback }}" maxlength="5000" placeholder="Feedback for the student...">
+                    <input type="text" id="feedback-{{ $s->id }}" name="feedback" class="qs-input" value="{{ $s->feedback }}" maxlength="5000" placeholder="What they did well, what to improve">
                 </div>
-                <button type="submit" class="sb-save">Save Grade</button>
+                <button type="submit" class="tp-btn">{{ $s->status === 'graded' ? 'Update grade' : 'Save grade' }}</button>
             </form>
-        </div>
+        </article>
     @empty
-        <div class="sb-empty">No submissions yet. Students will appear here once they submit.</div>
+        <div class="tp-card tp-empty">
+            <b>No submissions yet</b>
+            {{ $closed ? 'The deadline has passed and nobody submitted.' : 'Students appear here as soon as they submit.' }}
+        </div>
     @endforelse
 </div>
+
+<script>
+    // One click = one save; the browser's Back cache could otherwise show the button stuck
+    document.querySelectorAll('.qs-grade[data-once]').forEach(function (form) {
+        var btn = form.querySelector('button[type="submit"]');
+        var label = btn.textContent;
+        form.addEventListener('submit', function () { btn.disabled = true; btn.textContent = 'Saving…'; });
+        window.addEventListener('pageshow', function () { btn.disabled = false; btn.textContent = label; });
+    });
+</script>
 @endsection

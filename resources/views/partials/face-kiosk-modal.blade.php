@@ -16,7 +16,7 @@
     .fk-timer { font-size:13px; color:#64748b; margin-top:4px; font-variant-numeric:tabular-nums; }
     .fk-steps { text-align:left; font-size:12.5px; color:#475569; margin:14px 0 0; padding-left:18px; line-height:1.6; }
     .fk-btns { display:flex; gap:8px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
-    .fk-btn { height:40px; padding:0 16px; border-radius:10px; font-size:13.5px; font-weight:700; cursor:pointer; border:1px solid #e2e8f0; background:#fff; color:#0f172a; }
+    .fk-btn { height:44px; padding:0 16px; border-radius:10px; font-size:13.5px; font-weight:700; cursor:pointer; border:1px solid #e2e8f0; background:#fff; color:#0f172a; }
     .fk-btn.primary { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
     .fk-check { width:120px; height:120px; border-radius:999px; background:rgba(22,163,74,.12); color:#16a34a; display:grid; place-items:center; margin:40px auto; }
     .fk-check svg { width:64px; height:64px; }
@@ -30,8 +30,8 @@
         <div class="fk-state wait" id="fkState"></div>
         <div class="fk-timer" id="fkTimer"></div>
         <ol class="fk-steps">
-            <li>The student holds this screen up to the Raspberry Pi camera.</li>
-            <li>The Pi greets them by name, then takes about 10 photos — look straight at the camera.</li>
+            <li>The student holds this screen up to the kiosk camera.</li>
+            <li>The kiosk greets them by name, then takes their photos. They should look straight at the camera.</li>
             <li>This window turns green when the face is saved. It works once and expires in 10 minutes.</li>
         </ol>
         <div class="fk-btns">
@@ -47,16 +47,19 @@
     if (window.__dpFaceKioskBound) return;
     window.__dpFaceKioskBound = true;
 
-    var poll = null, tick = null, lastUrl = null, lastName = '', changed = false;
+    var poll = null, tick = null, lastUrl = null, lastName = '', changed = false, opener = null;
     var $ = function (id) { return document.getElementById(id); };
     var csrf = function () { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; };
 
     function stop() { clearInterval(poll); clearInterval(tick); poll = tick = null; }
+    // the page may have been swapped out (SPA navigation) while a QR was open
+    function gone() { if ($('fkBack')) return false; stop(); return true; }
     function setState(cls, text) { var s = $('fkState'); s.className = 'fk-state ' + cls; s.textContent = text; }
 
     function issue(url, name) {
         stop(); lastUrl = url; lastName = name || '';
         $('fkBack').classList.add('on');
+        $('fkClose').focus();
         $('fkSub').textContent = 'Creating a QR for ' + lastName + '…';
         $('fkQr').innerHTML = ''; $('fkTimer').textContent = ''; $('fkAgain').style.display = 'none';
         setState('wait', '');
@@ -64,6 +67,7 @@
         fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
             .then(function (res) {
+                if (gone()) return;
                 var d = res.d;
                 if (!res.ok || !d.ok) { $('fkSub').textContent = ''; setState('bad', d.message || 'Could not create the QR.'); return; }
                 $('fkSub').textContent = 'For ' + d.student + ' only.';
@@ -71,17 +75,20 @@
                 setState('wait', 'Waiting for the kiosk…');
                 var skew = Date.now() - Date.parse(d.server_time), exp = Date.parse(d.expires_at);
                 tick = setInterval(function () {
+                    if (gone()) return;
                     var left = Math.max(0, exp - (Date.now() - skew)), s = Math.floor(left / 1000);
                     $('fkTimer').textContent = 'Expires in ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
                 }, 1000);
                 poll = setInterval(function () {
+                    if (gone()) return;
                     fetch(d.status_url, { headers: { 'Accept': 'application/json' } })
                         .then(function (r) { return r.json(); })
                         .then(function (st) {
+                            if (gone()) return;
                             if (st.status === 'registered') {
                                 stop(); changed = true;
                                 $('fkQr').innerHTML = '<div class="fk-check"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>';
-                                $('fkTimer').textContent = ''; setState('ok', '✓ Face registered for ' + d.student + '.');
+                                $('fkTimer').textContent = ''; setState('ok', 'Face registered for ' + d.student + '.');
                             } else if (st.status === 'expired' || st.status === 'cancelled') {
                                 stop(); $('fkQr').innerHTML = ''; $('fkTimer').textContent = '';
                                 setState('bad', st.status === 'expired' ? 'This QR expired.' : 'A newer QR replaced this one.');
@@ -90,17 +97,19 @@
                         }).catch(function () {});
                 }, 3000);
             })
-            .catch(function () { setState('bad', 'Network error — please try again.'); });
+            .catch(function () { if (gone()) return; setState('bad', 'Could not reach the server. Check the connection and try again.'); });
     }
 
     function close() {
         stop(); var b = $('fkBack'); if (b) b.classList.remove('on');
+        if (opener && document.body.contains(opener)) opener.focus();
+        opener = null;
         if (changed) { changed = false; window.location.reload(); }  // refresh the face statuses
     }
 
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-kiosk-issue]');
-        if (btn) { e.preventDefault(); issue(btn.getAttribute('data-kiosk-issue'), btn.getAttribute('data-name')); return; }
+        if (btn) { e.preventDefault(); opener = btn; issue(btn.getAttribute('data-kiosk-issue'), btn.getAttribute('data-name')); return; }
         if (e.target.id === 'fkClose' || e.target.id === 'fkBack') { close(); return; }
         if (e.target.id === 'fkAgain' && lastUrl) { issue(lastUrl, lastName); }
     });

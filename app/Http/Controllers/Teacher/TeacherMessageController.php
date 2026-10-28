@@ -38,7 +38,8 @@ class TeacherMessageController extends Controller
             $otherId = (int) ($mine ? $m->receiver_id : $m->sender_id);
             if (! isset($threads[$otherId])) {
                 $threads[$otherId] = [
-                    'last_body' => $m->body,
+                    // a file sent from the app has no text — show its name instead of an empty preview
+                    'last_body' => ($m->body !== null && $m->body !== '') ? $m->body : ($m->file_name ?? 'Attachment'),
                     'last_at'   => $m->created_at,
                     'last_mine' => $mine,
                     'unread'    => 0,

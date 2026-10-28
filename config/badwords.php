@@ -9,7 +9,7 @@
 */
 
 return [
-    // Eksaktong salita (puwedeng may "-ng" na linker: gagong, tangang)
+    // Whole words (a "-ng" linker is also caught: gagong, tangang)
     'words' => [
         // Filipino
         'putangina', 'tangina', 'kingina', 'puta', 'gago', 'gaga', 'tanga', 'bobo',

@@ -150,7 +150,8 @@ class EnrollmentController extends Controller
         $data = $request->validate([
             'remarks' => 'required|string|max:500',
         ], [
-            'remarks.required' => 'Please state the reason for rejection.',
+            'remarks.required' => 'Tell the student what needs to change before returning the form.',
+            'remarks.max'      => 'Keep the message under 500 characters.',
         ]);
 
         $student = $enrollments->reject($enrollment, $data['remarks'], auth()->id());
@@ -162,6 +163,6 @@ class EnrollmentController extends Controller
         );
 
         return redirect()->route('teacher.enrollments.index')
-            ->with('success', "Enrollment for {$student->name} was rejected.");
+            ->with('success', "The form of {$student->name} was returned.");
     }
 }

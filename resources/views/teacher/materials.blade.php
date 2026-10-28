@@ -1,72 +1,35 @@
-@extends('layouts.teacher') 
+@extends('layouts.teacher')
 @section('title', 'Learning Materials')
-
-@section('sidebar')
-    <a href="{{ route('teacher.dashboard') }}"
-        class="{{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
-        Dashboard
-    </a>
-    <a href="{{ route('teacher.gradebook.index') }}"
-        class="{{ request()->routeIs('teacher.gradebook.*') ? 'active' : '' }}">
-        Gradebook
-    </a>
-    <a href="{{ route('teacher.materials.index') }}"
-        class="{{ request()->routeIs('teacher.materials.*') ? 'active' : '' }}">
-        Learning Materials
-    </a>
-    <a href="{{ route('teacher.announcements.index') }}"
-        class="{{ request()->routeIs('teacher.announcements.*') ? 'active' : '' }}">
-        Announcements
-    </a>
-@endsection
 
 @section('content')
 <style>
-    /* ── Page card ── */
-    .page-card {
-        background: #fff;
-        border-radius: 16px;
-        border: 1.5px solid #f1f5f9;
-        box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-        animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    /* Material rows: icon | title + meta | status | actions. On phones the actions get their own row
+       (they used to run off the card, hiding Unpublish and Delete). */
+    .mt-list { overflow: hidden; }
+    .mt-row {
+        display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; align-items: center;
+        gap: 10px 16px; padding: 16px 20px; border-bottom: 1px solid var(--border);
     }
-    @keyframes fadeUp {
-        from { opacity:0; transform:translateY(12px); }
-        to   { opacity:1; transform:translateY(0); }
-    }
+    .mt-row:last-child { border-bottom: none; }
+    .mt-icon { width: 40px; height: 40px; border-radius: var(--r-md); background: var(--accent-lt); color: var(--accent); display: grid; place-items: center; }
+    .mt-icon svg { width: 18px; height: 18px; }
+    .mt-main { min-width: 0; }
+    .mt-title { font-size: 14.5px; font-weight: 700; color: var(--text-1); overflow-wrap: anywhere; }
+    .mt-meta, .mt-stats { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12.5px; color: var(--text-3); margin-top: 3px; }
+    .mt-stats { color: var(--text-2); }
+    .mt-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .mt-time { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+    .mt-actions { display: flex; gap: 8px; }
+    .mt-actions form { margin: 0; }
+    .mt-pages { margin-top: 16px; }
 
-    .material-item {
-        padding: 16px 20px;
-        border-bottom: 1px solid #f3f4f6;
-        display: flex; align-items: center; gap: 14px;
-        transition: background 0.15s ease;
+    @media (max-width: 760px) {
+        .mt-row { grid-template-columns: 40px minmax(0, 1fr); padding: 14px 16px; }
+        .mt-side { grid-column: 2; flex-direction: row; align-items: center; gap: 10px; }
+        .mt-actions { grid-column: 1 / -1; }
+        .mt-actions > * { flex: 1; }
+        .mt-actions .tp-btn { width: 100%; }
     }
-    .material-item:last-child { border-bottom: none; }
-    .material-item:hover { background: #f8faff; }
-
-    .material-icon {
-        width: 40px; height: 40px; border-radius: 10px; background: #eff6ff;
-        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .material-item:hover .material-icon { transform: scale(1.1) rotate(-4deg); }
-
-    .upload-btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: #2563eb; color: white; border: none;
-        border-radius: 10px; padding: 9px 18px;
-        font-size: 13px; font-weight: 600; cursor: pointer;
-        transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-        box-shadow: 0 3px 10px rgba(37,99,235,0.25);
-        font-family: inherit;
-    }
-    @media (hover: hover) and (pointer: fine) {
-        .upload-btn:hover {
-            background: #1d4ed8; transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(37,99,235,0.35);
-        }
-    }
-    .upload-btn:active { transform: scale(0.97); }
 
     /* ══════════════════════════════════════════
        UPLOAD MODAL — scoped so layout styles
@@ -456,92 +419,76 @@
         .dm-loading { padding: 40px; text-align: center; color: #94a3b8; }
 </style>
 
-{{-- ── Page ── --}}
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
+<div class="tp-page">
+    <div class="tp-head">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Learning Materials</h1>
-            <p class="text-sm text-gray-400 mt-1">Upload and manage content for your students.</p>
+            <h1 class="tp-title">Learning materials</h1>
+            <p class="tp-sub">Lessons and files your students open under Learning Modules.</p>
         </div>
-        <button type="button" class="upload-btn" onclick="umOpen()">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        <button type="button" class="tp-btn" onclick="umOpen()">
+            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
             </svg>
-            Upload Material
+            Upload material
         </button>
     </div>
 
-    <div class="page-card">
+    <div class="tp-card mt-list">
         @forelse($materials as $material)
-        <div class="material-item">
-            <div class="material-icon">
-                <svg width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1
-                           1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-800 truncate">{{ $material->title }}</p>
-                <p class="text-xs text-gray-400 mt-0.5">
-                    {{ $material->subject->name ?? '—' }}
-                    @if($material->quarter) · {{ $material->quarter }} @endif
-                    @if($material->week) · Week {{ $material->week }} @endif
-                </p>
-                <p class="text-xs text-gray-500 mt-1" style="display:flex;gap:14px;">
-                    <span title="Viewed by">👁 {{ $material->views_count ?? 0 }}</span>
-                    <span title="Hearts">❤️ {{ $material->likes_count ?? 0 }}</span>
-                    <span title="Comments">💬 {{ $material->comments_count ?? 0 }}</span>
-                </p>
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                    {{ $material->is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                    {{ $material->is_published ? 'Published' : 'Draft' }}
+            <article class="mt-row">
+                <span class="mt-icon" aria-hidden="true">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
                 </span>
-                <span class="text-xs text-gray-400">{{ $material->created_at->diffForHumans() }}</span>
-                <button type="button"
-                   onclick="dmOpen('{{ route('teacher.materials.show', $material) }}', '{{ route('teacher.materials.destroy', $material) }}')"
-                   class="dm-trigger px-2.5 py-1 rounded-lg text-xs font-semibold"
-                   style="background:#eff6ff;color:#2563eb;border:none;cursor:pointer;transition:background .18s,transform .18s;">Details</button>
-                <form method="POST" action="{{ route('teacher.materials.publish', $material) }}" style="margin:0;"
-                      onsubmit="return confirm('{{ $material->is_published ? 'Unpublish this material? Students will no longer see it.' : 'Publish this material? Students will be notified.' }}');">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit"
-                        class="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                        style="background:{{ $material->is_published ? '#f1f5f9' : '#dcfce7' }};color:{{ $material->is_published ? '#475569' : '#15803d' }};border:none;cursor:pointer;">{{ $material->is_published ? 'Unpublish' : 'Publish' }}</button>
-                </form>
-                <form method="POST" action="{{ route('teacher.materials.destroy', $material) }}"
-                      onsubmit="return confirm('Delete this material? This cannot be undone.');"
-                      style="margin:0;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                        class="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                        style="background:#fee2e2;color:#dc2626;border:none;cursor:pointer;">Delete</button>
-                </form>
-            </div>
-        </div>
+                <div class="mt-main">
+                    <h2 class="mt-title">{{ $material->title }}</h2>
+                    <p class="mt-meta">
+                        <span>{{ $material->subject->name ?? 'Subject removed' }}</span>
+                        @if($material->quarter)<span>{{ $material->quarter }}</span>@endif
+                        @if($material->week)<span>Week {{ $material->week }}</span>@endif
+                    </p>
+                    <p class="mt-stats">
+                        <span>{{ $material->views_count ?? 0 }} {{ Str::plural('view', $material->views_count ?? 0) }}</span>
+                        <span>{{ $material->likes_count ?? 0 }} {{ Str::plural('heart', $material->likes_count ?? 0) }}</span>
+                        <span>{{ $material->comments_count ?? 0 }} {{ Str::plural('comment', $material->comments_count ?? 0) }}</span>
+                    </p>
+                </div>
+                <div class="mt-side">
+                    <span class="tp-pill {{ $material->is_published ? 'ok' : 'muted' }}">{{ $material->is_published ? 'Published' : 'Draft' }}</span>
+                    <time class="mt-time" datetime="{{ $material->created_at->toIso8601String() }}">{{ $material->created_at->diffForHumans() }}</time>
+                </div>
+                <div class="mt-actions">
+                    <button type="button" class="tp-btn ghost sm dm-trigger"
+                            onclick="dmOpen('{{ route('teacher.materials.show', $material) }}', '{{ route('teacher.materials.destroy', $material) }}')"
+                            aria-label="Details of {{ $material->title }}">Details</button>
+                    <form method="POST" action="{{ route('teacher.materials.publish', $material) }}"
+                          onsubmit="return confirm('{{ $material->is_published ? 'Unpublish this material? Students will no longer see it.' : 'Publish this material? Students will be notified.' }}');">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="tp-btn sm {{ $material->is_published ? 'ghost' : '' }}">{{ $material->is_published ? 'Unpublish' : 'Publish' }}</button>
+                    </form>
+                    <form method="POST" action="{{ route('teacher.materials.destroy', $material) }}"
+                          onsubmit="return confirm('Delete this material? This cannot be undone.');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="tp-btn danger sm" aria-label="Delete {{ $material->title }}">Delete</button>
+                    </form>
+                </div>
+            </article>
         @empty
-        <div class="py-16 text-center">
-            <div class="w-14 h-14 bg-blue-50 rounded-full mx-auto mb-4"
-                style="display:flex;align-items:center;justify-content:center;">
-                <svg width="24" height="24" fill="none" stroke="#93c5fd" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5
-                           5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
+            <div class="tp-empty">
+                <b>No materials yet</b>
+                Upload a lesson or file and it appears in your students' Learning Modules.
+                <div style="margin-top:16px;">
+                    <button type="button" class="tp-btn" onclick="umOpen()">Upload material</button>
+                </div>
             </div>
-            <p class="text-gray-400 text-sm font-medium">No materials uploaded yet.</p>
-            <p class="text-gray-300 text-xs mt-1">Click "Upload Material" to add your first material.</p>
-        </div>
         @endforelse
     </div>
 
-    @if($materials->count())
-    <div class="mt-4">{{ $materials->links() }}</div>
+    @if($materials->hasPages())
+        <div class="mt-pages">{{ $materials->links() }}</div>
     @endif
 </div>
 

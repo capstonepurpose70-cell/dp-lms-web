@@ -28,7 +28,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [—](#code-comments) | Code comments in English | `857b7c2` | — |
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
-| [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk | — | 🔧 12 |
+| [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR | — | 14 |
 
 ---
 
@@ -550,56 +550,84 @@ Audited with full-page screenshots of every remaining teacher page at 1366 px an
 two quizzes, grades, messages, two attendance sessions). No JS errors and no sideways scroll anywhere — the problems
 are layout, states and consistency.
 
-### B10-1 🔧 Materials: Unpublish and Delete unreachable on phones
+### B10-1 ✅ Materials: Unpublish and Delete unreachable on phones
 - **Problem:** at 390 px the row's action buttons run off the card — "Unpublish" is cut and "Delete" invisible.
   Buttons are ~26 px tall (needs 44 px); `min-w-0 truncate px-2.5 py-16 w-14` are missing from the CSS build.
 - **Where:** `resources/views/teacher/materials.blade.php`.
 - **Fix (plan):** row = title/meta on top, actions in their own row on phones; 44 px buttons; plain CSS.
 
-### B10-2 🔧 Material details: the three counters stack full width
+### B10-2 ✅ Material details: the three counters stack full width
 - **Problem:** `grid-cols-3` is missing from the build, so Viewed / Hearts / Comments become three tall full-width cards.
 - **Where:** `teacher/materials-show.blade.php`. **Fix (plan):** plain CSS row of three; sentence-case labels.
 
-### B10-3 🔧 Quizzes: a closed quiz looks open
+### B10-3 ✅ Quizzes: a closed quiz looks open
 - **Problem:** a quiz past its deadline shows only "Published" — on the list and on its page.
 - **Where:** `teacher/assignments.blade.php`, `teacher/assignment-show.blade.php`.
 - **Fix (plan):** "Open until …" / "Closed …" state next to Published/Draft.
 
-### B10-4 🔧 Create Quiz looks like a different app from Upload Material
+### B10-4 ✅ Create Quiz looks like a different app from Upload Material
 - **Problem:** other width, back link, buttons; the browser's raw "Choose File" input.
 - **Where:** `teacher/assignment-create.blade.php`. **Fix (plan):** same form shell and file picker as Upload Material.
 
-### B10-5 🔧 Gradebook: scores and Edit hidden on phones
+### B10-5 ✅ Gradebook: scores and Edit hidden on phones
 - **Problem:** at 390 px only Student and Subject are visible; quarter, scores, final grade and Edit are off-screen.
   Weight labels "(25%) (50%) (25%)" are typed in the view.
 - **Where:** `teacher/gradebook.blade.php`, `Teacher/GradebookController`.
 - **Fix (plan):** each grade becomes a compact row (student, subject · quarter, final + status, Edit) on phones;
   labels from `Grade::WEIGHTS`.
 
-### B10-6 🔧 Messages: a file-only last message previews as "You:"
+### B10-6 ✅ Messages: a file-only last message previews as "You:"
 - **Where:** `teacher/messages.blade.php`. **Fix (plan):** show the file name; drop the "COMMUNICATION" eyebrow.
 
-### B10-7 🔧 Attendance session: small mark buttons, odd placeholder
+### B10-7 ✅ Attendance session: small mark buttons, odd placeholder
 - **Problem:** P / L / A buttons ~32 px; a large "—" where the timer was once closed.
 - **Where:** `teacher/attendance/show.blade.php`. **Fix (plan):** 44 px buttons with full labels for screen readers;
   closed state without the placeholder.
 
-### B10-8 🔧 Enrollment request: avatar without its circle
+### B10-8 ✅ Enrollment request: avatar without its circle
 - **Where:** `teacher/enrollments/show.blade.php`; empty list keeps a table header (`enrollments/index`).
 
-### B10-9 🔧 Every page has its own width, header and buttons
+### B10-9 ✅ Every page has its own width, header and buttons
 - **Problem:** max-widths from 720 to 1100 px, some centred and some not; three back-link styles; "Create Quiz"
   and "Upload Material" are different buttons.
 - **Fix (plan):** one page shell in `layouts/teacher.blade.php` (`.tp-page`, `.tp-head`, `.tp-back`, `.tp-btn`) used by
   every teacher page: 1040 px for lists, 760 px for forms.
 
-### B10-10 🔧 Generated-looking details
+### B10-10 ✅ Generated-looking details
 - **Problem:** ALL-CAPS eyebrows ("COMMUNICATION", "NEW UPLOAD", "CLASS CODE — SHOW THIS TO THE CLASS", section
   labels), "→" / "←" in link text, " • " meta strings. Also in the student/parent pages from batches 5–7.
 - **Fix (plan):** sentence-case headings, icons instead of arrow characters, meta as separate items.
 
-### B10-11 🔧 Material and quiz cards: low-contrast meta text (#94A3B8-like on white)
-### B10-12 🔧 Touch targets under 44 px on list actions (materials, quizzes, gradebook Edit)
+### B10-11 ✅ Material and quiz cards: low-contrast meta text (#94A3B8-like on white)
+### B10-12 ✅ Touch targets under 44 px on list actions (materials, quizzes, gradebook Edit)
+
+### B10-13 ✅ Dashboard and sidebar look generated; pages appear late
+- **Problem:** the whole page stayed invisible (`opacity: 0`) until GSAP, loaded from a CDN, finished an
+  entrance animation; the menu was built by JavaScript at the end of the page, so it could appear after the
+  content. Sidebar: navy with an icon box per item, a glowing blue active pill, all-caps "MAIN MENU", items
+  sliding on hover. Top left: 30 px logo and 12 px school name squeezed against the toggle; on phones a dark
+  block inside the white top bar. Dashboard: three identical stat cards plus four identical shortcut cards.
+- **Where:** `layouts/teacher.blade.php`, `teacher/dashboard.blade.php`.
+- **Fix:** UI only (no route, controller or state logic touched). Content shows on the first paint (no
+  `opacity: 0`, no GSAP on teacher pages); the menu is rendered by Blade with the active item already marked
+  (`aria-current`), the script only adds in-page navigation. White sidebar, slate text (10:1), active item =
+  light tint + blue text + a thin bar, no shadows or glow, colour-only hover. Brand: 38 px logo aligned with the
+  menu icons, 15 px name + subtitle; the toggle is the first control of the top bar (left of the school on
+  phones). Dashboard: one summary strip, classes on the left, shortcuts as a list and students on the right.
+  Also: hidden table labels (`.sr-only`) could widen the page on phones — tables are now their containing block.
+- **Tested:** screenshots of every teacher page at 1366 and 390 px (normal, collapsed sidebar, phone menu open):
+  no JS errors, no sideways scroll (Attendance had 478 px before the `.sr-only` fix). SPA test 18/18 (it now
+  waits for the page to finish loading, because the content no longer hides behind a fade); all 12 teacher
+  pages fetched and every inline script parses.
+
+### B10-14 ✅ Teacher app cannot show the face-kiosk QR
+- **Problem:** the adviser's one-time QR existed only on the website; the app had no endpoint for it.
+- **Fix:** `GET /api/teacher/face-kiosk`, `POST /api/teacher/face-kiosk/{student}` (returns `qr_text` for
+  `qr_flutter`), `GET /api/teacher/face-kiosk/codes/{code}` — same rules as the web page
+  (`Api/Teacher/FaceKioskController`). Flutter task: `docs/FLUTTER_PROMPT_FACE_KIOSK_QR.md`.
+- **Tested (PHPUnit, 2 tests / 33 assertions):** list → QR → the kiosk endpoint accepts the exact `qr_text` →
+  `waiting` → a newer QR makes the old one `cancelled`; another teacher gets `403` for the QR and its status and
+  an empty list; a student gets `403`; no token `401`.
 
 ---
 

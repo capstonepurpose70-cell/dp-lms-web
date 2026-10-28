@@ -1,7 +1,7 @@
 # Flutter app: start here
 
 > Paste this whole file into the Claude Code session (or give it to the developer) of the Flutter project
-> (`dp_lms`). Copy the four files listed in §1 into that project's `docs/` folder first, so the session can
+> (`dp_lms`). Copy the files listed in §1 into that project's `docs/` folder first, so the session can
 > read them. Backend: Laravel `dp-lms-web`, branch `feature/ui-refresh`. Last checked against the server
 > on 2026-10-28.
 
@@ -30,7 +30,8 @@
 | 1 | `FLUTTER_HANDOFF.md` | Every backend change the app must follow: activation instead of register, login, forgot password, parent link (QR + code), parent activate/recover, quizzes, materials, enrollment form, grades, teacher endpoints, chat (typing, edit, unsend, bad-word filter), face status. Ends with a checklist (§9). |
 | 2 | `FLUTTER_PROMPT_PARENT_ARRIVAL.md` | **Core feature.** FCM setup, token register/unregister, the "child arrived at school" push, foreground display, tap handling, notification inbox, arrival history. |
 | 3 | `FLUTTER_PROMPT_CLASS_ATTENDANCE.md` | Teacher opens class attendance, students enter the 4-digit code, parents are notified. Reuses the FCM setup from #2. |
-| 4 | `IOT_ARRIVAL_NOTIFICATIONS.md` | Reference: the full Raspberry Pi → server → parent flow, when no push is sent, and how to test end to end without the gate camera (§4). |
+| 4 | `FLUTTER_PROMPT_FACE_KIOSK_QR.md` | Teacher (adviser) shows a one-time QR on the phone; the student holds it up to the Raspberry Pi kiosk to register their face. Same as the website. |
+| 5 | `IOT_ARRIVAL_NOTIFICATIONS.md` | Reference: the full Raspberry Pi → server → parent flow, when no push is sent, and how to test end to end without the gate camera (§4). |
 
 ---
 
@@ -54,6 +55,8 @@
 - Faces are registered only at the school kiosk with the adviser. When `GET /api/student/face` returns
   `self_upload: false`, hide the camera/upload screen and show only the status (`approved` → registered;
   otherwise show the server's `how_to` text).
+
+**P1. Face registration QR (teacher)** — all of `FLUTTER_PROMPT_FACE_KIOSK_QR.md`.
 
 **P1. Class attendance** — all of `FLUTTER_PROMPT_CLASS_ATTENDANCE.md`.
 

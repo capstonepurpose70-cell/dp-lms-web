@@ -3,76 +3,98 @@
 
 @section('content')
 <style>
-    .qz-wrap { max-width: 980px; margin: 0 auto; padding: 4px 0 48px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
-    .qz-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; gap:12px; flex-wrap:wrap; }
-    .qz-title { font-size:24px; font-weight:800; color:#0F172A; }
-    .qz-sub { font-size:13px; color:#64748B; margin-top:2px; }
-    .qz-btn { display:inline-flex; align-items:center; gap:8px; background:#2563EB; color:#fff; font-weight:600; font-size:14px;
-              padding:11px 18px; border-radius:12px; text-decoration:none; box-shadow:0 6px 16px rgba(37,99,235,.28); transition:.2s; }
-    .qz-btn:hover { background:#1D4ED8; transform:translateY(-1px); }
-    .qz-flash { background:#F0FDF4; border:1px solid #86EFAC; color:#166534; padding:12px 16px; border-radius:12px; margin-bottom:18px; font-size:14px; font-weight:600; }
-    .qz-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
-    .qz-card { background:#fff; border:1px solid #E2E8F0; border-radius:18px; padding:18px; box-shadow:0 1px 3px rgba(15,23,42,.05); transition:.2s; }
-    .qz-card:hover { box-shadow:0 10px 28px rgba(15,23,42,.10); transform:translateY(-2px); }
-    .qz-card h3 { font-size:16px; font-weight:700; color:#0F172A; margin-bottom:6px; }
-    .qz-meta { font-size:12.5px; color:#64748B; margin-bottom:12px; }
-    .qz-pill { display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; }
-    .qz-pub { background:#EFF6FF; color:#1D4ED8; }
-    .qz-draft { background:#F1F5F9; color:#64748B; }
-    .qz-row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid #F1F5F9; }
-    .qz-count { font-size:13px; color:#475569; font-weight:600; }
-    .qz-view { font-size:13px; font-weight:700; color:#2563EB; text-decoration:none; }
-    .qz-toggle { font-size:12px; font-weight:700; color:#475569; background:#F1F5F9; border:0; padding:5px 11px; border-radius:8px; cursor:pointer; }
-    .qz-toggle:hover { background:#E2E8F0; color:#1D4ED8; }
-    .qz-empty { text-align:center; padding:60px 20px; color:#94A3B8; }
-    .qz-empty svg { width:54px; height:54px; margin-bottom:14px; opacity:.5; }
+    /* Same row pattern as Learning materials: title + meta | state | actions */
+    .qz-list { overflow: hidden; }
+    .qz-row {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center;
+        gap: 10px 16px; padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .qz-row:last-child { border-bottom: none; }
+    .qz-main { min-width: 0; }
+    .qz-title { font-size: 15px; font-weight: 700; color: var(--text-1); overflow-wrap: anywhere; }
+    .qz-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12.5px; color: var(--text-3); margin-top: 3px; }
+    .qz-due { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+    .qz-state { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+    .qz-count { font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+    .qz-count b { color: #92400E; }
+    .qz-actions { display: flex; gap: 8px; }
+    .qz-actions form { margin: 0; }
+    .qz-pages { margin-top: 16px; }
+
+    @media (max-width: 760px) {
+        .qz-row { grid-template-columns: minmax(0, 1fr); padding: 14px 16px; }
+        .qz-state { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+        .qz-actions > * { flex: 1; }
+        .qz-actions .tp-btn { width: 100%; }
+    }
 </style>
 
-<div class="qz-wrap">
-    <div class="qz-head">
+<div class="tp-page">
+    <div class="tp-head">
         <div>
-            <div class="qz-title">Quizzes &amp; Assignments</div>
-            <div class="qz-sub">Upload a quiz/activity file. Students will submit their answers here.</div>
+            <h1 class="tp-title">Quizzes and assignments</h1>
+            <p class="tp-sub">Post an activity with a deadline; students submit their answers here and you grade them.</p>
         </div>
-        <a href="{{ route('teacher.assignments.create') }}" class="qz-btn">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            Create Quiz
+        <a href="{{ route('teacher.assignments.create') }}" class="tp-btn">
+            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Create quiz
         </a>
     </div>
 
-    @if($assignments->count())
-        <div class="qz-grid">
-            @foreach($assignments as $a)
-                <div class="qz-card">
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                        <span class="qz-pill {{ $a->is_published ? 'qz-pub' : 'qz-draft' }}">{{ $a->is_published ? 'Published' : 'Draft' }}</span>
-                        <form method="POST" action="{{ route('teacher.assignments.publish', $a) }}" style="margin:0;"
-                              onsubmit="return confirm('{{ $a->is_published ? 'Unpublish this quiz? Students will no longer see it.' : 'Publish this quiz? Students in the section will be notified.' }}');">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="qz-toggle">{{ $a->is_published ? 'Unpublish' : 'Publish' }}</button>
-                        </form>
-                    </div>
-                    <h3 style="margin-top:10px">{{ $a->title }}</h3>
-                    <div class="qz-meta">
-                        {{ $a->subject?->name }} • {{ $a->section?->name }}<br>
-                        @if($a->due_date) Due: {{ $a->due_date->format('M d, Y g:i A') }} @else No deadline @endif
-                        • {{ $a->max_score }} pts
-                    </div>
-                    <div class="qz-row">
-                        <span class="qz-count">{{ $a->submissions_count }} submission{{ $a->submissions_count == 1 ? '' : 's' }}</span>
-                        <a href="{{ route('teacher.assignments.show', $a) }}" class="qz-view">View &amp; Grade →</a>
-                    </div>
+    <div class="tp-card qz-list">
+        @forelse($assignments as $a)
+            @php
+                $closed = $a->due_date && $a->due_date->isPast();
+                $toGrade = (int) ($a->to_grade_count ?? 0);
+            @endphp
+            <article class="qz-row">
+                <div class="qz-main">
+                    <h2 class="qz-title">{{ $a->title }}</h2>
+                    <p class="qz-meta">
+                        <span>{{ $a->subject?->name ?? 'Subject removed' }}</span>
+                        <span>{{ $a->section?->name ?? 'Section removed' }}</span>
+                        <span>{{ $a->max_score }} points</span>
+                    </p>
+                    <p class="qz-due">
+                        @if(!$a->due_date)
+                            No deadline
+                        @elseif($closed)
+                            Closed {{ $a->due_date->format('M j, g:i A') }}
+                        @else
+                            Open until {{ $a->due_date->format('M j, g:i A') }}
+                        @endif
+                    </p>
                 </div>
-            @endforeach
-        </div>
-        <div style="margin-top:24px">{{ $assignments->links() }}</div>
-    @else
-        <div class="qz-empty">
-            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <div style="font-size:15px; font-weight:600; color:#475569">No quizzes yet</div>
-            <div style="font-size:13px; margin-top:4px">Click "Create Quiz" to upload your first one.</div>
-        </div>
+                <div class="qz-state">
+                    <span>
+                        <span class="tp-pill {{ $a->is_published ? 'ok' : 'muted' }}">{{ $a->is_published ? 'Published' : 'Draft' }}</span>
+                        @if($closed)<span class="tp-pill muted">Closed</span>@endif
+                    </span>
+                    <span class="qz-count">
+                        {{ $a->submissions_count }} {{ Str::plural('submission', $a->submissions_count) }}@if($toGrade), <b>{{ $toGrade }} to grade</b>@endif
+                    </span>
+                </div>
+                <div class="qz-actions">
+                    <a href="{{ route('teacher.assignments.show', $a) }}" class="tp-btn sm {{ $toGrade ? '' : 'ghost' }}">{{ $toGrade ? 'Grade' : 'Open' }}</a>
+                    <form method="POST" action="{{ route('teacher.assignments.publish', $a) }}"
+                          onsubmit="return confirm('{{ $a->is_published ? 'Unpublish this quiz? Students will no longer see it.' : 'Publish this quiz? Students in the section will be notified.' }}');">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="tp-btn ghost sm">{{ $a->is_published ? 'Unpublish' : 'Publish' }}</button>
+                    </form>
+                </div>
+            </article>
+        @empty
+            <div class="tp-empty">
+                <b>No quizzes yet</b>
+                Create one for a class; students in that section are notified when it is published.
+                <div style="margin-top:16px;"><a href="{{ route('teacher.assignments.create') }}" class="tp-btn">Create quiz</a></div>
+            </div>
+        @endforelse
+    </div>
+
+    @if($assignments->hasPages())
+        <div class="qz-pages">{{ $assignments->links() }}</div>
     @endif
 </div>
 @endsection

@@ -428,7 +428,7 @@ body.collapsed .sidebar-nav {
            GLOBAL CONTENT RESPONSIVENESS — every student/parent page
         ══════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
-            /* Tables: naka-horizontal scroll sa phone imbes na sumabog */
+            /* Tables scroll sideways on phones instead of breaking the layout */
             .main-content table {
                 display: block;
                 overflow-x: auto;
@@ -450,7 +450,7 @@ body.collapsed .sidebar-nav {
                 grid-template-columns: 1fr !important;
             }
 
-            /* Headers / action rows: hayaang mag-wrap */
+            /* Headers / action rows wrap */
             .main-content .panel-header,
             .main-content .page-header {
                 flex-wrap: wrap;

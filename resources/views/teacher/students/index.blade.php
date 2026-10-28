@@ -148,7 +148,7 @@
         font-size: 13px; font-weight: 700; color: #0F172A;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .stu-meta { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+    .stu-meta { font-size: 12px; color: var(--text-3); margin-top: 1px; display: flex; flex-wrap: wrap; gap: 0 12px; }
 
     /* Page shell */
     .stu-wrap { max-width: 1040px; margin: 0 auto; }
@@ -274,7 +274,7 @@
     }
     #stuModal .sm-hero-sub {
         font-size: 12px; color: #94a3b8; margin-top: 5px;   /* #64748b was too dark on the navy hero */
-        display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+        display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap;
     }
     #stuModal .sm-hero-pills { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
     #stuModal .sm-pill {
@@ -316,12 +316,9 @@
     }
     #stuModal .sm-sect:last-child { border-bottom: none; padding-bottom: 24px; }
     #stuModal .sm-sect-title {
-        font-size: 10px; font-weight: 700; letter-spacing: .1em;
-        text-transform: uppercase; color: #64748b;
-        margin-bottom: 12px;
-        display: flex; align-items: center; gap: 8px;
+        font-size: 14px; font-weight: 800; color: #0F172A;
+        margin: 0 0 12px;
     }
-    #stuModal .sm-sect-title::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
 
     /* Detail grid */
     #stuModal .sm-grid {
@@ -336,8 +333,7 @@
     }
     #stuModal .sm-item:hover { border-color: #dbeafe; }
     #stuModal .sm-item-label {
-        font-size: 10px; font-weight: 700; letter-spacing: .06em;
-        text-transform: uppercase; color: #64748b; margin-bottom: 4px;
+        font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 3px;
     }
     #stuModal .sm-item-val {
         font-size: 13px; font-weight: 600; color: #0F172A; word-break: break-word;
@@ -351,8 +347,7 @@
     #stuModal .sm-grade-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
     #stuModal .sm-grade-tbl thead th {
         background: #f8faff; padding: 9px 13px;
-        text-align: left; font-size: 10px; font-weight: 700;
-        letter-spacing: .08em; text-transform: uppercase;
+        text-align: left; font-size: 12px; font-weight: 700;
         color: #64748b; border-bottom: 1px solid #f1f5f9; white-space: nowrap;
     }
     #stuModal .sm-grade-tbl tbody tr {
@@ -473,9 +468,9 @@
                 <div class="stu-row-main">
                     <p class="stu-name">{{ $student->name }}</p>
                     <p class="stu-meta">
-                        <span class="stu-meta-grade">Grade {{ $student->grade_level ?? '—' }} &nbsp;·&nbsp;</span>
-                        {{ $student->section->name ?? '—' }}
-                        @if($student->lrn) &nbsp;·&nbsp; LRN {{ $student->lrn }} @endif
+                        <span class="stu-meta-grade">Grade {{ $student->grade_level ?? '—' }}</span>
+                        <span>{{ $student->section->name ?? 'No section' }}</span>
+                        @if($student->lrn)<span>LRN {{ $student->lrn }}</span>@endif
                     </p>
                 </div>
 
@@ -515,7 +510,6 @@
                 <h2 class="sm-hero-name" id="smName">—</h2>
                 <div class="sm-hero-sub">
                     <span id="smSubSection">—</span>
-                    <span aria-hidden="true">·</span>
                     <span id="smSubGrade">—</span>
                 </div>
                 <div class="sm-hero-pills" id="smPills"></div>
@@ -527,7 +521,7 @@
 
         <div class="sm-body">
             <div class="sm-sect">
-                <div class="sm-sect-title">Student</div>
+                <h3 class="sm-sect-title">Student</h3>
                 <div class="sm-grid cols-3">
                     <div class="sm-item"><div class="sm-item-label">LRN</div><div class="sm-item-val" id="smLrn">—</div></div>
                     <div class="sm-item"><div class="sm-item-label">Section</div><div class="sm-item-val" id="smSection">—</div></div>
@@ -536,7 +530,7 @@
             </div>
 
             <div class="sm-sect">
-                <div class="sm-sect-title">Account</div>
+                <h3 class="sm-sect-title">Account</h3>
                 <div class="sm-grid">
                     <div class="sm-item"><div class="sm-item-label">Email</div><div class="sm-item-val" id="smEmail">—</div></div>
                     <div class="sm-item"><div class="sm-item-label">Activated</div><div class="sm-item-val" id="smCreated">—</div></div>
@@ -544,7 +538,7 @@
             </div>
 
             <div class="sm-sect">
-                <div class="sm-sect-title">Grades · SY {{ $schoolYear }}</div>
+                <h3 class="sm-sect-title">Grades for school year {{ $schoolYear }}</h3>
                 <div class="sm-grade-wrap">
                     <table class="sm-grade-tbl">
                         <thead>

@@ -17,7 +17,7 @@ class AssignmentController extends Controller
     public function index()
     {
         $assignments = Assignment::with(['subject', 'section'])
-            ->withCount('submissions')
+            ->withCount(['submissions', 'submissions as to_grade_count' => fn ($q) => $q->where('status', '!=', 'graded')])
             ->where('user_id', auth()->id())
             ->latest()
             ->paginate(12);

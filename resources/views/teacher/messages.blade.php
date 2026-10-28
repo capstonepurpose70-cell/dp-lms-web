@@ -3,9 +3,9 @@
 
 @section('content')
 <style>
-    .msg-wrap { max-width: 64rem; margin: 0 auto; }
-    .msg-card { background:#fff; border:1px solid #eef2f7; border-radius:18px;
-                box-shadow:0 2px 14px rgba(15,23,42,.04); overflow:hidden; }
+    .msg-wrap { max-width: 1040px; margin: 0 auto; }
+    .msg-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+                box-shadow:var(--shadow-sm); overflow:hidden; }
     .msg-grid { display:grid; grid-template-columns: 320px 1fr; min-height: 560px; }
 
     /* conversation list */
@@ -15,12 +15,12 @@
                 border-bottom:1px solid #f6f8fb; text-decoration:none; transition:background .15s; }
     .msg-conv:hover { background:#f8fbff; }
     .msg-conv.active { background:#eff6ff; border-left:3px solid #2563eb; padding-left:13px; }
-    .msg-avatar { width:40px; height:40px; border-radius:12px; flex-shrink:0;
+    .msg-avatar { width:40px; height:40px; border-radius:50%; flex-shrink:0;
                   display:flex; align-items:center; justify-content:center;
-                  font-size:15px; font-weight:700; color:#fff;
-                  background:linear-gradient(135deg,#60a5fa,#2563eb); }
-    .msg-name { font-size:13.5px; font-weight:600; color:#0f172a; }
-    .msg-prev { font-size:12px; color:#94a3b8; max-width:170px; white-space:nowrap;
+                  font-size:15px; font-weight:800; color:var(--accent); background:var(--accent-lt); }
+    .msg-conv.active .msg-avatar { background:var(--accent); color:#fff; }
+    .msg-name { font-size:13.5px; font-weight:700; color:var(--text-1); }
+    .msg-prev { font-size:12.5px; color:var(--text-3); max-width:190px; white-space:nowrap;
                 overflow:hidden; text-overflow:ellipsis; }
     .msg-unread { min-width:18px; height:18px; padding:0 5px; border-radius:9px;
                   background:#2563eb; color:#fff; font-size:10px; font-weight:700;
@@ -38,7 +38,10 @@
     .bubble-mine  { margin-left:auto; background:#2563eb; color:#fff; border-bottom-right-radius:4px; }
     .bubble-their { margin-right:auto; background:#fff; color:#0f172a; border:1px solid #eef2f7;
                     border-bottom-left-radius:4px; }
-    .bubble-time { font-size:10px; margin-top:3px; opacity:.7; }
+    .bubble-time { font-size:11px; margin-top:3px; opacity:.8; }
+    .bubble-text + .bubble-file { margin-top:6px; }
+    .bubble-file { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:inherit; text-decoration:underline; }
+    .msg-back { display:none; width:44px; height:44px; align-items:center; justify-content:center; margin-left:-10px; color:var(--text-2); border-radius:var(--r-md); }
 
     .msg-composer { padding:12px 14px; border-top:1px solid #f1f5f9; display:flex; gap:9px; }
     .msg-composer textarea { flex:1; resize:none; border:1px solid #e7edf3; border-radius:12px;
@@ -59,16 +62,18 @@
         .msg-grid { grid-template-columns: 1fr; }
         .msg-list { border-right:none; display: var(--list-display, flex); }
         .msg-thread { display: var(--thread-display, none); }
+        .msg-back { display: inline-flex; }   /* the list is hidden while a conversation is open */
     }
 </style>
 
 <div class="msg-wrap"
      style="@if($activeUser)--list-display:none;--thread-display:flex;@else--list-display:flex;--thread-display:none;@endif">
 
-    <div class="mb-6">
-        <p style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;">Communication</p>
-        <h1 style="font-size:26px;font-weight:800;color:#0f172a;letter-spacing:-.02em;">Messages</h1>
-        <p style="font-size:13px;color:#94a3b8;margin-top:2px;">Chat with students in your sections.</p>
+    <div class="tp-head">
+        <div>
+            <h1 class="tp-title">Messages</h1>
+            <p class="tp-sub">Chat with students in your sections.</p>
+        </div>
     </div>
 
     @if($errors->any() && ! $activeUser)
@@ -103,7 +108,7 @@
                             <div style="flex:1;min-width:0;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
                                     <span class="msg-name">{{ $conv['name'] }}</span>
-                                    <span style="font-size:10px;color:#cbd5e1;flex-shrink:0;">{{ $conv['last_at'] }}</span>
+                                    <span style="font-size:11.5px;color:var(--text-3);flex-shrink:0;">{{ $conv['last_at'] }}</span>
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
                                     <span class="msg-prev">{{ $conv['last_mine'] ? 'You: ' : '' }}{{ $conv['last_message'] }}</span>
@@ -125,8 +130,9 @@
             <div class="msg-thread">
                 @if($activeUser)
                     <div class="msg-thread-head">
-                        <a href="{{ route('teacher.messages') }}"
-                           style="display:none;color:#64748b;" class="msg-back">←</a>
+                        <a href="{{ route('teacher.messages') }}" class="msg-back" aria-label="Back to conversations">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                        </a>
                         <div class="msg-avatar">{{ mb_strtoupper(mb_substr($activeUser->name ?? '?', 0, 1)) }}</div>
                         <div>
                             <p style="font-size:14px;font-weight:700;color:#0f172a;">{{ $activeUser->name }}</p>
@@ -141,8 +147,14 @@
                             @php $mine = (int) $m->sender_id === (int) $me->id; @endphp
                             <div class="bubble-row">
                                 <div class="bubble {{ $mine ? 'bubble-mine' : 'bubble-their' }}">
-                                    <span class="bubble-text">{{ $m->body }}</span>
-                                    <div class="bubble-time">{{ $m->created_at?->format('M d, h:i A') }}</div>
+                                    @if($m->body !== null && $m->body !== '')<span class="bubble-text">{{ $m->body }}</span>@endif
+                                    @if($m->file_path)
+                                        <a class="bubble-file" href="{{ asset('storage/' . ltrim($m->file_path, '/')) }}" target="_blank" rel="noopener">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                            {{ $m->file_name ?? 'Attachment' }}
+                                        </a>
+                                    @endif
+                                    <div class="bubble-time">{{ $m->created_at?->format('M j, g:i A') }}{{ $m->edited_at ? ', edited' : '' }}</div>
                                 </div>
                             </div>
                         @empty

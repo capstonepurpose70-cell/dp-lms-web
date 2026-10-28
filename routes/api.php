@@ -34,7 +34,7 @@ Route::middleware(['auth:sanctum', 'approved'])->group(function () {
     Route::post('/notifications/{id}/read',     [App\Http\Controllers\NotificationController::class, 'read']);
     Route::post('/notifications/read-all',      [App\Http\Controllers\NotificationController::class, 'readAll']);
 
-    // ── FCM push tokens (kahit anong naka-login na user) ──────────────
+    // ── FCM push tokens (any signed-in user) ────────────────────────────
     Route::post('/fcm-token',   [App\Http\Controllers\Api\FcmTokenController::class, 'store']);
     Route::delete('/fcm-token', [App\Http\Controllers\Api\FcmTokenController::class, 'destroy']);
 
@@ -91,6 +91,11 @@ Route::middleware(['auth:sanctum', 'approved'])->group(function () {
         Route::post('/class-attendance/{session}/code',    [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'code'])->whereNumber('session');
         Route::post('/class-attendance/{session}/close',   [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'close'])->whereNumber('session');
         Route::post('/class-attendance/{session}/mark',    [App\Http\Controllers\Api\Teacher\ClassAttendanceController::class, 'mark'])->whereNumber('session');
+
+        // Face registration QR for the Raspberry Pi kiosk (advisers only, same rules as the web page)
+        Route::get('/face-kiosk',                 [App\Http\Controllers\Api\Teacher\FaceKioskController::class, 'index']);
+        Route::post('/face-kiosk/{student}',      [App\Http\Controllers\Api\Teacher\FaceKioskController::class, 'issue'])->whereNumber('student')->middleware('throttle:20,1');
+        Route::get('/face-kiosk/codes/{code}',    [App\Http\Controllers\Api\Teacher\FaceKioskController::class, 'status'])->whereNumber('code');
 
         // Quizzes / assignments (file-based)
         Route::get('/assignments',             [App\Http\Controllers\Api\Teacher\AssignmentController::class, 'index']);

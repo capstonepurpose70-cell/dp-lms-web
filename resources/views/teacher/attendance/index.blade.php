@@ -3,12 +3,7 @@
 
 @section('content')
 <style>
-    .ca-page { max-width:1040px; animation: ca-fade .22s ease both; }
-    @keyframes ca-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-    .ca-title { font-size:22px; font-weight:800; color:var(--text-1); margin:0; }
-    .ca-sub { font-size:13px; color:var(--text-2); margin:4px 0 18px; line-height:1.55; max-width:720px; }
-
-    .ca-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+    .ca-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-sm); padding:18px; margin-bottom:16px; }
     .ca-card h2 { font-size:15px; font-weight:800; color:var(--text-1); margin:0 0 4px; }
     .ca-muted { font-size:12.5px; color:var(--text-2); margin:0 0 12px; line-height:1.5; }
 
@@ -38,7 +33,7 @@
     .ca-empty { text-align:center; padding:28px 12px; color:var(--text-2); font-size:13.5px; }
 
     .ca-table { width:100%; border-collapse:collapse; font-size:13px; }
-    .ca-table th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3); padding:9px 10px; border-bottom:1px solid var(--border); }
+    .ca-table th { text-align:left; font-size:12.5px; font-weight:700; color:var(--text-2); padding:9px 10px; border-bottom:1px solid var(--border); }
     .ca-table td { padding:10px; border-bottom:1px solid var(--border); color:var(--text-1); }
     .ca-table tr:last-child td { border-bottom:0; }
     .ca-n { font-weight:800; }
@@ -47,12 +42,15 @@
     @media (max-width: 760px) { .ca-grid { grid-template-columns:1fr; } }
 </style>
 
-<div class="ca-page">
-    <h1 class="ca-title">Class Attendance</h1>
-    <p class="ca-sub">Open attendance for one of your classes. Students get a notification on their phone and enter the
-        <b>4-digit code</b> you show in class. Before the on-time limit they are <b style="color:#15803d;">present</b>,
-        after it <b style="color:#a16207;">late</b>, and anyone who did not check in when it closes is <b style="color:#b91c1c;">absent</b>.
-        Parents are notified of every result.</p>
+<div class="tp-page">
+    <div class="tp-head">
+        <div>
+            <h1 class="tp-title">Class attendance</h1>
+            <p class="tp-sub">Open attendance for a class: students get a notification and enter the 4-digit code you show.
+                Before the on-time limit they are present, after it late, and anyone who has not checked in when it closes
+                is absent. Parents are notified of every result.</p>
+        </div>
+    </div>
 
     @if ($errors->any())
         <div class="ca-err" role="alert">{{ $errors->first() }}</div>
@@ -61,8 +59,8 @@
     @foreach ($open as $s)
         <div class="ca-live">
             <div>
-                <b><span class="ca-dot"></span>{{ $s->subject?->name }} · Grade {{ $s->section?->grade_level }} {{ $s->section?->name }} is open</b>
-                <span>Present until {{ $s->on_time_until->format('g:i A') }} · closes {{ $s->closes_at->format('g:i A') }}</span>
+                <b><span class="ca-dot" aria-hidden="true"></span>{{ $s->subject?->name }}, Grade {{ $s->section?->grade_level }} {{ $s->section?->name }} is open</b>
+                <span>Present until {{ $s->on_time_until->format('g:i A') }}, closes at {{ $s->closes_at->format('g:i A') }}</span>
             </div>
             <a href="{{ route('teacher.attendance.show', $s) }}" class="ca-btn" style="height:38px;">Show code &amp; live list</a>
         </div>
@@ -80,10 +78,10 @@
                     <div>
                         <label class="ca-label" for="caClass">Class</label>
                         <select id="caClass" name="class" class="ca-in" required>
-                            <option value="">— Choose a class —</option>
+                            <option value="">Choose a class</option>
                             @foreach ($classes as $c)
                                 @php $val = $c->section_id . '-' . $c->subject_id; @endphp
-                                <option value="{{ $val }}" @selected(old('class') === $val)>{{ $c->subject->name }} — Grade {{ $c->section->grade_level }} {{ $c->section->name }}</option>
+                                <option value="{{ $val }}" @selected(old('class') === $val)>{{ $c->subject->name }}, Grade {{ $c->section->grade_level }} {{ $c->section->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -105,8 +103,8 @@
                     </div>
                 </div>
                 <div class="ca-preview" aria-live="polite">
-                    <span class="ca-chip g" id="pvPresent">Present until —</span>
-                    <span class="ca-chip y" id="pvLate">Late until —</span>
+                    <span class="ca-chip g" id="pvPresent">Present</span>
+                    <span class="ca-chip y" id="pvLate">Late</span>
                     <span class="ca-chip r">Absent after that</span>
                 </div>
                 <div style="margin-top:14px;">
@@ -123,7 +121,7 @@
         @else
             <div class="ca-scroll">
                 <table class="ca-table">
-                    <thead><tr><th>Date</th><th>Class</th><th>Present</th><th>Late</th><th>Absent</th><th></th></tr></thead>
+                    <thead><tr><th scope="col">Date</th><th scope="col">Class</th><th scope="col">Present</th><th scope="col">Late</th><th scope="col">Absent</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
                     <tbody>
                         @foreach ($history as $h)
                             <tr>
@@ -149,13 +147,16 @@
     var on = document.getElementById('caOn'), late = document.getElementById('caLate');
     if (!on) return;
     function fmt(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    var timer;
     function upd() {
+        // the teacher layout swaps pages without reloading: stop once this form is gone
+        if (!document.body.contains(on)) { clearInterval(timer); return; }
         var now = new Date(), p = new Date(now.getTime() + on.value * 60000), l = new Date(p.getTime() + late.value * 60000);
         document.getElementById('pvPresent').textContent = 'Present until ' + fmt(p);
         var lt = document.getElementById('pvLate');
         lt.textContent = Number(late.value) ? 'Late until ' + fmt(l) : 'No late window';
     }
-    on.addEventListener('change', upd); late.addEventListener('change', upd); upd(); setInterval(upd, 30000);
+    on.addEventListener('change', upd); late.addEventListener('change', upd); upd(); timer = setInterval(upd, 30000);
     document.getElementById('caForm').addEventListener('submit', function (e) {
         if (!document.getElementById('caClass').value) { e.preventDefault(); document.getElementById('caClass').focus(); return; }
         var b = document.getElementById('caStart'); b.disabled = true; b.textContent = 'Starting…';
