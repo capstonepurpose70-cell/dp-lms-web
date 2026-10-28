@@ -78,12 +78,16 @@ Lahat ng request: header **`X-Device-Key: <ATTENDANCE_DEVICE_KEY>`** (parehong v
       "label": "juan@gmail.com",
       "name": "Juan Dela Cruz",
       "reviewed_at": "2026-10-20T09:15:00+08:00",
-      "images": ["https://.../storage/faces/12/img_01.jpg", "..."]
+      "images": ["https://.../api/faces/12/img_01.jpg", "..."]
     }
   ]
 }
 ```
-Gamitin ang **`label`** (email) bilang ID ng mukha sa model.
+Gamitin ang **`user_id`** bilang ID ng mukha sa model (`label`/email ay tinatanggap pa rin).
+
+**(2026-10-28) Private na ang face photos.** Wala na sa `/storage/faces/...`. Bawat `images[]` URL ay
+kailangan ding may **`X-Device-Key`** header (`GET /api/faces/{user_id}/img_01.jpg` → `200 image/jpeg`,
+`Cache-Control: no-store`). Walang key → `401`; hindi approved ang mukha o wala ang file → `404`.
 
 ### `POST /api/attendance`
 
@@ -96,6 +100,14 @@ Gamitin ang **`label`** (email) bilang ID ng mukha sa model.
 | `student_id` | required — ang `label` (email) mula sa `/api/faces/approved`; tinatanggap din ang numeric user ID |
 | `student_name` | optional |
 | `section_id` | optional; dapat umiiral na section ID — **mas mabuting huwag ipadala** (kinukuha ng server sa account) |
+| `score` | optional, `0`–`1` — similarity ng match (para sa recognition log) |
+| `device` | optional, hanggang 64 characters (hal. `gate-1`) |
+| `scanned_at` | optional, ISO 8601 — kailan talaga nakita ang mukha. Para sa scan na na-queue habang offline: ito ang ginagamit sa oras at present/late. Hanggang **2 araw** ang tanda; mas luma o nasa future → `422` |
+
+**Recognition log (2026-10-28):** bawat `POST /api/attendance` ay naitatala sa `gate_scans`
+(`recognized`, o `repeat` kapag na-scan na ngayong araw). Ang mukhang hindi nakilala ay
+`POST /api/gate/unknown { score?, device?, scanned_at? }` → `200 { "success": true }` — score lang,
+walang litrato. Ma-download ng admin bilang CSV: Reports → Downloads → **Recognition log**.
 
 | Response | Body |
 |---|---|

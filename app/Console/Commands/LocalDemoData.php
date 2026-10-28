@@ -16,6 +16,7 @@ use App\Models\Subject;
 use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\EnrollmentService;
+use App\Support\FacePhotos;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -235,7 +236,7 @@ class LocalDemoData extends Command
                 });
                 ClassAttendanceSession::where('teacher_id', $teacher->id)->delete();
             }
-            $studentIds->each(fn ($sid) => $disk->deleteDirectory("faces/{$sid}"));
+            $studentIds->each(fn ($sid) => FacePhotos::delete($sid));
 
             // Not cascaded by foreign keys
             Attendance::whereIn('user_id', $studentIds)

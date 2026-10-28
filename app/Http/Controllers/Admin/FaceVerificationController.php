@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FaceRegistration;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Support\FacePhotos;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class FaceVerificationController extends Controller
 {
@@ -45,11 +45,7 @@ class FaceVerificationController extends Controller
     {
         // Guard: never approve an empty image set — the Raspberry Pi would have
         // nothing to recognize. Ask the student to re-register instead.
-        $dir = "faces/{$registration->user_id}";
-        $hasImages = Storage::disk('public')->exists($dir)
-            && count(Storage::disk('public')->files($dir)) > 0;
-
-        if (! $hasImages) {
+        if (! FacePhotos::has($registration->user_id)) {
             return back()->with(
                 'error',
                 "No face images found for {$registration->user->name}. Please ask them to register again."
@@ -110,7 +106,7 @@ class FaceVerificationController extends Controller
             }
 
             // delete the offending images
-            Storage::disk('public')->deleteDirectory("faces/{$user->id}");
+            FacePhotos::delete($user->id);
         } else {
             AuditLogService::log("Rejected face registration: {$user->name}", 'Face Verification');
         }
@@ -162,18 +158,17 @@ class FaceVerificationController extends Controller
         return response()->json(['status' => $row ? $kiosk->status($row) : 'cancelled']);
     }
 
-    /** Attach public image URLs to a registration row */
+    /** GET /admin/face/photos/{user}/{file} — the photos are private, so the review page loads them here */
+    public function photo(User $user, string $file)
+    {
+        return FacePhotos::response($user->id, $file) ?? abort(404);
+    }
+
+    /** Attach the admin-only image URLs to a registration row */
     private function withImages(FaceRegistration $r): FaceRegistration
     {
-        $dir   = "faces/{$r->user_id}";
-        $files = Storage::disk('public')->exists($dir)
-            ? Storage::disk('public')->files($dir)
-            : [];
-
-        $r->image_urls = collect($files)
-            ->filter(fn ($f) => preg_match('/\.(jpe?g|png)$/i', $f))
-            ->map(fn ($f) => Storage::url($f))
-            ->values()
+        $r->image_urls = collect(FacePhotos::names($r->user_id))
+            ->map(fn ($name) => route('admin.face.photo', [$r->user_id, $name]))
             ->all();
 
         return $r;

@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Exceptions\ActionNotAllowed;
 use App\Models\FaceRegistration;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
+use App\Support\FacePhotos;
 
 /**
  * Saves face images (web camera + mobile app).
@@ -51,14 +51,14 @@ class FaceRegistrationService
     {
         $this->assertCanRegister($user);
 
-        $disk     = Storage::disk('public');
-        $finalDir = "faces/{$user->id}";
-        $tmpDir   = "faces/tmp_{$user->id}_" . now()->format('YmdHisv');
+        $disk     = FacePhotos::disk();
+        $finalDir = FacePhotos::dir($user->id);
+        $tmpDir   = "tmp_{$user->id}_" . now()->format('YmdHisv');
 
         try {
             $count = 0;
             foreach (array_values($files) as $i => $file) {
-                $file->storeAs($tmpDir, 'img_' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) . '.jpg', 'public');
+                $file->storeAs($tmpDir, 'img_' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) . '.jpg', FacePhotos::DISK);
                 $count++;
             }
 

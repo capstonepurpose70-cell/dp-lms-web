@@ -83,6 +83,7 @@ php artisan migrate:status              # all "Ran"
 php artisan db:seed --force             # admin (if none) + subjects; sections only on an empty DB
 php artisan db:seed --class=AdvisorySectionSeeder --force   # once, after teachers are imported
 php artisan storage:link
+php artisan faces:make-private          # once: moves face photos saved before 2026-10-28 out of public storage
 php artisan schedule:list               # shows attendance:finalize every minute
 ```
 

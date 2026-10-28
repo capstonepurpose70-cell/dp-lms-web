@@ -181,6 +181,45 @@ class ReportController extends Controller
             ]));
     }
 
+    /**
+     * Gate camera recognition log for a date range, optional section: every recognized face, repeat scan and
+     * unmatched face with the Pi's similarity score — the testing data for recognition accuracy.
+     * With a section chosen, unmatched faces (no student) are left out.
+     */
+    public function exportGateScans(Request $request)
+    {
+        $data = $request->validate([
+            'from'       => 'required|date',
+            'to'         => 'required|date|after_or_equal:from',
+            'section_id' => 'nullable|exists:sections,id',
+        ]);
+        $from = Carbon::parse($data['from'])->startOfDay();
+        $to   = Carbon::parse($data['to'])->endOfDay();
+        abort_if($from->diffInDays($to) > 370, 422, 'Please choose a range of one year or less.');
+
+        $rows = DB::table('gate_scans as g')
+            ->leftJoin('users as u', 'u.id', '=', 'g.user_id')
+            ->leftJoin('sections as s', 's.id', '=', 'u.section_id')
+            ->whereBetween('g.scanned_at', [$from, $to])
+            ->when($data['section_id'] ?? null, fn ($q, $sid) => $q->where('u.section_id', $sid))
+            ->orderBy('g.scanned_at')
+            ->get(['g.scanned_at', 'g.created_at', 'g.result', 'g.score', 'g.device', 'u.lrn', 'u.name', 's.grade_level', 's.name as section']);
+
+        AuditLogService::log('Exported gate recognition log', 'Reports',
+            $from->toDateString() . ' to ' . $to->toDateString() . " · {$rows->count()} rows");
+
+        $results = ['recognized' => 'Recognized', 'repeat' => 'Repeat scan', 'unknown' => 'Not recognized'];
+
+        return $this->csv('gate-recognition-' . $from->toDateString() . '-to-' . $to->toDateString() . '.csv',
+            ['Date', 'Time', 'Result', 'Score', 'LRN', 'Name', 'Grade', 'Section', 'Device', 'Received by server'],
+            $rows->map(fn ($r) => [
+                Carbon::parse($r->scanned_at)->format('Y-m-d'), Carbon::parse($r->scanned_at)->format('h:i:s A'),
+                $results[$r->result] ?? $r->result, $r->score !== null ? number_format((float) $r->score, 4) : '',
+                $r->lrn, $r->name, $r->grade_level, $r->section, $r->device,
+                Carbon::parse($r->created_at)->format('Y-m-d h:i:s A'),
+            ]));
+    }
+
     /** Class attendance (teacher-posted, per subject) for a date range, optional section — for SF2. */
     public function exportClassAttendance(Request $request)
     {

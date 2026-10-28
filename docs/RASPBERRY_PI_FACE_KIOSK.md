@@ -40,11 +40,11 @@ Students with 3 face warnings are blocked.
 
 ---
 
-## 2. One-time setup on the Pi (Raspberry Pi OS Bookworm, 64-bit)
+## 2. One-time setup on the Pi (Raspberry Pi OS 64-bit, Bookworm or newer)
 
 ```bash
 sudo apt update
-sudo apt install -y python3-picamera2 python3-opencv python3-requests
+sudo apt install -y python3-picamera2 python3-opencv opencv-data python3-requests   # opencv-data = face detector files
 rpicam-hello -t 2000          # camera test (Pi 5 + Camera Module); you should see a preview
 mkdir -p ~/dplms && cd ~/dplms
 # copy face_kiosk.py and config.example.py here, then:
@@ -61,6 +61,9 @@ python3 face_kiosk.py
 | `DEVICE_KEY` | **Same** value as `ATTENDANCE_DEVICE_KEY` on the server (Railway variables). Long random string |
 | `PHOTOS` | Photos per student (server accepts 3–15; default 10) |
 | `SHOW_WINDOW` | `True` with a monitor attached; `False` for headless (messages print to the terminal) |
+| `FULLSCREEN` | Full-screen, mirrored preview on the 5-inch display (default `True`) |
+| `COLOR_FIX` | White balance for cameras without an IR filter — otherwise photos are violet (default `True`) |
+| `SHARP_MIN` / `SHARP_GOOD` / `BRIGHT_MIN` | Photo quality gates (defaults 25 / 60 / 45). Lower `SHARP_MIN` only if clear faces keep getting "Hold still" |
 
 Never commit `config.py` — it contains the device key.
 
@@ -74,9 +77,13 @@ production refuses every device call with `401 Unauthorized device`.
 1. Adviser opens **Face Registration**, taps **Show QR** beside the student.
 2. Student holds the phone/laptop screen with the QR in front of the Pi camera (about 30–50 cm).
 3. Screen shows **"Hi <name>!"** → student looks straight at the camera, alone in the frame, good light on the face.
-4. After ~10 photos the Pi uploads them; the adviser's QR window turns **green**. Next student.
+   The screen says what to change: *Come a little closer · Move back a little · Move to the middle ·
+   Only ONE face · More light on your face · Hold still*. Green text = photos are being taken.
+4. The Pi keeps the sharpest ~10 photos (a one-frame false detection, blurry or dark frames are never used),
+   corrects the colour and uploads them; the adviser's QR window turns **green**. Next student.
 
-If "Not enough clear photos": scan the same QR again (it is still unused). If the QR expired: tap **Make a new QR**.
+If "Not enough clear photos": the reason is shown (usually light or movement) — fix it and scan the same QR
+again (it is still unused). If the QR expired: tap **Make a new QR**.
 
 ---
 
@@ -112,11 +119,39 @@ Fields: `code` = QR text, `images[]` = 3–15 files (JPEG/PNG, ≤ 2 MB each).
 
 ---
 
-## 5. Gate recognizer — what to change
+## 5. Gate camera (`gate_camera.py`)
 
-After a kiosk registration, the new face is already **approved**. Make the gate script refresh
-`GET /api/faces/approved` periodically (e.g. every 10 minutes, and at boot) so new students are recognized
-the same day. Nothing else changes: `POST /api/attendance { student_id: <label> }` → parent notification.
+The same Pi and camera check students in at the entrance. A kiosk registration is already approved, and the
+gate reloads the approved faces every `REFRESH_MINUTES` (and at start), so a new student is recognized the
+same day.
+
+**One-time setup** (in the folder with `face_kiosk.py` and `config.py`):
+
+```bash
+mkdir -p models && cd models
+wget https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
+wget https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx
+cd ..
+DISPLAY=:0 python3 gate_camera.py
+```
+
+**What it does:** YuNet finds the face, SFace compares it with every approved student's photos. The same
+student above `MATCH_THRESHOLD` on `MATCH_FRAMES` frames in a row → "Welcome, Juan!" with the time, then
+On time / Late / Already checked in from the server, and the parent gets the arrival notification.
+A face that matches nobody → "Not recognized" (logged with its score, no picture).
+
+**No internet:** the gate keeps working with the faces it loaded last (saved in `face_cache/`, owner-only
+permissions). Scans wait in `gate_queue.jsonl` with their real time and are sent, in order, when the server
+is reachable; on-time/late is decided from the real time, not the time they arrived.
+
+Measured on the laptop with the demo student's kiosk photos: same person 0.74–0.87, a different person
+0.17–0.18. The default threshold 0.40 sits well between; raise it if a student is ever mistaken for
+another, lower it if registered students often get "Not recognized".
+
+Options in `config.py`: `DEVICE_NAME`, `MATCH_THRESHOLD`, `MATCH_FRAMES`, `UNKNOWN_FRAMES`, `GATE_FACE_MIN`,
+`COOLDOWN_SECONDS`, `RESULT_SECONDS`, `REFRESH_MINUTES` (see `config.example.py`).
+
+Not yet: liveness (a printed photo or a phone screen can still be recognized) — B9-12.
 
 ---
 
@@ -125,7 +160,13 @@ the same day. Nothing else changes: `POST /api/attendance { student_id: <label> 
 | Symptom | Fix |
 |---|---|
 | `Unauthorized device` | `DEVICE_KEY` in `config.py` ≠ `ATTENDANCE_DEVICE_KEY` on the server |
+| Gate: `Missing model file(s)` | Download the two `.onnx` files into `models/` (section 5) |
+| Gate: `Loading faces...` never ends | Server unreachable on first start and no `face_cache/` yet: check `API_BASE` and the network |
+| Gate: a student is often "Not recognized" | Re-register at the kiosk in the gate's light, or lower `MATCH_THRESHOLD` a little (0.36 is OpenCV's reference) |
 | QR never detected | More light, hold the screen still and flat, raise screen brightness, 30–50 cm away |
 | "Only ONE face" stays on | Others in the background; ask them to step aside |
-| `haarcascade_frontalface_default.xml not found` | `sudo apt install python3-opencv` |
+| `haarcascade_frontalface_default.xml not found` | `sudo apt install opencv-data` (Debian 13 / Raspberry Pi OS Trixie ships the XML files separately) |
+| No window on the Pi screen when started over SSH | Start it as `DISPLAY=:0 python3 face_kiosk.py` |
+| Photos evenly soft / "Hold still" although nobody moves | The lens is out of focus: `DISPLAY=:0 python3 focus_check.py`, turn the lens slowly and stop at the highest sharpness (face ~50 cm away) |
+| Half of the face dark | Light from the side — put the light in front of the face (behind the camera) |
 | Camera error | `rpicam-hello` must work first; check the ribbon cable and `sudo raspi-config` |

@@ -289,11 +289,14 @@ Route::patch('/profile/update-password',
         Route::get('/reports/export/enrollment', [ReportController::class, 'exportEnrollment'])->name('reports.export.enrollment');
         Route::get('/reports/export/attendance', [ReportController::class, 'exportAttendance'])->name('reports.export.attendance');
         Route::get('/reports/export/class-attendance', [ReportController::class, 'exportClassAttendance'])->name('reports.export.class-attendance');
+        Route::get('/reports/export/gate-scans', [ReportController::class, 'exportGateScans'])->name('reports.export.gate-scans');
         Route::get('/audit-logs', [AuditLogController::class,  'index'])->name('audit-logs.index');
 
         // ── Face Verification ─────────────────────────────────────
         Route::get('/face',                    [FaceVerificationController::class, 'index'])->name('face.index');
         Route::patch('/face/{registration}/approve', [FaceVerificationController::class, 'approve'])->name('face.approve');
+        Route::get('/face/photos/{user}/{file}', [FaceVerificationController::class, 'photo'])
+            ->whereNumber('user')->where('file', 'img_\d{2}\.(jpe?g|png)')->name('face.photo');
         // Kiosk QR (Raspberry Pi face registration)
         Route::get('/face/kiosk/students',       [FaceVerificationController::class, 'kioskStudents'])->name('face.kiosk.students');
         Route::post('/face/kiosk/{student}',     [FaceVerificationController::class, 'kioskIssue'])->whereNumber('student')->name('face.kiosk.issue');
@@ -370,6 +373,9 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::post('/api/attendance',    [App\Http\Controllers\AttendanceController::class, 'store']);
     Route::get('/api/attendance',     [App\Http\Controllers\AttendanceController::class, 'index']);
     Route::get('/api/faces/approved', [App\Http\Controllers\AttendanceController::class, 'approvedFaces']);
+    Route::get('/api/faces/{user}/{file}', [App\Http\Controllers\AttendanceController::class, 'facePhoto'])
+        ->whereNumber('user')->where('file', 'img_\d{2}\.(jpe?g|png)');
+    Route::post('/api/gate/unknown',  [App\Http\Controllers\AttendanceController::class, 'unknownFace']);
 
     // Face kiosk — Pi scans the adviser's one-time QR, then uploads photos for that student
     Route::get('/api/kiosk/face',  [App\Http\Controllers\FaceKioskController::class, 'lookup']);

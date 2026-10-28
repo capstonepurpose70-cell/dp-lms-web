@@ -27,6 +27,8 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [7](#batch-7--parent-portal) | Parent portal, account recovery, report card | `69e3561` | 10 |
 | [—](#code-comments) | Code comments in English | `857b7c2` | — |
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
+| [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
+| [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk | — | 🔧 12 |
 
 ---
 
@@ -431,6 +433,173 @@ logout and Back/Forward ×3: never a signed-in page, form always empty with the 
 the client layer alone with a simulated cache restore (5/5); in-process 5/5 (flash is one-time, `no-store` on
 pages and the guest redirect, JSON and CSV downloads untouched, failed sign-in keeps the LRN, admin logout).
 Regression: parent 7/7, student pages 5/5, teacher SPA, all inline scripts on 24 pages parse, no JS errors.
+
+---
+
+## Batch 9 — IoT: face kiosk and gate
+
+Found during the first real kiosk registration on the Raspberry Pi 5 (OV5647 fisheye, no IR filter). The 10 saved
+photos were measured: face brightness ~60/255, colour B≈R≈80 / G≈48 (magenta), sharpness 15–34 except one at 84
+(Laplacian variance of the face resized to 160×160).
+
+### B9-1 ✅ Saved face photos contain the green guide box
+- **Problem:** the box drawn for the on-screen guide is drawn on the frame that gets cropped and uploaded, so every
+  stored photo (and later the gate model) has a green rectangle around the face.
+- **Where:** `docs/raspberry-pi/face_kiosk.py` → `capture_faces()`.
+- **Fix:** the guide is drawn only on the (mirrored) preview copy; photos are cropped from the untouched frame.
+
+### B9-2 ✅ A non-face was saved as the student's face
+- **Problem:** `img_01` is a piece of the room — a one-frame false detection was accepted.
+- **Fix:** `find_face()` — a frame counts only when exactly one face is ≥ 20% of the frame height, not too close,
+  near the centre (fisheye edges stretch faces) and in the same place for 3 frames in a row; live hints say what to change.
+
+### B9-3 ✅ Blurry and dark photos are accepted
+- **Problem:** no sharpness or brightness check; in dim light the auto-exposure uses long shutter times → motion blur.
+- **Fix:** every candidate is scored (`face_quality()`: sharpness + brightness); frames below `SHARP_MIN` / `BRIGHT_MIN`
+  are never used, the sharpest `PHOTOS` are kept (capture ends early once enough reach `SHARP_GOOD`), and a failed
+  capture says why ("More light on your face" / "Hold still"). Frames below 60% of the session's sharpest one are
+  dropped too (`SHARP_RELATIVE` — the head moved). Camera: exposure capped at 1/30 s, exposure target +0.5.
+  New `focus_check.py` shows the live sharpness while the lens is turned: the real lens went from 15–34 to **143**.
+
+### B9-4 ✅ Photos are violet
+- **Problem:** the OV5647 module has no IR-cut filter, so infrared shows up as red + blue.
+- **Fix:** gray-world white balance (gains from the whole frame, applied at 85%) + gamma brightening on the saved
+  crop only (`COLOR_FIX`). Measured on a real photo: BGR 79/49/81 → 115/121/115.
+
+### B9-5 ✅ Kiosk window does not fit the 5-inch screen
+- **Problem:** a 1280×720 window on an 800×480 display; not mirrored, so moving left goes right.
+- **Fix:** full-screen (`FULLSCREEN`), mirrored preview with large text and the live hints.
+
+**Tested (B9-1…B9-5):** the real `face_kiosk.py` against the real local server with a simulated camera (a real one-time
+QR issued by the server, then frames made from a Pi photo): good light → registered, QR used, photos replaced, no
+green-box pixels, neutral colour; dark → refused with "More light on your face", QR still unused; blurry → refused with
+"Hold still...", QR still unused. Thresholds come from the 10 photos of the first real registration.
+Shaky (sharp and moving frames alternating) → only the sharp frames are stored. On the Pi: after focusing the lens
+and putting the light in front of the face, the real registration stored 10 face photos with no box, neutral colour and
+the face clearly visible (one motion-blurred frame among them led to `SHARP_RELATIVE`).
+
+### B9-6 ✅ `haarcascade_frontalface_default.xml not found` on the new Pi OS
+- **Problem:** Raspberry Pi OS (Debian 13) ships the OpenCV face detector files in `opencv-data`, not `python3-opencv`.
+- **Fix:** install line and error message in `face_kiosk.py`, `RASPBERRY_PI_FACE_KIOSK.md`, `IOT_CHECKLIST.md`.
+
+### B9-7 ✅ Face photos can be downloaded by anyone
+- **Problem:** stored under `storage/app/public/faces/{user id}/img_01.jpg` — public and guessable. Anyone with the
+  link (no login) can download every student's face, which is biometric data under the Data Privacy Act.
+- **Fix (plan):** a private `faces` disk (`storage/app/faces`, never served by the web server) behind one helper
+  (`Support/FacePhotos`). The admin review page shows them through an admin-only route; the Pi downloads them
+  through `GET /api/faces/{user}/{file}` with the device key. `php artisan faces:make-private` moves the existing
+  photos once. All responses `Cache-Control: no-store`.
+- **Done:** as planned. The route only accepts `img_NN.jpg/png` names, so no other file can be asked for.
+  `storage/app/faces` is covered by `storage/app/.gitignore`. Tested (PHPUnit, rolled back): the old public file
+  is gone and the private one exists; the device gets `401` without or with a wrong key, `200 image/jpeg` +
+  `no-store` with it, `404` for a path-traversal name, a missing photo, or a face set that is not approved;
+  `/api/faces/approved` lists the new URLs; the admin photo route sends a guest and a student session to login
+  and serves the admin; the review page shows the new URLs and none under `/storage/faces`.
+
+### B9-11 ✅ Camera mounted upside down
+- **Fix:** `ROTATE_180` in `config.py` → the sensor flips the image (`libcamera.Transform`), so detection, preview
+  and saved photos are upright with no extra CPU work.
+
+### B9-12 🔧 Liveness — a photo or a phone screen must not register or check in a student
+- **Plan:** kiosk = active challenge in random order (turn left / turn right, blink) using face landmarks
+  (OpenCV YuNet, runs on the Pi); gate = passive checks so the line stays fast (anti-spoof model + natural movement),
+  with the challenge as a fallback when the passive check is unsure.
+
+### B9-13 🔧 Appearance rules at registration
+- **Plan:** refuse a covered face (cap/hat shadow over the forehead, sunglasses, mask) — the gate needs the face as it
+  looks every day. Crop the stored photo to the head only, so a shirtless student's body is never stored.
+- **Decision needed:** clear eyeglasses — allow (recommended: students who wear them daily are recognized better) or
+  require removal at registration.
+
+### B9-8 ✅ Gate recognizer (`gate_camera.py`) with an offline queue and a recognition log
+- **Problem:** faces can be registered but nothing recognizes them at the gate, so Objective 1.1 (automated
+  attendance through facial recognition) has no working path, and the study has no testing log for accuracy.
+- **Fix (plan):**
+  - **Pi:** `gate_camera.py` reuses the kiosk's camera code. OpenCV YuNet finds the face, SFace turns it into an
+    embedding, cosine similarity against every approved student's photos (downloaded with the device key and
+    cached). A student is checked in only when the same match repeats on consecutive frames above the threshold.
+    The screen greets them by name with on-time/late. If the server is unreachable, scans go to a local queue
+    (with the real scan time) and are sent when it is back.
+  - **Server:** `POST /api/attendance` takes the optional `score`, `device` and `scanned_at` (a queued scan keeps
+    its real time and on-time/late; at most 2 days old, never in the future). Every recognition and every
+    unknown face (`POST /api/gate/unknown`, no image kept) goes into a new `gate_scans` log. Admin Reports gets a
+    CSV export of that log for the study's testing data.
+- **Done:** as planned, plus: without internet at start the gate uses the faces it saved last time
+  (`face_cache/`, owner-only), new scans queue behind older ones so the order stays right, and the gallery is
+  rebuilt with its own model instances (sharing OpenCV's DNN models with the camera thread crashed it — found in
+  the simulator).
+- **Tested:**
+  - PHPUnit (8 tests, 56 assertions): recognized + repeat logged with score/device/attendance; a queued scan
+    from yesterday 7:45 is saved at 7:45 as late and does not block today's scan; `scanned_at` 3 days old, 1 h
+    ahead or unparsable and `score` 1.5 → `422` with nothing saved; unknown faces need the key and are logged
+    without a student; the CSV export is admin-only, shows both rows, and a section filter drops unknown faces.
+  - The real `gate_camera.py` with a fake camera against the local server: scores against the demo student's
+    kiosk photos 0.74–0.87 for the same person, 0.17–0.18 for another person (threshold 0.40). Recognized →
+    logged; other person → "Not recognized" logged. Server down: started from the saved faces, recognized
+    (0.842), both scans queued; server back: sent in order with their real times (seen 09:28:39, received
+    09:29:04).
+  - Regression: Pi/Flutter contract 5/5, face upload 2/2.
+### B9-9 🔧 Registration / gate mode switch and auto-start on power-on
+### B9-10 🔧 Faster gate response (cache the FCM token, push after the reply)
+
+---
+
+## Batch 10 — Teacher pages (part 2)
+
+Audited with full-page screenshots of every remaining teacher page at 1366 px and 390 px (demo data: a material,
+two quizzes, grades, messages, two attendance sessions). No JS errors and no sideways scroll anywhere — the problems
+are layout, states and consistency.
+
+### B10-1 🔧 Materials: Unpublish and Delete unreachable on phones
+- **Problem:** at 390 px the row's action buttons run off the card — "Unpublish" is cut and "Delete" invisible.
+  Buttons are ~26 px tall (needs 44 px); `min-w-0 truncate px-2.5 py-16 w-14` are missing from the CSS build.
+- **Where:** `resources/views/teacher/materials.blade.php`.
+- **Fix (plan):** row = title/meta on top, actions in their own row on phones; 44 px buttons; plain CSS.
+
+### B10-2 🔧 Material details: the three counters stack full width
+- **Problem:** `grid-cols-3` is missing from the build, so Viewed / Hearts / Comments become three tall full-width cards.
+- **Where:** `teacher/materials-show.blade.php`. **Fix (plan):** plain CSS row of three; sentence-case labels.
+
+### B10-3 🔧 Quizzes: a closed quiz looks open
+- **Problem:** a quiz past its deadline shows only "Published" — on the list and on its page.
+- **Where:** `teacher/assignments.blade.php`, `teacher/assignment-show.blade.php`.
+- **Fix (plan):** "Open until …" / "Closed …" state next to Published/Draft.
+
+### B10-4 🔧 Create Quiz looks like a different app from Upload Material
+- **Problem:** other width, back link, buttons; the browser's raw "Choose File" input.
+- **Where:** `teacher/assignment-create.blade.php`. **Fix (plan):** same form shell and file picker as Upload Material.
+
+### B10-5 🔧 Gradebook: scores and Edit hidden on phones
+- **Problem:** at 390 px only Student and Subject are visible; quarter, scores, final grade and Edit are off-screen.
+  Weight labels "(25%) (50%) (25%)" are typed in the view.
+- **Where:** `teacher/gradebook.blade.php`, `Teacher/GradebookController`.
+- **Fix (plan):** each grade becomes a compact row (student, subject · quarter, final + status, Edit) on phones;
+  labels from `Grade::WEIGHTS`.
+
+### B10-6 🔧 Messages: a file-only last message previews as "You:"
+- **Where:** `teacher/messages.blade.php`. **Fix (plan):** show the file name; drop the "COMMUNICATION" eyebrow.
+
+### B10-7 🔧 Attendance session: small mark buttons, odd placeholder
+- **Problem:** P / L / A buttons ~32 px; a large "—" where the timer was once closed.
+- **Where:** `teacher/attendance/show.blade.php`. **Fix (plan):** 44 px buttons with full labels for screen readers;
+  closed state without the placeholder.
+
+### B10-8 🔧 Enrollment request: avatar without its circle
+- **Where:** `teacher/enrollments/show.blade.php`; empty list keeps a table header (`enrollments/index`).
+
+### B10-9 🔧 Every page has its own width, header and buttons
+- **Problem:** max-widths from 720 to 1100 px, some centred and some not; three back-link styles; "Create Quiz"
+  and "Upload Material" are different buttons.
+- **Fix (plan):** one page shell in `layouts/teacher.blade.php` (`.tp-page`, `.tp-head`, `.tp-back`, `.tp-btn`) used by
+  every teacher page: 1040 px for lists, 760 px for forms.
+
+### B10-10 🔧 Generated-looking details
+- **Problem:** ALL-CAPS eyebrows ("COMMUNICATION", "NEW UPLOAD", "CLASS CODE — SHOW THIS TO THE CLASS", section
+  labels), "→" / "←" in link text, " • " meta strings. Also in the student/parent pages from batches 5–7.
+- **Fix (plan):** sentence-case headings, icons instead of arrow characters, meta as separate items.
+
+### B10-11 🔧 Material and quiz cards: low-contrast meta text (#94A3B8-like on white)
+### B10-12 🔧 Touch targets under 44 px on list actions (materials, quizzes, gradebook Edit)
 
 ---
 

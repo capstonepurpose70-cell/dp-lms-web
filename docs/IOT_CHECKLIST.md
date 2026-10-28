@@ -14,12 +14,12 @@ Legend: ✅ done · ⚠️ check · ❌ missing
 |---|---|---|---|
 | 1 | Raspberry Pi 5 | ✅ | |
 | 2 | 5-inch DSI touch display (800×480) | ✅ | Pi is mounted on its back |
-| 3 | Camera module | ✅ | Write down the model printed on the board (needed if it is not detected) |
-| 4 | **Official 27 W USB-C power supply (5.1 V / 5 A)** | ❌ | A phone charger causes reboots and camera errors. Most important item |
-| 5 | **Active Cooler for Pi 5** | ❌ | Face detection runs non-stop → the Pi overheats and slows down. Plug into the Pi's 4-pin **FAN** port (next to the USB ports), not the display's 2-pin header |
-| 6 | Display ribbon (DSI) on the Pi | ⚠️ | Only the camera ribbon is visible in the photos. The display ribbon goes into the **other** CAM/DISP port |
-| 7 | Camera cable for Pi 5 | ⚠️ | The Pi 5 port is the small 22-pin type. If both ends of the ribbon are the same width, it is a Pi 4 cable → buy a "Pi 5 camera cable 22-pin to 15-pin" |
-| 8 | microSD card | ⚠️ | Current: ORICO 16 GB (used before on a Pi 3). Try it; if writing/verify fails or the Pi won't boot → buy a new **32 GB A2** (SanDisk/Samsung) |
+| 3 | Camera module | ✅ | **OV5647** 5 MP fisheye, CAM/DISP port 0, auto-detected. No IR filter → pink colours (recognition uses grayscale, so it does not matter) |
+| 4 | **Official 27 W USB-C power supply (5.1 V / 5 A)** | ✅ | Raspberry Pi 27 W PSU, `vcgencmd get_throttled` = `0x0` |
+| 5 | **Active Cooler for Pi 5** | ✅ | Installed, plugged into the Pi's 4-pin **FAN** port (not the display's 2-pin header) |
+| 6 | Display ribbon (DSI) on the Pi | ✅ | In the second CAM/DISP port. **Write down which port is labelled 0 and which 1** — the display and camera settings need it |
+| 7 | Camera cable for Pi 5 | ✅ | Both ribbons are 22-pin (Pi) to 15-pin (display / camera). Camera is a wide-angle (fisheye) module — read the sensor name printed on its board (e.g. OV5647) |
+| 8 | microSD card | ✅ | Samsung EVO Plus 128 GB (the old ORICO 16 GB stalled while writing — do not use it) |
 | 9 | microSD card reader for the laptop | ⚠️ | Only if the laptop has no microSD slot |
 | 10 | Network at the gate | ⚠️ | School Wi-Fi, pocket Wi-Fi/phone hotspot, or an Ethernet cable |
 | 11 | Stand / mount + extension cord | ❌ | Camera at face height (~1.2–1.5 m), light in front of the face (no backlight from the gate) |
@@ -32,7 +32,8 @@ Legend: ✅ done · ⚠️ check · ❌ missing
       the `.py` files to a USB drive.
 - [ ] When Windows asks *"You need to format the disk"* → **Cancel** (every time).
 - [ ] Raspberry Pi Imager: Device **Raspberry Pi 5** → OS **Raspberry Pi OS (64-bit)** with desktop
-      (not Lite) → Storage: the SD card (~14–16 GB).
+      (not Lite) → Storage: the SD card (~14–16 GB). The Pi 3's old system cannot boot a Pi 5 — a fresh
+      write is required.
 - [ ] Customisation: hostname `dplms-gate`, username + password, Wi-Fi, country **PH**, timezone
       **Asia/Manila**, **enable SSH**.
 - [ ] Write → wait for Verify → eject. Imager erases the old Pi 3 system automatically.
@@ -42,8 +43,8 @@ Legend: ✅ done · ⚠️ check · ❌ missing
 
 ```bash
 sudo apt update && sudo apt full-upgrade -y
-sudo apt install -y python3-picamera2 python3-opencv python3-requests
-rpicam-hello -t 5000          # camera preview must appear
+sudo apt install -y python3-picamera2 python3-opencv opencv-data python3-requests
+rpicam-hello -t 5000          # camera preview must appear (over SSH: DISPLAY=:0 rpicam-hello -t 30000)
 ```
 
 - [ ] Display works (black screen → it needs a line in `/boot/firmware/config.txt` from the display maker's manual)
@@ -80,6 +81,7 @@ Server endpoints already built (all need the `X-Device-Key` header):
 | 4 | Mode switch: **Registration** (kiosk) vs **Gate** — one Pi, one camera, only one can run at a time | ❌ |
 | 5 | Auto-start on power-on (systemd service), so no keyboard is needed at the gate | ❌ |
 | 6 | Keep working when Wi-Fi drops: queue arrivals and resend later | ❌ (part of `gate_camera.py`) |
+| 7 | **Face photos are public files** (`/storage/faces/{user id}/img_01.jpg` — guessable). Move them to private storage and let the Pi download them only with the device key, before the gate script and before going live | ❌ server fix |
 
 ## F. Data + parent app
 

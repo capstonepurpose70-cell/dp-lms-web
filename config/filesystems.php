@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        // Student face photos (biometric data). Never served directly: the admin review page and the
+        // Raspberry Pi read them through authenticated routes (see App\Support\FacePhotos).
+        'faces' => [
+            'driver' => 'local',
+            'root' => storage_path('app/faces'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
