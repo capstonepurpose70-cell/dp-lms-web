@@ -28,7 +28,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [—](#code-comments) | Code comments in English | `857b7c2` | — |
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
-| [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR | — | 14 |
+| [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
 
 ---
 
@@ -619,6 +619,22 @@ are layout, states and consistency.
   no JS errors, no sideways scroll (Attendance had 478 px before the `.sr-only` fix). SPA test 18/18 (it now
   waits for the page to finish loading, because the content no longer hides behind a fade); all 12 teacher
   pages fetched and every inline script parses.
+
+### B10-15 ✅ Messages: every chat click reloads the page, no live updates, the page scrolls
+- **Problem:** opening a chat or sending a message reloaded the whole page; new messages from a student only
+  showed after a manual reload; the chat was taller than the screen, so the page itself scrolled; faint lines.
+- **Where:** `teacher/messages.blade.php` (view only — controller, routes, access rules unchanged).
+- **Fix:** the page loads the same server-rendered page in the background and swaps in only the chat and the
+  list (same access check and mark-as-read as a full load). Sending posts the same form (CSRF, bad-word filter,
+  validation stay on the server); errors show above the box and the text is kept. Every 5 s (tab visible only)
+  new messages and list previews are refreshed; the view sticks to the bottom only if it already was there; the
+  timer stops when the teacher leaves the page. Layout fits the screen (only the list and the messages scroll),
+  stronger dividers, search by name, day separators (Today / Yesterday / date), 44 px send button.
+- **Tested (real browser, 1366 and 390 px, 22 checks):** no page scroll; chat opens with no reload (a page
+  marker survives); scrolled to the newest message; Enter sends, bubble shows, box clears, list preview updates;
+  a bad word shows the server's error and keeps the text; a message inserted for the student appears live
+  without a reload; phone back button shows the list; search hides other chats; leaving through the sidebar
+  leaves no errors from the old timer. Test messages deleted afterwards.
 
 ### B10-14 ✅ Teacher app cannot show the face-kiosk QR
 - **Problem:** the adviser's one-time QR existed only on the website; the app had no endpoint for it.
