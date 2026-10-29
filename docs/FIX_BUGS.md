@@ -29,7 +29,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
 | [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
-| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page | — | 2 |
+| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard | — | 4 |
 
 ---
 
@@ -669,6 +669,31 @@ are layout, states and consistency.
   password signs in; wrong passwords count down 3 → 1, then lock with ~1800 s from the server, shown again after
   a reload without the flash, and even the right password is refused while locked; logout notice + form flag).
   Logout regression 5/5. Screenshots 1440 / 1024 / 390: no JS errors, no sideways scroll.
+
+### B11-3 ✅ JavaScript error on every admin page
+- **Problem:** a stray `n` after the dark-mode script in the admin layout (`})();n`) threw
+  `ReferenceError: n is not defined` on every admin page load.
+- **Where:** `layouts/admin.blade.php`. **Fix:** removed. Admin dashboard now loads with no JS errors.
+
+### B11-4 ✅ Dashboard: not live, two y-axes, dead code
+- **Problem:** numbers and charts only changed on a reload; sign-ins and registrations shared one chart with two
+  y-axes (different scales on one plot); an entrance animation called a library that is not loaded (`anime`);
+  a new chart was created on every visit without the old one being freed; chart colours read the theme once.
+- **Where:** `Admin/DashboardController`, `admin/dashboard.blade.php`, new `admin/partials/dashboard-pending` and
+  `dashboard-activity`, route `admin.dashboard.live`.
+- **Fix:** one data method used by the page and by `GET /admin/dashboard/live` (JSON, `no-store`, admin only); the
+  two lists come back as HTML from the same partials the page uses (forms and CSRF unchanged). The page refreshes
+  every 20 s while visible: numbers count to the new value, chart values glide to their new height, lists update
+  unless the admin is pointing at or focused inside them; the timer stops when the page is left. Two charts with
+  one axis each — Sign-ins (line, draws in from the left, crosshair tooltip) and Registrations and approvals
+  (grouped bars rising with a short stagger, legend). Palette validated for colour-blind separation and contrast
+  in light (`#2563EB`/`#0D9488`) and dark (`#3B82F6`/`#0D9488`); dark mode recolours without rebuilding; each
+  chart has a screen-reader table; reduced motion turns the animation off.
+- **Tested:** PHPUnit 3 tests / 44 assertions (page has both charts and no second axis; live endpoint needs an
+  admin; JSON shape, 7 / days-in-month / 12 labels; a new pending parent and a login appear on the next refresh,
+  with the approve form and CSRF field in the list HTML). Real browser: charts drawn, one y-axis each, month and
+  year views, dark mode recolour, the live refresh ran on its own and stayed "Live", no JS errors; screenshots
+  1440 / 390 with no sideways scroll.
 
 ---
 

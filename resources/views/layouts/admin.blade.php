@@ -8,7 +8,7 @@
                     document.documentElement.setAttribute('data-theme', 'dark');
                 }
             } catch (e) {}
-        })();n
+        })();
     </script>
     <style>
         /* ═══════════ DARK MODE ═══════════ */

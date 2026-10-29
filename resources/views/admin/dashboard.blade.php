@@ -4,657 +4,509 @@
 @section('content')
 
 <style>
-    .db-page { max-width: 1280px; margin: 0 auto; }
+    .db { max-width: 1280px; margin: 0 auto; --db-line: var(--border-default, #E2E8F0); }
+    .db .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .db-chart { position: relative; }
+    .db-card { background: var(--surface-card); border: 1px solid var(--db-line); border-radius: 14px; }
 
-    /* Page header */
-    .db-page-header {
-        display: flex; align-items: flex-end; justify-content: space-between;
-        margin-bottom: 1.75rem; gap: 1rem; flex-wrap: wrap;
-    }
-    .db-page-title {
-        font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700;
-        color: var(--slate-900); line-height: 1.2; letter-spacing: -0.02em;
-    }
-    .db-page-sub { font-size: 13px; color: var(--slate-500); margin-top: 4px; }
-    .db-date-badge {
-        display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-        color: var(--slate-500); background: var(--slate-100); border: 1px solid var(--border-default);
-        padding: 6px 14px; border-radius: var(--r-full); white-space: nowrap;
-    }
-    .db-date-badge svg { width: 14px; height: 14px; color: var(--blue-500); }
+    /* Header */
+    .db-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; margin-bottom: 20px; }
+    .db-title { font-size: 26px; font-weight: 800; color: var(--slate-900); letter-spacing: -.02em; line-height: 1.2; }
+    .db-sub { font-size: 14px; color: var(--slate-600); margin-top: 4px; }
+    .db-live { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--slate-600); }
+    .db-live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--success-light, #DCFCE7); color: #166534; font-weight: 700; }
+    .db-live-pill i { width: 7px; height: 7px; border-radius: 50%; background: #16A34A; }
+    .db-live.paused .db-live-pill { background: var(--slate-100); color: var(--slate-600); }
+    .db-live.paused .db-live-pill i { background: var(--slate-400); }
+    .db-live.updating .db-live-pill i { animation: db-blink 1s ease-in-out infinite; }
+    @keyframes db-blink { 50% { opacity: .25; } }
 
-    /* Clickable date + calendar popup */
-    .db-date-wrap { position: relative; }
-    .db-date-badge { cursor: pointer; transition: background .18s, border-color .18s; }
-    .db-date-badge:hover { background: var(--slate-200, #e2e8f0); }
-    .db-date-caret { width: 12px !important; height: 12px !important; color: var(--slate-400) !important; transition: transform .2s; }
-    .db-date-badge[aria-expanded="true"] .db-date-caret { transform: rotate(180deg); }
-
-    .db-cal {
-        position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
-        width: 270px; background: var(--white, #fff);
-        border: 1px solid var(--border-default); border-radius: var(--r-lg, 14px);
-        box-shadow: var(--shadow-lg); padding: 14px; animation: dbCalIn .16s ease;
-    }
-    .db-cal[hidden] { display: none; }
-    @keyframes dbCalIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-    .db-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .db-cal-title { font-family: 'Outfit', sans-serif; font-size: 13.5px; font-weight: 700; color: var(--slate-900); }
-    .db-cal-nav { width: 28px; height: 28px; border: none; background: var(--slate-100); border-radius: 8px;
-        cursor: pointer; color: var(--slate-600); font-size: 17px; line-height: 1;
-        display: flex; align-items: center; justify-content: center; }
-    .db-cal-nav:hover { background: var(--slate-200, #e2e8f0); color: var(--slate-900); }
-    .db-cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
-    .db-cal-dow span { text-align: center; font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .03em; }
-    .db-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-    .db-cal-cell { height: 32px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; color: var(--slate-700); border-radius: 8px; }
-    .db-cal-cell.muted { color: var(--slate-300); }
-    .db-cal-cell.today { background: var(--blue-600, #2563eb); color: #fff; font-weight: 700; }
-    .db-cal-today { margin-top: 10px; width: 100%; border: 1px solid var(--border-default); background: var(--white, #fff);
-        color: var(--blue-600, #2563eb); font-weight: 600; font-size: 12px; padding: 7px; border-radius: 9px; cursor: pointer; transition: background .18s; }
-    .db-cal-today:hover { background: var(--blue-50, #eff6ff); }
-
-    /* Stat cards */
-    .stat-grid {
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem; margin-bottom: 1.5rem;
-    }
-    .stat-card {
-        background: var(--white); border: 1px solid var(--border-default);
-        border-radius: var(--r-lg); padding: 1.25rem 1.375rem;
-        position: relative; overflow: hidden;
-        transition: box-shadow 0.18s var(--ease-out), transform 0.18s var(--ease-out);
-    }
-    .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-    .stat-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0;
-        height: 3px; border-radius: var(--r-lg) var(--r-lg) 0 0;
-    }
-    .stat-card.blue::before   { background: var(--blue-500); }
-    .stat-card.teal::before   { background: #1D9E75; }
-    .stat-card.amber::before  { background: #BA7517; }
-    .stat-card.purple::before { background: #534AB7; }
-
-    .stat-icon {
-        width: 40px; height: 40px; border-radius: var(--r-md);
-        display: flex; align-items: center; justify-content: center; margin-bottom: 0.875rem;
-    }
-    .stat-icon svg { width: 20px; height: 20px; }
-    .stat-icon.blue   { background: var(--blue-50); color: var(--blue-600); }
-    .stat-icon.teal   { background: #E1F5EE; color: #0F6E56; }
-    .stat-icon.amber  { background: #FAEEDA; color: #854F0B; }
-    .stat-icon.purple { background: #EEEDFE; color: #534AB7; }
-
-    .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--slate-400); margin-bottom: 4px; }
-    .stat-value { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 700; color: var(--slate-900); line-height: 1; letter-spacing: -0.03em; }
-    .stat-meta { font-size: 12px; font-weight: 500; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
-    .stat-meta.blue   { color: var(--blue-600); }
-    .stat-meta.teal   { color: #0F6E56; }
-    .stat-meta.amber  { color: #854F0B; }
-    .stat-meta.purple { color: #534AB7; }
-    .stat-meta svg { width: 13px; height: 13px; }
+    /* Summary strip */
+    .db-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 16px; }
+    .db-kpi { padding: 18px 22px; }
+    .db-kpi + .db-kpi { border-left: 1px solid var(--db-line); }
+    .db-kpi-label { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--slate-600); }
+    .db-kpi-label svg { width: 18px; height: 18px; color: var(--slate-400); flex-shrink: 0; }
+    .db-kpi-num { display: block; margin-top: 8px; font-size: 30px; font-weight: 800; color: var(--slate-900); line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .db-kpi-note { display: block; margin-top: 4px; font-size: 13px; color: var(--slate-500); font-variant-numeric: tabular-nums; }
+    .db-kpi-note.warn { color: #B45309; font-weight: 600; }
 
     /* Needs attention */
-    .att-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:1rem; margin-bottom:1.5rem; }
-    .att-card { display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--r-lg); border:1px solid var(--border-default);
-        background:var(--white); text-decoration:none; transition:box-shadow .18s, transform .18s, border-color .18s; }
-    .att-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
-    .att-ic { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; flex-shrink:0; }
-    .att-ic svg { width:20px; height:20px; }
-    .att-txt { flex:1; min-width:0; }
-    .att-txt b { display:block; font-family:'Outfit', sans-serif; font-size:22px; font-weight:700; color:var(--slate-900); line-height:1.1; }
-    .att-txt span { font-size:12.5px; color:var(--slate-500); font-weight:500; }
-    .att-go { width:16px; height:16px; color:var(--slate-400); flex-shrink:0; }
-    .att-card.warn { border-color:rgba(217,119,6,.35); }
-    .att-card.warn .att-ic { background:rgba(245,158,11,.14); color:#b45309; }
-    .att-card.warn:hover { border-color:#d97706; }
-    .att-card.ok .att-ic   { background:rgba(22,163,74,.12); color:#15803d; }
-    .att-card.info .att-ic { background:rgba(37,99,235,.10); color:#1d4ed8; }
-    [data-theme="dark"] .att-card.warn .att-ic { color:#fbbf24; }
-    [data-theme="dark"] .att-card.ok .att-ic   { color:#4ade80; }
-    [data-theme="dark"] .att-card.info .att-ic { color:#93c5fd; }
-    [data-theme="dark"] .role-pill.teacher { background:rgba(37,99,235,.18); color:#93c5fd; }
-    @media (max-width: 900px) { .att-grid { grid-template-columns:1fr; } }
+    .db-att { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; overflow: hidden; }
+    .db-att a { display: flex; align-items: center; gap: 12px; padding: 14px 18px; text-decoration: none; color: inherit; transition: background-color .15s ease; }
+    .db-att a + a { border-left: 1px solid var(--db-line); }
+    .db-att a:hover { background: var(--slate-50); }
+    .db-att-ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: var(--slate-100); color: var(--slate-600); }
+    .db-att a.warn .db-att-ic { background: #FEF3C7; color: #B45309; }
+    .db-att a.ok .db-att-ic { background: #DCFCE7; color: #15803D; }
+    .db-att-ic svg { width: 19px; height: 19px; }
+    .db-att-txt { flex: 1; min-width: 0; font-size: 13.5px; color: var(--slate-600); line-height: 1.4; }
+    .db-att-txt b { display: block; font-size: 18px; color: var(--slate-900); font-variant-numeric: tabular-nums; }
+    .db-att-go { width: 16px; height: 16px; color: var(--slate-400); flex-shrink: 0; transition: transform .15s ease; }
+    .db-att a:hover .db-att-go { transform: translateX(2px); }
 
-    /* Chart panel */
-    .chart-panel {
-        background: var(--white); border: 1px solid var(--border-default);
-        border-radius: var(--r-lg); overflow: hidden; margin-bottom: 1.25rem;
-    }
-    .chart-panel-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 1.125rem 1.5rem; border-bottom: 1px solid var(--border-default);
-        background: var(--slate-50); flex-wrap: wrap; gap: 0.75rem;
-    }
-    .chart-panel-title {
-        font-family: 'Outfit', sans-serif; font-size: 14.5px; font-weight: 700;
-        color: var(--slate-800); display: flex; align-items: center; gap: 8px;
-    }
-    .chart-panel-title svg { width: 17px; height: 17px; color: var(--blue-500); }
+    /* Period filter, one row above both charts */
+    .db-filter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 12px; }
+    .db-filter h2 { font-size: 16px; font-weight: 800; color: var(--slate-900); }
+    .db-tabs { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--slate-100); border: 1px solid var(--db-line); }
+    .db-tabs button { min-height: 34px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--slate-600); cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+    .db-tabs button[aria-pressed="true"] { background: var(--surface-card); color: var(--slate-900); box-shadow: 0 1px 2px rgba(15,23,42,.08); }
 
-    /* Period tabs */
-    .period-tabs {
-        display: flex; background: var(--slate-100); border: 1px solid var(--border-default);
-        border-radius: var(--r-md); padding: 3px; gap: 2px;
-    }
-    .period-tab {
-        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600;
-        color: var(--slate-500); padding: 5px 14px; border-radius: var(--r-sm);
-        border: none; background: transparent; cursor: pointer; transition: all 0.18s var(--ease-out);
-    }
-    .period-tab.active { background: var(--white); color: var(--blue-700); box-shadow: 0 1px 4px rgba(0,0,0,0.10); }
-    .period-tab:hover:not(.active) { color: var(--slate-700); background: rgba(255,255,255,0.6); }
+    .db-charts { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+    .db-chart { padding: 18px 20px 14px; }
+    .db-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .db-chart-title { font-size: 14.5px; font-weight: 700; color: var(--slate-700); }
+    .db-chart-total { display: block; margin-top: 2px; font-size: 24px; font-weight: 800; color: var(--slate-900); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .db-chart-total small { font-size: 13px; font-weight: 600; color: var(--slate-500); letter-spacing: 0; }
+    .db-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; font-weight: 600; color: var(--slate-600); }
+    .db-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .db-legend i { width: 10px; height: 10px; border-radius: 3px; }
+    .db-canvas { position: relative; height: 250px; }
+    .db-chart-note { display: grid; place-items: center; height: 100%; text-align: center; padding: 0 16px; font-size: 13px; color: var(--slate-500); }
 
-    /* Chart legend */
-    .chart-legend {
-        display: flex; align-items: center; gap: 1.25rem;
-        padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border-default);
-    }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--slate-500); }
-    .legend-swatch { width: 28px; height: 3px; border-radius: 2px; }
-    .legend-swatch.reg   { background: #2478e4; }
-    .legend-swatch.apr   { background: #1D9E75; }
-    .legend-swatch.log   { background: #534AB7; }
+    /* Lists */
+    .db-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px 12px; border-bottom: 1px solid var(--db-line); }
+    .panel-title { font-size: 15px; font-weight: 800; color: var(--slate-900); }
+    .panel-link { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 700; color: var(--blue-600); text-decoration: none; }
+    .panel-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .panel-body { max-height: 420px; overflow-y: auto; }
 
-    .chart-body { padding: 1.25rem 1.5rem 1rem; }
-    .chart-canvas-wrap { position: relative; height: 260px; }
-
-    /* Bottom grid */
-    .db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-    @media (max-width: 900px) { .db-grid { grid-template-columns: 1fr; } }
-
-    /* Panel */
-    .panel { background: var(--white); border: 1px solid var(--border-default); border-radius: var(--r-lg); overflow: hidden; }
-    .panel-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 1rem 1.375rem; border-bottom: 1px solid var(--border-default); background: var(--slate-50);
-    }
-    .panel-title { font-family: 'Outfit', sans-serif; font-size: 13.5px; font-weight: 700; color: var(--slate-800); display: flex; align-items: center; gap: 8px; }
-    .panel-title svg { width: 16px; height: 16px; color: var(--blue-500); }
-    .panel-link { font-size: 12px; font-weight: 600; color: var(--blue-600); text-decoration: none; display: flex; align-items: center; gap: 3px; transition: color 0.15s; }
-    .panel-link:hover { color: var(--blue-800); }
-    .panel-link svg { width: 13px; height: 13px; }
-    .panel-body { padding: 0 1.375rem; }
-    .panel-empty { padding: 2.5rem 1.375rem; text-align: center; color: var(--slate-400); font-size: 13px; }
-
-    /* Pending row */
-    .pending-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.875rem 0; border-bottom: 1px solid var(--slate-100); }
-    .pending-row:last-child { border-bottom: none; }
-    .pending-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--blue-400), var(--blue-700)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; letter-spacing: 0.03em; }
+    .pending-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--db-line); }
+    .pending-row:last-child { border-bottom: 0; }
+    .pending-avatar { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; background: var(--blue-50); color: var(--blue-700); font-size: 13px; font-weight: 800; }
     .pending-info { flex: 1; min-width: 0; }
-    .pending-name { font-size: 13.5px; font-weight: 600; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pending-email { font-size: 11.5px; color: var(--slate-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pending-name { font-size: 14px; font-weight: 700; color: var(--slate-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pending-email { font-size: 12.5px; color: var(--slate-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pending-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .pending-actions form { display: inline; margin: 0; }
+    .role-pill { padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--slate-100); color: var(--slate-700); }
+    .role-pill.student { background: #DBEAFE; color: #1E40AF; }
+    .role-pill.teacher { background: #CCFBF1; color: #115E59; }
+    .role-pill.parent  { background: #FEF3C7; color: #92400E; }
+    .action-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 11px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: background-color .15s ease; }
+    .action-btn svg { width: 14px; height: 14px; }
+    .action-btn.approve { background: #16A34A; color: #fff; }
+    .action-btn.approve:hover { background: #15803D; }
+    .action-btn.reject { background: transparent; color: #B91C1C; border-color: #FECACA; }
+    .action-btn.reject:hover { background: #FEF2F2; }
 
-    .role-pill { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: var(--r-full); }
-    .role-pill.student { background: #E1F5EE; color: #0F6E56; }
-    .role-pill.parent  { background: #FAEEDA; color: #854F0B; }
-    .role-pill.teacher { background: var(--blue-50); color: var(--blue-800); }
-
-    .action-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: var(--r-sm); border: none; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s var(--ease-out); }
-    .action-btn svg { width: 12px; height: 12px; }
-    .action-btn.approve { background: #EAF3DE; color: #3B6D11; }
-    .action-btn.approve:hover { background: #C0DD97; transform: translateY(-1px); }
-    .action-btn.reject  { background: #FCEBEB; color: #A32D2D; }
-    .action-btn.reject:hover  { background: #F7C1C1; transform: translateY(-1px); }
-
-    /* Log row */
-    .log-row { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.875rem 0; border-bottom: 1px solid var(--slate-100); }
-    .log-row:last-child { border-bottom: none; }
-    .log-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue-400); flex-shrink: 0; margin-top: 5px; }
+    .log-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--db-line); }
+    .log-row:last-child { border-bottom: 0; }
+    .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: var(--slate-400); }
+    .log-dot.good { background: #16A34A; }
+    .log-dot.bad { background: #DC2626; }
     .log-body { flex: 1; min-width: 0; }
-    .log-action { font-size: 13px; font-weight: 600; color: var(--slate-800); line-height: 1.4; }
-    .log-meta { font-size: 11.5px; color: var(--slate-400); margin-top: 2px; }
-    .log-module { display: inline-flex; align-items: center; background: var(--blue-50); color: var(--blue-700); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: var(--r-sm); margin-left: 4px; }
-    .log-time { font-size: 11px; color: var(--slate-400); white-space: nowrap; flex-shrink: 0; }
+    .log-action { font-size: 13.5px; font-weight: 600; color: var(--slate-900); overflow-wrap: anywhere; }
+    .log-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12.5px; color: var(--slate-500); margin-top: 1px; }
+    .log-module { padding: 0 7px; border-radius: 6px; background: var(--slate-100); color: var(--slate-600); font-weight: 600; }
+    .log-time { font-size: 12px; color: var(--slate-500); white-space: nowrap; flex-shrink: 0; }
 
-    /* ── Dark-mode polish: darken the pastel badges/pills to match theme ── */
-    [data-theme="dark"] .stat-icon.teal   { background: rgba(29,158,117,0.16); color: #4ade9f; }
-    [data-theme="dark"] .stat-icon.amber  { background: rgba(186,117,23,0.20); color: #f0b357; }
-    [data-theme="dark"] .stat-icon.purple { background: rgba(83,74,183,0.24);  color: #a89ee0; }
-    [data-theme="dark"] .stat-meta.teal   { color: #4ade9f; }
-    [data-theme="dark"] .stat-meta.amber  { color: #f0b357; }
-    [data-theme="dark"] .stat-meta.purple { color: #a89ee0; }
-    [data-theme="dark"] .role-pill.student { background: rgba(29,158,117,0.16); color: #4ade9f; }
-    [data-theme="dark"] .role-pill.parent  { background: rgba(186,117,23,0.20); color: #f0b357; }
-    [data-theme="dark"] .action-btn.approve { background: rgba(59,109,17,0.24); color: #9fd35f; }
-    [data-theme="dark"] .action-btn.approve:hover { background: rgba(59,109,17,0.38); }
-    [data-theme="dark"] .action-btn.reject  { background: rgba(163,45,45,0.24); color: #f0a0a0; }
-    [data-theme="dark"] .action-btn.reject:hover  { background: rgba(163,45,45,0.40); }
+    .panel-empty { padding: 32px 20px; text-align: center; font-size: 13.5px; color: var(--slate-500); line-height: 1.5; }
+    .panel-empty svg { width: 34px; height: 34px; color: var(--slate-300); margin: 0 auto 8px; display: block; }
+    .panel-empty b { display: block; color: var(--slate-800); }
+
+    /* One quiet entrance on first load */
+    .db-in { animation: db-rise .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 60ms); }
+    @keyframes db-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .db-flash { animation: db-flash 1.2s ease; }
+    @keyframes db-flash { 0% { background: rgba(37,99,235,.10); } 100% { background: transparent; } }
+
+    @media (max-width: 1100px) { .db-charts { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) {
+        .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .db-kpi:nth-child(3) { border-left: 0; }
+        .db-kpi:nth-child(n+3) { border-top: 1px solid var(--db-line); }
+        .db-att { grid-template-columns: 1fr; }
+        .db-att a + a { border-left: 0; border-top: 1px solid var(--db-line); }
+        .db-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+        .db-kpi { padding: 14px 14px; }
+        .db-kpi-num { font-size: 24px; }
+        .pending-row { flex-wrap: wrap; }
+        .pending-actions { width: 100%; justify-content: flex-end; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .db-in, .db-flash, .db-live.updating .db-live-pill i { animation: none !important; }
+    }
 </style>
 
-<div class="db-page">
+@php
+    $icons = [
+        'students' => 'M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-9-5m9 5l9-5',
+        'teachers' => 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-12a3 3 0 11-6 0 3 3 0 016 0zM6 8a3 3 0 11-6 0 3 3 0 016 0z',
+        'parents'  => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+        'activity' => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+    ];
+@endphp
 
-    {{-- Page Header --}}
-    <div class="db-page-header">
+<div class="db" id="dbRoot" data-live="{{ route('admin.dashboard.live') }}">
+
+    <header class="db-head db-in" style="--i:0">
         <div>
-            <div class="db-page-title">Dashboard</div>
-            <div class="db-page-sub">Welcome back — here's what's happening in DP-LMS today.</div>
+            <h1 class="db-title">Dashboard</h1>
+            <p class="db-sub">Accounts, enrollment and activity across DP-LMS.</p>
         </div>
-        <div class="db-date-wrap">
-            <button type="button" class="db-date-badge" id="dateBadge" aria-haspopup="true" aria-expanded="false">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span id="dashboardDate">—</span>
-                <svg class="db-date-caret" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-            <div class="db-cal" id="dateCalendar" hidden>
-                <div class="db-cal-head">
-                    <button type="button" class="db-cal-nav" id="calPrev" aria-label="Previous month">&lsaquo;</button>
-                    <span class="db-cal-title" id="calTitle">—</span>
-                    <button type="button" class="db-cal-nav" id="calNext" aria-label="Next month">&rsaquo;</button>
+        <p class="db-live" id="dbLive" aria-live="polite">
+            <span class="db-live-pill"><i aria-hidden="true"></i><span id="dbLiveLabel">Live</span></span>
+            <span id="dbUpdated">Updated {{ now()->format('g:i A') }}</span>
+        </p>
+    </header>
+
+    <section class="db-card db-kpis db-in" style="--i:1" aria-label="Summary">
+        <div class="db-kpi">
+            <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['students'] }}"/></svg>Students</span>
+            <span class="db-kpi-num" data-count="totalStudents">{{ number_format($totalStudents) }}</span>
+            <span class="db-kpi-note {{ $pendingStudents ? 'warn' : '' }}" data-note="pendingStudents" data-text=" waiting for approval">{{ $pendingStudents }} waiting for approval</span>
+        </div>
+        <div class="db-kpi">
+            <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['teachers'] }}"/></svg>Teachers</span>
+            <span class="db-kpi-num" data-count="totalTeachers">{{ number_format($totalTeachers) }}</span>
+            <span class="db-kpi-note" data-note="approvedTeachers" data-text=" with active accounts">{{ $approvedTeachers }} with active accounts</span>
+        </div>
+        <div class="db-kpi">
+            <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['parents'] }}"/></svg>Parents</span>
+            <span class="db-kpi-num" data-count="totalParents">{{ number_format($totalParents) }}</span>
+            <span class="db-kpi-note {{ $pendingParents ? 'warn' : '' }}" data-note="pendingParents" data-text=" waiting for approval">{{ $pendingParents }} waiting for approval</span>
+        </div>
+        <div class="db-kpi">
+            <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['activity'] }}"/></svg>Activity today</span>
+            <span class="db-kpi-num" data-count="todayLogs">{{ number_format($todayLogs) }}</span>
+            <span class="db-kpi-note">Audit log entries since midnight</span>
+        </div>
+    </section>
+
+    <nav class="db-card db-att db-in" style="--i:2" aria-label="Needs attention">
+        <a href="{{ route('admin.enrollment.index', ['status' => 'pending'], false) }}" class="{{ $pendingEnrollments ? 'warn' : 'ok' }}" data-att="pendingEnrollments">
+            <span class="db-att-ic" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
+            <span class="db-att-txt"><b data-count="pendingEnrollments">{{ $pendingEnrollments }}</b><span data-att-text>{{ $pendingEnrollments ? Str::plural('enrollment request', $pendingEnrollments) . ' to review' : 'No enrollment requests waiting' }}</span></span>
+            <svg class="db-att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="{{ route('admin.sections.index', [], false) }}" class="{{ $sectionsNoAdviser ? 'warn' : 'ok' }}" data-att="sectionsNoAdviser">
+            <span class="db-att-ic" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></span>
+            <span class="db-att-txt"><b data-count="sectionsNoAdviser">{{ $sectionsNoAdviser }}</b><span data-att-text>{{ $sectionsNoAdviser ? 'active ' . Str::plural('section', $sectionsNoAdviser) . ' without an adviser' : 'Every active section has an adviser' }}</span></span>
+            <svg class="db-att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="{{ route('admin.lrns.index', ['status' => 'available'], false) }}" data-att="availableLrns">
+            <span class="db-att-ic" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg></span>
+            <span class="db-att-txt"><b data-count="availableLrns">{{ number_format($availableLrns) }}</b><span>LRNs not yet activated by students</span></span>
+            <svg class="db-att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+    </nav>
+
+    <div class="db-filter db-in" style="--i:3">
+        <h2>Activity</h2>
+        <div class="db-tabs" role="group" aria-label="Time range for the charts">
+            <button type="button" data-period="weekly" aria-pressed="true">This week</button>
+            <button type="button" data-period="monthly" aria-pressed="false">This month</button>
+            <button type="button" data-period="yearly" aria-pressed="false">This year</button>
+        </div>
+    </div>
+
+    <div class="db-charts">
+        <section class="db-card db-chart db-in" style="--i:4" aria-labelledby="dbSignTitle">
+            <div class="db-chart-head">
+                <div>
+                    <h3 class="db-chart-title" id="dbSignTitle">Sign-ins</h3>
+                    <span class="db-chart-total"><span id="dbSignTotal">0</span> <small id="dbSignRange">this week</small></span>
                 </div>
-                <div class="db-cal-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
-                <div class="db-cal-grid" id="calGrid"></div>
-                <button type="button" class="db-cal-today" id="calToday">Jump to today</button>
             </div>
-        </div>
+            <div class="db-canvas"><canvas id="dbSignChart" role="img" aria-label="Sign-ins over the selected time range"></canvas></div>
+            <table class="sr-only" id="dbSignTable"></table>
+        </section>
+
+        <section class="db-card db-chart db-in" style="--i:5" aria-labelledby="dbRegTitle">
+            <div class="db-chart-head">
+                <div>
+                    <h3 class="db-chart-title" id="dbRegTitle">Registrations and approvals</h3>
+                    <span class="db-chart-total"><span id="dbRegTotal">0</span> <small>new accounts</small></span>
+                </div>
+                <div class="db-legend" aria-hidden="true">
+                    <span><i class="sw-reg"></i>Registrations</span>
+                    <span><i class="sw-apr"></i>Approvals</span>
+                </div>
+            </div>
+            <div class="db-canvas"><canvas id="dbRegChart" role="img" aria-label="Registrations and approvals over the selected time range"></canvas></div>
+            <table class="sr-only" id="dbRegTable"></table>
+        </section>
     </div>
 
-    {{-- Stat Cards --}}
-    <div class="stat-grid">
-        <div class="stat-card blue">
-            <div class="stat-icon blue">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-9-5m9 5l9-5"/></svg>
-            </div>
-            <div class="stat-label">Total Students</div>
-            <div class="stat-value">{{ $totalStudents }}</div>
-            <div class="stat-meta blue">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                {{ $pendingStudents }} pending approval
-            </div>
-        </div>
-        <div class="stat-card teal">
-            <div class="stat-icon teal">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-12a3 3 0 11-6 0 3 3 0 016 0zM6 8a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </div>
-            <div class="stat-label">Total Teachers</div>
-            <div class="stat-value">{{ $totalTeachers }}</div>
-            <div class="stat-meta teal">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                {{ $approvedTeachers }} active {{ Str::plural('account', $approvedTeachers) }}
-            </div>
-        </div>
-        <div class="stat-card amber">
-            <div class="stat-icon amber">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-            </div>
-            <div class="stat-label">Total Parents</div>
-            <div class="stat-value">{{ $totalParents }}</div>
-            <div class="stat-meta amber">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                {{ $pendingParents }} pending approval
-            </div>
-        </div>
-        <div class="stat-card purple">
-            <div class="stat-icon purple">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-            </div>
-            <div class="stat-label">Today's Activity</div>
-            <div class="stat-value">{{ $todayLogs }}</div>
-            <div class="stat-meta purple">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                Audit log entries
-            </div>
-        </div>
-    </div>
-
-    {{-- Needs attention — quick links to the pages where the admin acts --}}
-    <div class="att-grid">
-        <a href="{{ route('admin.enrollment.index', ['status' => 'pending'], false) }}" class="att-card {{ $pendingEnrollments ? 'warn' : 'ok' }}">
-            <div class="att-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-            <div class="att-txt">
-                <b>{{ $pendingEnrollments }}</b>
-                <span>{{ $pendingEnrollments ? Str::plural('enrollment request', $pendingEnrollments) . ' to review' : 'No enrollment requests waiting' }}</span>
-            </div>
-            <svg class="att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <a href="{{ route('admin.sections.index', [], false) }}" class="att-card {{ $sectionsNoAdviser ? 'warn' : 'ok' }}">
-            <div class="att-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
-            <div class="att-txt">
-                <b>{{ $sectionsNoAdviser }}</b>
-                <span>{{ $sectionsNoAdviser ? 'active ' . Str::plural('section', $sectionsNoAdviser) . ' without an adviser' : 'Every active section has an adviser' }}</span>
-            </div>
-            <svg class="att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <a href="{{ route('admin.lrns.index', ['status' => 'available'], false) }}" class="att-card info">
-            <div class="att-ic"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg></div>
-            <div class="att-txt">
-                <b>{{ number_format($availableLrns) }}</b>
-                <span>LRNs not yet activated by students</span>
-            </div>
-            <svg class="att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-    </div>
-
-    {{-- Activity Chart Panel --}}
-    <div class="chart-panel">
-        <div class="chart-panel-header">
-            <div class="chart-panel-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-                System Activity Overview
-            </div>
-            <div class="period-tabs" role="group" aria-label="Chart period">
-                <button class="period-tab active" data-period="weekly"  aria-pressed="true">Weekly</button>
-                <button class="period-tab"         data-period="monthly" aria-pressed="false">Monthly</button>
-                <button class="period-tab"         data-period="yearly"  aria-pressed="false">Yearly</button>
-            </div>
-        </div>
-
-        <div class="chart-legend">
-            <div class="legend-item"><span class="legend-swatch reg"></span> Registrations</div>
-            <div class="legend-item"><span class="legend-swatch apr"></span> Approvals</div>
-            <div class="legend-item"><span class="legend-swatch log"></span> Logins</div>
-        </div>
-
-        <div class="chart-body">
-            <div class="chart-canvas-wrap">
-                <canvas id="activityChart" aria-label="System activity area chart" role="img"></canvas>
-            </div>
-        </div>
-    </div>
-
-    {{-- Bottom Grid --}}
     <div class="db-grid">
-
-        <div class="panel">
+        <section class="db-card db-in" style="--i:6;overflow:hidden;" aria-labelledby="dbPendingTitle">
             <div class="panel-header">
-                <div class="panel-title">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                    Pending Registrations
-                </div>
-                <a href="{{ route('admin.users.index') }}?status=pending" class="panel-link">
-                    View all
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <h2 class="panel-title" id="dbPendingTitle">Waiting for approval</h2>
+                <a href="{{ route('admin.users.index') }}?status=pending" class="panel-link">View all
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                 </a>
             </div>
-            <div class="panel-body">
-                @forelse($pendingUsers as $user)
-                <div class="pending-row">
-                    <div class="pending-avatar">
-                        {{-- preg_split: a double space ("Juan  Cruz") must not leave an empty first word --}}
-                        {{ collect(preg_split('/\s+/', trim($user->name), -1, PREG_SPLIT_NO_EMPTY))->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->take(2)->join('') ?: '?' }}
-                    </div>
-                    <div class="pending-info">
-                        <div class="pending-name">{{ $user->name }}</div>
-                        <div class="pending-email">{{ $user->email }}</div>
-                    </div>
-                    <div class="pending-actions">
-                        <span class="role-pill {{ $user->role }}">{{ ucfirst($user->role) }}</span>
-                        <form method="POST" action="{{ route('admin.users.approve', $user) }}" style="display:inline;"
-                              data-msg="Approve {{ $user->name }}? They will be able to log in." onsubmit="return confirm(this.dataset.msg);">
-                            @csrf @method('PATCH')
-                            <button type="submit" class="action-btn approve">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                Approve
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('admin.users.reject', $user) }}" style="display:inline;"
-                              data-msg="Reject {{ $user->name }}? They will not be able to log in." onsubmit="return confirm(this.dataset.msg);">
-                            @csrf @method('PATCH')
-                            <button type="submit" class="action-btn reject">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                Reject
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                @empty
-                <div class="panel-empty">
-                    <svg style="width:36px;height:36px;color:var(--slate-300);margin:0 auto 8px;display:block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    No pending registrations.
-                </div>
-                @endforelse
-            </div>
-        </div>
+            <div class="panel-body" id="dbPending">@include('admin.partials.dashboard-pending', ['pendingUsers' => $pendingUsers])</div>
+        </section>
 
-        <div class="panel">
+        <section class="db-card db-in" style="--i:7;overflow:hidden;" aria-labelledby="dbActivityTitle">
             <div class="panel-header">
-                <div class="panel-title">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Recent Activity
-                </div>
-                <a href="{{ route('admin.audit-logs.index') }}" class="panel-link">
-                    View all
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <h2 class="panel-title" id="dbActivityTitle">Recent activity</h2>
+                <a href="{{ route('admin.audit-logs.index') }}" class="panel-link">Audit log
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                 </a>
             </div>
-            <div class="panel-body">
-                @forelse($recentLogs as $log)
-                <div class="log-row">
-                    <div class="log-dot"></div>
-                    <div class="log-body">
-                        <div class="log-action">{{ $log->action }}</div>
-                        <div class="log-meta">{{ $log->user_name }}<span class="log-module">{{ $log->module }}</span></div>
-                    </div>
-                    <div class="log-time">{{ $log->created_at->diffForHumans() }}</div>
-                </div>
-                @empty
-                <div class="panel-empty">
-                    <svg style="width:36px;height:36px;color:var(--slate-300);margin:0 auto 8px;display:block;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-                    No recent activity.
-                </div>
-                @endforelse
-            </div>
-        </div>
-
+            <div class="panel-body" id="dbActivity">@include('admin.partials.dashboard-activity', ['recentLogs' => $recentLogs])</div>
+        </section>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-
 <script>
 (function () {
+    const root = document.getElementById('dbRoot');
+    if (!root) return;
 
-    /* Live date */
-    document.getElementById('dashboardDate').textContent =
-        new Date().toLocaleDateString('en-PH', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+    const POLL_MS = 20000;
+    const RANGE_WORD = { weekly: 'this week', monthly: 'this month', yearly: 'this year' };
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let data = {
+        weekly:  @json($chartDataWeekly),
+        monthly: @json($chartDataMonthly),
+        yearly:  @json($chartDataYearly),
+    };
+    let period = 'weekly';
+    const gone = () => !document.body.contains(root);   // the admin layout swapped in another page
+    const sum = (arr) => (arr || []).reduce((a, b) => a + (Number(b) || 0), 0);
+    const fmt = (n) => Number(n).toLocaleString('en-US');
 
-    /* Date badge -> calendar popup */
-    (function () {
-        const badge = document.getElementById('dateBadge');
-        const cal   = document.getElementById('dateCalendar');
-        const grid  = document.getElementById('calGrid');
-        const title = document.getElementById('calTitle');
-        if (!badge || !cal) return;
-
-        const MONTHS = ['January','February','March','April','May','June',
-                        'July','August','September','October','November','December'];
-        const today = new Date();
-        let vy = today.getFullYear(), vm = today.getMonth();
-
-        function cell(n, muted, isToday) {
-            const el = document.createElement('div');
-            el.className = 'db-cal-cell' + (muted ? ' muted' : '') + (isToday ? ' today' : '');
-            el.textContent = n;
-            return el;
-        }
-        function render() {
-            title.textContent = MONTHS[vm] + ' ' + vy;
-            grid.innerHTML = '';
-            const first    = new Date(vy, vm, 1).getDay();
-            const days     = new Date(vy, vm + 1, 0).getDate();
-            const prevDays = new Date(vy, vm, 0).getDate();
-            for (let i = first - 1; i >= 0; i--) grid.appendChild(cell(prevDays - i, true, false));
-            for (let d = 1; d <= days; d++) {
-                const isToday = d === today.getDate() && vm === today.getMonth() && vy === today.getFullYear();
-                grid.appendChild(cell(d, false, isToday));
-            }
-            const trail = (7 - ((first + days) % 7)) % 7;
-            for (let d = 1; d <= trail; d++) grid.appendChild(cell(d, true, false));
-        }
-        function open(show) {
-            const willOpen = (show === undefined) ? cal.hidden : show;
-            cal.hidden = !willOpen;
-            badge.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        }
-
-        badge.addEventListener('click', e => { e.stopPropagation(); open(); });
-        cal.addEventListener('click', e => e.stopPropagation());
-        document.getElementById('calPrev').addEventListener('click', () => { if (--vm < 0) { vm = 11; vy--; } render(); });
-        document.getElementById('calNext').addEventListener('click', () => { if (++vm > 11) { vm = 0; vy++; } render(); });
-        document.getElementById('calToday').addEventListener('click', () => { vy = today.getFullYear(); vm = today.getMonth(); render(); });
-        // Document listeners outlive this page under SPA navigation — act only while it's on screen
-        document.addEventListener('click', () => { if (document.body.contains(cal)) open(false); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.contains(cal)) open(false); });
-
-        render();
-    })();
-
-    const C = { blue:'#2478e4', teal:'#1D9E75', purple:'#534AB7' };
-    const _dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const _grid = _dark ? 'rgba(255,255,255,0.07)' : '#f1f5f9';
-    const _tick = _dark ? '#93a0b4' : '#94a3b8';
-
-    function gradient(ctx, hex) {
-        const g = ctx.createLinearGradient(0, 0, 0, 260);
-        const r = parseInt(hex.slice(1,3),16), gr = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-        g.addColorStop(0, `rgba(${r},${gr},${b},0.20)`);
-        g.addColorStop(1, `rgba(${r},${gr},${b},0.00)`);
-        return g;
+    /* ── Counting numbers (first load and every change) ── */
+    function countTo(el, to) {
+        const from = Number(String(el.textContent).replace(/[^\d-]/g, '')) || 0;
+        if (from === to) return;
+        if (reduceMotion) { el.textContent = fmt(to); return; }
+        const start = performance.now(), dur = 700;
+        const step = (now) => {
+            const t = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - t, 3);
+            el.textContent = fmt(Math.round(from + (to - from) * e));
+            if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
     }
 
-    const canvas = document.getElementById('activityChart');
-    // Chart.js is from a CDN — without internet show a note instead of breaking the page script
+    /* ── Theme-aware colours (validated palette: light #2563EB/#0D9488, dark #3B82F6/#0D9488) ── */
+    function palette() {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const css = getComputedStyle(root);
+        return {
+            dark,
+            blue: dark ? '#3B82F6' : '#2563EB',
+            teal: '#0D9488',
+            grid: dark ? 'rgba(255,255,255,.07)' : '#EEF2F7',
+            tick: css.getPropertyValue('--slate-500').trim() || '#64748B',
+            surface: css.getPropertyValue('--surface-card').trim() || '#FFFFFF',
+            ink: css.getPropertyValue('--slate-900').trim() || '#0F172A',
+        };
+    }
+    function paintLegend(p) {
+        root.querySelectorAll('.sw-reg').forEach(el => el.style.background = p.blue);
+        root.querySelectorAll('.sw-apr').forEach(el => el.style.background = p.teal);
+    }
+
+    /* Accessible table view of what each chart shows */
+    function writeTable(id, caption, labels, series) {
+        const t = document.getElementById(id);
+        if (!t) return;
+        const head = '<tr><th scope="col">Period</th>' + series.map(s => `<th scope="col">${s.name}</th>`).join('') + '</tr>';
+        const rows = labels.map((l, i) => `<tr><th scope="row">${l}</th>` + series.map(s => `<td>${s.values[i] ?? 0}</td>`).join('') + '</tr>').join('');
+        t.innerHTML = `<caption>${caption}</caption><thead>${head}</thead><tbody>${rows}</tbody>`;
+    }
+
+    function updateTotals() {
+        const d = data[period];
+        countTo(document.getElementById('dbSignTotal'), sum(d.log));
+        countTo(document.getElementById('dbRegTotal'), sum(d.reg));
+        document.getElementById('dbSignRange').textContent = RANGE_WORD[period];
+        writeTable('dbSignTable', 'Sign-ins ' + RANGE_WORD[period], d.labels, [{ name: 'Sign-ins', values: d.log }]);
+        writeTable('dbRegTable', 'Registrations and approvals ' + RANGE_WORD[period], d.labels,
+            [{ name: 'Registrations', values: d.reg }, { name: 'Approvals', values: d.apr }]);
+    }
+
+    /* ── Charts ── */
+    let signChart = null, regChart = null;
+
     if (typeof Chart === 'undefined') {
-        canvas.parentNode.innerHTML = '<div style="height:100%;display:grid;place-items:center;color:var(--slate-500);font-size:13px;text-align:center;padding:0 16px;">'
-            + 'The activity chart could not load (no internet connection). All other dashboard data is up to date.</div>';
-        return;
-    }
-    const ctx    = canvas.getContext('2d');
-
-    const BASE_DS = {
-        tension: 0.42,
-        borderWidth: 2.5,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        pointHoverBorderWidth: 2.5,
-        pointHoverBackgroundColor: '#fff',
-        fill: true,
-    };
-
-    // Helper to build datasets from raw data arrays
-    const buildDatasets = (dataObj) => [
-        { ...BASE_DS, label:'Registrations', data: dataObj.reg,
-          borderColor: C.blue,   backgroundColor: gradient(ctx,C.blue),   pointHoverBorderColor: C.blue   },
-        { ...BASE_DS, label:'Approvals',     data: dataObj.apr,
-          borderColor: C.teal,   backgroundColor: gradient(ctx,C.teal),   pointHoverBorderColor: C.teal   },
-        { ...BASE_DS, label:'Logins',        data: dataObj.log,
-          borderColor: C.purple, backgroundColor: gradient(ctx,C.purple), pointHoverBorderColor: C.purple,
-          yAxisID: 'y2' },
-    ];
-
-    // Initial Data Load
-    let currentPeriod = 'weekly';
-    
-    // Fallback if data is missing/empty (prevents JS errors)
-    const safeData = (arr) => arr || [];
-
-    const initialData = {
-        labels: safeData(@json($chartDataWeekly['labels'] ?? [])),
-        reg:    safeData(@json($chartDataWeekly['reg'] ?? [])),
-        apr:    safeData(@json($chartDataWeekly['apr'] ?? [])),
-        log:    safeData(@json($chartDataWeekly['log'] ?? [])),
-    };
-
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: initialData.labels,
-            datasets: buildDatasets(initialData),
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode:'index', intersect:false },
-            animation: { duration:460, easing:'easeOutQuart' },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0c3566',
-                    titleColor: '#bcd6fc',
-                    bodyColor: '#e0edff',
-                    borderColor: 'rgba(36,120,228,0.35)',
-                    borderWidth: 1,
-                    padding: { x:14, y:10 },
-                    cornerRadius: 10,
-                    titleFont: { family:"'Outfit',sans-serif", size:13, weight:'700' },
-                    bodyFont: { family:"'Plus Jakarta Sans',sans-serif", size:12, weight:'500' },
-                    displayColors: true,
-                    boxWidth: 8, boxHeight: 8,
-                    usePointStyle: true,
-                    callbacks: {
-                        label: i => '  ' + i.dataset.label + ': ' + i.parsed.y.toLocaleString(),
-                    },
-                },
-            },
-            scales: {
-                x: {
-                    grid: { color: _grid },
-                    border: { display:false },
-                    ticks: { color: _tick, font:{ family:"'Plus Jakarta Sans',sans-serif", size:11.5, weight:'600' }, padding:8 },
-                },
-                y: {
-                    position: 'left',
-                    grid: { color: _grid },
-                    border: { display:false },
-                    ticks: { color: _tick, font:{ family:"'Plus Jakarta Sans',sans-serif", size:11, weight:'500' }, padding:10, maxTicksLimit:6, callback: v => v.toLocaleString() },
-                },
-                y2: {
-                    position: 'right',
-                    grid: { drawOnChartArea:false },
-                    border: { display:false },
-                    ticks: { color:'#a89ee0', font:{ family:"'Plus Jakarta Sans',sans-serif", size:11, weight:'500' }, padding:10, maxTicksLimit:6, callback: v => v.toLocaleString() },
-                },
-            },
-        },
-    });
-
-    /* Period switcher */
-    document.querySelectorAll('.period-tab').forEach(btn => {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.period-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-            this.classList.add('active'); this.setAttribute('aria-pressed','true');
-
-            const p = this.dataset.period;
-            currentPeriod = p;
-
-            // Get data from Laravel Blade variables
-            let rawData;
-            if (p === 'weekly') rawData = @json($chartDataWeekly ?? []);
-            else if (p === 'monthly') rawData = @json($chartDataMonthly ?? []);
-            else rawData = @json($chartDataYearly ?? []);
-
-            const d = {
-                labels: safeData(rawData['labels']),
-                reg:    safeData(rawData['reg']),
-                apr:    safeData(rawData['apr']),
-                log:    safeData(rawData['log']),
-            };
-
-            chart.data.labels             = d.labels;
-            chart.data.datasets[0].data   = d.reg;
-            chart.data.datasets[1].data   = d.apr;
-            chart.data.datasets[2].data   = d.log;
-            
-            // Update gradients
-            chart.data.datasets[0].backgroundColor = gradient(ctx, C.blue);
-            chart.data.datasets[1].backgroundColor = gradient(ctx, C.teal);
-            chart.data.datasets[2].backgroundColor = gradient(ctx, C.purple);
-            
-            chart.update('active');
+        // Chart.js comes from a CDN: without internet the numbers and lists still work
+        ['dbSignChart', 'dbRegChart'].forEach(id => {
+            const c = document.getElementById(id);
+            c.parentNode.innerHTML = '<div class="db-chart-note">The chart could not load (no internet connection). The numbers on this page are up to date.</div>';
         });
-    });
+    } else {
+        const p = palette();
+        paintLegend(p);
+        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
 
-    /* Entrance animations */
-    if (typeof anime !== 'undefined') {
-        anime({ targets:'.stat-card,.att-card', opacity:[0,1], translateY:[12,0], duration:300, easing:'easeOutQuad', delay:anime.stagger(40) });
-        anime({ targets:'.chart-panel,.panel',  opacity:[0,1], translateY:[10,0], duration:300, easing:'easeOutQuad', delay:anime.stagger(50,{start:160}) });
+        // Vertical guide line under the tooltip on the line chart
+        const crosshair = {
+            id: 'dbCrosshair',
+            afterDatasetsDraw(chart) {
+                const a = chart.tooltip && chart.tooltip.getActiveElements();
+                if (!a || !a.length) return;
+                const x = a[0].element.x, { top, bottom } = chart.chartArea, ctx = chart.ctx;
+                ctx.save();
+                ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom);
+                ctx.lineWidth = 1; ctx.strokeStyle = palette().tick; ctx.globalAlpha = .45; ctx.stroke();
+                ctx.restore();
+            },
+        };
+
+        const axes = (pp) => ({
+            x: { grid: { display: false }, border: { display: false }, ticks: { color: pp.tick, maxRotation: 0, autoSkipPadding: 12, font: { size: 11.5, weight: '600' } } },
+            y: { beginAtZero: true, grid: { color: pp.grid }, border: { display: false }, ticks: { color: pp.tick, precision: 0, maxTicksLimit: 5, padding: 8, font: { size: 11 } } },
+        });
+        const tooltip = (pp) => ({
+            backgroundColor: pp.dark ? '#E2E8F0' : '#0F172A',
+            titleColor: pp.dark ? '#0F172A' : '#F8FAFC',
+            bodyColor: pp.dark ? '#1E293B' : '#E2E8F0',
+            padding: 10, cornerRadius: 8, boxPadding: 4, usePointStyle: true,
+            titleFont: { size: 12.5, weight: '700' }, bodyFont: { size: 12.5 },
+            callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + fmt(c.parsed.y) },
+        });
+
+        // Line draws in from the left, one point after another; bars rise with a short stagger
+        const lineIn = (n) => reduceMotion ? false : {
+            x: { type: 'number', easing: 'easeOutQuart', duration: 500, from: NaN, delay: (c) => c.type === 'data' && c.mode === 'default' ? c.dataIndex * (700 / Math.max(n, 1)) : 0 },
+            y: { type: 'number', easing: 'easeOutQuart', duration: 500, from: (c) => c.chart.scales.y ? c.chart.scales.y.getPixelForValue(0) : 0, delay: (c) => c.type === 'data' && c.mode === 'default' ? c.dataIndex * (700 / Math.max(n, 1)) : 0 },
+        };
+
+        const d0 = data[period];
+        signChart = new Chart(document.getElementById('dbSignChart'), {
+            type: 'line',
+            data: { labels: d0.labels, datasets: [{
+                label: 'Sign-ins', data: d0.log, borderColor: p.blue, backgroundColor: p.blue + '14', fill: 'origin',
+                borderWidth: 2, cubicInterpolationMode: 'monotone', pointRadius: 0, pointHoverRadius: 5,
+                pointHoverBackgroundColor: p.blue, pointHoverBorderColor: p.surface, pointHoverBorderWidth: 2,
+            }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                animations: lineIn(d0.labels.length),
+                animation: reduceMotion ? false : { duration: 500 },
+                plugins: { legend: { display: false }, tooltip: tooltip(p) },
+                scales: axes(p),
+            },
+            plugins: [crosshair],
+        });
+
+        regChart = new Chart(document.getElementById('dbRegChart'), {
+            type: 'bar',
+            data: { labels: d0.labels, datasets: [
+                { label: 'Registrations', data: d0.reg, backgroundColor: p.blue, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 18 },
+                { label: 'Approvals', data: d0.apr, backgroundColor: p.teal, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 18 },
+            ] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                datasets: { bar: { categoryPercentage: .62, barPercentage: .86 } },
+                interaction: { mode: 'index', intersect: false },
+                animation: reduceMotion ? false : {
+                    duration: 600, easing: 'easeOutQuart',
+                    delay: (c) => c.type === 'data' && c.mode === 'default' ? c.dataIndex * 35 + c.datasetIndex * 80 : 0,
+                },
+                plugins: { legend: { display: false }, tooltip: tooltip(p) },
+                scales: axes(p),
+            },
+        });
+
+        // Dark / light switch: recolour without rebuilding
+        const themeWatch = new MutationObserver(() => {
+            if (gone()) { themeWatch.disconnect(); return; }
+            const q = palette();
+            paintLegend(q);
+            const s = signChart.data.datasets[0];
+            s.borderColor = q.blue; s.backgroundColor = q.blue + '14'; s.pointHoverBackgroundColor = q.blue; s.pointHoverBorderColor = q.surface;
+            regChart.data.datasets[0].backgroundColor = q.blue;
+            regChart.data.datasets[1].backgroundColor = q.teal;
+            [signChart, regChart].forEach(ch => { ch.options.scales = axes(q); ch.options.plugins.tooltip = tooltip(q); ch.update('none'); });
+        });
+        themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     }
 
+    function showPeriod(next, animate) {
+        period = next;
+        const d = data[period];
+        if (signChart) {
+            const labelsChanged = JSON.stringify(signChart.data.labels) !== JSON.stringify(d.labels);
+            signChart.data.labels = d.labels; signChart.data.datasets[0].data = d.log;
+            regChart.data.labels = d.labels; regChart.data.datasets[0].data = d.reg; regChart.data.datasets[1].data = d.apr;
+            // New range = draw in again; same range with new numbers = values glide to their new height
+            if (labelsChanged && animate) { signChart.reset(); regChart.reset(); }
+            signChart.update(); regChart.update();
+        }
+        updateTotals();
+    }
+
+    root.querySelector('.db-tabs').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-period]');
+        if (!b || b.dataset.period === period) return;
+        root.querySelectorAll('.db-tabs button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+        showPeriod(b.dataset.period, true);
+    });
+
+    /* ── Live refresh ── */
+    const live = document.getElementById('dbLive');
+    const liveLabel = document.getElementById('dbLiveLabel');
+    const updated = document.getElementById('dbUpdated');
+    let timer = null, busy = false;
+
+    function setText(el, text) { if (el && el.textContent !== text) el.textContent = text; }
+    function swapList(id, html) {
+        const el = document.getElementById(id);
+        if (!el || el.innerHTML.trim() === html.trim()) return;
+        // Never pull a button out from under the admin's cursor or keyboard focus
+        if (el.contains(document.activeElement) || el.matches(':hover')) return;
+        el.innerHTML = html;
+        el.classList.remove('db-flash'); void el.offsetWidth; el.classList.add('db-flash');
+    }
+
+    function apply(json) {
+        const c = json.counts || {};
+        root.querySelectorAll('[data-count]').forEach(el => { if (c[el.dataset.count] !== undefined) countTo(el, Number(c[el.dataset.count])); });
+        root.querySelectorAll('[data-note]').forEach(el => {
+            const n = Number(c[el.dataset.note] ?? 0);
+            setText(el, n + el.dataset.text);
+            if (el.dataset.note !== 'approvedTeachers') el.classList.toggle('warn', n > 0);
+        });
+        const att = (key, yes, no) => {
+            const a = root.querySelector(`[data-att="${key}"]`), n = Number(c[key] ?? 0);
+            if (!a) return;
+            a.classList.toggle('warn', n > 0); a.classList.toggle('ok', n === 0);
+            setText(a.querySelector('[data-att-text]'), n > 0 ? yes(n) : no);
+        };
+        att('pendingEnrollments', n => (n === 1 ? 'enrollment request' : 'enrollment requests') + ' to review', 'No enrollment requests waiting');
+        att('sectionsNoAdviser', n => 'active ' + (n === 1 ? 'section' : 'sections') + ' without an adviser', 'Every active section has an adviser');
+
+        if (json.charts) { data = json.charts; showPeriod(period, false); }
+        if (typeof json.pendingHtml === 'string') swapList('dbPending', json.pendingHtml);
+        if (typeof json.activityHtml === 'string') swapList('dbActivity', json.activityHtml);
+        setText(updated, 'Updated ' + new Date(json.updatedAt || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+    }
+
+    function refresh() {
+        if (gone()) { clearInterval(timer); return; }
+        if (document.hidden || busy) return;
+        busy = true;
+        live.classList.add('updating');
+        fetch(root.dataset.live, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(r => {
+                if (r.status === 401 || r.status === 419 || (r.redirected && !r.url.includes('/admin/dashboard'))) { window.location.href = '/admin/login'; throw new Error('signed out'); }
+                if (!r.ok) throw new Error('http ' + r.status);
+                return r.json();
+            })
+            .then(json => { if (!gone()) { apply(json); live.classList.remove('paused'); setText(liveLabel, 'Live'); } })
+            .catch(() => { live.classList.add('paused'); setText(liveLabel, 'Reconnecting'); })
+            .finally(() => { busy = false; live.classList.remove('updating'); });
+    }
+
+    // First paint: numbers count up from zero, charts draw in
+    root.querySelectorAll('.db-kpi-num[data-count]').forEach(el => { const to = Number(el.textContent.replace(/[^\d-]/g, '')) || 0; el.textContent = '0'; countTo(el, to); });
+    updateTotals();
+
+    timer = setInterval(refresh, POLL_MS);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !gone()) refresh(); });
 })();
 </script>
 @endsection

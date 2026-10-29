@@ -15,6 +15,43 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        return view('admin.dashboard', $this->data());
+    }
+
+    /**
+     * GET /admin/dashboard/live — the same numbers as the page, for the live refresh.
+     * The two lists come back as HTML from the same partials the page uses (forms, CSRF and all).
+     */
+    public function live()
+    {
+        $d = $this->data();
+
+        return response()->json([
+            'counts' => [
+                'totalStudents'      => $d['totalStudents'],
+                'totalTeachers'      => $d['totalTeachers'],
+                'totalParents'       => $d['totalParents'],
+                'pendingStudents'    => $d['pendingStudents'],
+                'pendingParents'     => $d['pendingParents'],
+                'approvedTeachers'   => $d['approvedTeachers'],
+                'todayLogs'          => $d['todayLogs'],
+                'pendingEnrollments' => $d['pendingEnrollments'],
+                'sectionsNoAdviser'  => $d['sectionsNoAdviser'],
+                'availableLrns'      => $d['availableLrns'],
+            ],
+            'charts' => [
+                'weekly'  => $d['chartDataWeekly'],
+                'monthly' => $d['chartDataMonthly'],
+                'yearly'  => $d['chartDataYearly'],
+            ],
+            'pendingHtml'  => view('admin.partials.dashboard-pending', ['pendingUsers' => $d['pendingUsers']])->render(),
+            'activityHtml' => view('admin.partials.dashboard-activity', ['recentLogs' => $d['recentLogs']])->render(),
+            'updatedAt'    => now()->toIso8601String(),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    private function data(): array
+    {
         $today = now()->toDateString();
 
         // ── Chart data ───────────────────────────────────────────────────
@@ -98,7 +135,7 @@ class DashboardController extends Controller
             ->when($status, fn ($c) => $c->where('status', $status))
             ->sum('c');
 
-        return view('admin.dashboard', [
+        return [
             'totalStudents'    => $count('student'),
             'totalTeachers'    => $count('teacher'),
             'totalParents'     => $count('parent'),
@@ -118,6 +155,6 @@ class DashboardController extends Controller
             'chartDataWeekly'  => $chartDataWeekly,
             'chartDataMonthly' => $chartDataMonthly,
             'chartDataYearly'  => $chartDataYearly,
-        ]);
+        ];
     }
 }

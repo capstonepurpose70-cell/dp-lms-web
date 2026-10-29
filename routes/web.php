@@ -285,6 +285,7 @@ Route::patch('/profile/update-password',
 
         // Core pages
         Route::get('/dashboard',  [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/live', [DashboardController::class, 'live'])->name('dashboard.live');
         Route::get('/reports',    [ReportController::class,    'index'])->name('reports');
         Route::get('/reports/export/enrollment', [ReportController::class, 'exportEnrollment'])->name('reports.export.enrollment');
         Route::get('/reports/export/attendance', [ReportController::class, 'exportAttendance'])->name('reports.export.attendance');
