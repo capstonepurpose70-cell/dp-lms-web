@@ -4,15 +4,16 @@
 @section('content')
 
 <style>
-    .db { max-width: 1280px; margin: 0 auto; --db-line: var(--border-default, #E2E8F0); }
+    .db { max-width: 1280px; margin: 0 auto; --db-line: var(--border-default, #E2E8F0); --db-brand: #1D4ED8; }
+    [data-theme="dark"] .db { --db-brand: #1E40AF; }
     .db .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-    .db-chart { position: relative; }
-    .db-card { background: var(--surface-card); border: 1px solid var(--db-line); border-radius: 14px; }
+    .db-card { background: var(--surface-card); border: 1px solid var(--db-line); border-radius: 16px; }
+    .db-num { font-variant-numeric: tabular-nums; }
 
     /* Header */
     .db-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 16px; margin-bottom: 20px; }
     .db-title { font-size: 26px; font-weight: 800; color: var(--slate-900); letter-spacing: -.02em; line-height: 1.2; }
-    .db-sub { font-size: 14px; color: var(--slate-600); margin-top: 4px; }
+    .db-sub { font-size: 14px; color: var(--slate-600); margin-top: 4px; text-wrap: pretty; }
     .db-live { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--slate-600); }
     .db-live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--success-light, #DCFCE7); color: #166534; font-weight: 700; }
     .db-live-pill i { width: 7px; height: 7px; border-radius: 50%; background: #16A34A; }
@@ -21,18 +22,41 @@
     .db-live.updating .db-live-pill i { animation: db-blink 1s ease-in-out infinite; }
     @keyframes db-blink { 50% { opacity: .25; } }
 
-    /* Summary strip */
-    .db-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 16px; }
-    .db-kpi { padding: 18px 22px; }
-    .db-kpi + .db-kpi { border-left: 1px solid var(--db-line); }
+    /* Change chip: arrow + words */
+    .db-delta { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 7px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: var(--slate-100); color: var(--slate-600); font-variant-numeric: tabular-nums; }
+    .db-delta svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .db-delta svg path { display: none; }
+    .db-delta[data-tone="up"] .up, .db-delta[data-tone="down"] .down, .db-delta[data-tone="flat"] .flat { display: block; }
+    .db-delta[data-tone="up"] { background: #DCFCE7; color: #166534; }
+    .db-delta[data-tone="down"] { background: #FEE2E2; color: #991B1B; }
+    [data-theme="dark"] .db-delta[data-tone="up"] { background: rgba(22,163,74,.18); color: #86EFAC; }
+    [data-theme="dark"] .db-delta[data-tone="down"] { background: rgba(220,38,38,.18); color: #FCA5A5; }
+
+    /* KPI row: one brand card for what the chart shows, then the account totals */
+    .db-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+    .db-kpi { padding: 18px 20px 14px; display: flex; flex-direction: column; min-width: 0; }
+    .db-kpi-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 10px 0 14px; }
+    .db-kpi-line .db-kpi-big { margin: 0; }
     .db-kpi-label { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--slate-600); }
-    .db-kpi-label svg { width: 18px; height: 18px; color: var(--slate-400); flex-shrink: 0; }
-    .db-kpi-num { display: block; margin-top: 8px; font-size: 30px; font-weight: 800; color: var(--slate-900); line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-    .db-kpi-note { display: block; margin-top: 4px; font-size: 13px; color: var(--slate-500); font-variant-numeric: tabular-nums; }
-    .db-kpi-note.warn { color: #B45309; font-weight: 600; }
+    .db-kpi-label svg { width: 17px; height: 17px; color: var(--slate-400); flex-shrink: 0; }
+    .db-kpi-big { display: block; margin: 10px 0 14px; font-size: 32px; font-weight: 800; color: var(--slate-900); line-height: 1; letter-spacing: -.025em; }
+    .db-rows { margin-top: auto; }
+    .db-rows div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--db-line); font-size: 13px; }
+    .db-rows dt { color: var(--slate-500); }
+    .db-rows dd { margin: 0; font-weight: 700; color: var(--slate-800); font-variant-numeric: tabular-nums; }
+    .db-rows dd.warn { color: #B45309; }
+    [data-theme="dark"] .db-rows dd.warn { color: #FBBF24; }
+
+    .db-hero { background: var(--db-brand); border-color: var(--db-brand); color: #fff; }
+    .db-hero .db-kpi-label, .db-hero .db-kpi-label svg { color: rgba(255,255,255,.82); }
+    .db-hero .db-kpi-big { color: #fff; }
+    .db-hero .db-rows div { border-top-color: rgba(255,255,255,.18); }
+    .db-hero .db-rows dt { color: rgba(255,255,255,.75); }
+    .db-hero .db-rows dd { color: #fff; }
+    .db-hero .db-delta, .db-hero .db-delta[data-tone] { background: rgba(255,255,255,.16); color: #fff; }
 
     /* Needs attention */
-    .db-att { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; overflow: hidden; }
+    .db-att { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; overflow: hidden; }
     .db-att a { display: flex; align-items: center; gap: 12px; padding: 14px 18px; text-decoration: none; color: inherit; transition: background-color .15s ease; }
     .db-att a + a { border-left: 1px solid var(--db-line); }
     .db-att a:hover { background: var(--slate-50); }
@@ -45,58 +69,52 @@
     .db-att-go { width: 16px; height: 16px; color: var(--slate-400); flex-shrink: 0; transition: transform .15s ease; }
     .db-att a:hover .db-att-go { transform: translateX(2px); }
 
-    /* Period filter, one row above both charts */
-    .db-filter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 12px; }
-    .db-filter h2 { font-size: 16px; font-weight: 800; color: var(--slate-900); }
-    .db-tabs { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--slate-100); border: 1px solid var(--db-line); }
-    .db-tabs button { min-height: 34px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--slate-600); cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-    .db-tabs button[aria-pressed="true"] { background: var(--surface-card); color: var(--slate-900); box-shadow: 0 1px 2px rgba(15,23,42,.08); }
+    /* Activity chart */
+    .db-chart { padding: 20px 22px 16px; margin-bottom: 14px; }
+    .db-chart-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 16px; }
+    .db-chart-title { font-size: 16px; font-weight: 800; color: var(--slate-900); }
+    .db-chart-sub { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+    .db-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+    .db-tabs { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--slate-100); }
+    .db-tabs button { min-height: 32px; padding: 0 12px; border-radius: 7px; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--slate-600); cursor: pointer; transition: background-color .15s ease, color .15s ease, box-shadow .15s ease; }
+    .db-tabs button:hover { color: var(--slate-900); }
+    .db-tabs button[aria-pressed="true"] { background: var(--surface-card); color: var(--slate-900); box-shadow: 0 1px 2px rgba(15,23,42,.10), 0 0 0 1px rgba(15,23,42,.04); }
+    .db-tabs button:focus-visible { outline: 2px solid #2563EB; outline-offset: 1px; }
 
-    .db-charts { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
-    .db-chart { padding: 18px 20px 14px; }
-    .db-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-    .db-chart-title { font-size: 14.5px; font-weight: 700; color: var(--slate-700); }
-    .db-chart-total { display: block; margin-top: 2px; font-size: 24px; font-weight: 800; color: var(--slate-900); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-    .db-chart-total small { font-size: 13px; font-weight: 600; color: var(--slate-500); letter-spacing: 0; }
-    .db-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; font-weight: 600; color: var(--slate-600); }
-    .db-legend span { display: inline-flex; align-items: center; gap: 6px; }
-    .db-legend i { width: 10px; height: 10px; border-radius: 3px; }
-    .db-canvas { position: relative; height: 250px; }
+    .db-summary { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 20px; margin: 18px 0 10px; }
+    .db-total { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+    .db-total-num { font-size: 30px; font-weight: 800; color: var(--slate-900); letter-spacing: -.025em; line-height: 1; }
+    .db-total-word { font-size: 13.5px; font-weight: 600; color: var(--slate-500); }
+    .db-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; font-weight: 600; color: var(--slate-600); }
+    .db-legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .db-legend b { color: var(--slate-900); font-variant-numeric: tabular-nums; }
+    .db-key-bar { width: 10px; height: 10px; border-radius: 3px; background: #2563EB; }
+    .db-key-dash { width: 14px; height: 2px; border-radius: 2px; background: #0F172A; }
+    .db-key-soon { width: 10px; height: 10px; border-radius: 3px; background: repeating-linear-gradient(135deg, #DCE3EE 0 1.5px, #F1F4F9 1.5px 4px); }
+    [data-theme="dark"] .db-key-bar { background: #3B82F6; }
+    [data-theme="dark"] .db-key-dash { background: #E2E8F0; }
+    [data-theme="dark"] .db-key-soon { background: repeating-linear-gradient(135deg, rgba(148,163,184,.3) 0 1.5px, rgba(148,163,184,.08) 1.5px 4px); }
+
+    .db-canvas { position: relative; height: 300px; }
     .db-chart-note { display: grid; place-items: center; height: 100%; text-align: center; padding: 0 16px; font-size: 13px; color: var(--slate-500); }
-
-
-    /* Change vs the previous period: arrow + words, never colour alone */
-    .db-delta { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; background: var(--slate-100); color: var(--slate-600); }
-    .db-delta svg path { display: none; }
-    .db-delta[data-tone="up"] { background: #DCFCE7; color: #166534; }
-    .db-delta[data-tone="down"] { background: #FEE2E2; color: #991B1B; }
-    .db-delta[data-tone="up"] .up, .db-delta[data-tone="down"] .down, .db-delta[data-tone="flat"] .flat { display: block; }
-    [data-theme="dark"] .db-delta[data-tone="up"] { background: rgba(22,163,74,.18); color: #86EFAC; }
-    [data-theme="dark"] .db-delta[data-tone="down"] { background: rgba(220,38,38,.18); color: #FCA5A5; }
-
-    /* Chart tooltip card */
-    .db-tip { position: absolute; left: 0; top: 0; z-index: 5; min-width: 150px; padding: 10px 12px; border-radius: 10px; pointer-events: none;
-              background: var(--surface-card); border: 1px solid var(--db-line); box-shadow: 0 10px 30px -8px rgba(15,23,42,.25), 0 2px 6px rgba(15,23,42,.06);
-              font-size: 12.5px; color: var(--slate-700); opacity: 0; transition: opacity .12s ease, transform .12s ease; }
+    .db-tip { position: absolute; left: 0; top: 0; z-index: 5; min-width: 168px; padding: 10px 12px; border-radius: 12px; pointer-events: none;
+              background: var(--surface-card); border: 1px solid var(--db-line); box-shadow: 0 12px 32px -10px rgba(15,23,42,.28), 0 2px 6px rgba(15,23,42,.06);
+              font-size: 12.5px; color: var(--slate-600); opacity: 0; transition: opacity .12s ease, transform .16s cubic-bezier(.2,.7,.2,1); }
     .db-tip[data-open="true"] { opacity: 1; }
-    .db-tip-title { font-weight: 700; color: var(--slate-900); margin-bottom: 6px; }
+    .db-tip-title { font-weight: 700; color: var(--slate-900); margin-bottom: 7px; }
     .db-tip-row { display: flex; align-items: center; gap: 8px; }
     .db-tip-row + .db-tip-row { margin-top: 4px; }
     .db-tip-row i { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-    .db-tip-row b { margin-left: auto; padding-left: 14px; color: var(--slate-900); font-variant-numeric: tabular-nums; }
-
-    /* Sparkline in "Activity today" */
-    .db-kpi { position: relative; }
-    .db-spark { position: absolute; right: 18px; top: 16px; width: 96px; height: 32px; overflow: visible; }
-    [data-theme="dark"] .db-spark-line { stroke: #3B82F6; }
-    [data-theme="dark"] .db-spark-area { fill: rgba(59,130,246,.16); }
-    @media (max-width: 1100px) { .db-spark { display: none; } }
-    .db-spark-area { fill: rgba(37,99,235,.10); }
-    .db-spark-line { fill: none; stroke: #2563EB; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-    .db-chart .db-legend { margin: -4px 0 10px; }
+    .db-tip-row i.dash { width: 10px; height: 2px; }
+    .db-tip-row b { margin-left: auto; padding-left: 16px; color: var(--slate-900); font-variant-numeric: tabular-nums; }
+    .db-tip-chip { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--slate-100); color: var(--slate-600); }
+    .db-tip-chip[data-tone="up"] { background: #DCFCE7; color: #166534; }
+    .db-tip-chip[data-tone="down"] { background: #FEE2E2; color: #991B1B; }
+    [data-theme="dark"] .db-tip-chip[data-tone="up"] { background: rgba(22,163,74,.18); color: #86EFAC; }
+    [data-theme="dark"] .db-tip-chip[data-tone="down"] { background: rgba(220,38,38,.18); color: #FCA5A5; }
 
     /* Lists */
-    .db-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .db-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px 12px; border-bottom: 1px solid var(--db-line); }
     .panel-title { font-size: 15px; font-weight: 800; color: var(--slate-900); }
     .panel-link { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 700; color: var(--blue-600); text-decoration: none; }
@@ -138,38 +156,45 @@
     .panel-empty b { display: block; color: var(--slate-800); }
 
     /* One quiet entrance on first load */
-    .db-in { animation: db-rise .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 60ms); }
+    .db-in { animation: db-rise .45s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 50ms); }
     @keyframes db-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     .db-flash { animation: db-flash 1.2s ease; }
     @keyframes db-flash { 0% { background: rgba(37,99,235,.10); } 100% { background: transparent; } }
 
-    @media (max-width: 1100px) { .db-charts { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 900px) {
-        .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .db-kpi:nth-child(3) { border-left: 0; }
-        .db-kpi:nth-child(n+3) { border-top: 1px solid var(--db-line); }
         .db-att { grid-template-columns: 1fr; }
         .db-att a + a { border-left: 0; border-top: 1px solid var(--db-line); }
         .db-grid { grid-template-columns: 1fr; }
     }
-    @media (max-width: 520px) {
-        .db-kpi { padding: 14px 14px; }
-        .db-kpi-num { font-size: 24px; }
+    @media (max-width: 560px) {
+        .db-kpis { grid-template-columns: 1fr; gap: 10px; }
+        .db-kpi { padding: 14px 16px 8px; }
+        .db-kpi-big { font-size: 26px; margin: 8px 0 10px; }
+        .db-kpi-line { margin: 8px 0 10px; }
+        .db-chart { padding: 16px 14px 12px; }
+        .db-controls, .db-tabs { width: 100%; }
+        .db-tabs button { flex: 1; padding: 0 6px; }
+        .db-canvas { height: 240px; }
         .pending-row { flex-wrap: wrap; }
         .pending-actions { width: 100%; justify-content: flex-end; }
     }
     @media (prefers-reduced-motion: reduce) {
         .db-in, .db-flash, .db-live.updating .db-live-pill i { animation: none !important; }
+        .db-tip { transition: none; }
     }
 </style>
 
 @php
     $icons = [
+        'signin'   => 'M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3',
         'students' => 'M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-9-5m9 5l9-5',
         'teachers' => 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-12a3 3 0 11-6 0 3 3 0 016 0zM6 8a3 3 0 11-6 0 3 3 0 016 0z',
         'parents'  => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
-        'activity' => 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
     ];
+    $week = $chartDataWeekly;
+    $signToday = $week['current'] >= 0 ? ($week['log'][$week['current']] ?? 0) : 0;
+    $delta = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path class="up" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8"/><path class="down" stroke-linecap="round" stroke-linejoin="round" d="M7 7l10 10M17 9v8H9"/><path class="flat" stroke-linecap="round" d="M5 12h14"/></svg><span>—</span>';
 @endphp
 
 <div class="db" id="dbRoot" data-live="{{ route('admin.dashboard.live') }}"
@@ -186,31 +211,48 @@
         </p>
     </header>
 
-    <section class="db-card db-kpis db-in" style="--i:1" aria-label="Summary">
-        <div class="db-kpi">
+    <section class="db-kpis" aria-label="Summary">
+        <article class="db-card db-kpi db-hero db-in" style="--i:1">
+            <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['signin'] }}"/></svg>Sign-ins today</span>
+            <div class="db-kpi-line">
+                <span class="db-kpi-big db-num" id="dbSignToday">{{ number_format($signToday) }}</span>
+                <span class="db-delta" id="dbSignDelta" data-tone="flat">{!! $delta !!}</span>
+            </div>
+            <dl class="db-rows">
+                <div><dt>This week</dt><dd class="db-num" id="dbSignWeek">{{ number_format(array_sum($week['log'])) }}</dd></div>
+                <div><dt>This month</dt><dd class="db-num" id="dbSignMonth">{{ number_format(array_sum($chartDataMonthly['log'])) }}</dd></div>
+            </dl>
+        </article>
+
+        <article class="db-card db-kpi db-in" style="--i:2">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['students'] }}"/></svg>Students</span>
-            <span class="db-kpi-num" data-count="totalStudents">{{ number_format($totalStudents) }}</span>
-            <span class="db-kpi-note {{ $pendingStudents ? 'warn' : '' }}" data-note="pendingStudents" data-warn data-text=" waiting for approval">{{ $pendingStudents }} waiting for approval</span>
-        </div>
-        <div class="db-kpi">
+            <span class="db-kpi-big db-num" data-count="totalStudents">{{ number_format($totalStudents) }}</span>
+            <dl class="db-rows">
+                <div><dt>Approved</dt><dd class="db-num" data-count="approvedStudents">{{ number_format($approvedStudents) }}</dd></div>
+                <div><dt>Waiting for approval</dt><dd class="db-num {{ $pendingStudents ? 'warn' : '' }}" data-count="pendingStudents" data-warn="pendingStudents">{{ number_format($pendingStudents) }}</dd></div>
+            </dl>
+        </article>
+
+        <article class="db-card db-kpi db-in" style="--i:3">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['teachers'] }}"/></svg>Teachers</span>
-            <span class="db-kpi-num" data-count="totalTeachers">{{ number_format($totalTeachers) }}</span>
-            <span class="db-kpi-note" data-note="approvedTeachers" data-text=" with active accounts">{{ $approvedTeachers }} with active accounts</span>
-        </div>
-        <div class="db-kpi">
+            <span class="db-kpi-big db-num" data-count="totalTeachers">{{ number_format($totalTeachers) }}</span>
+            <dl class="db-rows">
+                <div><dt>Active accounts</dt><dd class="db-num" data-count="approvedTeachers">{{ number_format($approvedTeachers) }}</dd></div>
+                <div><dt>Not active yet</dt><dd class="db-num" data-diff="totalTeachers-approvedTeachers">{{ number_format(max(0, $totalTeachers - $approvedTeachers)) }}</dd></div>
+            </dl>
+        </article>
+
+        <article class="db-card db-kpi db-in" style="--i:4">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['parents'] }}"/></svg>Parents</span>
-            <span class="db-kpi-num" data-count="totalParents">{{ number_format($totalParents) }}</span>
-            <span class="db-kpi-note {{ $pendingParents ? 'warn' : '' }}" data-note="pendingParents" data-warn data-text=" waiting for approval">{{ $pendingParents }} waiting for approval</span>
-        </div>
-        <div class="db-kpi">
-            <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['activity'] }}"/></svg>Activity today</span>
-            <span class="db-kpi-num" data-count="todayLogs">{{ number_format($todayLogs) }}</span>
-            <span class="db-kpi-note">Audit log entries since midnight</span>
-            <svg class="db-spark" id="dbSpark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
-        </div>
+            <span class="db-kpi-big db-num" data-count="totalParents">{{ number_format($totalParents) }}</span>
+            <dl class="db-rows">
+                <div><dt>Approved</dt><dd class="db-num" data-count="approvedParents">{{ number_format($approvedParents) }}</dd></div>
+                <div><dt>Waiting for approval</dt><dd class="db-num {{ $pendingParents ? 'warn' : '' }}" data-count="pendingParents" data-warn="pendingParents">{{ number_format($pendingParents) }}</dd></div>
+            </dl>
+        </article>
     </section>
 
-    <nav class="db-card db-att db-in" style="--i:2" aria-label="Needs attention">
+    <nav class="db-card db-att db-in" style="--i:5" aria-label="Needs attention">
         <a href="{{ route('admin.enrollment.index', ['status' => 'pending'], false) }}" class="{{ $pendingEnrollments ? 'warn' : 'ok' }}" data-att="pendingEnrollments"
            data-one="enrollment request to review" data-many="enrollment requests to review" data-none="No enrollment requests waiting">
             <span class="db-att-ic" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
@@ -230,47 +272,48 @@
         </a>
     </nav>
 
-    <div class="db-filter db-in" style="--i:3">
-        <h2>Activity</h2>
-        <div class="db-tabs" role="group" aria-label="Time range for the charts">
-            <button type="button" data-period="weekly" aria-pressed="true">This week</button>
-            <button type="button" data-period="monthly" aria-pressed="false">This month</button>
-            <button type="button" data-period="yearly" aria-pressed="false">This year</button>
-        </div>
-    </div>
-
-    <div class="db-charts">
-        <section class="db-card db-chart db-in" style="--i:4" aria-labelledby="dbSignTitle">
-            <div class="db-chart-head">
-                <div>
-                    <h3 class="db-chart-title" id="dbSignTitle">Sign-ins</h3>
-                    <span class="db-chart-total"><span id="dbSignTotal">0</span> <small id="dbSignRange">this week</small></span>
-                </div>
-                <span class="db-delta" id="dbSignDelta" data-tone="flat"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"><path class="up" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8"/><path class="down" stroke-linecap="round" stroke-linejoin="round" d="M7 7l10 10M17 9v8H9"/><path class="flat" stroke-linecap="round" d="M5 12h14"/></svg><span>—</span></span>
+    <section class="db-card db-chart db-in" style="--i:6" aria-labelledby="dbChartTitle">
+        <div class="db-chart-head">
+            <div>
+                <h2 class="db-chart-title" id="dbChartTitle">Activity</h2>
+                <p class="db-chart-sub">Compared with the same point in the period before.</p>
             </div>
-            <div class="db-canvas"><canvas id="dbSignChart" role="img" aria-label="Sign-ins over the selected time range"></canvas><div class="db-tip" id="dbSignTip" data-open="false" aria-hidden="true"></div></div>
-            <table class="sr-only" id="dbSignTable"></table>
-        </section>
-
-        <section class="db-card db-chart db-in" style="--i:5" aria-labelledby="dbRegTitle">
-            <div class="db-chart-head">
-                <div>
-                    <h3 class="db-chart-title" id="dbRegTitle">Registrations and approvals</h3>
-                    <span class="db-chart-total"><span id="dbRegTotal">0</span> <small>new accounts</small></span>
+            <div class="db-controls">
+                <div class="db-tabs" id="dbMetric" role="group" aria-label="What the chart shows">
+                    <button type="button" data-value="log" aria-pressed="true">Sign-ins</button>
+                    <button type="button" data-value="reg" aria-pressed="false">Registrations</button>
+                    <button type="button" data-value="apr" aria-pressed="false">Approvals</button>
                 </div>
-                <span class="db-delta" id="dbRegDelta" data-tone="flat"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"><path class="up" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8"/><path class="down" stroke-linecap="round" stroke-linejoin="round" d="M7 7l10 10M17 9v8H9"/><path class="flat" stroke-linecap="round" d="M5 12h14"/></svg><span>—</span></span>
+                <div class="db-tabs" id="dbRange" role="group" aria-label="Time range">
+                    <button type="button" data-value="weekly" aria-pressed="true">Week</button>
+                    <button type="button" data-value="monthly" aria-pressed="false">Month</button>
+                    <button type="button" data-value="yearly" aria-pressed="false">Year</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="db-summary">
+            <div class="db-total">
+                <span class="db-total-num db-num" id="dbTotal">0</span>
+                <span class="db-total-word" id="dbTotalWord">sign-ins this week</span>
+                <span class="db-delta" id="dbDelta" data-tone="flat">{!! $delta !!}</span>
             </div>
             <div class="db-legend" aria-hidden="true">
-                <span><i data-swatch="reg"></i>Registrations</span>
-                <span><i data-swatch="apr"></i>Approvals</span>
+                <span><i class="db-key-bar"></i><span id="dbNowLabel">This week</span></span>
+                <span><i class="db-key-dash"></i><span id="dbThenLabel">Last week</span> <b id="dbThenValue">0</b></span>
+                <span><i class="db-key-soon"></i>Still to come</span>
             </div>
-            <div class="db-canvas"><canvas id="dbRegChart" role="img" aria-label="Registrations and approvals over the selected time range"></canvas><div class="db-tip" id="dbRegTip" data-open="false" aria-hidden="true"></div></div>
-            <table class="sr-only" id="dbRegTable"></table>
-        </section>
-    </div>
+        </div>
+
+        <div class="db-canvas">
+            <canvas id="dbChart" role="img" aria-label="Sign-ins per day, this week compared with last week"></canvas>
+            <div class="db-tip" id="dbTip" data-open="false" aria-hidden="true"></div>
+        </div>
+        <table class="sr-only" id="dbTable"></table>
+    </section>
 
     <div class="db-grid">
-        <section class="db-card db-in" style="--i:6;overflow:hidden;" aria-labelledby="dbPendingTitle">
+        <section class="db-card db-in" style="--i:7;overflow:hidden;" aria-labelledby="dbPendingTitle">
             <div class="panel-header">
                 <h2 class="panel-title" id="dbPendingTitle">Waiting for approval</h2>
                 <a href="{{ route('admin.users.index') }}?status=pending" class="panel-link">View all
@@ -280,7 +323,7 @@
             <div class="panel-body" id="dbPending">@include('admin.partials.dashboard-pending', ['pendingUsers' => $pendingUsers])</div>
         </section>
 
-        <section class="db-card db-in" style="--i:7;overflow:hidden;" aria-labelledby="dbActivityTitle">
+        <section class="db-card db-in" style="--i:8;overflow:hidden;" aria-labelledby="dbActivityTitle">
             <div class="panel-header">
                 <h2 class="panel-title" id="dbActivityTitle">Recent activity</h2>
                 <a href="{{ route('admin.audit-logs.index') }}" class="panel-link">Audit log

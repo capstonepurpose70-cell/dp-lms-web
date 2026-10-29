@@ -32,6 +32,8 @@ class DashboardController extends Controller
                 'totalTeachers'      => $d['totalTeachers'],
                 'totalParents'       => $d['totalParents'],
                 'pendingStudents'    => $d['pendingStudents'],
+                'approvedStudents'   => $d['approvedStudents'],
+                'approvedParents'    => $d['approvedParents'],
                 'pendingParents'     => $d['pendingParents'],
                 'approvedTeachers'   => $d['approvedTeachers'],
                 'todayLogs'          => $d['todayLogs'],
@@ -97,11 +99,11 @@ class DashboardController extends Controller
             return $out;
         };
 
-        // labels = short axis labels, titles = full dates for the tooltip, prev = totals of the period before
-        $series = function (array $days, array $labels, array $titles, array $prev) use ($byDay) {
-            $out = ['labels' => $labels, 'titles' => $titles, 'prev' => $prev, 'reg' => [], 'apr' => [], 'log' => []];
-            foreach ($days as $dayKeys) {
-                foreach (['reg', 'apr', 'log'] as $cat) {
+        // Per bucket (a day, or the days of a month) and category
+        $bucketSums = function (array $buckets) use ($byDay) {
+            $out = ['reg' => [], 'apr' => [], 'log' => []];
+            foreach ($buckets as $dayKeys) {
+                foreach ($out as $cat => $_) {
                     $sum = 0;
                     foreach ((array) $dayKeys as $d) {
                         $sum += $byDay[$d][$cat] ?? 0;
@@ -110,6 +112,21 @@ class DashboardController extends Controller
                 }
             }
             return $out;
+        };
+
+        // labels = short axis labels, titles = full dates for the tooltip, prev = totals of the period before,
+        // before = the period before, bucket by bucket at the same position, current = index of today
+        // (later buckets are still in the future)
+        $series = function (array $days, array $labels, array $titles, array $prev, array $beforeDays, int $current) use ($bucketSums) {
+            $now  = $bucketSums($days);
+            $then = $bucketSums($beforeDays);
+            $n    = count($days);
+            $fit  = fn (array $a) => array_slice(array_pad($a, $n, 0), 0, $n);   // last month may be shorter or longer
+            return [
+                'labels' => $labels, 'titles' => $titles, 'prev' => $prev, 'current' => $current,
+                'reg'    => $now['reg'], 'apr' => $now['apr'], 'log' => $now['log'],
+                'before' => ['reg' => $fit($then['reg']), 'apr' => $fit($then['apr']), 'log' => $fit($then['log'])],
+            ];
         };
 
         // Weekly: Mon..Sun of this week
@@ -122,6 +139,8 @@ class DashboardController extends Controller
             array_map(fn ($d) => Carbon::parse($d)->format('D'), $weekDays),
             array_map(fn ($d) => Carbon::parse($d)->format('l, M j'), $weekDays),
             $total($weekStart->copy()->subWeek(), $weekEnd->copy()->subWeek()),
+            array_map(fn ($d) => Carbon::parse($d)->subWeek()->toDateString(), $weekDays),
+            (int) array_search(now()->toDateString(), $weekDays, true),
         );
 
         // Monthly: every day of this month
@@ -135,6 +154,8 @@ class DashboardController extends Controller
             array_map(fn ($d) => Carbon::parse($d)->format('M j'), $monthDays),
             array_map(fn ($d) => Carbon::parse($d)->format('l, M j'), $monthDays),
             $total($lastMonth, $lastMonth->copy()->endOfMonth()),
+            array_map(fn ($i) => $lastMonth->copy()->addDays($i)->toDateString(), range(0, $lastMonth->daysInMonth - 1)),
+            now()->day - 1,
         );
 
         // Yearly: 12 months, each bucket = all days of that month (this year)
@@ -153,6 +174,14 @@ class DashboardController extends Controller
             ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
             array_map(fn ($m) => Carbon::create($year, $m, 1)->format('F Y'), range(1, 12)),
             $total(Carbon::create($year - 1, 1, 1), Carbon::create($year - 1, 12, 31)),
+            array_map(function ($m) use ($year) {
+                $days = [];
+                for ($d = Carbon::create($year - 1, $m, 1); $d->month === $m; $d->addDay()) {
+                    $days[] = $d->toDateString();
+                }
+                return $days;
+            }, range(1, 12)),
+            now()->month - 1,
         );
 
         // ── Counts ───────────────────────────────────────────────────────
@@ -170,6 +199,8 @@ class DashboardController extends Controller
             'totalTeachers'    => $count('teacher'),
             'totalParents'     => $count('parent'),
             'pendingStudents'  => $count('student', 'pending'),
+            'approvedStudents' => $count('student', 'approved'),
+            'approvedParents'  => $count('parent', 'approved'),
             'pendingParents'   => $count('parent', 'pending'),
             'approvedTeachers' => $count('teacher', 'approved'),
             'todayLogs'        => AuditLog::whereDate('created_at', $today)->count(),

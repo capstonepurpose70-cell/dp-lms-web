@@ -29,7 +29,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
 | [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
-| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard | — | 4 |
+| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode | — | 7 |
 
 ---
 
@@ -701,6 +701,42 @@ are layout, states and consistency.
   with the approve form and CSRF field in the list HTML). Real browser: charts drawn, one y-axis each, month and
   year views, dark mode recolour, the live refresh ran on its own and stayed "Live", no JS errors; screenshots
   1440 / 390 with no sideways scroll.
+
+### B11-5 ✅ Admin sidebar icons cut off, repeated and wrong
+- **Problem:** the User Management and Sections icons drew outside their 24 px box (clipped), Sections reused the
+  "people" icon, Face Verification used an eye; icons grew on hover so the menu jumped.
+- **Where:** `layouts/admin.blade.php`. **Fix:** one consistent set (same stroke, round caps, inside the box):
+  dashboard grid, people, scan-face, ID card, school, calendar-clock, clipboard-check, history, bar chart,
+  sign-out; no hover zoom.
+
+### B11-6 ✅ User profile opened as a side drawer
+- **Problem:** the eye button slid in a full-height drawer from the right; no dialog semantics, focus stayed on
+  the page behind, the page behind could scroll.
+- **Where:** `admin/users/index.blade.php`, `admin/users/show.blade.php` (reset-account row spacing).
+- **Fix:** a centred modal (bottom sheet on phones) with a short fade + scale, blurred backdrop, `role="dialog"`,
+  focus moves in and returns to the eye button, Tab stays inside, Esc / backdrop / close button close it, the
+  page behind is locked and unlocked again (also on Back). Same profile content and "Open full page" link.
+- **Tested (real browser):** opens, profile loads inside, focus inside, page locked, centred, Esc closes, focus
+  back on the eye button, page unlocked; no JS errors.
+
+### B11-7 ✅ Dashboard charts still hard to read (third pass)
+- **Problem:** two small charts side by side; a line for daily counts that are mostly zero; the KPI cards said
+  one number each with no breakdown.
+- **Where:** `Admin/DashboardController` (`before` arrays + `current` index per range, `approvedStudents`,
+  `approvedParents`), `admin/dashboard.blade.php`, `public/js/admin-dashboard.js`.
+- **Fix:** one Activity bar chart with Sign-ins / Registrations / Approvals and Week / Month / Year switches.
+  Every slot has a full-height light track; today (or the bar under the pointer) is the brand blue, the rest a
+  light blue; a dark dash on each slot marks the same day/month of the previous period; days still to come are
+  hatched. Header shows the total, "+N% vs last week" and a legend; tooltip shows the date, this vs last and the
+  change. Y-axis steps are round (5 → 1, 20 → 5 …). KPI row: a blue "Sign-ins today" card (today, this week,
+  this month, change vs yesterday) and Students / Teachers / Parents cards with approved / waiting rows, all
+  updated by the live refresh.
+- **Also fixed:** the admin dark-mode toggle only swapped its icon — the `:root` palette further down the layout
+  overrode the dark values (same specificity, later wins). The dark block now uses `html[data-theme="dark"]`.
+- **Tested:** PHPUnit 3 tests / 57 assertions (single chart and its controls on the page; `before` and `current`
+  in the live JSON). Real browser, 17 checks: bars + tracks per range, today highlighted, future hatched, hover
+  tooltip opens / closes and lights the bar, metric and range switches, dark recolour, live refresh, no sideways
+  scroll at 390, no JS errors. Dark-mode screenshots of the nine admin pages: no JS errors.
 
 ---
 

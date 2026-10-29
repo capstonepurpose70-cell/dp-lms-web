@@ -150,24 +150,36 @@
     .um-confirm-proceed.reject  { background:#dc2626; }
     .um-confirm-proceed:disabled { opacity:.7; cursor:wait; }
 
-    /* Profile drawer */
-    .um-overlay { position:fixed; inset:0; background:rgba(15,23,42,0); z-index:998; pointer-events:none; transition:background .25s ease; }
-    .um-overlay.open { background:rgba(15,23,42,.38); pointer-events:auto; }
-    .um-drawer { position:fixed; top:0; right:0; height:100vh; width:min(680px, 100vw); background:var(--white); box-shadow:-12px 0 40px rgba(0,0,0,.14);
-        z-index:999; transform:translateX(100%); transition:transform .3s cubic-bezier(.22,1,.36,1); display:flex; flex-direction:column; }
-    .um-drawer.open { transform:none; }
-    .um-drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border-default); background:var(--slate-50); }
-    .um-drawer-head b { font-size:14px; color:var(--slate-900); }
-    .um-drawer-close { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; border:1px solid var(--border-default);
-        background:var(--white); color:var(--slate-500); cursor:pointer; }
-    .um-drawer-close:hover { color:var(--slate-900); }
-    .um-drawer-close svg { width:14px; height:14px; }
-    .um-drawer-body { flex:1; overflow-y:auto; padding:20px; }
-    .um-drawer-foot { padding:12px 20px; border-top:1px solid var(--border-default); background:var(--slate-50); display:none; }
-    .um-drawer-foot a { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#2563eb; text-decoration:none; }
+    /* Profile modal (opens from the eye button in the list) */
+    .um-overlay { position:fixed; inset:0; z-index:998; background:rgba(15,23,42,.45); backdrop-filter:blur(3px);
+        opacity:0; visibility:hidden; transition:opacity .22s ease, visibility 0s linear .22s; }
+    .um-overlay.open { opacity:1; visibility:visible; transition:opacity .22s ease; }
+    .um-drawer { position:fixed; left:50%; top:50%; z-index:999; width:min(760px, calc(100vw - 32px)); max-height:calc(100dvh - 48px);
+        display:flex; flex-direction:column; overflow:hidden; background:var(--white); border:1px solid var(--border-default); border-radius:16px;
+        box-shadow:0 24px 60px -12px rgba(15,23,42,.35), 0 4px 12px rgba(15,23,42,.08);
+        opacity:0; visibility:hidden; transform:translate(-50%, -47%) scale(.97);
+        transition:opacity .2s ease, transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s linear .28s; }
+    .um-drawer.open { opacity:1; visibility:visible; transform:translate(-50%, -50%) scale(1); transition:opacity .2s ease, transform .28s cubic-bezier(.2,.8,.2,1); }
+    .um-drawer-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px 14px 20px; border-bottom:1px solid var(--border-default); }
+    .um-drawer-head h2 { font-size:15px; font-weight:800; color:var(--slate-900); }
+    .um-drawer-close { width:36px; height:36px; display:grid; place-items:center; border-radius:10px; border:1px solid var(--border-default);
+        background:var(--white); color:var(--slate-500); cursor:pointer; transition:background-color .15s ease, color .15s ease; }
+    .um-drawer-close:hover { background:var(--slate-50); color:var(--slate-900); }
+    .um-drawer-close svg { width:16px; height:16px; }
+    .um-drawer-body { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:20px; }
+    .um-drawer-foot { padding:12px 20px; border-top:1px solid var(--border-default); display:none; }
+    .um-drawer-foot a { display:inline-flex; align-items:center; gap:6px; min-height:32px; font-size:13px; font-weight:700; color:#2563eb; text-decoration:none; }
+    .um-drawer-foot a:hover { text-decoration:underline; text-underline-offset:3px; }
     .um-drawer-foot svg { width:14px; height:14px; }
-    .um-drawer-msg { color:var(--slate-500); font-size:13.5px; padding:20px 4px; }
+    .um-drawer-msg { display:flex; align-items:center; gap:10px; color:var(--slate-500); font-size:13.5px; padding:24px 4px; }
     .um-drawer-msg a { color:#2563eb; font-weight:700; }
+    .um-spin { width:18px; height:18px; border-radius:50%; border:2px solid var(--slate-200); border-top-color:#2563eb; animation:um-spin .7s linear infinite; }
+    @keyframes um-spin { to { transform:rotate(360deg); } }
+    @media (max-width: 640px) {
+        .um-drawer { left:0; right:0; top:auto; bottom:0; width:100%; max-height:92dvh; border-radius:18px 18px 0 0; transform:translateY(24px); }
+        .um-drawer.open { transform:none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .um-drawer, .um-overlay { transition:none !important; } .um-spin { animation:none; } }
 
     @media (max-width: 640px) {
         .um-head { align-items:flex-start; }
@@ -255,11 +267,11 @@
 
 {{-- Profile drawer --}}
 <div class="um-overlay" id="up-overlay"></div>
-<aside class="um-drawer" id="up-drawer" aria-label="User profile" aria-hidden="true">
+<div class="um-drawer" id="up-drawer" role="dialog" aria-modal="true" aria-labelledby="up-drawer-title" aria-hidden="true">
     <div class="um-drawer-head">
-        <b>User Profile</b>
+        <h2 id="up-drawer-title">User profile</h2>
         <button type="button" class="um-drawer-close" id="up-drawer-close" aria-label="Close">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
     </div>
     <div class="um-drawer-body" id="up-drawer-body"></div>
@@ -269,7 +281,7 @@
             Open full page
         </a>
     </div>
-</aside>
+</div>
 
 <script>
 (function () {
@@ -378,14 +390,17 @@
     window.__umUsersBound = true;
 
     // Profile drawer
-    var drawerCtl = null;
+    var drawerCtl = null, drawerOpener = null;
     function openDrawer(url) {
         var drawer = $('up-drawer'), overlay = $('up-overlay'), body = $('up-drawer-body'), foot = $('up-drawer-footer');
         if (!drawer) return false;
         if (drawerCtl) drawerCtl.abort();
         drawerCtl = new AbortController();
+        drawerOpener = document.activeElement;
         overlay.classList.add('open'); drawer.classList.add('open'); drawer.setAttribute('aria-hidden', 'false');
-        body.innerHTML = '<div class="um-drawer-msg">Loading profile…</div>';
+        document.documentElement.style.overflow = 'hidden';
+        body.innerHTML = '<div class="um-drawer-msg" role="status"><span class="um-spin" aria-hidden="true"></span>Loading profile…</div>';
+        $('up-drawer-close').focus();
         foot.style.display = 'none';
         $('up-drawer-fullpage').href = url;
 
@@ -415,8 +430,22 @@
     function closeDrawer() {
         var drawer = $('up-drawer'), overlay = $('up-overlay');
         if (drawerCtl) { drawerCtl.abort(); drawerCtl = null; }
-        if (drawer) { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true'); }
+        if (!drawer || !drawer.classList.contains('open')) return;
+        drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true');
         if (overlay) overlay.classList.remove('open');
+        document.documentElement.style.overflow = '';
+        if (drawerOpener && document.body.contains(drawerOpener)) drawerOpener.focus();
+        drawerOpener = null;
+    }
+    // Tab stays inside the open profile
+    function trapFocus(e) {
+        var drawer = $('up-drawer');
+        if (e.key !== 'Tab' || !drawer || !drawer.classList.contains('open')) return;
+        var items = drawer.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (!items.length) return;
+        var first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
 
     // Approve / reject confirmation
@@ -465,8 +494,12 @@
             form.submit();
         }
     });
+    // Back/Forward swaps the page: never leave the page scroll locked behind a closed modal
+    window.addEventListener('popstate', function () { closeDrawer(); document.documentElement.style.overflow = ''; });
     document.addEventListener('keydown', function (e) {
-        if (e.key !== 'Escape' || !$('um-ajax-content')) return;
+        if (!$('um-ajax-content')) return;
+        trapFocus(e);
+        if (e.key !== 'Escape') return;
         var box = $('um-confirm-backdrop');
         if (box && box.classList.contains('open')) closeConfirm(); else closeDrawer();
     });

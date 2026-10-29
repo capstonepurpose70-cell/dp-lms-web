@@ -12,7 +12,8 @@
     </script>
     <style>
         /* ═══════════ DARK MODE ═══════════ */
-        [data-theme="dark"] {
+        /* html[...] outranks the :root palette further down, which would otherwise win by source order */
+        html[data-theme="dark"] {
             --surface-page:    #0b1220;
             --surface-card:    #131c2e;
             --surface-nav:     #0f1827;
@@ -639,7 +640,6 @@
             background: var(--sidebar-hover-bg);
             color: #ffffff;
         }
-        .nav-link:hover svg { transform: scale(1.1); }
         .nav-link.active {
             background: var(--sidebar-active-bg);
             color: #ffffff;
@@ -1072,10 +1072,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
                data-tooltip="Dashboard"
                data-barba-prevent="self">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6zM4 14a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z"/>
-                </svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
                 <span class="nav-link-label">Dashboard</span>
             </a>
 
@@ -1083,10 +1080,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
                data-tooltip="User Management"
                data-barba-prevent="self">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-12a3 3 0 11-6 0 3 3 0 016 0zM6 8a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span class="nav-link-label">User Management</span>
             </a>
 
@@ -1094,12 +1088,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.face.*') ? 'active' : '' }}"
                data-tooltip="Face Verification"
                data-barba-prevent="self">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round"
-          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-    <path stroke-linecap="round" stroke-linejoin="round"
-          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-</svg>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
                 <span class="nav-link-label">Face Verification</span>
             </a>
 
@@ -1107,10 +1096,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.lrns.*') ? 'active' : '' }}"
                data-tooltip="LRN Master List"
                data-barba-prevent="self">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M9 12h6m-6 4h6M9 8h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
-              </svg>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 9h3"/><path d="M15 13h3"/><path d="M6 16.5c.5-1.3 1.6-2 3-2s2.5.7 3 2"/></svg>
                 <span class="nav-link-label">LRN Master List</span>
             </a>
 
@@ -1118,10 +1104,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}"
                data-tooltip="Sections & Advisers"
                data-barba-prevent="self">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87a4 4 0 100-8 4 4 0 000 8zm6-8a4 4 0 11-8 0 4 4 0 018 0z"/>
-              </svg>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 22v-4a2 2 0 1 0-4 0v4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M18 5v17"/><path d="m4 6 8-4 8 4"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></svg>
                 <span class="nav-link-label">Sections &amp; Advisers</span>
             </a>
 
@@ -1129,10 +1112,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}"
                data-tooltip="Class Schedules"
                data-barba-prevent="self">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M8 7V3m8 4V3M3 11h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"/>
-              </svg>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><circle cx="16" cy="16" r="6"/><path d="M16 14v2.2l1.4 1"/></svg>
                 <span class="nav-link-label">Class Schedules</span>
             </a>
 
@@ -1140,10 +1120,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.enrollment.*') ? 'active' : '' }}"
                data-tooltip="Enrollment"
                data-barba-prevent="self">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
                 <span class="nav-link-label">
                     Enrollment
                     <span class="nav-badge" id="enrollmentBadge">{{ $pendingEnrollments ?? 0 }}</span>
@@ -1159,10 +1136,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.audit-logs.*') ? 'active' : '' }}"
                data-tooltip="Audit Logs"
                data-barba-prevent="self">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                </svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
                 <span class="nav-link-label">Audit Logs</span>
             </a>
 
@@ -1170,10 +1144,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                class="nav-link {{ request()->routeIs('admin.reports') ? 'active' : '' }}"
                data-tooltip="Reports"
                data-barba-prevent="self">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
                 <span class="nav-link-label">Reports</span>
             </a>
 
@@ -1182,10 +1153,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
         {{-- Footer — Sign Out --}}
         <div class="sidebar-footer">
             <button type="button" class="logout-btn" id="logoutTrigger" aria-label="Sign out">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                </svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
                 <span class="logout-label">Sign Out</span>
             </button>
         </div>

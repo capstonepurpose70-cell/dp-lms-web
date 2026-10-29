@@ -1,12 +1,13 @@
 /*
- * Admin dashboard — charts, counters and the live refresh.
+ * Admin dashboard — activity chart, counters and the live refresh.
  *
- * Reads everything from #dbRoot:
- *   data-charts  JSON { weekly, monthly, yearly } — each { labels, titles, prev, log, reg, apr }
+ * Reads from #dbRoot:
+ *   data-charts  JSON { weekly, monthly, yearly }, each { labels, titles, current, prev, log, reg, apr,
+ *                before: { log, reg, apr } } — "before" is the previous period at the same position
  *   data-live    URL of GET /admin/dashboard/live
  *
- * The admin layout swaps pages without a reload and runs this file again on every visit, so all
- * state lives inside this function and every timer / observer stops once #dbRoot is gone.
+ * The admin layout swaps pages without a reload and runs this file again on every visit, so all state
+ * lives inside this function and every timer / observer stops once #dbRoot is gone.
  */
 (function () {
     'use strict';
@@ -15,345 +16,313 @@
     if (!root) return;
 
     const POLL_MS = 20000;
-    const REVEAL_MS = 900;
     const RANGE = {
-        weekly:  { word: 'this week',  prev: 'last week' },
-        monthly: { word: 'this month', prev: 'last month' },
-        yearly:  { word: 'this year',  prev: 'last year' },
+        weekly:  { now: 'This week',  then: 'Last week',  unit: 'day' },
+        monthly: { now: 'This month', then: 'Last month', unit: 'day' },
+        yearly:  { now: 'This year',  then: 'Last year',  unit: 'month' },
     };
+    const METRIC = { log: 'Sign-ins', reg: 'Registrations', apr: 'Approvals' };
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const $ = (id) => document.getElementById(id);
     const gone = () => !document.body.contains(root);
     const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+    const num = (text) => Number(String(text).replace(/[^0-9-]/g, '')) || 0;
     const sum = (arr) => (arr || []).reduce((a, b) => a + (Number(b) || 0), 0);
-    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
-    let data = parse(root.dataset.charts) || {};
+    let data = parseJson(root.dataset.charts) || {};
     let period = 'weekly';
+    let metric = 'log';
 
-    function parse(text) {
+    function parseJson(text) {
         try { return JSON.parse(text); } catch (e) { return null; }
     }
 
-    /* ─────────────────────────── Theme ─────────────────────────── */
+    /* ─────────────────────────── Numbers ─────────────────────────── */
 
-    // Validated palette (colour-blind separation + contrast): light #2563EB / #0D9488, dark #3B82F6 / #0D9488
-    function theme() {
-        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const css = getComputedStyle(root);
-        const v = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
-        return {
-            dark,
-            blue: dark ? '#3B82F6' : '#2563EB',
-            teal: '#0D9488',
-            grid: dark ? 'rgba(255,255,255,.06)' : '#E9EEF5',
-            tick: v('--slate-500', '#64748B'),
-            surface: v('--surface-card', '#FFFFFF'),
-        };
-    }
+    const running = new WeakMap();
 
-    function rgba(hex, a) {
-        const n = parseInt(hex.slice(1), 16);
-        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-    }
-
-    /* ───────────────────────── Numbers ─────────────────────────── */
-
-    // Counts from the number on screen to the new one; tabular figures keep the width steady
     function countTo(el, to) {
         if (!el) return;
-        const from = Number(String(el.textContent).replace(/[^\d-]/g, '')) || 0;
         to = Number(to) || 0;
-        if (from === to) return;
+        cancelAnimationFrame(running.get(el));
+        const from = num(el.textContent);
+        if (from === to) { el.textContent = fmt(to); return; }
         if (reduceMotion) { el.textContent = fmt(to); return; }
-        const start = performance.now(), dur = 800;
+        const start = performance.now(), dur = 700;
         const step = (now) => {
-            const t = Math.min(1, (now - start) / dur);
-            el.textContent = fmt(Math.round(from + (to - from) * ease(t)));
-            if (t < 1 && !gone()) requestAnimationFrame(step);
+            const k = Math.min(1, (now - start) / dur);
+            el.textContent = fmt(Math.round(from + (to - from) * easeOut(k)));
+            if (k < 1 && !gone()) running.set(el, requestAnimationFrame(step));
         };
-        requestAnimationFrame(step);
+        running.set(el, requestAnimationFrame(step));
     }
 
-    // "+18% vs last week" — an arrow and words, never colour alone
-    function delta(el, now, before) {
+    // Change vs the previous period as words ("+18%"), never colour alone
+    function change(now, before) {
+        if (!now && !before) return { tone: 'flat', text: 'No change' };
+        if (!before) return { tone: 'up', text: 'New' };
+        const pct = Math.round(((now - before) / before) * 100);
+        return { tone: pct > 0 ? 'up' : (pct < 0 ? 'down' : 'flat'), text: (pct > 0 ? '+' : '') + pct + '%' };
+    }
+
+    function setDelta(el, now, before, suffix) {
         if (!el) return;
-        let text, tone;
-        if (before === 0 && now === 0) { text = 'No change'; tone = 'flat'; }
-        else if (before === 0) { text = 'New ' + RANGE[period].word; tone = 'up'; }
-        else {
-            const pct = Math.round(((now - before) / before) * 100);
-            tone = pct > 0 ? 'up' : (pct < 0 ? 'down' : 'flat');
-            text = (pct > 0 ? '+' : '') + pct + '% vs ' + RANGE[period].prev;
-        }
-        el.dataset.tone = tone;
-        el.querySelector('span').textContent = text;
-        el.title = fmt(before) + ' ' + RANGE[period].prev;
+        const c = change(now, before);
+        el.dataset.tone = c.tone;
+        el.querySelector('span').textContent = c.text + (suffix ? ' ' + suffix : '');
     }
 
-    /* ───────────────────────── Sparkline ───────────────────────── */
+    /* ─────────────────────────── Theme ──────────────────────────── */
 
-    // Small SVG trend for "Activity today" (sign-ins this week); a path, no chart library needed
-    function sparkline(values) {
-        const svg = $('dbSpark');
-        if (!svg) return;
-        const w = 120, h = 36, pad = 3, max = Math.max(1, ...values);
-        const pts = values.map((v, i) => [pad + i * (w - pad * 2) / Math.max(1, values.length - 1), h - pad - (v / max) * (h - pad * 2)]);
-        const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-        const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${h} L${pts[0][0].toFixed(1)} ${h} Z`;
-        svg.innerHTML = `<path d="${area}" class="db-spark-area"/><path d="${line}" class="db-spark-line"/>`;
-    }
-
-    /* ─────────────────────── Screen-reader tables ──────────────── */
-
-    function table(id, caption, labels, series) {
-        const t = $(id);
-        if (!t) return;
-        const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-        t.innerHTML = `<caption>${esc(caption)}</caption><thead><tr><th scope="col">Period</th>`
-            + series.map((s) => `<th scope="col">${esc(s.name)}</th>`).join('') + '</tr></thead><tbody>'
-            + labels.map((l, i) => `<tr><th scope="row">${esc(l)}</th>` + series.map((s) => `<td>${s.values[i] || 0}</td>`).join('') + '</tr>').join('')
-            + '</tbody>';
-    }
-
-    /* ─────────────────────────── Charts ────────────────────────── */
-
-    let sign = null, regs = null;
-
-    // One smooth left-to-right reveal of the whole line (instead of point-by-point delays)
-    const reveal = {
-        id: 'dbReveal',
-        beforeDatasetsDraw(chart) {
-            const p = chart.$reveal;
-            if (p === undefined || p >= 1) return;
-            const a = chart.chartArea;
-            chart.ctx.save();
-            chart.ctx.beginPath();
-            chart.ctx.rect(a.left - 4, a.top - 10, (a.right - a.left + 8) * p, a.bottom - a.top + 20);
-            chart.ctx.clip();
-            chart.$clipped = true;
-        },
-        afterDatasetsDraw(chart) {
-            if (chart.$clipped) { chart.ctx.restore(); chart.$clipped = false; }
-        },
-    };
-
-    function playReveal(chart) {
-        if (reduceMotion) { chart.$reveal = 1; chart.update('none'); return; }
-        const start = performance.now();
-        chart.$reveal = 0;
-        const step = (now) => {
-            if (gone()) return;
-            chart.$reveal = ease(Math.min(1, (now - start) / REVEAL_MS));
-            chart.draw();
-            if (chart.$reveal < 1) requestAnimationFrame(step);
+    function theme() {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            accent: dark ? '#3B82F6' : '#2563EB',            // today, or the bar under the pointer
+            bar:    dark ? '#2B4A80' : '#BFD3FB',            // every other bar
+            track:  dark ? 'rgba(148,163,184,.07)' : '#F1F4F9',
+            stripe: dark ? 'rgba(148,163,184,.16)' : '#DCE3EE',
+            marker: dark ? '#E2E8F0' : '#0F172A',            // previous period
+            grid:   dark ? 'rgba(148,163,184,.10)' : '#E8EDF4',
+            tick:   getComputedStyle(root).getPropertyValue('--slate-500').trim() || '#64748B',
         };
-        requestAnimationFrame(step);
     }
 
-    // Thin vertical guide under the hovered point
-    const crosshair = {
-        id: 'dbCrosshair',
-        afterDatasetsDraw(chart) {
-            const active = chart.tooltip && chart.tooltip.getActiveElements();
-            if (!active || !active.length) return;
-            const x = active[0].element.x, a = chart.chartArea, ctx = chart.ctx;
+    // Slots that have not happened yet get a diagonal hatch instead of an empty track
+    function hatch(t) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 8;
+        const x = c.getContext('2d');
+        x.fillStyle = t.track;
+        x.fillRect(0, 0, 8, 8);
+        x.strokeStyle = t.stripe;
+        x.lineWidth = 1.5;
+        x.beginPath();
+        x.moveTo(-2, 10); x.lineTo(10, -2);
+        x.moveTo(-2, 2);  x.lineTo(2, -2);
+        x.moveTo(6, 10);  x.lineTo(10, 6);
+        x.stroke();
+        return x.createPattern(c, 'repeat');
+    }
+
+    /* ─────────────────────────── Chart ──────────────────────────── */
+
+    let chart = null;
+    let hover = -1;
+
+    function view() {
+        const d = data[period] || { labels: [], titles: [], current: -1, before: {} };
+        const now = d[metric] || [];
+        const before = (d.before && d.before[metric]) || [];
+        const scale = niceScale(now.concat(before));
+        return { d, now, before, max: scale.max, step: scale.step };
+    }
+
+    // Top of the y axis and its tick step: 5 → 1, 10 → 2, 20 → 5, 50 → 10, 100 → 20 ...
+    function niceScale(values) {
+        const m = Math.max(5, ...values.map(Number));
+        const p = Math.pow(10, Math.floor(Math.log10(m)));
+        const n = m / p;
+        const max = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+        return { max, step: max / (String(max)[0] === '2' ? 4 : 5) };
+    }
+
+    function fills(t, d) {
+        const pattern = hatch(t);
+        const bars = [], tracks = [];
+        const lit = hover >= 0 ? hover : d.current;
+        d.labels.forEach((_, i) => {
+            bars.push(i === lit ? t.accent : t.bar);
+            tracks.push(d.current >= 0 && i > d.current ? pattern : t.track);
+        });
+        return { bars, tracks };
+    }
+
+    // Previous period: a short dash across each slot, drawn after the bars
+    const lastPeriodMarks = {
+        id: 'dbLastPeriod',
+        afterDatasetsDraw(c) {
+            const bars = c.getDatasetMeta(0).data;
+            const before = c.data.datasets[0].before || [];
+            const y = c.scales.y;
+            const ctx = c.ctx;
             ctx.save();
-            ctx.setLineDash([4, 4]);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = theme().tick;
-            ctx.globalAlpha = .5;
-            ctx.beginPath(); ctx.moveTo(x, a.top); ctx.lineTo(x, a.bottom); ctx.stroke();
+            ctx.strokeStyle = theme().marker;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            bars.forEach((bar, i) => {
+                if (!before[i]) return;
+                const half = Math.max(3, bar.width / 2 - 1);
+                const py = Math.round(y.getPixelForValue(before[i])) + 0.5;
+                ctx.beginPath();
+                ctx.moveTo(bar.x - half, py);
+                ctx.lineTo(bar.x + half, py);
+                ctx.stroke();
+            });
             ctx.restore();
         },
     };
 
-    // Our own tooltip card (HTML), positioned inside the chart box
-    function htmlTooltip(boxId) {
-        return (context) => {
-            const box = $(boxId);
-            if (!box) return;
-            const tip = context.tooltip;
-            if (tip.opacity === 0) { box.dataset.open = 'false'; return; }
-            const i = tip.dataPoints && tip.dataPoints.length ? tip.dataPoints[0].dataIndex : 0;
-            const d = data[period];
-            const th = theme();
-            const rows = tip.dataPoints.map((p) =>
-                `<div class="db-tip-row"><i style="background:${p.dataset.label === 'Approvals' ? th.teal : th.blue}"></i>`
-                + `<span>${p.dataset.label}</span><b>${fmt(p.parsed.y)}</b></div>`).join('');
-            box.innerHTML = `<div class="db-tip-title">${(d.titles && d.titles[i]) || tip.title}</div>${rows}`;
-            const canvas = context.chart.canvas;
-            const left = Math.min(Math.max(tip.caretX, 80), canvas.offsetWidth - 80);
-            box.style.transform = `translate(${left}px, ${Math.max(tip.caretY - 12, 0)}px) translate(-50%, -100%)`;
-            box.dataset.open = 'true';
-        };
+    function tooltip(context) {
+        const box = $('dbTip');
+        if (!box) return;
+        const tip = context.tooltip;
+        if (tip.opacity === 0 || !tip.dataPoints || !tip.dataPoints.length) { box.dataset.open = 'false'; return; }
+        const i = tip.dataPoints[0].dataIndex;
+        const { d, now, before } = view();
+        const r = RANGE[period];
+        const t = theme();
+        const future = d.current >= 0 && i > d.current;
+        const c = change(now[i] || 0, before[i] || 0);
+        box.innerHTML =
+            `<div class="db-tip-title">${(d.titles && d.titles[i]) || d.labels[i]}</div>`
+            + (future
+                ? `<div class="db-tip-row"><span>Not here yet</span></div>`
+                : `<div class="db-tip-row"><i style="background:${t.accent}"></i><span>${r.now}</span><b>${fmt(now[i])}</b></div>`)
+            + `<div class="db-tip-row"><i class="dash" style="background:${t.marker}"></i><span>${r.then}</span><b>${fmt(before[i])}</b></div>`
+            + (future ? '' : `<div class="db-tip-chip" data-tone="${c.tone}">${c.text} vs ${r.then.toLowerCase()}</div>`);
+        const area = context.chart.chartArea;
+        const bar = context.chart.getDatasetMeta(0).data[i];
+        const x = Math.min(Math.max(bar ? bar.x : tip.caretX, 84), context.chart.width - 84);
+        box.style.transform = `translate(${Math.round(x)}px, ${Math.round(area.top)}px) translate(-50%, calc(-100% - 6px))`;
+        box.dataset.open = 'true';
     }
 
-    function axes(t) {
-        return {
-            x: {
-                grid: { display: false }, border: { display: false },
-                ticks: { color: t.tick, maxRotation: 0, autoSkipPadding: 16, padding: 6, font: { size: 11.5, weight: '600' } },
-            },
-            y: {
-                beginAtZero: true, grace: '8%',
-                grid: { color: t.grid, drawTicks: false }, border: { display: false, dash: [4, 4] },
-                ticks: { color: t.tick, precision: 0, maxTicksLimit: 5, padding: 10, font: { size: 11 } },
-            },
-        };
+    function setHover(i) {
+        if (!chart || hover === i) return;
+        hover = i;
+        chart.data.datasets[0].backgroundColor = fills(theme(), view().d).bars;
+        chart.update('none');
     }
 
-    // Area fill fades from the line down to the baseline
-    function areaFill(color) {
-        return (context) => {
-            const { chart } = context;
-            const a = chart.chartArea;
-            if (!a) return rgba(color, .12);
-            const g = chart.ctx.createLinearGradient(0, a.top, 0, a.bottom);
-            g.addColorStop(0, rgba(color, theme().dark ? .28 : .2));
-            g.addColorStop(1, rgba(color, 0));
-            return g;
-        };
-    }
-
-    function buildCharts() {
+    function build() {
+        const canvas = $('dbChart');
+        if (!canvas) return;
         if (typeof Chart === 'undefined') {
-            ['dbSignChart', 'dbRegChart'].forEach((id) => {
-                const c = $(id);
-                if (c) c.parentNode.innerHTML = '<div class="db-chart-note">The chart could not load (no internet connection). The numbers on this page are up to date.</div>';
-            });
+            canvas.parentNode.innerHTML = '<p class="db-chart-note">The chart could not load. Check the internet connection, then reload the page. The numbers above are still live.</p>';
             return;
         }
         const t = theme();
-        const d = data[period];
-        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
-
-        const common = {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            animation: reduceMotion ? false : { duration: 800, easing: 'easeOutCubic' },
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: axes(t),
+        const { d, now, before, max, step } = view();
+        const f = fills(t, d);
+        // Hover colour is ours (setHover); Chart.js would otherwise darken the bar and tint the track
+        const sameColour = (ctx) => {
+            const bg = ctx.dataset.backgroundColor;
+            return Array.isArray(bg) ? bg[ctx.dataIndex] : bg;
         };
+        const bar = { borderRadius: 6, borderSkipped: false, grouped: false, categoryPercentage: .78, barPercentage: .82, maxBarThickness: 36, hoverBackgroundColor: sameColour };
+        Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 
-        sign = new Chart($('dbSignChart'), {
-            type: 'line',
-            data: {
-                labels: d.labels,
-                datasets: [{
-                    label: 'Sign-ins', data: d.log,
-                    borderColor: t.blue, backgroundColor: areaFill(t.blue), fill: 'origin',
-                    borderWidth: 2.5, cubicInterpolationMode: 'monotone', borderCapStyle: 'round', borderJoinStyle: 'round',
-                    pointRadius: 0, pointHitRadius: 18, pointHoverRadius: 6,
-                    pointHoverBackgroundColor: t.blue, pointHoverBorderColor: t.surface, pointHoverBorderWidth: 3,
-                }],
-            },
-            options: {
-                ...common,
-                transitions: { active: { animation: { duration: 150 } } },
-                plugins: { ...common.plugins, tooltip: { enabled: false, external: htmlTooltip('dbSignTip') } },
-            },
-            plugins: [reveal, crosshair],
-        });
-        playReveal(sign);
-
-        regs = new Chart($('dbRegChart'), {
+        chart = new Chart(canvas, {
             type: 'bar',
             data: {
                 labels: d.labels,
                 datasets: [
-                    { label: 'Registrations', data: d.reg, backgroundColor: t.blue },
-                    { label: 'Approvals', data: d.apr, backgroundColor: t.teal },
+                    Object.assign({ label: 'now', data: now, before, order: 1, backgroundColor: f.bars }, bar),
+                    Object.assign({ label: 'track', data: d.labels.map(() => max), order: 2, backgroundColor: f.tracks, animation: false }, bar),
                 ],
             },
+            plugins: [lastPeriodMarks],
             options: {
-                ...common,
-                datasets: { bar: { borderRadius: 6, borderSkipped: 'start', categoryPercentage: .64, barPercentage: .84, maxBarThickness: 16 } },
-                plugins: { ...common.plugins, tooltip: { enabled: false, external: htmlTooltip('dbRegTip') } },
-                // Fade the other days so the hovered one stands out
-                onHover: (event, active, chart) => {
-                    const idx = active.length ? active[0].index : -1;
-                    if (chart.$hoverIndex === idx) return;
-                    chart.$hoverIndex = idx;
-                    const th = theme();
-                    chart.data.datasets.forEach((ds, k) => {
-                        const base = k === 0 ? th.blue : th.teal;
-                        ds.backgroundColor = idx < 0 ? base : ds.data.map((_, j) => (j === idx ? base : rgba(base, .28)));
-                    });
-                    chart.update('none');
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                animation: reduceMotion ? false : {
+                    duration: 650,
+                    easing: 'easeOutQuart',
+                    delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * Math.min(40, 280 / ctx.chart.data.labels.length) : 0),
                 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false, external: tooltip, filter: (item) => item.datasetIndex === 0 },
+                },
+                scales: {
+                    x: { grid: { display: false }, border: { display: false },
+                         ticks: { color: t.tick, maxRotation: 0, autoSkipPadding: 12, padding: 6, font: { size: 11.5, weight: '600' } } },
+                    y: { min: 0, max, grid: { color: t.grid, drawTicks: false }, border: { display: false },
+                         ticks: { color: t.tick, stepSize: step, padding: 10, font: { size: 11 } } },
+                },
+                onHover: (e, active) => setHover(active.length ? active[0].index : -1),
             },
         });
 
-        // Dark / light switch: recolour in place
+        canvas.addEventListener('mouseleave', () => setHover(-1));
+
         const watch = new MutationObserver(() => {
             if (gone()) { watch.disconnect(); return; }
-            const th = theme();
-            const s = sign.data.datasets[0];
-            s.borderColor = th.blue; s.backgroundColor = areaFill(th.blue);
-            s.pointHoverBackgroundColor = th.blue; s.pointHoverBorderColor = th.surface;
-            regs.data.datasets[0].backgroundColor = th.blue;
-            regs.data.datasets[1].backgroundColor = th.teal;
-            [sign, regs].forEach((ch) => { ch.options.scales = axes(th); ch.update('none'); });
-            legend(th);
+            refreshChart('theme');
         });
         watch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     }
 
-    function legend(t) {
-        root.querySelectorAll('[data-swatch="reg"]').forEach((el) => { el.style.background = t.blue; });
-        root.querySelectorAll('[data-swatch="apr"]').forEach((el) => { el.style.background = t.teal; });
+    // 'grow': the range or metric changed, bars grow again · 'theme': recolour only · 'data': live numbers
+    function refreshChart(mode) {
+        if (!chart) return;
+        const t = theme();
+        hover = -1;
+        const { d, now, before, max, step } = view();
+        const f = fills(t, d);
+        const [bars, tracks] = chart.data.datasets;
+        chart.data.labels = d.labels;
+        bars.data = now;
+        bars.before = before;
+        bars.backgroundColor = f.bars;
+        tracks.data = d.labels.map(() => max);
+        tracks.backgroundColor = f.tracks;
+        const s = chart.options.scales;
+        s.y.max = max;
+        s.y.ticks.stepSize = step;
+        s.y.grid.color = t.grid;
+        s.x.ticks.color = s.y.ticks.color = t.tick;
+        if (mode === 'theme') { chart.update('none'); return; }
+        if (mode === 'grow') chart.reset();
+        chart.update();
     }
 
-    /* ───────────────────────── Period view ─────────────────────── */
+    /* ─────────────────────── Text around the chart ─────────────── */
 
     function renderText() {
-        const d = data[period];
-        if (!d) return;
-        const prev = d.prev || { log: 0, reg: 0, apr: 0 };
+        const { d, now, before } = view();
+        const r = RANGE[period];
+        const word = METRIC[metric].toLowerCase();
+        countTo($('dbTotal'), sum(now));
+        $('dbTotalWord').textContent = word + ' ' + r.now.toLowerCase();
+        setDelta($('dbDelta'), sum(now), sum(before), 'vs ' + r.then.toLowerCase());
+        $('dbNowLabel').textContent = r.now;
+        $('dbThenLabel').textContent = r.then;
+        $('dbThenValue').textContent = fmt(sum(before));
+        $('dbChart').setAttribute('aria-label', `${METRIC[metric]} per ${r.unit}, ${r.now.toLowerCase()} compared with ${r.then.toLowerCase()}`);
 
-        countTo($('dbSignTotal'), sum(d.log));
-        countTo($('dbRegTotal'), sum(d.reg));
-        $('dbSignRange').textContent = RANGE[period].word;
-        delta($('dbSignDelta'), sum(d.log), prev.log);
-        delta($('dbRegDelta'), sum(d.reg), prev.reg);
-        table('dbSignTable', 'Sign-ins ' + RANGE[period].word, d.labels, [{ name: 'Sign-ins', values: d.log }]);
-        table('dbRegTable', 'Registrations and approvals ' + RANGE[period].word, d.labels,
-            [{ name: 'Registrations', values: d.reg }, { name: 'Approvals', values: d.apr }]);
-        if (data.weekly) sparkline(data.weekly.log);
+        const table = $('dbTable');
+        table.innerHTML = `<caption>${METRIC[metric]} per ${r.unit}</caption>`
+            + `<thead><tr><th scope="col">${r.unit === 'day' ? 'Day' : 'Month'}</th><th scope="col">${r.now}</th><th scope="col">${r.then}</th></tr></thead><tbody>`
+            + d.labels.map((l, i) => `<tr><th scope="row">${(d.titles && d.titles[i]) || l}</th><td>${now[i] || 0}</td><td>${before[i] || 0}</td></tr>`).join('')
+            + '</tbody>';
+
+        // Hero card: sign-ins today, this week, this month
+        const w = data.weekly, m = data.monthly;
+        if (w) {
+            const today = w.current >= 0 ? (w.log[w.current] || 0) : 0;
+            const yesterday = w.current > 0 ? (w.log[w.current - 1] || 0) : ((w.before && w.before.log[6]) || 0);
+            countTo($('dbSignToday'), today);
+            setDelta($('dbSignDelta'), today, yesterday, 'vs yesterday');
+            countTo($('dbSignWeek'), sum(w.log));
+        }
+        if (m) countTo($('dbSignMonth'), sum(m.log));
     }
 
-    function render(rangeChanged) {
-        const d = data[period];
-        if (!d) return;
-        renderText();
-        if (!sign) return;
-        if (rangeChanged && regs.$hoverIndex !== undefined && regs.$hoverIndex !== -1) {
-            const th = theme();
-            regs.$hoverIndex = -1;
-            regs.data.datasets[0].backgroundColor = th.blue;
-            regs.data.datasets[1].backgroundColor = th.teal;
-        }
-        sign.data.labels = d.labels; sign.data.datasets[0].data = d.log;
-        regs.data.labels = d.labels; regs.data.datasets[0].data = d.reg; regs.data.datasets[1].data = d.apr;
-        if (rangeChanged) {
-            // A new range draws in again; bars grow from the baseline
-            sign.update('none'); playReveal(sign);
-            regs.reset(); regs.update();
-        } else {
-            // Same range, new numbers: values glide to their new height
-            sign.update(); regs.update();
-        }
+    function bindTabs(id, pick) {
+        const group = $(id);
+        if (!group) return;
+        group.addEventListener('click', (e) => {
+            const b = e.target.closest('button[data-value]');
+            if (!b || b.getAttribute('aria-pressed') === 'true') return;
+            group.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+            pick(b.dataset.value);
+            renderText();
+            refreshChart('grow');
+        });
     }
-
-    root.querySelector('.db-tabs').addEventListener('click', (e) => {
-        const b = e.target.closest('button[data-period]');
-        if (!b || b.dataset.period === period) return;
-        root.querySelectorAll('.db-tabs button').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
-        period = b.dataset.period;
-        render(true);
-    });
 
     /* ───────────────────────── Live refresh ────────────────────── */
 
@@ -365,10 +334,12 @@
     function swapList(id, html) {
         const el = $(id);
         if (!el || typeof html !== 'string' || el.innerHTML.trim() === html.trim()) return;
-        // Never move a button out from under the admin's pointer or keyboard focus
+        // Never pull a button out from under the admin's pointer or keyboard focus
         if (el.contains(document.activeElement) || el.matches(':hover')) return;
         el.innerHTML = html;
-        el.classList.remove('db-flash'); void el.offsetWidth; el.classList.add('db-flash');
+        el.classList.remove('db-flash');
+        void el.offsetWidth;
+        el.classList.add('db-flash');
     }
 
     function apply(json) {
@@ -376,18 +347,25 @@
         root.querySelectorAll('[data-count]').forEach((el) => {
             if (c[el.dataset.count] !== undefined) countTo(el, c[el.dataset.count]);
         });
-        root.querySelectorAll('[data-note]').forEach((el) => {
-            const n = Number(c[el.dataset.note] || 0);
-            setText(el, n + el.dataset.text);
-            if (el.dataset.warn !== undefined) el.classList.toggle('warn', n > 0);
+        root.querySelectorAll('[data-diff]').forEach((el) => {
+            const [a, b] = el.dataset.diff.split('-');
+            if (c[a] !== undefined && c[b] !== undefined) countTo(el, Math.max(0, c[a] - c[b]));
+        });
+        root.querySelectorAll('[data-warn]').forEach((el) => {
+            el.classList.toggle('warn', Number(c[el.dataset.warn] || 0) > 0);
         });
         root.querySelectorAll('[data-att]').forEach((a) => {
-            const n = Number(c[a.dataset.att] || 0);
             if (a.dataset.one === undefined) return;
-            a.classList.toggle('warn', n > 0); a.classList.toggle('ok', n === 0);
+            const n = Number(c[a.dataset.att] || 0);
+            a.classList.toggle('warn', n > 0);
+            a.classList.toggle('ok', n === 0);
             setText(a.querySelector('[data-att-text]'), n === 0 ? a.dataset.none : (n === 1 ? a.dataset.one : a.dataset.many));
         });
-        if (json.charts) { data = json.charts; render(false); }
+        if (json.charts) {
+            data = json.charts;
+            renderText();
+            refreshChart('data');
+        }
         swapList('dbPending', json.pendingHtml);
         swapList('dbActivity', json.activityHtml);
         setText($('dbUpdated'), 'Updated ' + new Date(json.updatedAt || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
@@ -400,6 +378,7 @@
         live.classList.add('updating');
         fetch(root.dataset.live, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
             .then((r) => {
+                // Session ended in another tab: the endpoint redirects to the login page
                 if (r.status === 401 || r.status === 419 || (r.redirected && r.url.indexOf('/admin/dashboard') === -1)) {
                     window.location.href = '/admin/login';
                     throw new Error('signed out');
@@ -413,8 +392,14 @@
                 live.classList.remove('paused');
                 setText($('dbLiveLabel'), 'Live');
             })
-            .catch(() => { live.classList.add('paused'); setText($('dbLiveLabel'), 'Reconnecting'); })
-            .finally(() => { busy = false; live.classList.remove('updating'); });
+            .catch(() => {
+                live.classList.add('paused');
+                setText($('dbLiveLabel'), 'Reconnecting');
+            })
+            .finally(() => {
+                busy = false;
+                live.classList.remove('updating');
+            });
     }
 
     function onVisible() {
@@ -424,14 +409,14 @@
 
     /* ─────────────────────────── Start ─────────────────────────── */
 
-    legend(theme());
-    // Numbers count up from zero on the first paint
-    root.querySelectorAll('.db-kpi-num[data-count]').forEach((el) => {
-        const to = Number(el.textContent.replace(/[^\d-]/g, '')) || 0;
+    root.querySelectorAll('.db-num').forEach((el) => {
+        const to = num(el.textContent);
         el.textContent = '0';
         countTo(el, to);
     });
-    buildCharts();
+    bindTabs('dbMetric', (v) => { metric = v; });
+    bindTabs('dbRange', (v) => { period = v; });
+    build();
     renderText();
     timer = setInterval(refresh, POLL_MS);
     document.addEventListener('visibilitychange', onVisible);

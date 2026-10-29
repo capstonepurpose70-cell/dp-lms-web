@@ -500,13 +500,12 @@
 @if($user->role === 'student' && $user->lrn)
 <form method="POST" action="{{ route('admin.users.release-lrn', $user) }}"
       onsubmit="return confirm('Reset this account?\n\nThe account will be disabled and LRN {{ $user->lrn }} will be released so its real owner can activate it. Only do this when someone reports they did not activate it.');"
-      style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border,#e5e7eb);">
+      style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:16px 28px 20px;border-top:1px solid var(--border-default,#e5e7eb);">
     @csrf @method('PATCH')
-    <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin:0 0 8px;line-height:1.5;">
-        Activated {{ $user->created_at?->format('M j, Y g:i A') }}
-        @if($user->birthdate) · birthdate entered: {{ $user->birthdate->format('M j, Y') }} @endif
+    <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin:0;line-height:1.5;">
+        Activated {{ $user->created_at?->format('M j, Y g:i A') }}@if($user->birthdate)<br>Birthdate entered: {{ $user->birthdate->format('M j, Y') }}@endif
     </p>
-    <button type="submit" style="border:1px solid var(--danger,#dc2626);color:var(--danger,#dc2626);background:#fff;border-radius:var(--r-md,10px);padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px;">
+    <button type="submit" style="border:1px solid #FECACA;color:#B91C1C;background:transparent;border-radius:10px;padding:0 14px;font-size:13px;font-weight:700;cursor:pointer;min-height:40px;">
         Reset account (release LRN)
     </button>
 </form>
