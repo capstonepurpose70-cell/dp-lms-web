@@ -306,8 +306,16 @@ Route::patch('/profile/update-password',
         // ── LRN Master List ─────────────────────────────
         Route::get('/lrns',          [LrnController::class, 'index'])->name('lrns.index');
         Route::post('/lrns',         [LrnController::class, 'store'])->name('lrns.store');
-        Route::post('/lrns/bulk',    [LrnController::class, 'bulkImport'])->name('lrns.bulk');
-        Route::delete('/lrns/{lrn}', [LrnController::class, 'destroy'])->name('lrns.destroy');
+        Route::delete('/lrns/{lrn}', [LrnController::class, 'destroy'])->whereNumber('lrn')->name('lrns.destroy');
+        // Spreadsheet import: upload → preview (kept 30 min for this admin) → confirm
+        Route::get('/lrns/template',  [LrnController::class, 'template'])->name('lrns.template');
+        Route::post('/lrns/import',   [LrnController::class, 'import'])->middleware('throttle:10,1')->name('lrns.import');
+        Route::prefix('/lrns/import/{token}')->where(['token' => '[A-Za-z0-9]{32}'])->group(function () {
+            Route::get('/',          [LrnController::class, 'preview'])->name('lrns.import.show');
+            Route::post('/',         [LrnController::class, 'confirm'])->name('lrns.import.confirm');
+            Route::delete('/',       [LrnController::class, 'cancel'])->name('lrns.import.cancel');
+            Route::get('/fix.xlsx',  [LrnController::class, 'problems'])->name('lrns.import.problems');
+        });
 
         // ── Sections & Advisers ─────────────────────────
         Route::get('/sections',            [SectionController::class, 'index'])->name('sections.index');

@@ -29,7 +29,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
 | [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
-| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode | — | 7 |
+| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode, LRN Excel import | — | 8 |
 
 ---
 
@@ -737,6 +737,43 @@ are layout, states and consistency.
   in the live JSON). Real browser, 17 checks: bars + tracks per range, today highlighted, future hatched, hover
   tooltip opens / closes and lights the bar, metric and range switches, dark recolour, live refresh, no sideways
   scroll at 390, no JS errors. Dark-mode screenshots of the nine admin pages: no JS errors.
+
+### B11-8 ✅ LRN Master List: import from Excel, and the page layout
+- **Problem:** bulk import was a paste box (`LRN,Name,Grade` per line). SF1 names have a comma
+  (`DELA CRUZ, JUAN`), so the name's second half was read as the grade and every row was skipped; one query per
+  row and no transaction (a failure half-way left half a list); no name format or length check (a long name
+  gave a 500); only 8 skipped rows reported, in a toast. The search, filter and button stacked on separate lines
+  and the two forms took half the page.
+- **Where:** `Admin/LrnController`, new `Services/LrnImportService`, `Support/SpreadsheetReader`,
+  `Support/XlsxWriter`, `Support/UnreadableSpreadsheet`, `admin/lrns/index`, new `admin/lrns/preview` and
+  `admin/lrns/partials/styles`, routes `admin.lrns.import*` / `admin.lrns.template` (the paste route
+  `admin.lrns.bulk` is gone).
+- **Fix:** upload → preview → confirm.
+  - Reads `.xlsx` (PHP zip + XMLReader, no new package) or `.csv` (comma / semicolon / tab, BOM, Windows-1252).
+  - Finds the header row itself: "LRN" plus the name column, or last / first / middle columns. Works with SF1
+    from LIS as is (two-row header, Father's / Mother's / Guardian name columns skipped, totals rows left out).
+  - Each row is Ready / Already on the list (never changed) / Need fixing with the reason: not 12 digits, Excel
+    shortened it to `1.23E+11`, no name, only one name, bad characters, grade not 7–12, same LRN as row N.
+  - Confirm adds the ready rows in one transaction (`insertOrIgnore`, 500 per insert); the preview is pulled from
+    the cache so a double click or refresh cannot import twice. The rows to fix download as `.xlsx` with the LRN
+    kept as text. There is a template download.
+  - Safety: admin only, CSRF, 10 uploads a minute, 2 MB / 5,000 rows, extension and content checked (a renamed
+    file is refused), every part of the workbook capped at 40 MB unzipped (zip bomb), no external XML entities,
+    formulas never run, the upload itself is not stored; the preview lives 30 min in the cache under the admin's
+    id, compressed (5,000 rows are about 1.5 MB as text, more than MySQL's default 1 MB packet on XAMPP).
+  - "Add one LRN" now also checks the name (letters, at least first + last) and tidies spaces.
+  - Page: Import list / Add one LRN buttons open native dialogs (Esc, focus kept inside, bottom sheet on phones);
+    summary with an activation progress bar; status tabs with counts, grade filter and search in one row; remove
+    asks in a dialog; rows become cards on phones; dark mode.
+- **Tested:** PHPUnit 9 tests / 104 assertions — SF1-style workbook (shared strings, numeric and exponent LRNs,
+  formula cell, two-row header, father's name column, totals rows, second sheet): 4 ready / 2 existing / 5 to fix
+  / 2 left out, existing names unchanged, second confirm adds nothing; the rows-to-fix file keeps LRNs whole;
+  another admin cannot open or confirm the preview; CSV with split name columns, BOM, semicolons and Windows-1252;
+  fake `.xlsx`, `.xls`, `.php`, binary CSV, no LRN column, no name column, wrong grade and a 3 MB file are refused;
+  zip bomb refused; template reads back and a filled template imports; 5,000 rows checked in 0.27 s and saved in
+  0.26 s. Real browser, 21 checks: dialogs open centred, Esc closes and they open again, file chosen, preview
+  counts, confirm, success message, duplicate LRN reopens the dialog with the error, remove asks first, status
+  tab, no sideways scroll at 390, no JS errors.
 
 ---
 
