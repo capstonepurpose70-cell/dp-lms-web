@@ -78,7 +78,7 @@ Same flow as batches 1–8: plan in FIX_BUGS.md → fix → test → commit.
 
 | # | Task | Where |
 |---|---|---|
-| U1 | **Admin** layout + pages (not audited yet) — includes the lockout countdown showing 45 s while the server locks 30 min | `layouts/admin.blade.php`, `admin/login.blade.php`, `resources/views/admin/*` |
+| U1 | **Admin** layout + pages (not audited yet; sign-in page done in Batch 11) | `layouts/admin.blade.php`, `admin/login.blade.php`, `resources/views/admin/*` |
 | U2b ✅ | **Teacher dashboard + sidebar polish** (requested 2026-10-28): clean, professional look; minimalist sidebar with highly visible text, no glow/neon; fix the logo + school name block at the top left. UI only — no backend or state logic changes; no rendering delays | `layouts/teacher.blade.php`, `teacher/dashboard.blade.php` |
 | U2 | Teacher pages not polished yet: Materials, Quizzes/Assignments, Gradebook, Messages, Enrollments, Class attendance, Face kiosk | `resources/views/teacher/*` |
 | U3 | **Change password** inside the app for students/teachers/parents (with current-password check); `/change-password` today only serves the forced change and always redirects to the teacher dashboard | `Auth/ChangePasswordController`, `auth/change-password.blade.php` |

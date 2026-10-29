@@ -3,844 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login — DP-LMS</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-@include('partials.gsap-fallback')
-
+    <meta name="robots" content="noindex">
+    <title>Administrator sign in — Sto. Domingo NHS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="{{ asset('images/logo.png') }}">
     <style>
         :root {
-            --primary: #16a34a;
-            --primary-hover: #15803d;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --navy:   #0E2A5C;
+            --navy-2: #163B7A;
+            --gold:   #E8B23A;
+            --blue:   #1D4ED8;
+            --blue-2: #1E40AF;
+            --ink:    #0F172A;
+            --slate:  #475569;
+            --muted:  #64748B;
+            --line:   #CBD5E1;
+            --paper:  #F5F7FA;
+            --danger: #B91C1C;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
         body {
-            min-height: 100vh;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            opacity: 0;
-            /* Dark overlay to make text readable over any image */
-            background-color: rgba(2, 6, 23, 0.7); 
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: var(--ink); background: var(--paper);
+            -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ── Background Image Layer (Blurred Only) ── */
-        .bg-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            
-            /* YOUR BACKGROUND IMAGE HERE */
-            background-image: url('{{ asset("images/background.jpg") }}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            
-            /* This blurs ONLY the background */
-            filter: blur(5px);
-            transform: scale(1.1); /* Scale up to hide blurry edges */
-            animation: kenburns 22s ease-in-out infinite alternate;
+        .page { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(380px, 44%) 1fr; }
+
+        /* ── School panel ── */
+        .school {
+            position: relative; overflow: hidden; isolation: isolate;
+            background: var(--navy); color: #fff;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 48px 56px;
         }
-        @keyframes kenburns {
-            from { transform: scale(1.1); }
-            to   { transform: scale(1.2) translateY(-8px); }
+        /* Rings taken from the round school seal — the one decorative element, drawn in CSS-sized SVG */
+        .rings { position: absolute; right: -460px; top: -200px; width: 760px; height: 760px; z-index: -1; pointer-events: none; }
+        .school-top { display: flex; align-items: center; gap: 14px; }
+        .seal { width: 64px; height: 64px; border-radius: 50%; background: #fff; padding: 3px; flex-shrink: 0; }
+        .seal img { width: 100%; height: 100%; display: block; border-radius: 50%; }
+        .school-tag { font-size: 14px; font-weight: 600; color: #C7D4EE; line-height: 1.35; }
+        .school-tag b { display: block; color: #fff; font-size: 15px; font-weight: 800; }
+
+        .school-name { font-size: 40px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; max-width: 12ch; text-wrap: balance; }
+        .school-place { margin-top: 14px; font-size: 16px; color: #C7D4EE; }
+        .school-rule { display: block; width: 48px; height: 3px; border-radius: 2px; background: var(--gold); margin-bottom: 22px; }
+
+        .school-foot { font-size: 13.5px; color: #C7D4EE; line-height: 1.55; max-width: 36ch; }
+        .school-foot b { color: #fff; font-weight: 700; }
+
+        /* ── Form side ── */
+        .side { display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
+        .panel { width: 100%; max-width: 400px; }
+        .panel h1 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
+        .lead { margin-top: 8px; font-size: 15px; color: var(--slate); line-height: 1.55; }
+
+        .notice { display: flex; gap: 10px; align-items: flex-start; margin-top: 24px; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; }
+        .notice svg { flex-shrink: 0; margin-top: 1px; }
+        .notice.error { background: #FEF2F2; border: 1px solid #FECACA; color: var(--danger); }
+        .notice.ok { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+
+        form { margin-top: 28px; display: grid; gap: 20px; }
+        .field label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+        .input {
+            width: 100%; height: 48px; padding: 0 14px;
+            border: 1px solid var(--line); border-radius: 10px; background: #fff;
+            font: inherit; font-size: 15px; color: var(--ink);
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
+        .input::placeholder { color: #94A3B8; }
+        .input:hover { border-color: #94A3B8; }
+        .input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(29,78,216,.18); }
+        .input[aria-invalid="true"] { border-color: var(--danger); }
+        .field-error { margin-top: 6px; font-size: 13px; color: var(--danger); }
 
-        /* ── Content Wrapper (Sharp & Clear) ── */
-        .wrapper {
-            position: relative;
-            z-index: 10; /* Sits on top of the blurred background */
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* ── Logo Section ── */
-        .logo-wrap {
-            text-align: center;
-            margin-bottom: 30px;
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-
-.logo-box {
-    width: 88px;
-    height: 88px;
-    border-radius: 22px;
-    background: #f0fdf4;
-    margin: 0 auto 14px;
-    box-shadow:
-        0 0 0 3px rgba(22, 163, 74, 0.12),
-        0 6px 16px rgba(0, 0, 0, 0.10);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.card-logo-section {
-    text-align: center;
-    margin-bottom: 22px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-
-        .logo-box img {
-            width: 70%;
-            height: 70%;
-            object-fit: contain;
-        }
-
-.logo-title {
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    color: #166534;
-    margin-bottom: 3px;
-}
-
-.logo-sub {
-    font-size: 11px;
-    color: #6b7280;
-    font-weight: 500;
-    text-shadow: none;
-}
-
-        /* ── Card with Glass Effect ── */
-/* BAGO */
-.card {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 20px;
-    padding: 32px;
-    box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.04),
-        0 20px 48px rgba(0, 0, 0, 0.28),
-        0 0 0 1px rgba(255, 255, 255, 0.6);
-    opacity: 0;
-    transform: translateY(30px);
-}
-
-.card-heading {
-    font-size: 16px;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 22px;
-    color: #111827;
-    letter-spacing: -0.01em;
-}
-        /* ── Form Elements ── */
-        .form-group { margin-bottom: 20px; }
-
-        
-.field-label {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 7px;
-    margin-left: 2px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-
-.field-input {
-    width: 100%;
-    background: #f9fafb;
-    border: 1.5px solid #e5e7eb;
-    color: #111827;
-    border-radius: 10px;
-    padding: 11px 14px;
-    font-size: 14px;
-    font-weight: 500;
-    font-family: inherit;
-    transition:
-        border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
-        box-shadow   180ms cubic-bezier(0.23, 1, 0.32, 1),
-        background   180ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-
-.field-input::placeholder {
-    color: #c9cdd6;
-    font-weight: 400;
-}
-
-.field-input:focus {
-    border-color: #3b82f6;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
-    outline: none;
-}
-
-.field-input.error {
-    border-color: #fca5a5;
-    background: #fff5f5;
-}
-
-.field-error {
-    font-size: 11px;
-    color: #ef4444;
-    margin-top: 5px;
-    margin-left: 2px;
-    font-weight: 500;
-}
-        /* Password Wrap */
-        .pw-wrap { position: relative; }
-        .pw-wrap .field-input { padding-right: 45px; }
-
+        .pw { position: relative; }
+        .pw .input { padding-right: 52px; }
         .pw-toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #94a3b8;
-            padding: 4px;
-            display: flex;
-            transition: color 0.2s;
+            position: absolute; right: 4px; top: 4px; width: 40px; height: 40px; border-radius: 8px;
+            border: 0; background: transparent; color: var(--muted); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
+        .pw-toggle:hover { background: #F1F5F9; color: var(--ink); }
+        .pw-toggle .off, .pw-toggle[aria-pressed="true"] .on { display: none; }
+        .pw-toggle[aria-pressed="true"] .off { display: block; }
+        .caps { margin-top: 6px; font-size: 13px; font-weight: 600; color: #92400E; }
 
-
-        .pw-toggle svg { width: 18px; height: 18px; }
-        .icon-eye-off { display: none; }
-
-        /* ── Submit Button ── */
-.btn-submit {
-    width: 100%;
-    background: linear-gradient(135deg, #16a34a, #15803d);
-    color: white;
-    border: none;
-    border-radius: 11px;
-    padding: 13px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 4px;
-    position: relative;
-    overflow: hidden;
-    letter-spacing: 0.02em;
-    transition:
-        background  200ms cubic-bezier(0.23, 1, 0.32, 1),
-        box-shadow  200ms cubic-bezier(0.23, 1, 0.32, 1);
-    box-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.10),
-        0 4px 12px rgba(22, 163, 74, 0.28);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .btn-submit:hover {
-        background: linear-gradient(135deg, #22c55e, #16a34a);
-    }
-    .pw-toggle:hover {
-        color: #3b82f6;
-    }
-}
-.btn-submit:active {
-    transform: scale(0.98);
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.08),
-        0 2px 6px rgba(22, 163, 74, 0.18);
-}
-
-        /* Spinner */
-        .btn-spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .submit {
+            height: 48px; border: 0; border-radius: 10px; background: var(--blue); color: #fff;
+            font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            transition: background-color .15s ease, transform .1s ease;
         }
+        .submit:hover { background: var(--blue-2); }
+        .submit:active { transform: scale(.985); }
+        .submit:disabled { cursor: progress; background: var(--blue-2); }
+        .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; display: none; animation: spin .7s linear infinite; }
+        .submit.loading .spinner { display: block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .lock { margin-top: 28px; padding: 22px; border: 1px solid #FDE68A; border-radius: 12px; background: #FFFBEB; }
+        .lock h2 { font-size: 17px; font-weight: 800; color: #78350F; }
+        .lock p { margin-top: 6px; font-size: 14px; color: #92400E; line-height: 1.55; }
+        .lock-time { margin-top: 14px; font-size: 32px; font-weight: 800; color: #78350F; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+        .lock-bar { margin-top: 12px; height: 6px; border-radius: 3px; background: #FDE68A; overflow: hidden; }
+        .lock-bar span { display: block; height: 100%; background: #D97706; transition: width 1s linear; }
 
-        .btn-submit.loading .btn-text { visibility: hidden; opacity: 0; }
-        .btn-submit.loading .btn-spinner { display: block; }
+        .other { margin-top: 28px; padding-top: 20px; border-top: 1px solid #E2E8F0; font-size: 14px; color: var(--slate); line-height: 1.55; }
+        .other a { color: var(--blue); font-weight: 700; text-decoration: none; }
+        .other a:hover { text-decoration: underline; text-underline-offset: 3px; }
+        .copy { margin-top: 16px; font-size: 13px; color: var(--muted); }
 
-        /* ── Divider & Footer ── */
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 24px 0;
-            opacity: 0;
-                transform: translateY(8px); /* ← DAGDAG */
+        :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+        .school :focus-visible { outline-color: #93C5FD; }
+
+        @media (max-width: 960px) {
+            .page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+            .school { padding: 24px; gap: 18px; }
+            .rings { width: 420px; height: 420px; right: -170px; top: auto; bottom: -230px; }
+            .seal { width: 52px; height: 52px; }
+            .school-name { font-size: 24px; max-width: none; }
+            .school-place { margin-top: 6px; font-size: 14px; }
+            .school-rule, .school-foot { display: none; }
+            .side { align-items: flex-start; padding: 32px 20px 40px; }
+            .panel h1 { font-size: 24px; }
         }
-
-  .divider-line {
-    flex: 1;
-    height: 1px;
-    background: #e5e7eb;
-}
-
-.divider-text {
-    font-size: 11px;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-}
-
-.restricted-note {
-    text-align: center;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.65);
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    opacity: 0;
-    transform: translateY(8px); /* ← may ; na */
-}
-        .copyright {
-            text-align: center;
-            font-size: 11px;
-            color: #cbd5e1;
-            margin-top: 12px;
-            opacity: 0;
-                transform: translateY(8px);
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
         }
-
-        /* Alert */
-.alert-error {
-    background: #fef2f2;
-    border: 1.5px solid #fecaca;
-    color: #b91c1c;
-    border-radius: 10px;
-    padding: 11px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    opacity: 0;
-    transform: translateY(-10px);
-}
-
-
-/* ── Checkmark draw animation ── */
-
-#btn-check path {
-    stroke-dasharray: 28;
-    stroke-dashoffset: 28;
-}
-
-@keyframes draw-check {
-    from { stroke-dashoffset: 28; opacity: 0; }
-    to   { stroke-dashoffset: 0;  opacity: 1; }
-}
-.btn-submit.success {
-    background: linear-gradient(135deg, #16a34a, #15803d);
-    pointer-events: none;
-}
-
-.btn-submit.success #btn-check {
-    display: block !important;
-    animation: draw-check 350ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-
-.btn-submit.loading #btn-icon,
-.btn-submit.loading #btn-check {
-    opacity: 0 !important;
-}
-
-.lockout-box {
-    display: none;
-    text-align: center;
-    padding: 24px 16px;
-}
-
-.lockout-icon {
-    width: 48px;
-    height: 48px;
-    background: #fef2f2;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 14px;
-    border: 1.5px solid #fecaca;
-}
-
-.lockout-icon svg {
-    width: 22px;
-    height: 22px;
-    color: #ef4444;
-    stroke: #ef4444;
-}
-
-.lockout-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 6px;
-}
-
-.lockout-sub {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 20px;
-    line-height: 1.6;
-}
-
-.countdown-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #f9fafb;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 12px 20px;
-}
-
-.countdown-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.countdown-timer {
-    font-size: 22px;
-    font-weight: 800;
-    color: #ef4444;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-    min-width: 52px;
-    text-align: center;
-}
-
-.countdown-progress {
-    width: 100%;
-    height: 3px;
-    background: #f3f4f6;
-    border-radius: 99px;
-    margin-top: 16px;
-    overflow: hidden;
-}
-
-.countdown-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #ef4444, #f97316);
-    border-radius: 99px;
-    width: 100%;
-    transition: width 1s linear;
-}
-
-
     </style>
 </head>
 <body>
+<main class="page">
 
-    <!-- Separate Layer for Background (Blurred) -->
-    <div class="bg-layer"></div>
-
-<div class="wrapper">
-
-    {{-- Logo --}}
-
-
-    {{-- Card --}}
-<div class="card gsap-card">
-
-    {{-- Logo (moved inside) --}}
-    <div class="card-logo-section">
-        <div class="logo-box">
-            <img src="{{ asset('images/logo.png') }}" alt="DP-LMS Logo">
-        </div>
-        <p class="logo-title">DIGITAL PLATFORM LMS</p>
-        <p class="logo-sub">Sto. Domingo National High School</p>
-    </div>
-
-    <h2 class="card-heading">Administrator Access</h2>
-
-    
- @if(session('error'))
-    <div class="alert-error gsap-alert" id="alert-box">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    <section class="school" aria-label="Sto. Domingo National High School">
+        <svg class="rings" viewBox="0 0 760 760" fill="none" aria-hidden="true">
+            @foreach ([370, 310, 250, 190, 130] as $r)
+                <circle cx="380" cy="380" r="{{ $r }}" stroke="#FFFFFF" stroke-opacity="{{ $r === 250 ? 0 : .09 }}" stroke-width="1.5"/>
+            @endforeach
+            <circle cx="380" cy="380" r="250" stroke="#E8B23A" stroke-opacity=".55" stroke-width="2"/>
         </svg>
-        <span id="alert-msg">{{ session('error') }}</span>
-    </div>
-@endif
 
-        <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm" @if(session('signed_out')) data-signed-out @endif>
-            @csrf
+        <div class="school-top">
+            <span class="seal"><img src="{{ asset('images/logo.png') }}" alt="" width="58" height="58" decoding="async" fetchpriority="high"></span>
+            <p class="school-tag"><b>DP-LMS</b>Administration</p>
+        </div>
 
-            {{-- Email --}}
-            <div class="form-group gsap-form-item">
-                <label class="field-label">Admin Email</label>
-                <input type="email" name="email"
-                    value="{{ old('email') }}"
-                    placeholder="name@school.edu.ph"
-                    required
-                    class="field-input {{ $errors->has('email') ? 'error' : '' }}">
-                @error('email')
-                    <p class="field-error">{{ $message }}</p>
-                @enderror
-            </div>
+        <div>
+            <span class="school-rule" aria-hidden="true"></span>
+            <p class="school-name">Sto. Domingo National High School</p>
+            <p class="school-place">San Manuel, Pangasinan</p>
+        </div>
 
-            {{-- Password --}}
-            <div class="form-group gsap-form-item">
-                <label class="field-label">Password</label>
-                <div class="pw-wrap">
-                    <input type="password" name="password"
-                        id="admin-pw"
-                        placeholder="••••••••"
-                        required
-                        class="field-input {{ $errors->has('password') ? 'error' : '' }}">
-                    <button type="button" class="pw-toggle gsap-icon-toggle"
-                        onclick="toggleAdminPw()" tabindex="-1">
-                        <svg class="icon-eye" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                        <svg class="icon-eye-off" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                        </svg>
-                    </button>
+        <p class="school-foot"><b>For school administrators only.</b> Every sign-in and failed attempt on this page is recorded in the audit log.</p>
+    </section>
+
+    <section class="side">
+        <div class="panel">
+            <h1>Administrator sign in</h1>
+            <p class="lead">Use the email and password of your administrator account.</p>
+
+            @if ($lockSeconds > 0)
+                <div class="lock" role="alert" id="lock" data-seconds="{{ $lockSeconds }}">
+                    <h2>Sign-in is paused</h2>
+                    <p>There were too many incorrect attempts. For security, you can try again when the timer ends.</p>
+                    <p class="lock-time" id="lockTime" aria-live="off">{{ sprintf('%02d:%02d', intdiv($lockSeconds, 60), $lockSeconds % 60) }}</p>
+                    <div class="lock-bar" aria-hidden="true"><span id="lockBar" style="width:100%;"></span></div>
                 </div>
-                @error('password')
-                    <p class="field-error">{{ $message }}</p>
-                @enderror
-            </div>
+            @else
+                @if (session('error'))
+                    <div class="notice error" role="alert">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/></svg>
+                        <span>{{ session('error') }}</span>
+                    </div>
+                @elseif (session('signed_out'))
+                    <div class="notice ok" role="status">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>You have signed out.</span>
+                    </div>
+                @endif
 
-<button type="submit" class="btn-submit gsap-btn-submit">
-    <!-- Lock icon (default state) -->
-    <svg id="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-         stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;transition:opacity 200ms ease">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-    </svg>
+                <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm" novalidate @if (session('signed_out')) data-signed-out @endif>
+                    @csrf
+                    <div class="field">
+                        <label for="admin-email">Email</label>
+                        <input class="input" type="email" id="admin-email" name="email" value="{{ old('email') }}"
+                               autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required
+                               placeholder="name@school.edu.ph"
+                               @error('email') aria-invalid="true" aria-describedby="err-email" @enderror>
+                        @error('email') <p class="field-error" id="err-email">{{ $message }}</p> @enderror
+                    </div>
 
-    <!-- Checkmark (success state, hidden initially) -->
-    <svg id="btn-check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-         stroke="currentColor" stroke-width="2.5"
-         style="width:20px;height:20px;flex-shrink:0;display:none;opacity:0">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-    </svg>
+                    <div class="field">
+                        <label for="admin-pw">Password</label>
+                        <div class="pw">
+                            <input class="input" type="password" id="admin-pw" name="password"
+                                   autocomplete="current-password" required
+                                   @error('password') aria-invalid="true" aria-describedby="err-pw" @enderror>
+                            <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" aria-pressed="false">
+                                <svg class="on" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="off" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.6 5.1A10.6 10.6 0 0112 5c6 0 9.5 7 9.5 7a17 17 0 01-3.1 4M6.6 6.6A16.8 16.8 0 002.5 12S6 19 12 19a9.8 9.8 0 005.4-1.6M9.9 9.9a3 3 0 004.2 4.2"/></svg>
+                            </button>
+                        </div>
+                        <p class="caps" id="capsNote" hidden>Caps Lock is on.</p>
+                        @error('password') <p class="field-error" id="err-pw">{{ $message }}</p> @enderror
+                    </div>
 
-    <span id="btn-text" style="margin-left:6px">Sign In</span>
-    <div class="btn-spinner"></div>
-</button>
-        </form>
+                    <button type="submit" class="submit" id="adminSubmit">
+                        <span class="spinner" aria-hidden="true"></span>
+                        <span id="adminSubmitText">Sign in</span>
+                    </button>
+                </form>
+            @endif
 
-        {{-- Lockout Box --}}
-<div class="lockout-box" id="lockout-box">
-    <div class="lockout-icon">
-        <svg fill="none" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 
-                  11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 
-                  2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 
-                  2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
-        </svg>
-    </div>
-    <p class="lockout-title">Account Temporarily Locked</p>
-    <p class="lockout-sub">Too many failed attempts.<br>Please wait before trying again.</p>
-    <div class="countdown-wrap">
-        <span class="countdown-label">Try again in</span>
-        <span class="countdown-timer" id="countdown-display">30:00</span>
-    </div>
-    <div class="countdown-progress">
-        <div class="countdown-bar" id="countdown-bar"></div>
-    </div>
-</div>
-
-        <div class="divider gsap-divider">
-            <div class="divider-line"></div>
-            <span class="divider-text">Secure Gateway</span>
-            <div class="divider-line"></div>
+            <p class="other">Students, teachers and parents sign in on the <a href="{{ route('login') }}">main sign-in page</a>.</p>
+            <p class="copy">&copy; {{ date('Y') }} Sto. Domingo National High School</p>
         </div>
-    </div>
+    </section>
 
-    <p class="restricted-note gsap-footer">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
-        Restricted to authorized personnel only
-    </p>
-
-    <p class="copyright gsap-footer">
-        &copy; {{ date('Y') }} Sto. Domingo NHS
-    </p>
-</div>
-
+</main>
 
 <script>
-function toggleAdminPw() {
-    const field  = document.getElementById('admin-pw');
-    const eyeOn  = document.querySelector('.icon-eye');
-    const eyeOff = document.querySelector('.icon-eye-off');
-    if (field.type === 'password') {
-        field.type = 'text';
-        eyeOn.style.display  = 'none';
-        eyeOff.style.display = 'block';
-    } else {
-        field.type = 'password';
-        eyeOn.style.display  = 'block';
-        eyeOff.style.display = 'none';
-    }
-}
-
-/* Clear the form right after logout, and whenever Back/Forward brings this page back with
-   the typed email and password still in it (the password possibly shown as text). */
-window.addEventListener('pageshow', (e) => {
-    const nav  = performance.getEntriesByType('navigation')[0];
+(function () {
     const form = document.getElementById('adminLoginForm');
-    if (!(e.persisted || (nav && nav.type === 'back_forward') || form.hasAttribute('data-signed-out'))) return;
-    form.reset();
     const pw = document.getElementById('admin-pw');
-    pw.value = '';
-    if (pw.type !== 'password') toggleAdminPw();
-});
+    const toggle = document.getElementById('pwToggle');
+    const submit = document.getElementById('adminSubmit');
 
-document.addEventListener("DOMContentLoaded", () => {
-
-    // ── Entrance sequence ──────────────────────────────
-    // initial states for a richer pop-in
-    gsap.set(".gsap-card", { scale: 0.94 });
-    gsap.set(".logo-box",  { scale: 0.45, rotation: -14, transformOrigin: "50% 50%" });
-
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-
-    tl.to("body",            { opacity: 1, duration: 0.3 })
-      .to(".gsap-card",      { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power4.out" }, "-=0.1")
-      .to(".logo-box",       { scale: 1, rotation: 0, duration: 0.8, ease: "back.out(1.9)" }, "-=0.4")
-      .to(".gsap-alert",     { opacity: 1, y: 0, duration: 0.3  }, "-=0.45")
-      .to(".gsap-form-item", { opacity: 1, y: 0, stagger: 0.09, duration: 0.4 }, "-=0.3")
-      .to(".gsap-btn-submit",{ opacity: 1, y: 0, duration: 0.4 }, "-=0.15")
-      .to(".gsap-divider",   { opacity: 1, y: 0, duration: 0.3  }, "-=0.2")
-      .to(".gsap-footer",    { opacity: 1, y: 0, stagger: 0.06, duration: 0.3  }, "-=0.15")
-      // gentle continuous float on the logo
-      .to(".logo-box",       { y: -6, duration: 2.2, ease: "sine.inOut", yoyo: true, repeat: -1 }, "+=0.05");
-
-// ── Lockout detection ──────────────────────────────
-const alertMsg  = document.getElementById('alert-msg');
-const isLocked  = alertMsg && alertMsg.textContent.toLowerCase().includes('too many attempts');
-
-// ── Still locked out from an earlier page load? ──
-const storedEnd = sessionStorage.getItem('lockout_end');
-const stillLocked = storedEnd && (parseInt(storedEnd) - Date.now()) > 0;
-
-if (isLocked || stillLocked) {
-    activateLockout();
-}
-function activateLockout() {
-    const formItems  = document.querySelectorAll('.gsap-form-item');
-    const submitBtn  = document.querySelector('.gsap-btn-submit');
-    const lockoutBox = document.getElementById('lockout-box');
-    const alertBox   = document.getElementById('alert-box');
-    const TOTAL_SECS = 45; 
-
-    // ── Reload during a lockout ──
-    const storedEnd = sessionStorage.getItem('lockout_end');
-    const isReload  = storedEnd && (parseInt(storedEnd) - Date.now()) > 0;
-
-    function showLockout() {
-        formItems.forEach(el => el.style.display = 'none');
-        submitBtn.style.display = 'none';
-        if (alertBox) alertBox.style.display = 'none';
-
-        lockoutBox.style.display = 'block';
-        gsap.fromTo(lockoutBox,
-            { opacity: 0, y: 12 },
-            { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }
-        );
-
-        startCountdown(TOTAL_SECS);
+    function showPassword(on) {
+        if (!pw) return;
+        pw.type = on ? 'text' : 'password';
+        toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+        toggle.setAttribute('aria-label', on ? 'Hide password' : 'Show password');
     }
 
-    if (isReload) {
-        // Skip fade-out animation — show lockout agad
-        showLockout();
-    } else {
-        gsap.to([...formItems, submitBtn], {
-            opacity: 0, y: -8,
-            duration: 0.3, ease: 'power2.in', stagger: 0.04,
-            onComplete: showLockout
-        });
-    }
-}
+    if (form) {
+        toggle.addEventListener('click', () => { showPassword(pw.type === 'password'); pw.focus(); });
 
-function startCountdown(totalSecs) {
-    const display = document.getElementById('countdown-display');
-    const bar     = document.getElementById('countdown-bar');
-    let remaining = totalSecs;
+        const caps = document.getElementById('capsNote');
+        const checkCaps = (e) => { if (e.getModifierState) caps.hidden = !e.getModifierState('CapsLock'); };
+        pw.addEventListener('keydown', checkCaps);
+        pw.addEventListener('keyup', checkCaps);
+        pw.addEventListener('blur', () => { caps.hidden = true; });
 
-    const stored = sessionStorage.getItem('lockout_end');
-    // ── Keep the total for the progress bar ──
-    const storedTotal = sessionStorage.getItem('lockout_total');
-
-    if (stored) {
-        const diff = Math.floor((parseInt(stored) - Date.now()) / 1000);
-        remaining = diff > 0 ? diff : 0;
-    } else {
-        sessionStorage.setItem('lockout_end',   Date.now() + totalSecs * 1000);
-        sessionStorage.setItem('lockout_total', totalSecs); // ← DAGDAG
-    }
-
-    // ── Use stored total as denominator ──
-    const total = storedTotal ? parseInt(storedTotal) : totalSecs; // ← DAGDAG
-
-    function tick() {
-        if (remaining <= 0) {
-            sessionStorage.removeItem('lockout_end');
-            sessionStorage.removeItem('lockout_total'); // ← DAGDAG
-            unlockForm();
-            return;
-        }
-
-        const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
-        const secs = String(remaining % 60).padStart(2, '0');
-        display.textContent = `${mins}:${secs}`;
-
-        const pct = (remaining / total) * 100; // relative to the stored total
-        bar.style.width = pct + '%';
-
-        remaining--;
-        setTimeout(tick, 1000);
-    }
-
-    tick();
-}
-
-    function unlockForm() {
-        const formItems  = document.querySelectorAll('.gsap-form-item');
-        const submitBtn  = document.querySelector('.gsap-btn-submit');
-        const lockoutBox = document.getElementById('lockout-box');
-
-        // ── Hide lockout box ──
-        gsap.to(lockoutBox, {
-            opacity: 0, y: -8, duration: 0.3, ease: 'power2.in',
-            onComplete: () => {
-                lockoutBox.style.display = 'none';
-
-                // ── Show form again ──
-                formItems.forEach(el => {
-                    el.style.display = '';
-                    el.style.opacity = '0';
-                });
-                submitBtn.style.display = '';
-                submitBtn.style.opacity = '0';
-
-                gsap.to([...formItems, submitBtn], {
-                    opacity: 1, y: 0,
-                    duration: 0.35,
-                    stagger: 0.06,
-                    ease: 'power3.out'
-                });
+        form.addEventListener('submit', (e) => {
+            const email = document.getElementById('admin-email');
+            if (!email.value.trim() || !pw.value) {
+                e.preventDefault();
+                (email.value.trim() ? pw : email).focus();
+                return;
             }
+            if (submit.disabled) { e.preventDefault(); return; }
+            submit.disabled = true;
+            submit.classList.add('loading');
+            document.getElementById('adminSubmitText').textContent = 'Signing in…';
         });
-    }
 
-    // ── Button interactions ────────────────────────────
-    const btn       = document.querySelector(".gsap-btn-submit");
-    const isPointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-    if (isPointer) {
-        btn.addEventListener("mouseenter", () => {
-            if (!btn.classList.contains('loading') && !btn.classList.contains('success'))
-                gsap.to(btn, { y: -2, duration: 0.2 });
-        });
-        btn.addEventListener("mouseleave", () => {
-            if (!btn.classList.contains('loading') && !btn.classList.contains('success'))
-                gsap.to(btn, { y: 0, duration: 0.2 });
-        });
-    }
-
-    btn.addEventListener("mousedown",  () => gsap.to(btn, { scale: 0.97, duration: 0.1  }));
-    btn.addEventListener("mouseup",    () => gsap.to(btn, { scale: 1,    duration: 0.12 }));
-    btn.addEventListener("mouseleave", () => gsap.to(btn, { scale: 1,    duration: 0.12 }));
-
-    // ── Form submit ────────────────────────────────────
-    const form     = document.getElementById('adminLoginForm');
-    const btnIcon  = document.getElementById('btn-icon');
-    const btnCheck = document.getElementById('btn-check');
-    const btnText  = document.getElementById('btn-text');
-
-    form.addEventListener('submit', function (e) {
-        if (btn.classList.contains('loading') || btn.classList.contains('success')) {
-            e.preventDefault();
-            return;
+        // Desktop only: on phones this would open the keyboard over the page right away
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            const email = document.getElementById('admin-email');
+            (email.value ? pw : email).focus();
         }
-        btn.classList.add('loading');
-        btn.disabled = true;
-        btnIcon.style.opacity = '0';
-        btnText.textContent   = 'Signing in...';
+    }
+
+    /* Clear the form right after logout, and whenever Back/Forward brings this page back with the
+       typed email and password still in it (the password possibly shown as text). Also re-enable
+       the button if the page comes back from the back/forward cache mid-submit. */
+    window.addEventListener('pageshow', (e) => {
+        if (!form) return;
+        submit.disabled = false;
+        submit.classList.remove('loading');
+        document.getElementById('adminSubmitText').textContent = 'Sign in';
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (!(e.persisted || (nav && nav.type === 'back_forward') || form.hasAttribute('data-signed-out'))) return;
+        form.reset();
+        pw.value = '';
+        showPassword(false);
     });
 
-    // ── Success animation ──────────────────────────────
-    window.triggerSuccess = function () {
-        btn.classList.remove('loading');
-        btn.classList.add('success');
-        btn.disabled = true;
-
-        const spinner = btn.querySelector('.btn-spinner');
-        if (spinner) spinner.style.display = 'none';
-
-        btnIcon.style.opacity = '1';
-        btnIcon.style.display = 'none';
-        btnCheck.style.display = 'block';
-        btnText.textContent    = 'Access Granted';
-
-        gsap.to(btnCheck, { opacity: 1, duration: 0.2 });
-
-        gsap.delayedCall(0.65, () => {
-            gsap.to('.gsap-card', {
-                y: -24, opacity: 0, scale: 0.97,
-                duration: 0.4, ease: 'power2.in'
-            });
-            gsap.to(['.gsap-footer', '.copyright'], {
-                opacity: 0, duration: 0.25, ease: 'power2.in'
-            });
-        });
-    };
-});
+    // Lockout: the time comes from the server; when it ends, reload so the server decides again
+    const lock = document.getElementById('lock');
+    if (lock) {
+        const total = parseInt(lock.dataset.seconds, 10) || 0;
+        const end = Date.now() + total * 1000;
+        const time = document.getElementById('lockTime');
+        const bar = document.getElementById('lockBar');
+        const tick = () => {
+            const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+            time.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+            bar.style.width = (total ? (left / total) * 100 : 0) + '%';
+            if (left <= 0) { clearInterval(timer); window.location.replace(window.location.pathname); }
+        };
+        const timer = setInterval(tick, 1000);
+        tick();
+    }
+})();
 </script>
-
-    @if(session('login_success'))
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            setTimeout(() => window.triggerSuccess(), 800);
-        });
-    </script>
-    @endif
-
 </body>
 </html>

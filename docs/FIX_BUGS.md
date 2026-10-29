@@ -29,6 +29,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [8](#batch-8--logout-and-the-login-form) | Logout, login form reset, back/forward cache | — | 3 |
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
 | [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
+| [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page | — | 2 |
 
 ---
 
@@ -647,11 +648,34 @@ are layout, states and consistency.
 
 ---
 
+## Batch 11 — Admin (part 1): sign-in page
+
+### B11-1 ✅ Lockout countdown said 45 seconds; the server locks for 30 minutes
+- **Problem:** after 5 wrong passwords the page showed a 45-second timer kept in `sessionStorage`; when it ended
+  the form came back but the server kept refusing for 30 minutes.
+- **Where:** `Admin/AdminAuthController`, `admin/login.blade.php`.
+- **Fix:** the time comes from the same rate limiter the form post checks (`RateLimiter::availableIn`), also after
+  a reload; when it ends the page reloads and the server decides again. Wrong passwords now say how many tries
+  are left (from 3). Only the email is kept after a failed try, never the password.
+
+### B11-2 ✅ Sign-in page slow and heavy
+- **Problem:** the page stayed invisible (`opacity: 0`) until GSAP (CDN) finished; a 2 MB background photo; a
+  logo floating forever; dead code for a "success" animation that never ran.
+- **Fix:** no GSAP, no photo, no hidden body; the only decoration is an inline SVG (rings from the school seal).
+  Labels tied to inputs, `autocomplete` username/current-password, a keyboard-reachable show-password button
+  with `aria-pressed`, Caps Lock warning, a "You have signed out." notice, a link to the main sign-in page.
+  Layout: school panel + form on desktop, short school header + form on phones.
+- **Tested:** PHPUnit 4 tests / 29 assertions (page has no photo/GSAP/hidden body and has the labels; right
+  password signs in; wrong passwords count down 3 → 1, then lock with ~1800 s from the server, shown again after
+  a reload without the flash, and even the right password is refused while locked; logout notice + form flag).
+  Logout regression 5/5. Screenshots 1440 / 1024 / 390: no JS errors, no sideways scroll.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |
 |---|---|---|
-| 🔧 | Admin login lockout countdown shows 45 seconds, but the server locks for 30 minutes | `resources/views/admin/login.blade.php` (`TOTAL_SECS = 45`) |
 | 🔧 | `/api/parent/*` `enrollment_status` is still only "enrolled" / "not enrolled" (the web now shows pending/returned) | `Api/ParentPortal/DashboardController.php` — needs a Flutter change first |
 | 🔧 | A parent with two children cannot link the second child themselves (the school office links them) | `ParentLinkService` — feature decision |
 | 🔧 | Grade weights 25/50/25 for every subject (DepEd differs per subject group) | CLAUDE.md §13 #13 — confirm with the school |
