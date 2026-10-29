@@ -62,8 +62,10 @@ class DashboardController extends Controller
         //   reg = "account activated" / starts with "parent linked" / contains "registration"
         $weekStart = now()->startOfWeek();
         $weekEnd   = now()->endOfWeek();
-        $from      = $weekStart->copy()->min(now()->startOfYear());   // week may start in last year
-        $to        = $weekEnd->copy()->max(now()->endOfYear());       // or end in next year
+        // From the start of LAST year: the previous week / month / year are needed for the
+        // "vs last period" comparison. The week may also end in next year.
+        $from      = $weekStart->copy()->subWeek()->min(now()->subYear()->startOfYear());
+        $to        = $weekEnd->copy()->max(now()->endOfYear());
 
         $a = 'LOWER(action)';
         $category = "CASE
@@ -84,8 +86,20 @@ class DashboardController extends Controller
             $byDay[(string) $r->d][$r->cat] = (int) $r->c;
         }
 
-        $series = function (array $days, array $labels) use ($byDay) {
-            $out = ['labels' => $labels, 'reg' => [], 'apr' => [], 'log' => []];
+        // Totals of each category between two dates (inclusive), for the previous period
+        $total = function (Carbon $start, Carbon $end) use ($byDay) {
+            $out = ['reg' => 0, 'apr' => 0, 'log' => 0];
+            for ($d = $start->copy()->startOfDay(); $d->lte($end); $d->addDay()) {
+                foreach ($out as $cat => $n) {
+                    $out[$cat] += $byDay[$d->toDateString()][$cat] ?? 0;
+                }
+            }
+            return $out;
+        };
+
+        // labels = short axis labels, titles = full dates for the tooltip, prev = totals of the period before
+        $series = function (array $days, array $labels, array $titles, array $prev) use ($byDay) {
+            $out = ['labels' => $labels, 'titles' => $titles, 'prev' => $prev, 'reg' => [], 'apr' => [], 'log' => []];
             foreach ($days as $dayKeys) {
                 foreach (['reg', 'apr', 'log'] as $cat) {
                     $sum = 0;
@@ -103,14 +117,25 @@ class DashboardController extends Controller
         for ($d = $weekStart->copy(); $d->lte($weekEnd); $d->addDay()) {
             $weekDays[] = $d->toDateString();
         }
-        $chartDataWeekly = $series($weekDays, array_map(fn ($d) => Carbon::parse($d)->format('D'), $weekDays));
+        $chartDataWeekly = $series(
+            $weekDays,
+            array_map(fn ($d) => Carbon::parse($d)->format('D'), $weekDays),
+            array_map(fn ($d) => Carbon::parse($d)->format('l, M j'), $weekDays),
+            $total($weekStart->copy()->subWeek(), $weekEnd->copy()->subWeek()),
+        );
 
         // Monthly: every day of this month
         $monthDays = [];
         for ($d = now()->startOfMonth(); $d->lte(now()->endOfMonth()); $d->addDay()) {
             $monthDays[] = $d->toDateString();
         }
-        $chartDataMonthly = $series($monthDays, array_map(fn ($d) => Carbon::parse($d)->format('M j'), $monthDays));
+        $lastMonth = now()->startOfMonth()->subMonth();
+        $chartDataMonthly = $series(
+            $monthDays,
+            array_map(fn ($d) => Carbon::parse($d)->format('M j'), $monthDays),
+            array_map(fn ($d) => Carbon::parse($d)->format('l, M j'), $monthDays),
+            $total($lastMonth, $lastMonth->copy()->endOfMonth()),
+        );
 
         // Yearly: 12 months, each bucket = all days of that month (this year)
         $year = now()->year;
@@ -123,7 +148,12 @@ class DashboardController extends Controller
             }
             $monthBuckets[] = $bucket;
         }
-        $chartDataYearly = $series($monthBuckets, ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']);
+        $chartDataYearly = $series(
+            $monthBuckets,
+            ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+            array_map(fn ($m) => Carbon::create($year, $m, 1)->format('F Y'), range(1, 12)),
+            $total(Carbon::create($year - 1, 1, 1), Carbon::create($year - 1, 12, 31)),
+        );
 
         // ── Counts ───────────────────────────────────────────────────────
         $roleStatus = User::whereIn('role', ['student', 'teacher', 'parent'])

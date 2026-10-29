@@ -689,6 +689,13 @@ are layout, states and consistency.
   (grouped bars rising with a short stagger, legend). Palette validated for colour-blind separation and contrast
   in light (`#2563EB`/`#0D9488`) and dark (`#3B82F6`/`#0D9488`); dark mode recolours without rebuilding; each
   chart has a screen-reader table; reduced motion turns the animation off.
+- **Second pass (charts did not feel smooth):** the page script moved to `public/js/admin-dashboard.js`
+  (versioned by file time, sections for theme / numbers / charts / live refresh; data passed through a
+  `data-charts` attribute because the admin layout re-runs every `<script>` on navigation). Line chart: one
+  continuous left-to-right reveal instead of point-by-point delays, gradient area fill, dashed crosshair, HTML
+  tooltip card with the full date; bars dim the other days on hover; "+N% vs last week/month/year" chips
+  (arrow + words) from previous-period totals added to the same grouped query; a sparkline of this week's
+  sign-ins in "Activity today"; values glide on live updates.
 - **Tested:** PHPUnit 3 tests / 44 assertions (page has both charts and no second axis; live endpoint needs an
   admin; JSON shape, 7 / days-in-month / 12 labels; a new pending parent and a login appear on the next refresh,
   with the approve form and CSRF field in the list HTML). Real browser: charts drawn, one y-axis each, month and

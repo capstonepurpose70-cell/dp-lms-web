@@ -64,6 +64,37 @@
     .db-canvas { position: relative; height: 250px; }
     .db-chart-note { display: grid; place-items: center; height: 100%; text-align: center; padding: 0 16px; font-size: 13px; color: var(--slate-500); }
 
+
+    /* Change vs the previous period: arrow + words, never colour alone */
+    .db-delta { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; white-space: nowrap; background: var(--slate-100); color: var(--slate-600); }
+    .db-delta svg path { display: none; }
+    .db-delta[data-tone="up"] { background: #DCFCE7; color: #166534; }
+    .db-delta[data-tone="down"] { background: #FEE2E2; color: #991B1B; }
+    .db-delta[data-tone="up"] .up, .db-delta[data-tone="down"] .down, .db-delta[data-tone="flat"] .flat { display: block; }
+    [data-theme="dark"] .db-delta[data-tone="up"] { background: rgba(22,163,74,.18); color: #86EFAC; }
+    [data-theme="dark"] .db-delta[data-tone="down"] { background: rgba(220,38,38,.18); color: #FCA5A5; }
+
+    /* Chart tooltip card */
+    .db-tip { position: absolute; left: 0; top: 0; z-index: 5; min-width: 150px; padding: 10px 12px; border-radius: 10px; pointer-events: none;
+              background: var(--surface-card); border: 1px solid var(--db-line); box-shadow: 0 10px 30px -8px rgba(15,23,42,.25), 0 2px 6px rgba(15,23,42,.06);
+              font-size: 12.5px; color: var(--slate-700); opacity: 0; transition: opacity .12s ease, transform .12s ease; }
+    .db-tip[data-open="true"] { opacity: 1; }
+    .db-tip-title { font-weight: 700; color: var(--slate-900); margin-bottom: 6px; }
+    .db-tip-row { display: flex; align-items: center; gap: 8px; }
+    .db-tip-row + .db-tip-row { margin-top: 4px; }
+    .db-tip-row i { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .db-tip-row b { margin-left: auto; padding-left: 14px; color: var(--slate-900); font-variant-numeric: tabular-nums; }
+
+    /* Sparkline in "Activity today" */
+    .db-kpi { position: relative; }
+    .db-spark { position: absolute; right: 18px; top: 16px; width: 96px; height: 32px; overflow: visible; }
+    [data-theme="dark"] .db-spark-line { stroke: #3B82F6; }
+    [data-theme="dark"] .db-spark-area { fill: rgba(59,130,246,.16); }
+    @media (max-width: 1100px) { .db-spark { display: none; } }
+    .db-spark-area { fill: rgba(37,99,235,.10); }
+    .db-spark-line { fill: none; stroke: #2563EB; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+    .db-chart .db-legend { margin: -4px 0 10px; }
+
     /* Lists */
     .db-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px 12px; border-bottom: 1px solid var(--db-line); }
@@ -141,7 +172,8 @@
     ];
 @endphp
 
-<div class="db" id="dbRoot" data-live="{{ route('admin.dashboard.live') }}">
+<div class="db" id="dbRoot" data-live="{{ route('admin.dashboard.live') }}"
+     data-charts="{{ json_encode(['weekly' => $chartDataWeekly, 'monthly' => $chartDataMonthly, 'yearly' => $chartDataYearly]) }}">
 
     <header class="db-head db-in" style="--i:0">
         <div>
@@ -158,7 +190,7 @@
         <div class="db-kpi">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['students'] }}"/></svg>Students</span>
             <span class="db-kpi-num" data-count="totalStudents">{{ number_format($totalStudents) }}</span>
-            <span class="db-kpi-note {{ $pendingStudents ? 'warn' : '' }}" data-note="pendingStudents" data-text=" waiting for approval">{{ $pendingStudents }} waiting for approval</span>
+            <span class="db-kpi-note {{ $pendingStudents ? 'warn' : '' }}" data-note="pendingStudents" data-warn data-text=" waiting for approval">{{ $pendingStudents }} waiting for approval</span>
         </div>
         <div class="db-kpi">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['teachers'] }}"/></svg>Teachers</span>
@@ -168,22 +200,25 @@
         <div class="db-kpi">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['parents'] }}"/></svg>Parents</span>
             <span class="db-kpi-num" data-count="totalParents">{{ number_format($totalParents) }}</span>
-            <span class="db-kpi-note {{ $pendingParents ? 'warn' : '' }}" data-note="pendingParents" data-text=" waiting for approval">{{ $pendingParents }} waiting for approval</span>
+            <span class="db-kpi-note {{ $pendingParents ? 'warn' : '' }}" data-note="pendingParents" data-warn data-text=" waiting for approval">{{ $pendingParents }} waiting for approval</span>
         </div>
         <div class="db-kpi">
             <span class="db-kpi-label"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icons['activity'] }}"/></svg>Activity today</span>
             <span class="db-kpi-num" data-count="todayLogs">{{ number_format($todayLogs) }}</span>
             <span class="db-kpi-note">Audit log entries since midnight</span>
+            <svg class="db-spark" id="dbSpark" viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"></svg>
         </div>
     </section>
 
     <nav class="db-card db-att db-in" style="--i:2" aria-label="Needs attention">
-        <a href="{{ route('admin.enrollment.index', ['status' => 'pending'], false) }}" class="{{ $pendingEnrollments ? 'warn' : 'ok' }}" data-att="pendingEnrollments">
+        <a href="{{ route('admin.enrollment.index', ['status' => 'pending'], false) }}" class="{{ $pendingEnrollments ? 'warn' : 'ok' }}" data-att="pendingEnrollments"
+           data-one="enrollment request to review" data-many="enrollment requests to review" data-none="No enrollment requests waiting">
             <span class="db-att-ic" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
             <span class="db-att-txt"><b data-count="pendingEnrollments">{{ $pendingEnrollments }}</b><span data-att-text>{{ $pendingEnrollments ? Str::plural('enrollment request', $pendingEnrollments) . ' to review' : 'No enrollment requests waiting' }}</span></span>
             <svg class="db-att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
-        <a href="{{ route('admin.sections.index', [], false) }}" class="{{ $sectionsNoAdviser ? 'warn' : 'ok' }}" data-att="sectionsNoAdviser">
+        <a href="{{ route('admin.sections.index', [], false) }}" class="{{ $sectionsNoAdviser ? 'warn' : 'ok' }}" data-att="sectionsNoAdviser"
+           data-one="active section without an adviser" data-many="active sections without an adviser" data-none="Every active section has an adviser">
             <span class="db-att-ic" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></span>
             <span class="db-att-txt"><b data-count="sectionsNoAdviser">{{ $sectionsNoAdviser }}</b><span data-att-text>{{ $sectionsNoAdviser ? 'active ' . Str::plural('section', $sectionsNoAdviser) . ' without an adviser' : 'Every active section has an adviser' }}</span></span>
             <svg class="db-att-go" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -211,8 +246,9 @@
                     <h3 class="db-chart-title" id="dbSignTitle">Sign-ins</h3>
                     <span class="db-chart-total"><span id="dbSignTotal">0</span> <small id="dbSignRange">this week</small></span>
                 </div>
+                <span class="db-delta" id="dbSignDelta" data-tone="flat"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"><path class="up" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8"/><path class="down" stroke-linecap="round" stroke-linejoin="round" d="M7 7l10 10M17 9v8H9"/><path class="flat" stroke-linecap="round" d="M5 12h14"/></svg><span>—</span></span>
             </div>
-            <div class="db-canvas"><canvas id="dbSignChart" role="img" aria-label="Sign-ins over the selected time range"></canvas></div>
+            <div class="db-canvas"><canvas id="dbSignChart" role="img" aria-label="Sign-ins over the selected time range"></canvas><div class="db-tip" id="dbSignTip" data-open="false" aria-hidden="true"></div></div>
             <table class="sr-only" id="dbSignTable"></table>
         </section>
 
@@ -222,12 +258,13 @@
                     <h3 class="db-chart-title" id="dbRegTitle">Registrations and approvals</h3>
                     <span class="db-chart-total"><span id="dbRegTotal">0</span> <small>new accounts</small></span>
                 </div>
-                <div class="db-legend" aria-hidden="true">
-                    <span><i class="sw-reg"></i>Registrations</span>
-                    <span><i class="sw-apr"></i>Approvals</span>
-                </div>
+                <span class="db-delta" id="dbRegDelta" data-tone="flat"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24" aria-hidden="true"><path class="up" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M9 7h8v8"/><path class="down" stroke-linecap="round" stroke-linejoin="round" d="M7 7l10 10M17 9v8H9"/><path class="flat" stroke-linecap="round" d="M5 12h14"/></svg><span>—</span></span>
             </div>
-            <div class="db-canvas"><canvas id="dbRegChart" role="img" aria-label="Registrations and approvals over the selected time range"></canvas></div>
+            <div class="db-legend" aria-hidden="true">
+                <span><i data-swatch="reg"></i>Registrations</span>
+                <span><i data-swatch="apr"></i>Approvals</span>
+            </div>
+            <div class="db-canvas"><canvas id="dbRegChart" role="img" aria-label="Registrations and approvals over the selected time range"></canvas><div class="db-tip" id="dbRegTip" data-open="false" aria-hidden="true"></div></div>
             <table class="sr-only" id="dbRegTable"></table>
         </section>
     </div>
@@ -255,258 +292,7 @@
     </div>
 </div>
 
+{{-- Chart.js (CDN) first, then the page script; the admin layout runs both again on every visit --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script>
-(function () {
-    const root = document.getElementById('dbRoot');
-    if (!root) return;
-
-    const POLL_MS = 20000;
-    const RANGE_WORD = { weekly: 'this week', monthly: 'this month', yearly: 'this year' };
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let data = {
-        weekly:  @json($chartDataWeekly),
-        monthly: @json($chartDataMonthly),
-        yearly:  @json($chartDataYearly),
-    };
-    let period = 'weekly';
-    const gone = () => !document.body.contains(root);   // the admin layout swapped in another page
-    const sum = (arr) => (arr || []).reduce((a, b) => a + (Number(b) || 0), 0);
-    const fmt = (n) => Number(n).toLocaleString('en-US');
-
-    /* ── Counting numbers (first load and every change) ── */
-    function countTo(el, to) {
-        const from = Number(String(el.textContent).replace(/[^\d-]/g, '')) || 0;
-        if (from === to) return;
-        if (reduceMotion) { el.textContent = fmt(to); return; }
-        const start = performance.now(), dur = 700;
-        const step = (now) => {
-            const t = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - t, 3);
-            el.textContent = fmt(Math.round(from + (to - from) * e));
-            if (t < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-    }
-
-    /* ── Theme-aware colours (validated palette: light #2563EB/#0D9488, dark #3B82F6/#0D9488) ── */
-    function palette() {
-        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const css = getComputedStyle(root);
-        return {
-            dark,
-            blue: dark ? '#3B82F6' : '#2563EB',
-            teal: '#0D9488',
-            grid: dark ? 'rgba(255,255,255,.07)' : '#EEF2F7',
-            tick: css.getPropertyValue('--slate-500').trim() || '#64748B',
-            surface: css.getPropertyValue('--surface-card').trim() || '#FFFFFF',
-            ink: css.getPropertyValue('--slate-900').trim() || '#0F172A',
-        };
-    }
-    function paintLegend(p) {
-        root.querySelectorAll('.sw-reg').forEach(el => el.style.background = p.blue);
-        root.querySelectorAll('.sw-apr').forEach(el => el.style.background = p.teal);
-    }
-
-    /* Accessible table view of what each chart shows */
-    function writeTable(id, caption, labels, series) {
-        const t = document.getElementById(id);
-        if (!t) return;
-        const head = '<tr><th scope="col">Period</th>' + series.map(s => `<th scope="col">${s.name}</th>`).join('') + '</tr>';
-        const rows = labels.map((l, i) => `<tr><th scope="row">${l}</th>` + series.map(s => `<td>${s.values[i] ?? 0}</td>`).join('') + '</tr>').join('');
-        t.innerHTML = `<caption>${caption}</caption><thead>${head}</thead><tbody>${rows}</tbody>`;
-    }
-
-    function updateTotals() {
-        const d = data[period];
-        countTo(document.getElementById('dbSignTotal'), sum(d.log));
-        countTo(document.getElementById('dbRegTotal'), sum(d.reg));
-        document.getElementById('dbSignRange').textContent = RANGE_WORD[period];
-        writeTable('dbSignTable', 'Sign-ins ' + RANGE_WORD[period], d.labels, [{ name: 'Sign-ins', values: d.log }]);
-        writeTable('dbRegTable', 'Registrations and approvals ' + RANGE_WORD[period], d.labels,
-            [{ name: 'Registrations', values: d.reg }, { name: 'Approvals', values: d.apr }]);
-    }
-
-    /* ── Charts ── */
-    let signChart = null, regChart = null;
-
-    if (typeof Chart === 'undefined') {
-        // Chart.js comes from a CDN: without internet the numbers and lists still work
-        ['dbSignChart', 'dbRegChart'].forEach(id => {
-            const c = document.getElementById(id);
-            c.parentNode.innerHTML = '<div class="db-chart-note">The chart could not load (no internet connection). The numbers on this page are up to date.</div>';
-        });
-    } else {
-        const p = palette();
-        paintLegend(p);
-        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
-
-        // Vertical guide line under the tooltip on the line chart
-        const crosshair = {
-            id: 'dbCrosshair',
-            afterDatasetsDraw(chart) {
-                const a = chart.tooltip && chart.tooltip.getActiveElements();
-                if (!a || !a.length) return;
-                const x = a[0].element.x, { top, bottom } = chart.chartArea, ctx = chart.ctx;
-                ctx.save();
-                ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom);
-                ctx.lineWidth = 1; ctx.strokeStyle = palette().tick; ctx.globalAlpha = .45; ctx.stroke();
-                ctx.restore();
-            },
-        };
-
-        const axes = (pp) => ({
-            x: { grid: { display: false }, border: { display: false }, ticks: { color: pp.tick, maxRotation: 0, autoSkipPadding: 12, font: { size: 11.5, weight: '600' } } },
-            y: { beginAtZero: true, grid: { color: pp.grid }, border: { display: false }, ticks: { color: pp.tick, precision: 0, maxTicksLimit: 5, padding: 8, font: { size: 11 } } },
-        });
-        const tooltip = (pp) => ({
-            backgroundColor: pp.dark ? '#E2E8F0' : '#0F172A',
-            titleColor: pp.dark ? '#0F172A' : '#F8FAFC',
-            bodyColor: pp.dark ? '#1E293B' : '#E2E8F0',
-            padding: 10, cornerRadius: 8, boxPadding: 4, usePointStyle: true,
-            titleFont: { size: 12.5, weight: '700' }, bodyFont: { size: 12.5 },
-            callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + fmt(c.parsed.y) },
-        });
-
-        // Line draws in from the left, one point after another; bars rise with a short stagger
-        const lineIn = (n) => reduceMotion ? false : {
-            x: { type: 'number', easing: 'easeOutQuart', duration: 500, from: NaN, delay: (c) => c.type === 'data' && c.mode === 'default' ? c.dataIndex * (700 / Math.max(n, 1)) : 0 },
-            y: { type: 'number', easing: 'easeOutQuart', duration: 500, from: (c) => c.chart.scales.y ? c.chart.scales.y.getPixelForValue(0) : 0, delay: (c) => c.type === 'data' && c.mode === 'default' ? c.dataIndex * (700 / Math.max(n, 1)) : 0 },
-        };
-
-        const d0 = data[period];
-        signChart = new Chart(document.getElementById('dbSignChart'), {
-            type: 'line',
-            data: { labels: d0.labels, datasets: [{
-                label: 'Sign-ins', data: d0.log, borderColor: p.blue, backgroundColor: p.blue + '14', fill: 'origin',
-                borderWidth: 2, cubicInterpolationMode: 'monotone', pointRadius: 0, pointHoverRadius: 5,
-                pointHoverBackgroundColor: p.blue, pointHoverBorderColor: p.surface, pointHoverBorderWidth: 2,
-            }] },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                animations: lineIn(d0.labels.length),
-                animation: reduceMotion ? false : { duration: 500 },
-                plugins: { legend: { display: false }, tooltip: tooltip(p) },
-                scales: axes(p),
-            },
-            plugins: [crosshair],
-        });
-
-        regChart = new Chart(document.getElementById('dbRegChart'), {
-            type: 'bar',
-            data: { labels: d0.labels, datasets: [
-                { label: 'Registrations', data: d0.reg, backgroundColor: p.blue, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 18 },
-                { label: 'Approvals', data: d0.apr, backgroundColor: p.teal, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 18 },
-            ] },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                datasets: { bar: { categoryPercentage: .62, barPercentage: .86 } },
-                interaction: { mode: 'index', intersect: false },
-                animation: reduceMotion ? false : {
-                    duration: 600, easing: 'easeOutQuart',
-                    delay: (c) => c.type === 'data' && c.mode === 'default' ? c.dataIndex * 35 + c.datasetIndex * 80 : 0,
-                },
-                plugins: { legend: { display: false }, tooltip: tooltip(p) },
-                scales: axes(p),
-            },
-        });
-
-        // Dark / light switch: recolour without rebuilding
-        const themeWatch = new MutationObserver(() => {
-            if (gone()) { themeWatch.disconnect(); return; }
-            const q = palette();
-            paintLegend(q);
-            const s = signChart.data.datasets[0];
-            s.borderColor = q.blue; s.backgroundColor = q.blue + '14'; s.pointHoverBackgroundColor = q.blue; s.pointHoverBorderColor = q.surface;
-            regChart.data.datasets[0].backgroundColor = q.blue;
-            regChart.data.datasets[1].backgroundColor = q.teal;
-            [signChart, regChart].forEach(ch => { ch.options.scales = axes(q); ch.options.plugins.tooltip = tooltip(q); ch.update('none'); });
-        });
-        themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    }
-
-    function showPeriod(next, animate) {
-        period = next;
-        const d = data[period];
-        if (signChart) {
-            const labelsChanged = JSON.stringify(signChart.data.labels) !== JSON.stringify(d.labels);
-            signChart.data.labels = d.labels; signChart.data.datasets[0].data = d.log;
-            regChart.data.labels = d.labels; regChart.data.datasets[0].data = d.reg; regChart.data.datasets[1].data = d.apr;
-            // New range = draw in again; same range with new numbers = values glide to their new height
-            if (labelsChanged && animate) { signChart.reset(); regChart.reset(); }
-            signChart.update(); regChart.update();
-        }
-        updateTotals();
-    }
-
-    root.querySelector('.db-tabs').addEventListener('click', (e) => {
-        const b = e.target.closest('button[data-period]');
-        if (!b || b.dataset.period === period) return;
-        root.querySelectorAll('.db-tabs button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
-        showPeriod(b.dataset.period, true);
-    });
-
-    /* ── Live refresh ── */
-    const live = document.getElementById('dbLive');
-    const liveLabel = document.getElementById('dbLiveLabel');
-    const updated = document.getElementById('dbUpdated');
-    let timer = null, busy = false;
-
-    function setText(el, text) { if (el && el.textContent !== text) el.textContent = text; }
-    function swapList(id, html) {
-        const el = document.getElementById(id);
-        if (!el || el.innerHTML.trim() === html.trim()) return;
-        // Never pull a button out from under the admin's cursor or keyboard focus
-        if (el.contains(document.activeElement) || el.matches(':hover')) return;
-        el.innerHTML = html;
-        el.classList.remove('db-flash'); void el.offsetWidth; el.classList.add('db-flash');
-    }
-
-    function apply(json) {
-        const c = json.counts || {};
-        root.querySelectorAll('[data-count]').forEach(el => { if (c[el.dataset.count] !== undefined) countTo(el, Number(c[el.dataset.count])); });
-        root.querySelectorAll('[data-note]').forEach(el => {
-            const n = Number(c[el.dataset.note] ?? 0);
-            setText(el, n + el.dataset.text);
-            if (el.dataset.note !== 'approvedTeachers') el.classList.toggle('warn', n > 0);
-        });
-        const att = (key, yes, no) => {
-            const a = root.querySelector(`[data-att="${key}"]`), n = Number(c[key] ?? 0);
-            if (!a) return;
-            a.classList.toggle('warn', n > 0); a.classList.toggle('ok', n === 0);
-            setText(a.querySelector('[data-att-text]'), n > 0 ? yes(n) : no);
-        };
-        att('pendingEnrollments', n => (n === 1 ? 'enrollment request' : 'enrollment requests') + ' to review', 'No enrollment requests waiting');
-        att('sectionsNoAdviser', n => 'active ' + (n === 1 ? 'section' : 'sections') + ' without an adviser', 'Every active section has an adviser');
-
-        if (json.charts) { data = json.charts; showPeriod(period, false); }
-        if (typeof json.pendingHtml === 'string') swapList('dbPending', json.pendingHtml);
-        if (typeof json.activityHtml === 'string') swapList('dbActivity', json.activityHtml);
-        setText(updated, 'Updated ' + new Date(json.updatedAt || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
-    }
-
-    function refresh() {
-        if (gone()) { clearInterval(timer); return; }
-        if (document.hidden || busy) return;
-        busy = true;
-        live.classList.add('updating');
-        fetch(root.dataset.live, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-            .then(r => {
-                if (r.status === 401 || r.status === 419 || (r.redirected && !r.url.includes('/admin/dashboard'))) { window.location.href = '/admin/login'; throw new Error('signed out'); }
-                if (!r.ok) throw new Error('http ' + r.status);
-                return r.json();
-            })
-            .then(json => { if (!gone()) { apply(json); live.classList.remove('paused'); setText(liveLabel, 'Live'); } })
-            .catch(() => { live.classList.add('paused'); setText(liveLabel, 'Reconnecting'); })
-            .finally(() => { busy = false; live.classList.remove('updating'); });
-    }
-
-    // First paint: numbers count up from zero, charts draw in
-    root.querySelectorAll('.db-kpi-num[data-count]').forEach(el => { const to = Number(el.textContent.replace(/[^\d-]/g, '')) || 0; el.textContent = '0'; countTo(el, to); });
-    updateTotals();
-
-    timer = setInterval(refresh, POLL_MS);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && !gone()) refresh(); });
-})();
-</script>
+<script src="{{ asset('js/admin-dashboard.js') }}?v={{ filemtime(public_path('js/admin-dashboard.js')) }}"></script>
 @endsection
