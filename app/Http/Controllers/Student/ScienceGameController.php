@@ -14,8 +14,13 @@ class ScienceGameController extends Controller
     private function guardGrade(): string
     {
         $grade = (string) (Auth::user()->grade_level ?? '');
-        abort_unless(in_array($grade, ['11', '12'], true), 403,
-            'The Strata Rush Science Game is available to Grade 11 and Grade 12 students only.');
+        if (!in_array($grade, ['11', '12'], true)) {
+            $message = 'The Strata Rush Science Game is available to Grade 11 and Grade 12 students only.';
+            // The game's own requests get a plain 403; a student who opened the page goes back to the dashboard
+            abort_if(request()->expectsJson(), 403, $message);
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->route('student.dashboard')->with('info', $message));
+        }
         return $grade;
     }
 

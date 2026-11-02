@@ -8,6 +8,7 @@ use App\Models\Section;
 use App\Models\StudentEnrollment;
 use App\Models\StudentProfile;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -27,8 +28,10 @@ class EnrollmentService
             // grade_level and school_year are set by the SERVER, not the student
             'student_type'         => 'required|in:new,old,transfer',
             'full_name'            => ['required', 'string', 'max:255', 'regex:/^[\pL\s\.\'\-]+$/u'],
-            'age'                  => 'required|integer|min:10|max:25',
-            'birthdate'            => 'required|date|before:today',
+            // Still accepted from older app builds, but the saved age is always worked out from the birthdate
+            'age'                  => 'nullable|integer',
+            'birthdate'            => ['required', 'date', 'before_or_equal:' . now()->subYears(10)->toDateString(),
+                                       'after:' . now()->subYears(26)->toDateString()],
             'gender'               => 'required|in:Male,Female',
             'address'              => 'required|string|max:500',
             'mother_name'          => ['nullable', 'string', 'max:255', self::NAME],
@@ -52,7 +55,20 @@ class EnrollmentService
             'guardian_contact.regex' => 'Contact number must contain numbers only.',
             'general_average.between' => 'General average must be between 60 and 100.',
             'general_average.numeric' => 'General average must be a number, e.g. 88.5.',
+            'birthdate.before_or_equal' => 'Check the birthdate: students must be 10 to 25 years old.',
+            'birthdate.after'         => 'Check the birthdate: students must be 10 to 25 years old.',
         ];
+    }
+
+    /** Enrolled for the current school year — by an approved form or directly by the school. */
+    public static function isEnrolled(User $student): bool
+    {
+        $schoolYear = static::currentSchoolYear();
+
+        return EnrollmentRequest::where('user_id', $student->id)->where('status', 'approved')
+                ->where('school_year', $schoolYear)->exists()
+            || StudentEnrollment::where('user_id', $student->id)->where('status', 'enrolled')
+                ->where('school_year', $schoolYear)->exists();
     }
 
     public static function currentSchoolYear(): string
@@ -68,16 +84,12 @@ class EnrollmentService
         $schoolYear = static::currentSchoolYear();
 
         // Checked here, not only on the form — an enrolled student could POST directly.
-        $alreadyApproved = EnrollmentRequest::where('user_id', $student->id)
-            ->where('status', 'approved')
-            ->where('school_year', $schoolYear)
-            ->exists();
-
-        if ($alreadyApproved) {
+        if (static::isEnrolled($student)) {
             throw ValidationException::withMessages(['student_type' => 'You are already enrolled for this school year.']);
         }
 
         $fields = collect($data)->only(array_keys(static::rules()))->all();
+        $fields['age'] = Carbon::parse($data['birthdate'])->age;
 
         return EnrollmentRequest::updateOrCreate(
             ['user_id' => $student->id, 'status' => 'pending'],

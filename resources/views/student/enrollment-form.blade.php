@@ -13,7 +13,10 @@
     .ef-errors ul { padding-left: 18px; line-height: 1.6; }
 
     .ef-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 22px; margin-bottom: 16px; }
-    .ef-section { font-size: 12px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--accent-dark); padding-bottom: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .ef-section { font-size: 15.5px; font-weight: 800; color: var(--text-1); padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .ef-returned { display: flex; gap: 12px; background: #FFFBEB; border: 1px solid #FDE68A; color: #78350F; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; font-size: 13.5px; line-height: 1.55; }
+    .ef-returned svg { width: 20px; height: 20px; flex-shrink: 0; color: #B45309; margin-top: 1px; }
+    .ef-returned b { display: block; color: #78350F; }
 
     .ef-grid { display: grid; gap: 14px; margin-bottom: 14px; }
     .ef-2 { grid-template-columns: 1fr 1fr; }
@@ -64,12 +67,25 @@
 
 @php
     $err = fn ($f) => $errors->has($f) ? 'is-error' : '';
-    $type = old('student_type', 'new');
+    // Old input after a failed submit, else the returned form's answers, else what the account already knows
+    $v = fn (string $f, $default = null) => old($f, $prefill[$f] ?? $default);
+    $type = $v('student_type', 'new');
 @endphp
 
 <div class="ef-wrap">
     <h1 class="ef-title">Enrollment Form</h1>
     <p class="ef-sub">Fill out every required field (<span style="color:#B91C1C;">*</span>). Your adviser reviews the form and places you in a section.</p>
+
+    @if($returned)
+        <div class="ef-returned" role="status">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <div>
+                <b>Your adviser returned your form</b>
+                {{ $returned->remarks ?: 'Check your details below and submit the form again.' }}
+                Your previous answers are filled in — change only what needs fixing.
+            </div>
+        </div>
+    @endif
 
     @if($errors->any())
         <div class="ef-errors" role="alert">
@@ -112,13 +128,13 @@
             <div class="ef-grid ef-2 ef-transfer" id="efTransfer" @if($type !== 'transfer') hidden @endif>
                 <div class="ef-field">
                     <label class="ef-label" for="ef-last-school">Last school attended</label>
-                    <input id="ef-last-school" type="text" name="last_school" value="{{ old('last_school') }}" maxlength="255"
+                    <input id="ef-last-school" type="text" name="last_school" value="{{ $v('last_school') }}" maxlength="255"
                            placeholder="School name" class="ef-input {{ $err('last_school') }}">
                     @error('last_school')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="ef-field">
                     <label class="ef-label" for="ef-last-grade">Last grade completed</label>
-                    <input id="ef-last-grade" type="text" name="last_grade_completed" value="{{ old('last_grade_completed') }}" maxlength="50"
+                    <input id="ef-last-grade" type="text" name="last_grade_completed" value="{{ $v('last_grade_completed') }}" maxlength="50"
                            placeholder="e.g. Grade 7" class="ef-input {{ $err('last_grade_completed') }}">
                     @error('last_grade_completed')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
@@ -126,7 +142,7 @@
 
             <div class="ef-field" style="max-width:320px;">
                 <label class="ef-label" for="ef-ga">General average last school year <span class="opt">(optional)</span></label>
-                <input id="ef-ga" type="number" name="general_average" value="{{ old('general_average') }}" min="60" max="100" step="0.01"
+                <input id="ef-ga" type="number" name="general_average" value="{{ $v('general_average') }}" min="60" max="100" step="0.01"
                        inputmode="decimal" placeholder="e.g. 88.50" aria-describedby="ef-ga-hint" class="ef-input {{ $err('general_average') }}">
                 @error('general_average')<p class="ef-error">{{ $message }}</p>@enderror
                 <p class="ef-hint" id="ef-ga-hint">From your last report card (Form 138). Leave blank if you don't know it.</p>
@@ -140,7 +156,7 @@
             <div class="ef-grid ef-2">
                 <div class="ef-field">
                     <label class="ef-label" for="ef-name">Full name <span class="req">*</span></label>
-                    <input id="ef-name" type="text" name="full_name" value="{{ old('full_name', $user->name) }}" maxlength="255" required
+                    <input id="ef-name" type="text" name="full_name" value="{{ $v('full_name', $user->name) }}" maxlength="255" required
                            autocomplete="name" data-letters class="ef-input {{ $err('full_name') }}" aria-describedby="ef-name-hint"
                            @error('full_name') aria-invalid="true" @enderror>
                     @error('full_name')<p class="ef-error">{{ $message }}</p>@enderror
@@ -148,7 +164,7 @@
                 </div>
                 <div class="ef-field">
                     <label class="ef-label" for="ef-address">Home address <span class="req">*</span></label>
-                    <input id="ef-address" type="text" name="address" value="{{ old('address') }}" maxlength="500" required
+                    <input id="ef-address" type="text" name="address" value="{{ $v('address') }}" maxlength="500" required
                            autocomplete="street-address" placeholder="House no., street, barangay, town"
                            class="ef-input {{ $err('address') }}" @error('address') aria-invalid="true" @enderror>
                     @error('address')<p class="ef-error">{{ $message }}</p>@enderror
@@ -158,24 +174,23 @@
             <div class="ef-grid ef-3">
                 <div class="ef-field">
                     <label class="ef-label" for="ef-birthdate">Birthdate <span class="req">*</span></label>
-                    <input id="ef-birthdate" type="date" name="birthdate" value="{{ old('birthdate') }}" required
-                           max="{{ now()->subDay()->toDateString() }}" autocomplete="bday"
+                    <input id="ef-birthdate" type="date" name="birthdate" value="{{ $v('birthdate') }}" required
+                           min="{{ now()->subYears(26)->addDay()->toDateString() }}" max="{{ now()->subYears(10)->toDateString() }}" autocomplete="bday"
                            class="ef-input {{ $err('birthdate') }}" @error('birthdate') aria-invalid="true" @enderror>
                     @error('birthdate')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="ef-field">
-                    <label class="ef-label" for="ef-age">Age <span class="req">*</span></label>
-                    <input id="ef-age" type="number" name="age" value="{{ old('age') }}" min="10" max="25" required inputmode="numeric"
-                           class="ef-input {{ $err('age') }}" aria-describedby="ef-age-hint" @error('age') aria-invalid="true" @enderror>
-                    @error('age')<p class="ef-error">{{ $message }}</p>@enderror
-                    <p class="ef-hint" id="ef-age-hint">Filled in from your birthdate.</p>
+                    <label class="ef-label" for="ef-age">Age</label>
+                    <input id="ef-age" type="text" name="age" value="" readonly tabindex="-1"
+                           class="ef-input" aria-describedby="ef-age-hint">
+                    <p class="ef-hint" id="ef-age-hint">Worked out from your birthdate.</p>
                 </div>
                 <div class="ef-field">
                     <label class="ef-label" for="ef-gender">Sex <span class="req">*</span></label>
                     <select id="ef-gender" name="gender" required class="ef-input {{ $err('gender') }}" @error('gender') aria-invalid="true" @enderror>
                         <option value="">Select…</option>
-                        <option value="Male" @selected(old('gender') === 'Male')>Male</option>
-                        <option value="Female" @selected(old('gender') === 'Female')>Female</option>
+                        <option value="Male" @selected($v('gender') === 'Male')>Male</option>
+                        <option value="Female" @selected($v('gender') === 'Female')>Female</option>
                     </select>
                     @error('gender')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
@@ -191,14 +206,14 @@
                 @foreach(['mother_name' => "Mother's full name", 'father_name' => "Father's full name", 'guardian_name' => "Guardian's full name"] as $field => $label)
                     <div class="ef-field">
                         <label class="ef-label" for="ef-{{ $field }}">{{ $label }} <span class="opt">(optional)</span></label>
-                        <input id="ef-{{ $field }}" type="text" name="{{ $field }}" value="{{ old($field) }}" maxlength="255" data-letters
+                        <input id="ef-{{ $field }}" type="text" name="{{ $field }}" value="{{ $v($field) }}" maxlength="255" data-letters
                                class="ef-input {{ $err($field) }}">
                         @error($field)<p class="ef-error">{{ $message }}</p>@enderror
                     </div>
                 @endforeach
                 <div class="ef-field">
                     <label class="ef-label" for="ef-gcontact">Guardian's contact number <span class="opt">(optional)</span></label>
-                    <input id="ef-gcontact" type="tel" name="guardian_contact" value="{{ old('guardian_contact') }}" maxlength="20"
+                    <input id="ef-gcontact" type="tel" name="guardian_contact" value="{{ $v('guardian_contact') }}" maxlength="20"
                            inputmode="tel" autocomplete="tel" placeholder="09XXXXXXXXX" class="ef-input {{ $err('guardian_contact') }}">
                     @error('guardian_contact')<p class="ef-error">{{ $message }}</p>@enderror
                 </div>
@@ -223,17 +238,17 @@
         i.addEventListener('input', function () { const v = i.value.replace(/[0-9]/g, ''); if (v !== i.value) i.value = v; });
     });
 
-    // Age from birthdate — still editable
+    // Age shown from the birthdate (the server works it out the same way when saving)
     const bd = document.getElementById('ef-birthdate'), age = document.getElementById('ef-age');
     function fillAge() {
-        if (!bd.value) return;
+        if (!bd.value) { age.value = ''; return; }
         const b = new Date(bd.value + 'T00:00:00'), n = new Date();
         let a = n.getFullYear() - b.getFullYear();
         if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
-        if (a > 0 && a < 120) age.value = a;
+        age.value = a > 0 && a < 120 ? a : '';
     }
-    bd.addEventListener('change', fillAge);
-    if (bd.value && !age.value) fillAge();
+    bd.addEventListener('input', fillAge);
+    fillAge();
 
     // No double submit; Back restores the button
     const form = document.getElementById('efForm'), btn = form.querySelector('.ef-submit');

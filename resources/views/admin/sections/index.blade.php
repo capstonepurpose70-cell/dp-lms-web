@@ -89,7 +89,8 @@
     [data-theme="dark"] .sec-alert.ok  { color:#4ade80; }
     [data-theme="dark"] .sec-alert.err { color:#f87171; }
 
-    @media (max-width: 1100px) { .sec-grid { grid-template-columns:1fr; } }
+    /* minmax(0,…): a plain 1fr track grows to the table's min-width instead of letting its wrapper scroll */
+    @media (max-width: 1100px) { .sec-grid { grid-template-columns:minmax(0,1fr); } }
     @media (max-width: 700px)  { .sec-stats { grid-template-columns:repeat(2,1fr); } }
 </style>
 

@@ -244,20 +244,27 @@ class StudentDashboardController extends Controller
         $user    = auth()->user();
         $request = $user->enrollmentRequest;
 
-        // Pending — or approved for THIS school year. An approval from last year must not
-        // block enrolling for the next school year.
-        $currentSy = EnrollmentService::currentSchoolYear();
-        if ($request && ($request->status === 'pending'
-                || ($request->status === 'approved' && $request->school_year === $currentSy))) {
-            return redirect()->route('student.dashboard')
-                ->with('info', $request->status === 'pending'
-                    ? 'Your enrollment is pending review.'
-                    : 'You are already enrolled.');
+        // Enrolled for THIS school year (approved form or placed by the school), or waiting for review.
+        // Last year's enrollment must not block enrolling for the next school year.
+        if (EnrollmentService::isEnrolled($user)) {
+            return redirect()->route('student.dashboard')->with('info', 'You are already enrolled.');
         }
+        if ($request && $request->status === 'pending') {
+            return redirect()->route('student.dashboard')->with('info', 'Your enrollment is pending review.');
+        }
+
+        // A returned form opens with the student's previous answers, so only the problem needs fixing
+        $returned = $request && $request->status === 'rejected' ? $request : null;
+        $prefill  = $returned
+            ? $returned->only(array_keys(EnrollmentService::rules()))
+            : ['full_name' => $user->name];
+        $birthdate = $returned?->birthdate ?? $user->birthdate;
+        $prefill['birthdate'] = $birthdate ? \Illuminate\Support\Carbon::parse($birthdate)->format('Y-m-d') : null;
 
         return view('student.enrollment-form', [
             'user'      => $user,
-            'request'   => $request,
+            'returned'  => $returned,
+            'prefill'   => $prefill,
             // Set by the server: active school year + grade from the LRN masterlist
             'activeSy'  => \App\Models\SchoolYear::active()->first(),
             'userGrade' => $user->grade_level,

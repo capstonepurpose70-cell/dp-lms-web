@@ -927,5 +927,6 @@ setInterval(loadNotifs, 30000);
 // ended (logout) or show old data — ask the server again; it sends a signed-out visitor to login.
 window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 </script>
+<script src="{{ asset('js/scroll-cue.js') }}?v={{ filemtime(public_path('js/scroll-cue.js')) }}" defer></script>
 </body>
 </html>

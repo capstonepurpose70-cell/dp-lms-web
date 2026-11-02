@@ -30,6 +30,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [9](#batch-9--iot-face-kiosk-and-gate) | IoT: face kiosk photo quality, photo privacy, gate camera | — | 🔧 13 |
 | [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
 | [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode, LRN Excel import | — | 8 |
+| [12](#batch-12--system-flow-check) | Enrolled student could reopen the form, returned-form prefill, age from birthdate, phone tables, sections layout, game access message | — | 5 |
 
 ---
 
@@ -774,6 +775,57 @@ are layout, states and consistency.
   0.26 s. Real browser, 21 checks: dialogs open centred, Esc closes and they open again, file chosen, preview
   counts, confirm, success message, duplicate LRN reopens the dialog with the error, remove asks first, status
   tab, no sideways scroll at 390, no JS errors.
+
+---
+
+## Batch 12 — System flow check
+
+Whole-system pass after the admin work: 11 regression suites, an end-to-end student journey (LRN import →
+activation → enrollment form → adviser approval → subjects / schedule → parent code → parent account), and every
+parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors, no sideways page scroll).
+
+### B12-1 ✅ Enrolled student could open and submit the enrollment form again
+- **Problem:** the form and the submit check only looked at the latest enrollment *request*. A student placed in a
+  section whose latest request was rejected (or who was enrolled directly by the school) saw the form again and
+  could send a new pending request — the adviser then got a request for a student already in a section. The app's
+  API (`/api/student/enroll`) had the same gap.
+- **Where:** `EnrollmentService::isEnrolled()` (new), `submit()`, `StudentDashboardController::enrollmentForm()`.
+- **Fix:** "enrolled" = an approved form **or** an `enrolled` row in `student_enrollments` for the current school
+  year; the form redirects to the dashboard and both web and API submits are refused.
+
+### B12-2 ✅ Returned enrollment form opened blank; age not tied to birthdate
+- **Problem:** after the adviser returned a form, the student retyped everything and did not see why it was
+  returned on the form itself; the birthdate the account already had was not filled in; age was typed separately,
+  so a 2012 birthdate with age 25 was accepted (and a 1-year-old birthdate too).
+- **Where:** `EnrollmentService::rules()` / `submit()`, `StudentDashboardController`, `student/enrollment-form`.
+- **Fix:** a returned form opens with the previous answers and an amber note with the adviser's reason; the
+  birthdate comes from the account; age is read-only, shown from the birthdate and **worked out by the server**
+  (an `age` sent by older app builds is accepted but ignored); the birthdate must make the student 10–25 years
+  old. Section headings are plain headings instead of small capitals.
+
+### B12-3 ✅ Admin Sections page cut off on phones and tablets
+- **Problem:** below 1100 px the layout used a `1fr` grid track, which grows to the sections table's 760 px
+  minimum, so the right side of the page (including the Create button) was cut off and could not be reached.
+- **Where:** `admin/sections/index`. **Fix:** `minmax(0,1fr)` — the table's own wrapper now scrolls.
+
+### B12-4 ✅ Wide tables on phones gave no hint that columns were hidden
+- **Problem:** Student My Grades, Parent Child's Records, Teacher Attendance, Admin Users (tabs and table), Admin
+  Enrollment, Audit Logs and Reports scroll sideways inside their box, but nothing showed that Q4, Average, Late,
+  Absent or the Parents tab were off-screen.
+- **Where:** new `public/js/scroll-cue.js`, loaded by the admin, teacher and student/parent layouts.
+- **Fix:** any box that scrolls sideways fades the edge that has more content; the fade moves or disappears as
+  you scroll. Picks up pages swapped in without a reload; rescans are debounced.
+
+### B12-5 ✅ Science game showed a raw 403 page to Grade 7–10
+- **Where:** `Student/ScienceGameController`. **Fix:** opening the game or leaderboard sends the student to the
+  dashboard with "available to Grade 11 and Grade 12 students only"; the game's JSON requests still get 403.
+
+- **Tested:** PHPUnit — journey suite 5 tests / 67 assertions (full journey; enrolled student blocked on web and
+  API; returned form shows the reason and previous answers; age from birthdate, 10–25 enforced, sent age ignored;
+  game redirect and JSON 403); all 11 earlier suites pass, including the Flutter / Pi API contract (two tests
+  were fixed to stop depending on real gate scans in the database). Real browser at 390 px: cue on every wide
+  table, gone at the end of the scroll, nothing cut off on Sections, enrolled student's `/student/enroll` goes to
+  the dashboard; returned form screenshot at 1366 / 390; no JS errors.
 
 ---
 
