@@ -14,8 +14,8 @@
     @keyframes rp-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 
     .rp-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
-    .rp-title { font-size:22px; font-weight:800; color:var(--slate-900); margin:0; letter-spacing:-0.01em; }
-    .rp-sub { font-size:13px; color:var(--slate-500); margin:4px 0 0; }
+    .rp-title { font-size:26px; font-weight:800; color:var(--slate-900); margin:0; letter-spacing:-0.01em; }
+    .rp-sub { font-size:14px; color:var(--slate-600); margin:4px 0 0; }
     .rp-sy { display:inline-block; padding:2px 9px; border-radius:999px; background:rgba(37,99,235,.10); color:#1d4ed8; font-weight:700; font-size:12px; }
     [data-theme="dark"] .rp-sy { color:#93c5fd; }
     .rp-btn { display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:10px; font-size:13px; font-weight:700;

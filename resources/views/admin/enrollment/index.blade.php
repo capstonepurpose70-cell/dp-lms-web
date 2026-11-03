@@ -16,11 +16,11 @@
 
     .en-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
     .en-header-meta { display:flex; align-items:center; gap:14px; min-width:0; }
-    .en-header-icon { width:46px; height:46px; border-radius:var(--r-lg); flex-shrink:0; display:grid; place-items:center; color:#fff;
+    .en-header-icon { display:none !important; width:46px; height:46px; border-radius:var(--r-lg); flex-shrink:0; display:grid; place-items:center; color:#fff;
         background:linear-gradient(135deg, var(--blue-500), var(--blue-700)); box-shadow:0 6px 16px -4px rgba(36,120,228,.5); }
     .en-header-icon svg { width:22px; height:22px; }
-    .en-title { font-size:22px; font-weight:800; color:var(--slate-900); letter-spacing:-0.01em; }
-    .en-sub   { font-size:13px; color:var(--slate-500); margin-top:2px; max-width:620px; line-height:1.5; }
+    .en-title { font-size:26px; font-weight:800; color:var(--slate-900); letter-spacing:-0.01em; }
+    .en-sub   { font-size:14px; color:var(--slate-600); margin-top:2px; max-width:620px; line-height:1.5; }
 
     .en-flash { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; font-size:13.5px; font-weight:500; margin-bottom:16px; border:1px solid; }
     .en-flash svg { width:18px; height:18px; flex-shrink:0; }

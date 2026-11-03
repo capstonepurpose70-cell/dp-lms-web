@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'DP-LMS') — Sto. Domingo NHS</title>
+    <meta name="theme-color" content="#FFFFFF">
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
@@ -413,6 +414,8 @@
 
         /* Keyboard focus */
         :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        :root { color-scheme: light; }
+        a, button, label, select { touch-action: manipulation; }
 
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
@@ -449,7 +452,7 @@
 
     <div class="nav-right">
      <div style="position:relative;" id="notifWrapper">
-    <button class="nav-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
+    <button type="button" class="nav-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
@@ -473,7 +476,7 @@
         <div style="padding:14px 16px 10px; border-bottom:1px solid var(--border);
                     display:flex; align-items:center; justify-content:space-between;">
             <span style="font-size:13px; font-weight:800; color:var(--text-1);">Notifications</span>
-            <button id="markAllRead" style="font-size:11px; color:var(--accent);
+            <button type="button" id="markAllRead" style="font-size:11px; color:var(--accent);
                 font-weight:600; background:none; border:none; cursor:pointer;">
                 Mark all read
             </button>
@@ -505,7 +508,7 @@
         {{-- Icons + links are injected by JS below so icons are ALWAYS guaranteed --}}
         <nav class="sidebar-nav" id="sidebarNav"></nav>
         <div class="sidebar-footer">
-            <button class="logout-btn" id="logoutTrigger">
+            <button type="button" class="logout-btn" id="logoutTrigger">
                 <span class="logout-icon">
                     <svg fill="none" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -559,7 +562,7 @@
         <div class="modal-title">Log out?</div>
         <div class="modal-desc">You'll be signed out of your account. Any unsaved progress may be lost.</div>
         <div class="modal-actions">
-            <button class="modal-cancel" id="modalCancel">Cancel</button>
+            <button type="button" class="modal-cancel" id="modalCancel">Cancel</button>
             <form method="POST" action="{{ route('logout') }}" style="flex:1;display:flex;">
                 @csrf
                 <button type="submit" class="modal-confirm" style="width:100%;">Log out</button>

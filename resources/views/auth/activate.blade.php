@@ -28,7 +28,7 @@
             <input class="ac-input @error('lrn') is-error @enderror" type="text" id="lrn" name="lrn"
                    value="{{ old('lrn') }}" inputmode="numeric" pattern="\d{12}" maxlength="12" data-digits
                    autocomplete="off" placeholder="12-digit LRN" aria-describedby="lrn-hint"
-                   @error('lrn') aria-invalid="true" @enderror required autofocus>
+                   @error('lrn') aria-invalid="true" @enderror required data-autofocus>
             <p class="ac-hint" id="lrn-hint">On your report card or school ID.</p>
         </div>
 

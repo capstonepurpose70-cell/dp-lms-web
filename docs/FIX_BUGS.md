@@ -32,7 +32,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode, LRN Excel import | — | 8 |
 | [12](#batch-12--system-flow-check) | Enrolled student could reopen the form, returned-form prefill, age from birthdate, phone tables, sections layout, game access message | — | 5 |
 | [13](#batch-13--student-portal-polish) | Student/parent shell matched to the teacher side, dashboard with today's classes and to-submit list, consistent page widths, subjects cards | — | 4 |
-| [14](#batch-14--sign-in-pages-and-terms) | Login / Activate / auth pages redesigned (photo + form, no top bar, no scroll), Terms of Use and Privacy Policy with required agreement | — | 3 |
+| [14](#batch-14--sign-in-pages-and-terms) | Login / Activate / auth pages redesigned (photo + form, no top bar, no scroll), Terms of Use and Privacy Policy with required agreement, guideline fixes, admin headers | — | 3 |
 
 ---
 
@@ -887,6 +887,17 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
   any page until they agree (or sign out). The Privacy Policy follows the Data Privacy Act of 2012 (RA 10173):
   what is collected (including face photos), why, who sees it, protection, retention and rights. The app's
   activation API is unchanged.
+
+### B14-3 ✅ Web Interface Guidelines pass and admin page headers
+- **Checked with:** the Web Interface Guidelines review (accessibility, focus, forms, images, touch, theming).
+- **Fixed:** logo images got width/height (no layout shift); `theme-color` and `color-scheme` set; `touch-action:
+  manipulation` on controls; the sign-in pages focus the first field the server flagged, and the main field only
+  on larger screens (no keyboard popping up on phones); "DP-LMS" marked `translate="no"`; buttons outside forms
+  in the student/parent layout have `type="button"`.
+- **Admin pages:** Audit Logs, Enrollment, Face Verification, Sections, Schedules, Reports and User Management use
+  the Dashboard / LRN header (26 px title, 14 px subtitle, no icon tile); the repeated red "No adviser —
+  enrollment can't be reviewed" line on every section row is a small "Needs an adviser" pill with the reason on
+  hover. Parent dashboard: "From the school" is a normal heading, no "→" on the records link.
 
 - **Tested:** PHPUnit — new Terms gate suite 6 tests / 41 assertions (public pages; every role stopped until
   agreeing, JSON gets 403; agreeing is recorded and returns to the page they wanted; web activation and parent

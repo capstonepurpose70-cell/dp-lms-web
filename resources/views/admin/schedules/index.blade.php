@@ -33,8 +33,8 @@
     @keyframes sch-fade { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none;} }
 
     .sch-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
-    .sch-head h1 { font-size:22px; font-weight:800; margin:0; color:var(--slate-900); letter-spacing:-0.01em; }
-    .sch-head p  { margin:4px 0 0; font-size:13px; color:var(--slate-500); line-height:1.5; }
+    .sch-head h1 { font-size:26px; font-weight:800; margin:0; color:var(--slate-900); letter-spacing:-0.01em; }
+    .sch-head p  { margin:4px 0 0; font-size:14px; color:var(--slate-600); line-height:1.5; }
 
     .sch-card { background:var(--white); border:1px solid var(--border-default); border-radius:16px; padding:18px; box-shadow:var(--shadow-sm); }
     .sch-card h3 { margin:0 0 4px; font-size:14.5px; font-weight:800; color:var(--slate-900); }

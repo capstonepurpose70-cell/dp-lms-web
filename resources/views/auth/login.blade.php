@@ -39,7 +39,7 @@
                class="ac-input {{ $errors->has('email') ? 'is-error' : '' }}"
                placeholder="you@gmail.com · 12-digit LRN · 09XXXXXXXXX"
                autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254"
-               aria-describedby="emailStatus" @error('email') aria-invalid="true" @enderror required autofocus>
+               aria-describedby="emailStatus" @error('email') aria-invalid="true" @enderror required data-autofocus>
         <p class="lg-status" id="emailStatus" aria-live="polite"></p>
     </div>
 

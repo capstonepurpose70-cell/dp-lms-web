@@ -18,11 +18,11 @@
     /* Header */
     .um-head { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
     .um-head-l { display:flex; align-items:center; gap:14px; min-width:0; }
-    .um-head-ic { width:46px; height:46px; border-radius:14px; display:grid; place-items:center; color:#fff; flex-shrink:0;
+    .um-head-ic { display:none !important; width:46px; height:46px; border-radius:14px; display:grid; place-items:center; color:#fff; flex-shrink:0;
         background:linear-gradient(135deg, var(--blue-500), var(--blue-700)); box-shadow:0 6px 16px -4px rgba(36,120,228,.5); }
     .um-head-ic svg { width:22px; height:22px; }
-    .um-title { font-size:22px; font-weight:800; color:var(--slate-900); letter-spacing:-0.01em; margin:0; }
-    .um-subtitle { font-size:13px; color:var(--slate-500); margin:2px 0 0; }
+    .um-title { font-size:26px; font-weight:800; color:var(--slate-900); letter-spacing:-0.01em; margin:0; }
+    .um-subtitle { font-size:14px; color:var(--slate-600); margin:2px 0 0; }
     .um-add { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 16px; border-radius:10px; background:#1d4ed8; color:#fff;
         font-size:13.5px; font-weight:700; text-decoration:none; box-shadow:0 6px 14px -6px rgba(29,78,216,.6); transition:background .15s, transform .1s; }
     .um-add:hover { background:#1e40af; }

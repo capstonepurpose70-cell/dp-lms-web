@@ -17,8 +17,8 @@
     @keyframes sec-fade { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none;} }
 
     .sec-head { margin-bottom:18px; }
-    .sec-head h1 { font-size:22px; font-weight:800; margin:0; color:var(--slate-900); letter-spacing:-0.01em; }
-    .sec-head p  { margin:4px 0 0; font-size:13px; color:var(--slate-500); max-width:640px; line-height:1.5; }
+    .sec-head h1 { font-size:26px; font-weight:800; margin:0; color:var(--slate-900); letter-spacing:-0.01em; }
+    .sec-head p  { margin:4px 0 0; font-size:14px; color:var(--slate-600); max-width:640px; line-height:1.5; }
 
     .sec-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
     .sec-stat { background:var(--white); border:1px solid var(--border-default); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow-sm); }
@@ -66,8 +66,8 @@
     select.sec-row-in { font-weight:500; border-color:var(--border-default); background:var(--white); cursor:pointer; max-width:240px; }
     .sec-count { display:inline-block; min-width:30px; text-align:center; padding:2px 8px; border-radius:7px;
         background:var(--slate-100); color:var(--slate-700); font-weight:700; font-size:12.5px; }
-    .sec-noadv { display:inline-block; margin-top:4px; font-size:11px; font-weight:700; color:#b45309; }
-    [data-theme="dark"] .sec-noadv { color:#fbbf24; }
+    .sec-noadv { display:inline-flex; margin-top:5px; padding:1px 8px; border-radius:99px; background:#FEF3C7; font-size:11.5px; font-weight:700; color:#92400E; }
+    [data-theme="dark"] .sec-noadv { background:rgba(251,191,36,.14); color:#fbbf24; }
 
     .sec-toggle { display:inline-flex; align-items:center; gap:7px; cursor:pointer; font-size:12.5px; font-weight:600; color:var(--slate-700); user-select:none; }
     .sec-toggle input { width:16px; height:16px; accent-color:#16a34a; cursor:pointer; }
@@ -198,7 +198,7 @@
                                             @endforeach
                                         </select>
                                         @if (!$s->adviser_id && $s->is_active)
-                                            <span class="sec-noadv">No adviser — enrollment can't be reviewed</span>
+                                            <span class="sec-noadv" title="Enrollment forms for this section can't be reviewed until it has an adviser">Needs an adviser</span>
                                         @endif
                                     </td>
                                     <td>

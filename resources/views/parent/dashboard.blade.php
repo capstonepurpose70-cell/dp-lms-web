@@ -43,7 +43,7 @@
     .pd-more:hover { text-decoration: underline; }
 
     /* Announcements */
-    .pd-section { font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); margin: 26px 0 10px; }
+    .pd-section { font-size: 15.5px; font-weight: 800; color: var(--text-1); margin: 26px 0 10px; }
     .pd-ann { padding: 16px 20px; border-bottom: 1px solid var(--border); }
     .pd-ann:last-child { border-bottom: none; }
     .pd-ann-title { font-size: 14.5px; font-weight: 700; color: var(--text-1); }
@@ -137,7 +137,7 @@
                         </div>
                     @endforeach
                 @endif
-                <a class="pd-more" href="{{ route('parent.child-records') }}#child-{{ $child->id }}">Full records and attendance →</a>
+                <a class="pd-more" href="{{ route('parent.child-records') }}#child-{{ $child->id }}">Full records and attendance</a>
             </div>
         </section>
     @empty

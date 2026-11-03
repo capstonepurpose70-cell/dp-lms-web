@@ -6,8 +6,8 @@
     /* Uses admin layout tokens so dark mode works */
     .fv-page { max-width:1100px; margin:0 auto; animation: fv-fade .22s ease both; }
     @keyframes fv-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-    .fv-title { font-size:22px; font-weight:800; color:var(--slate-900); margin:0; letter-spacing:-0.01em; }
-    .fv-sub { font-size:13px; color:var(--slate-500); margin:4px 0 18px; line-height:1.55; max-width:760px; }
+    .fv-title { font-size:26px; font-weight:800; color:var(--slate-900); margin:0; letter-spacing:-0.01em; }
+    .fv-sub { font-size:14px; color:var(--slate-600); margin:4px 0 18px; line-height:1.55; max-width:760px; }
     .fv-card { background:var(--white); border:1px solid var(--border-default); border-radius:16px; padding:18px; margin-bottom:16px; box-shadow:var(--shadow-sm); }
     .fv-h2 { font-size:15px; font-weight:800; color:var(--slate-900); margin:0; }
     .fv-muted { font-size:12.5px; color:var(--slate-500); margin:3px 0 0; line-height:1.5; }

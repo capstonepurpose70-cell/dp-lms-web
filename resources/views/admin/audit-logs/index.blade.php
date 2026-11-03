@@ -39,11 +39,11 @@
     @keyframes al-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 
     .al-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
-    .al-head-ic { width:46px; height:46px; border-radius:14px; display:grid; place-items:center; color:#fff; flex-shrink:0;
+    .al-head-ic { display:none !important; width:46px; height:46px; border-radius:14px; display:grid; place-items:center; color:#fff; flex-shrink:0;
         background:linear-gradient(135deg, var(--blue-500), var(--blue-700)); box-shadow:0 6px 16px -4px rgba(36,120,228,.5); }
     .al-head-ic svg { width:22px; height:22px; }
-    .al-title { font-size:22px; font-weight:800; color:var(--slate-900); letter-spacing:-0.01em; margin:0; }
-    .al-sub { font-size:13px; color:var(--slate-500); margin:2px 0 0; }
+    .al-title { font-size:26px; font-weight:800; color:var(--slate-900); letter-spacing:-0.01em; margin:0; }
+    .al-sub { font-size:14px; color:var(--slate-600); margin:2px 0 0; }
 
     .al-stats { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px; margin-bottom:16px; }
     .al-stat { background:var(--white); border:1px solid var(--border-default); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow-sm); }

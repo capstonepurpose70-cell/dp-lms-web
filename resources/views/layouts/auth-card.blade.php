@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') — DP-LMS</title>
+    <meta name="theme-color" content="#15803d">
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Shared by activation, sign-in code, password and parent pages: school photo on the left, form on the
@@ -19,6 +20,7 @@
             --text-1: #0f172a; --text-2: #475569; --text-3: #64748b;
             --surface: #fff; --field: #f8fafc; --border: #e2e8f0;
             --r-sm: 10px; --r-md: 12px; --r-lg: 18px;
+            color-scheme: light;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { min-height: 100vh; font-family: 'DM Sans', system-ui, -apple-system, sans-serif; color: var(--text-1); background: var(--surface); -webkit-font-smoothing: antialiased; }
@@ -136,7 +138,8 @@
         .ac-legal a:hover { color: var(--accent); text-decoration: underline; }
 
         :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-        .ac-input:focus-visible { outline: none; }
+        .ac-input:focus-visible { outline: none; }   /* the 4px focus ring above replaces it */
+        a, button, label, input[type=checkbox] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
         @media (max-width: 1100px) {
             .ac-shell { grid-template-columns: minmax(0, 1fr) minmax(440px, 520px); }
@@ -169,20 +172,20 @@
 <div class="ac-shell">
     <aside class="ac-photo" aria-hidden="true">
         <a class="ac-school" href="{{ route('login') }}" tabindex="-1">
-            <img src="{{ asset('images/logo.png') }}" alt="">
+            <img src="{{ asset('images/logo.png') }}" alt="" width="56" height="56">
             <span><b>Sto. Domingo National High School</b><span>San Manuel, Pangasinan</span></span>
         </a>
         <div class="ac-quote">
             <blockquote>“The fear of the LORD is the beginning of knowledge.”</blockquote>
             <cite>Proverbs 1:7</cite>
-            <p class="ac-system"><b>DP-LMS</b>Digital Platform Learning Management System</p>
+            <p class="ac-system"><b translate="no">DP-LMS</b>Digital Platform Learning Management System</p>
         </div>
     </aside>
 
     <div class="ac-main">
         <a class="ac-mobile-brand" href="{{ route('login') }}">
-            <img src="{{ asset('images/logo.png') }}" alt="">
-            <span><b>Sto. Domingo NHS</b><span>DP-LMS Portal</span></span>
+            <img src="{{ asset('images/logo.png') }}" alt="" width="40" height="40">
+            <span><b>Sto. Domingo NHS</b><span translate="no">DP-LMS Portal</span></span>
         </a>
 
         <main class="ac-wrap @yield('wrap-class')">
@@ -228,6 +231,15 @@
 @stack('scripts')
 
 <script>
+    // Focus: the first field the server flagged; otherwise the page's main field, on larger screens only
+    // (on a phone, focusing on load pops the keyboard over the page before it is read).
+    (function () {
+        var bad = document.querySelector('.ac-input.is-error');
+        var main = document.querySelector('[data-autofocus]');
+        if (bad) bad.focus();
+        else if (main && window.matchMedia('(min-width: 861px)').matches) main.focus();
+    })();
+
     // Show / hide password
     document.querySelectorAll('[data-pw-toggle]').forEach(function (btn) {
         btn.addEventListener('click', function () {
