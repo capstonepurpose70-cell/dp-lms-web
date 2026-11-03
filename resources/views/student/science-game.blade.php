@@ -137,6 +137,26 @@
         50%      { box-shadow: 0 8px 34px rgba(37,99,235,.75), 0 0 0 4px rgba(37,99,235,.14); }
     }
     @media (prefers-reduced-motion: reduce) { #srStartBtn { animation: none; } }
+
+    /* While a question is open nothing sits under the quiz: controls step aside, progress moves up */
+    .sr-controls { transition: opacity .2s ease, transform .2s ease; }
+    #sr-shell.quiz-open .sr-controls { opacity: 0; transform: translateY(8px); pointer-events: none; }
+    #sr-shell.quiz-open .sr-progress { bottom: auto; top: 80px; }
+    @media (max-width: 820px) {
+        #sr-shell.quiz-open .sr-hint-bar,
+        #sr-shell.quiz-open .sr-stats { display: none; }
+    }
+    /* Phones: the quiz is a bottom sheet that leaves the two scientists in view */
+    @media (max-width: 560px) {
+        .sr-hint-bar { font-size: 12px; padding: 8px 14px; max-width: 86%; }
+        .sr-quiz { left: 8px; right: 8px; bottom: 8px; width: auto; max-width: none; transform: none;
+            padding: 14px; border-radius: 16px; max-height: 60%; overflow-y: auto; }
+        .sr-quiz.show { animation: srSheetIn .22s ease; }
+        .sr-quiz .qtext { font-size: 14.5px; margin-bottom: 10px; }
+        .sr-opts { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .sr-opt { padding: 9px 10px; font-size: 13px; }
+    }
+    @keyframes srSheetIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 </style>
 
 <div id="sr-shell">
@@ -220,7 +240,11 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+{{-- three.js r128 served by the school site itself: the public CDN can take 30+ s on school Wi-Fi --}}
+<script src="{{ asset('vendor/three-r128/three.min.js') }}"></script>
+<script src="{{ asset('vendor/three-r128/GLTFLoader.js') }}"></script>
+<script src="{{ asset('vendor/three-r128/DRACOLoader.js') }}"></script>
+<script src="{{ asset('vendor/three-r128/RoomEnvironment.js') }}"></script>
 <script>
 (function () {
     const CFG = {
@@ -230,6 +254,9 @@
         urlQuestions: @json(route('student.science-game.questions')),
         urlScore:     @json(route('student.science-game.score')),
         csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        // Lab glassware modelled in Blender (source: resources/art/strata-rush/lab_glassware.blend)
+        labGlassware: @json(asset('games/strata-rush/models/lab_glassware.glb')),
+        dracoPath:    @json(asset('vendor/three-r128/draco') . '/'),
     };
     const isG11 = CFG.grade === '11';   // Formula Clash (battle) vs Field Researcher (collect)
 
@@ -344,6 +371,11 @@
     const sparks = [];    // transient hit effects (rings + particles)
 
     function registerActor(ch, lungeX){
+        // Without the shadow pass (phones) a soft blob keeps each scientist standing on the floor
+        if (renderer && !renderer.shadowMap.enabled) {
+            const blob = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
+            blob.rotation.x = -Math.PI / 2; blob.position.y = 0.02; ch.add(blob);
+        }
         ch.userData.baseX=ch.position.x; ch.userData.baseY=ch.position.y; ch.userData.baseZ=ch.position.z;
         ch.userData.lungeX=lungeX||0; ch.userData.phase=Math.random()*Math.PI*2;
         ch.userData.baseRY=ch.rotation.y;
@@ -442,10 +474,87 @@
         return g;
     }
 
+    // r128 reads hex colours as linear light while the output is sRGB, which washed every colour out.
+    // Convert the authored colours, lights and canvas textures once, so the scene shows the palette as designed.
+    function linearizeColors(root) {
+        const fix = (c) => { if (c && c.isColor) c.convertSRGBToLinear(); };
+        root.traverse(o => {
+            if (o.isLight && !o.userData.lin) { o.userData.lin = true; fix(o.color); fix(o.groundColor); }
+            const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+            mats.forEach(m => {
+                if (m.userData.lin) return;
+                m.userData.lin = true;
+                fix(m.color); fix(m.emissive);
+                if (m.map && m.map.encoding !== THREE.sRGBEncoding) { m.map.encoding = THREE.sRGBEncoding; m.map.needsUpdate = true; m.needsUpdate = true; }
+            });
+        });
+        if (scene.fog) fix(scene.fog.color);
+        if (scene.background && scene.background.isColor) fix(scene.background);
+    }
+
+    // Swap the simple beaker / flask / microscope shapes for the Blender models (Draco-compressed, baked AO).
+    // The shapes stay if the file or the decoder cannot load.
+    function loadLabGlassware(spots) {
+        if (!THREE.GLTFLoader || !THREE.DRACOLoader || !CFG.labGlassware) return;
+        const loader = new THREE.GLTFLoader();
+        const draco = new THREE.DRACOLoader();
+        draco.setDecoderPath(CFG.dracoPath);
+        loader.setDRACOLoader(draco);
+        loader.load(CFG.labGlassware, (gltf) => {
+            // Each prop carries its kind as a Blender custom property (glTF extras → userData)
+            const src = {};
+            gltf.scene.traverse(o => { if (o.userData && o.userData.dplms_kind) src[o.userData.dplms_kind] = o; });
+            // Studio reflections for the props only, so chrome and glass read as metal and glass
+            let env = null;
+            if (THREE.RoomEnvironment) {
+                const pmrem = new THREE.PMREMGenerator(renderer);
+                env = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+                pmrem.dispose();
+            }
+            spots.forEach(sp => {
+                const proto = src[sp.kind];
+                if (!proto) return;
+                const obj = proto.clone(true);
+                obj.position.set(sp.x, sp.y, sp.z);
+                obj.rotation.set(0, sp.ry || 0, 0);
+                obj.scale.setScalar(sp.scale || 1);
+                obj.traverse(m => {
+                    if (!m.isMesh) return;
+                    // small bench props: no shadow pass (it would double their draw calls for an invisible shadow)
+                    m.castShadow = false; m.receiveShadow = true;
+                    m.material = m.material.clone();
+                    if (/^M_Liquid/.test(m.material.name)) {   // by material: the loader may suffix duplicate node names
+                        // Liquids glow in their own colour; reflections would wash them out to white
+                        m.renderOrder = 1;
+                        // a soft glow only: bright pastel + strong glow is pushed to white by the ACES tone mapping
+                        // The lab lights land hard on the benches: a darker base keeps the hue, the glow carries the colour
+                        if (sp.col !== undefined) { m.material.color.setHex(sp.col).convertSRGBToLinear().multiplyScalar(0.35); m.material.emissive.setHex(sp.col).convertSRGBToLinear(); }
+                        else m.material.color.multiplyScalar(0.5);
+                        m.material.emissiveIntensity = 0.45; m.material.opacity = 0.8; m.material.roughness = 0.25;
+                    } else if (m.material.transparent) {
+                        m.renderOrder = 2;            // glass drawn after the liquid inside it
+                        m.material.depthWrite = false;
+                        // thin glass: a glint and an edge, not a milky film over the coloured liquid
+                        m.material.opacity = 0.13; m.material.color.multiplyScalar(0.7);
+                        if (env) { m.material.envMap = env; m.material.envMapIntensity = 0.35; }
+                    } else if (env) {
+                        m.material.envMap = env; m.material.envMapIntensity = 0.8;   // chrome knobs, enamel, plastic
+                    }
+                });
+                scene.add(obj);
+                if (sp.prim) sp.prim.visible = false;
+            });
+            draco.dispose();
+        }, undefined, () => { draco.dispose(); });
+    }
+
     function initScene() {
         renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // Phones and tablets: no real-time shadow pass (it doubles the draw calls) and a lower pixel ratio;
+        // the blob shadows under each character still ground them.
+        const lowPower = window.matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowPower ? 1.5 : 2));
+        renderer.shadowMap.enabled = !lowPower; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
         resize();
@@ -460,6 +569,7 @@
         dir.shadow.bias=-0.0004; scene.add(dir);
 
         if (isG11) buildArena(); else buildField();
+        linearizeColors(scene);
 
         clock = new THREE.Clock();
         window.addEventListener('resize', resize);
@@ -480,7 +590,7 @@
         x.fillStyle='#0a1838'; x.fillRect(0,0,256,192);
         x.strokeStyle='rgba(57,208,255,.18)'; for(let i=0;i<192;i+=14){ x.beginPath(); x.moveTo(0,i); x.lineTo(256,i); x.stroke(); }
         x.fillStyle='#46d3ff'; x.font='bold 26px monospace';
-        const L=['H2O','E=mc^2','PV=nRT','F = m a','CO2','1/2mv^2']; 
+        const L=['H2O','E=mc^2','PV=nRT','F = m a','CO2','1/2mv^2'];
         L.forEach((t,i)=>{ x.globalAlpha=0.55+Math.random()*0.45; x.fillText(t, 16, 34+i*28); });
         x.globalAlpha=1; return new THREE.CanvasTexture(c);
     }
@@ -653,15 +763,19 @@
         const texts=[['E = mc\u00b2','F = ma','PV = nRT'],['H\u2082O  CO\u2082','NaCl  CH\u2084','DNA \u2192 RNA'],['v = d/t','a = \u0394v/t','W = F\u00b7d'],['pH 0\u201314','Acid | Base','Titration'],['V = IR','P = VI','\u03bbf = c']];
         for(let i=-2;i<=2;i++){ const scn=new THREE.Mesh(new THREE.PlaneGeometry(4.4,3.1), new THREE.MeshBasicMaterial({map:screenTex(texts[i+2])})); scn.position.set(i*6,6.2,-12.6); scene.add(scn);
             const fr=new THREE.Mesh(new THREE.BoxGeometry(4.7,3.4,0.18), M(0x1c2c52,{emissive:0x14305e,emissiveIntensity:0.4})); fr.position.set(i*6,6.2,-12.78); scene.add(fr); }
-        // helpers: glowing beaker + microscope + flask
+        // helpers: glowing beaker + microscope + flask (each beaker spot gets the Blender model once it loads)
+        const glassSpots = [];
         function beaker(x,y,z,col,h){ const bk=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,h,12),
             new THREE.MeshStandardMaterial({color:col,transparent:true,opacity:0.55,emissive:col,emissiveIntensity:0.5,roughness:0.2}));
-            bk.position.set(x,y,z); scene.add(bk); }
+            bk.position.set(x,y,z); scene.add(bk);
+            // bench beakers only: the shelf bottles are too far and small to be worth two extra draws each
+            if (y < 3) glassSpots.push({ kind:'Beaker', x, y:y-h/2, z, col, scale:h/0.5, prim:bk }); }
         function microscope(x,z){ const m=new THREE.Group();
             const mb=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.08,0.5), M(0x2c3444,{metalness:0.6,roughness:0.3})); m.add(mb);
             const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.5,8), M(0x2c3444,{metalness:0.6})); arm.position.set(0,0.28,-0.12); arm.rotation.x=0.35; m.add(arm);
             const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.34,10), M(0x3a4a66,{metalness:0.7,roughness:0.25})); tube.position.set(0,0.5,0.02); tube.rotation.x=0.35; m.add(tube);
-            m.position.set(x,1.23,z); scene.add(m); }
+            m.position.set(x,1.23,z); scene.add(m);
+            glassSpots.push({ kind:'Microscope', x, y:1.19, z, prim:m }); }
         function bench(bx,bz,rot){ const gp=new THREE.Group();
             const top=new THREE.Mesh(new THREE.BoxGeometry(4.6,0.22,1.5), M(0x2a3a5e,{metalness:0.35,roughness:0.45})); top.position.y=1.08; gp.add(top);
             const base=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.0,1.3), M(0x1b2946,{roughness:0.8})); base.position.y=0.52; gp.add(base);
@@ -674,6 +788,8 @@
         const flask=new THREE.Mesh(new THREE.ConeGeometry(0.26,0.5,14),
             new THREE.MeshStandardMaterial({color:0x86efac,transparent:true,opacity:0.5,emissive:0x86efac,emissiveIntensity:0.4,roughness:0.2}));
         flask.position.set(8.1,1.46,-8); scene.add(flask);
+        glassSpots.push({ kind:'Flask', x:8.1, y:1.21, z:-8, col:0x86efac, prim:flask });
+        glassSpots.push({ kind:'TubeRack', x:-10.25, y:1.19, z:-7.65 }, { kind:'TubeRack', x:10.4, y:1.19, z:-7.65 });
         beaker(-19,1.48,0.4,0x6ee7ff,0.5); beaker(-19,1.44,-0.5,0xfde68a,0.44); microscope(19,0.3);
         // shelves with reagent bottles
         const shelfCols=[0x6ee7ff,0x86efac,0xfca5a5,0xfde68a,0xc4b5fd];
@@ -692,6 +808,8 @@
         // lab supervisor NPC (watching the clash)
         const npc = buildCharacter({ skin:'#e8c4a0', hair:'#2a2a2a', eye:'#3a3a30', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
         npc.position.set(0,0,-7.5); npc.scale.setScalar(0.92); scene.add(npc); registerActor(npc, 0); professor=npc;
+
+        loadLabGlassware(glassSpots);
 
         beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1,8), new THREE.MeshBasicMaterial({ color:0x6ee7ff, transparent:true, opacity:0 }));
         beam.rotation.z = Math.PI/2; scene.add(beam);
@@ -762,9 +880,11 @@
         cam.target.set(0,1.85,0); cam.rad = 22; cam.pol = 1.1; Object.assign(DEF, cam);
     }
 
-    function resize() { renderer.setSize(shell.clientWidth, shell.clientHeight, false); if (camera){ camera.aspect=shell.clientWidth/shell.clientHeight; camera.updateProjectionMatrix(); } }
+    function resize() { renderer.setSize(shell.clientWidth, shell.clientHeight, false); if (camera){ camera.aspect=shell.clientWidth/shell.clientHeight; camera.updateProjectionMatrix(); applyCamera(); } }
     function applyCamera() {
-        const x=cam.target.x+cam.rad*Math.sin(cam.pol)*Math.sin(cam.az), y=cam.target.y+cam.rad*Math.cos(cam.pol), z=cam.target.z+cam.rad*Math.sin(cam.pol)*Math.cos(cam.az);
+        // A portrait phone sees much less width: move back so both scientists stay in frame
+        const r = cam.rad * Math.max(1, 0.85 / (camera.aspect || 1));
+        const x=cam.target.x+r*Math.sin(cam.pol)*Math.sin(cam.az), y=cam.target.y+r*Math.cos(cam.pol), z=cam.target.z+r*Math.sin(cam.pol)*Math.cos(cam.az);
         camera.position.set(x,y,z); camera.lookAt(cam.target);
     }
     function bindControls() {
@@ -843,8 +963,8 @@
         el('srQTopic').textContent=q.topic||'Science';
         el('srQuizText').textContent=q.question;
         const wrap=el('srQuizOpts'); wrap.innerHTML=''; const L=['A','B','C','D','E']; q._btns=[];
-        q.options.forEach((opt,i)=>{ const b=document.createElement('button'); b.className='sr-opt'; b.innerHTML='<span class="lt">'+L[i]+'</span> '+opt; b.onclick=()=>{ if(q._answered) return; q._answered=true; G.responseTimes.push(performance.now()-G.qStart); q._btns.forEach(x=>x.disabled=true); const ok=(i===q.correct_index); sfx(ok?'correct':'wrong'); if(ok){b.classList.add('correct');}else{b.classList.add('wrong'); q._btns[q.correct_index].classList.add('correct');} onAnswer(ok); }; wrap.appendChild(b); q._btns.push(b); });
-        el('srQuiz').classList.add('show');
+        q.options.forEach((opt,i)=>{ const b=document.createElement('button'); b.className='sr-opt'; const lt=document.createElement('span'); lt.className='lt'; lt.textContent=L[i]; b.append(lt, ' ' + opt); b.onclick=()=>{ if(q._answered) return; q._answered=true; G.responseTimes.push(performance.now()-G.qStart); q._btns.forEach(x=>x.disabled=true); const ok=(i===q.correct_index); sfx(ok?'correct':'wrong'); if(ok){b.classList.add('correct');}else{b.classList.add('wrong'); q._btns[q.correct_index].classList.add('correct');} onAnswer(ok); }; wrap.appendChild(b); q._btns.push(b); });
+        el('srQuiz').classList.add('show'); shell.classList.add('quiz-open');
     }
 
     // ---- G11 battle flow ----
@@ -874,7 +994,7 @@
                      if (G.youHP>0 && G.youHP<=40) profSay(CHEER_LOW[Math.floor(Math.random()*CHEER_LOW.length)],2.8); }
             updateHUD();
             setTimeout(()=>{
-                el('srQuiz').classList.remove('show');
+                el('srQuiz').classList.remove('show'); shell.classList.remove('quiz-open');
                 if (G.rivalHP<=0){ G.battleWon=true; playDeath(rival);
                     profSay('INCREDIBLE! You mastered every formula!',3.2);
                     setTimeout(endGame, 1900); return; }
@@ -933,7 +1053,7 @@
             else { G.wrong++; G.combo=0; G.recentAcc.push(0); G.lives--; }
             updateHUD();
             setTimeout(()=>{
-                el('srQuiz').classList.remove('show'); G.quizOpen=false;
+                el('srQuiz').classList.remove('show'); shell.classList.remove('quiz-open'); G.quizOpen=false;
                 if (ok){ sample.userData.collected=true; sample.visible=false; G.collected++; el('srHint').textContent='Sample collected! ('+G.collected+'/'+G.total+')'; }
                 else { el('srHint').textContent='Wrong! You lost a life. Pick another sample.'; }
                 cam.target.set(0,1.85,0); applyCamera(); updateHUD();
@@ -944,7 +1064,7 @@
     }
 
     function endGame() {
-        G.running=false; clearInterval(timerId); stopMusic(); el('srQuiz').classList.remove('show');
+        G.running=false; clearInterval(timerId); stopMusic(); el('srQuiz').classList.remove('show'); shell.classList.remove('quiz-open');
         const total=G.correct+G.wrong, acc=total?Math.round(G.correct/total*100):0;
         const avg=G.responseTimes.length?Math.round(G.responseTimes.reduce((a,b)=>a+b,0)/G.responseTimes.length):0;
         let won, goalVal, goalK;
@@ -978,7 +1098,8 @@
         if(!barEl||!camera) return;
         const v=new THREE.Vector3(ch.position.x, hy, ch.position.z); v.project(camera);
         if(v.z>1){ barEl.classList.remove('show'); return; }
-        const x=(v.x*0.5+0.5)*shell.clientWidth, y=(-v.y*0.5+0.5)*shell.clientHeight;
+        // Keep the whole plate on screen (half its 134 px width + 8 px margin from each edge)
+        const x=Math.min(Math.max((v.x*0.5+0.5)*shell.clientWidth, 75), shell.clientWidth-75), y=(-v.y*0.5+0.5)*shell.clientHeight;
         barEl.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) translate(-50%,-125%)';
         barEl.classList.add('show');
     }
@@ -1094,7 +1215,11 @@
         renderer.render(scene, camera);
     }
 
-    function boot(){ if(typeof THREE==='undefined'){ setTimeout(boot,120); return; } try{ initScene(); el('srHint').textContent = isG11?'Formula Clash — ready to begin?':'Field Researcher — ready to begin?'; }catch(e){ console.error('Strata Rush',e); } }
+    const bootStart = Date.now();
+    function boot(){ if(typeof THREE==='undefined'){
+            // Never leave the student on "Loading…" forever when the 3D library cannot load
+            if (Date.now() - bootStart > 20000) { el('srHint').textContent = 'The 3D game could not load. Check your connection and reload the page.'; return; }
+            setTimeout(boot,120); return; } try{ initScene(); el('srHint').textContent = isG11?'Formula Clash — ready to begin?':'Field Researcher — ready to begin?'; }catch(e){ console.error('Strata Rush',e); } }
     if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>

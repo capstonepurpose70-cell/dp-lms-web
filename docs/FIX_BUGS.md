@@ -999,6 +999,40 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
   `config:cache` and `route:cache` succeed; cache/session use the database tables that are in the migrations;
   `bootstrap/cache` is ignored by git; the local-only dev packages (Boost, IDE helper) are not used by app code.
 
+## Batch 16 — Strata Rush: loading, colour, phone layout, Blender lab props
+
+### B16-1 ✅ Game stuck on "Loading…" on slow connections
+- **Problem:** three.js came from a public CDN that took 39 s to download here; the game waited forever.
+- **Fix:** three.js r128 (same build, checksum compared with the CDN copy), GLTFLoader, DRACOLoader, the Draco
+  decoder and RoomEnvironment are served from `public/vendor/three-r128/`. After 20 s without the library the game
+  says so instead of spinning.
+
+### B16-2 ✅ Washed-out colours
+- **Cause:** r128 reads hex colours as linear light while the output is sRGB — the navy lab rendered pale blue,
+  the field almost white. Authored colours, lights and canvas textures are converted once after the world is built.
+
+### B16-3 ✅ Phone and desktop overlap during a question
+- Desktop: the quiz covered the Time card and the controls. Phone: the quiz covered both scientists, the HP plates
+  were cut at the edges and the Points card sat on answer D. Now the controls step aside while a question is open,
+  the progress card moves up, the phone quiz is a two-column bottom sheet, the camera pulls back on portrait
+  screens and the HP plates stay on screen.
+
+### B16-4 ✅ Answer text inserted as HTML
+- Quiz options were built with `innerHTML` from database text; they are inserted as text now.
+
+### B16-5 ✅ Lab props modelled in Blender
+- **Assets:** beaker, Erlenmeyer flask, test-tube rack, microscope (`resources/art/strata-rush/lab_glassware.blend`)
+  → `public/games/strata-rush/models/lab_glassware.glb` (173 KB): PBR materials (base colour, roughness, metallic,
+  glass IOR), baked ambient occlusion (1024 / 512 px, JPEG, glTF occlusion), modifiers applied, Draco on 12/12
+  primitives, custom properties (`dplms_kind`) read by the game. Parts merged (microscope 12→1 mesh, rack tubes and
+  liquids into one mesh each with vertex colours) to keep draw calls down.
+- **Game:** the props replace the bench shapes once loaded (the shapes stay if loading fails); studio reflections
+  (RoomEnvironment) on the props only; no shadow pass for small props; phones skip the real-time shadow pass, cap the
+  pixel ratio at 1.5 and use blob shadows under the scientists.
+- **Measured (draws per frame during play):** lab desktop 293 avg (≤ 300), lab phone 151 avg (≈ 150), field desktop
+  129, field phone 141; triangles ≤ 61k. Peaks during attack effects: 351 desktop, 207 phone. Headless browser FPS is
+  software-rendered and not a measure of real devices.
+
 ---
 
 ## Found, not fixed yet
