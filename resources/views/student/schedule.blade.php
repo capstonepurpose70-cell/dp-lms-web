@@ -6,11 +6,11 @@
     /* Uses the design tokens of layouts/app.blade.php — no new
        Tailwind classes, so the CSS build state does not matter. */
 
-    .sch-wrap { max-width: 1080px; margin: 0 auto; }
+    .sch-wrap { max-width: 1040px; margin: 0 auto; }
 
     .sch-head { margin-bottom: 22px; }
-    .sch-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--text-1); }
-    .sch-sub   { font-size: 13.5px; color: var(--text-2); margin-top: 4px; }
+    .sch-title { font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--text-1); }
+    .sch-sub   { font-size: 14px; color: var(--text-2); margin-top: 4px; }
 
     .sch-card {
         background: var(--surface); border: 1px solid var(--border);

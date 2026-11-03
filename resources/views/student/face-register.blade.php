@@ -4,10 +4,10 @@
 @section('content')
 <style>
     /* Plain CSS (the Tailwind build is stale). Only used when FACE_SELF_UPLOAD=true. */
-    .fr-wrap { max-width: 680px; margin: 0 auto; }
+    .fr-wrap { max-width: 760px; margin: 0 auto; }
     .fr-wrap .hidden { display: none !important; }
     .fr-title { font-size: 24px; font-weight: 800; color: var(--text-1); }
-    .fr-sub { font-size: 13.5px; color: var(--text-2); margin: 4px 0 18px; line-height: 1.55; }
+    .fr-sub { font-size: 14px; color: var(--text-2); margin: 4px 0 18px; line-height: 1.55; }
     .fr-sub b.ok { color: #15803D; }
 
     .fr-alert { border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.5; border: 1px solid; }

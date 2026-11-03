@@ -3,9 +3,9 @@
 
 @section('content')
 <style>
-    .sg-wrap { max-width: 900px; margin: 0 auto; }
+    .sg-wrap { max-width: 1040px; margin: 0 auto; }
     .sg-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
-    .sg-sub { font-size: 13.5px; color: var(--text-2); margin-top: 4px; margin-bottom: 20px; }
+    .sg-sub { font-size: 14px; color: var(--text-2); margin-top: 4px; margin-bottom: 20px; }
 
     .sg-year { margin-bottom: 26px; }
     .sg-year-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }

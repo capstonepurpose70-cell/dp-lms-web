@@ -4,9 +4,9 @@
 @section('content')
 <style>
     /* Design tokens from layouts/app.blade.php — no new Tailwind classes. */
-    .pl-wrap { max-width: 720px; margin: 0 auto; }
-    .pl-title { font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--text-1); }
-    .pl-sub   { font-size: 13.5px; color: var(--text-2); margin: 4px 0 22px; line-height: 1.6; }
+    .pl-wrap { max-width: 760px; margin: 0 auto; }
+    .pl-title { font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--text-1); }
+    .pl-sub   { font-size: 14px; color: var(--text-2); margin: 4px 0 22px; line-height: 1.6; }
 
     .pl-card {
         background: var(--surface); border: 1px solid var(--border);

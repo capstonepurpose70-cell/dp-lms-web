@@ -6,7 +6,7 @@
 <style>
     .ms-wrap { max-width: 1040px; margin: 0 auto; }
     .ms-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
-    .ms-sub { font-size: 13.5px; color: var(--text-2); margin: 4px 0 18px; }
+    .ms-sub { font-size: 14px; color: var(--text-2); margin: 4px 0 18px; }
 
     .ms-grid { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
     .ms-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); overflow: hidden; }

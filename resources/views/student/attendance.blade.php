@@ -6,8 +6,8 @@
 <style>
     /* no side padding of its own — the layout already pads the page */
     .sa-wrap { max-width:760px; margin:0 auto; padding:0 0 40px; }
-    .sa-h1 { font-size:26px; font-weight:800; color:#0F172A; }
-    .sa-sub { font-size:13.5px; color:#64748B; margin:3px 0 20px; line-height:1.5; }
+    .sa-h1 { font-size:24px; font-weight:800; color:var(--text-1); letter-spacing:-.01em; }
+    .sa-sub { font-size:14px; color:#64748B; margin:3px 0 20px; line-height:1.5; }
     .sa-card { background:#fff; border:1px solid #EEF1F5; border-radius:22px; padding:20px; box-shadow:0 4px 24px rgba(15,23,42,.05); margin-bottom:16px; }
     .sa-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
     .sa-subj { font-size:18px; font-weight:800; color:#0F172A; }
@@ -40,7 +40,7 @@
 </style>
 
 <div class="sa-wrap">
-    <div class="sa-h1">Attendance</div>
+    <h1 class="sa-h1">Attendance</h1>
     <div class="sa-sub">When your teacher opens attendance, enter the <b>4-digit code</b> shown in class.
         On time = <b style="color:#16A34A;">present</b>, after the time limit = <b style="color:#A16207;">late</b>,
         not checked in when it closes = <b style="color:#DC2626;">absent</b>. Your parent is notified.</div>

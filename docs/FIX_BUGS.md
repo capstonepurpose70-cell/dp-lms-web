@@ -31,6 +31,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [10](#batch-10--teacher-pages-part-2) | Teacher: Materials, Quizzes, Gradebook, Messages, Enrollments, Attendance, Face kiosk, dashboard + sidebar, app QR, live chat | — | 15 |
 | [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode, LRN Excel import | — | 8 |
 | [12](#batch-12--system-flow-check) | Enrolled student could reopen the form, returned-form prefill, age from birthdate, phone tables, sections layout, game access message | — | 5 |
+| [13](#batch-13--student-portal-polish) | Student/parent shell matched to the teacher side, dashboard with today's classes and to-submit list, consistent page widths, subjects cards | — | 4 |
 
 ---
 
@@ -826,6 +827,40 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
   were fixed to stop depending on real gate scans in the database). Real browser at 390 px: cue on every wide
   table, gone at the end of the scroll, nothing cut off on Sections, enrolled student's `/student/enroll` goes to
   the dashboard; returned form screenshot at 1366 / 390; no JS errors.
+
+---
+
+## Batch 13 — Student portal polish
+
+### B13-1 ✅ Student and parent pages looked like a different system
+- **Problem:** dark navy sidebar with icon pills, sliding hover, a green "zoom" log-out and a "Main Menu" label,
+  while the teacher and admin sides use a white, quiet sidebar; the logo and header were different too.
+- **Where:** `layouts/app.blade.php` (used by student and parent).
+- **Fix:** the teacher shell styles (tokens, top bar, sidebar, phone menu, flash and log-out dialog) — same logo
+  linking to the dashboard, same sidebar toggle, same active marker and focus ring. The menu, notifications,
+  log-out and phone behaviour (JS) are unchanged.
+
+### B13-2 ✅ Student dashboard repeated the menu instead of showing the day
+- **Problem:** six "Quick actions" cards repeated the sidebar; labels in small capitals; a large empty
+  announcements box; nothing about today's classes or what is due.
+- **Where:** `student/dashboard.blade.php`, `StudentDashboardController::index()` (two read-only lists added).
+- **Fix:** header with grade, section, school year and status; a summary strip that links to subjects, quizzes
+  and messages; **Today's classes** from the schedule with the class in progress marked "Now" and the next one
+  "Next"; **To submit** (open quizzes not yet turned in, soonest deadline first, soon ones highlighted); subjects
+  and announcements on the side. The returned-form notice uses the same wording as the form.
+
+### B13-3 ✅ Student pages had different widths and heading sizes
+- **Where:** `student/{subjects,modules,quizzes,grades,schedule,messages,attendance,face-register,face-status,parent-link}`.
+- **Fix:** 1040 px for list pages, 760 px for single-task pages (as on the teacher side); 24 px titles at the same
+  weight, 14 px subtitles; Attendance and Face status titles are real `<h1>` headings now.
+
+### B13-4 ✅ "My Subjects" cards were large blue blocks with one letter
+- **Where:** `student/subjects.blade.php`. **Fix:** a card with a small subject mark, name and code, the teacher,
+  and a "Learning modules" footer link; quiet hover instead of lift-and-glow.
+
+- **Tested:** PHPUnit — student pages 5/20, journey 5/67, parent portal 7/40, approved-web 2/5, logout 5/44.
+  Real browser: 10 student pages and 2 parent pages at 1366 and 390 px — no JS errors, no sideways scroll; sidebar
+  white with 10 links and the right one active; dashboard "Now"/"Next" checked against the demo schedule.
 
 ---
 

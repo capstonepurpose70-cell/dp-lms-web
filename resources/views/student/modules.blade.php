@@ -4,10 +4,10 @@
 @section('content')
 {{-- Layout tokens for text colors (readable contrast) --}}
 <style>
-    .sm-wrap { max-width: 900px; margin: 0 auto; }
+    .sm-wrap { max-width: 1040px; margin: 0 auto; }
     .sm-head { margin-bottom: 22px; }
     .sm-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
-    .sm-sub { font-size: 13.5px; color: var(--text-2); margin-top: 4px; }
+    .sm-sub { font-size: 14px; color: var(--text-2); margin-top: 4px; }
 
     .sm-notice { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--r-md); padding: 18px 20px; color: #92400E; }
     .sm-notice b { display: block; font-size: 14px; margin-bottom: 2px; }

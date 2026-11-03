@@ -3,477 +3,267 @@
 
 @section('content')
 <style>
-    /* ═══════════════════════════════════════════════════════════
-       STUDENT DASHBOARD
-       Uses the design tokens of layouts/app.blade.php
-       (--accent, --text-1..3, --border, --r-*, --shadow-*)
-       to match the rest of the system. Plain CSS only, no new
-       Tailwind classes, so the build state does not matter.
-    ═══════════════════════════════════════════════════════════ */
+    /* Student dashboard — layouts/app tokens (--accent, --text-1..3, --border, --r-*) */
+    .sd { max-width: 1120px; margin: 0 auto; }
+    .sd-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
 
-    .sd-wrap { max-width: 1080px; margin: 0 auto; }
+    /* Header: greeting left, enrollment right */
+    .sd-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; margin-bottom: 20px; }
+    .sd-greet { font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--text-1); line-height: 1.25; }
+    .sd-date { font-size: 14px; color: var(--text-2); margin-top: 4px; }
+    .sd-enrolled { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-2); }
+    .sd-enrolled b { color: var(--text-1); font-weight: 700; }
+    .sd-enrolled .sep { width: 4px; height: 4px; border-radius: 50%; background: #CBD5E1; }
+    .sd-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; background: var(--green-lt); color: #166534; }
+    .sd-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 
-    /* ─── Page header ─────────────────────────────────────────── */
-    .sd-head { margin-bottom: 24px; }
-    .sd-greet {
-        font-size: 24px; font-weight: 700; letter-spacing: -.02em;
-        color: var(--text-1); line-height: 1.25;
-    }
-    .sd-date { font-size: 13.5px; color: var(--text-2); margin-top: 4px; }
-
-    /* ─── Cards ───────────────────────────────────────────────── */
-    .sd-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg);
-        box-shadow: var(--shadow-sm);
-    }
-    .sd-card-pad { padding: 20px 22px; }
-
-    .sd-section-title {
-        font-size: 12px; font-weight: 700; letter-spacing: .06em;
-        text-transform: uppercase; color: var(--text-2);
-    }
-
-    /* ─── Enrollment strip ────────────────────────────────────── */
-    .sd-enroll { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; }
-    .sd-enroll-item { min-width: 96px; }
-    .sd-enroll-label {
-        font-size: 11px; font-weight: 600; letter-spacing: .06em;
-        text-transform: uppercase; color: var(--text-3);
-    }
-    .sd-enroll-value {
-        font-size: 17px; font-weight: 700; color: var(--text-1); margin-top: 3px;
-    }
-    .sd-pill {
-        margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-        padding: 6px 12px; border-radius: 999px;
-        font-size: 12px; font-weight: 600;
-        background: var(--green-lt); color: var(--green-dark);
-    }
-    .sd-pill-dot {
-        width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-    }
-
-    /* ─── Notice (not enrolled yet) ───────────────────────────── */
-    .sd-notice {
-        display: flex; gap: 12px; align-items: flex-start;
-        background: #FFFBEB; border: 1px solid #FDE68A;
-        border-radius: var(--r-md); padding: 14px 16px; margin-top: 14px;
-    }
-    .sd-notice-title { font-size: 13.5px; font-weight: 700; color: #92400E; }
-    .sd-notice-text  { font-size: 12.5px; color: #92400E; margin-top: 2px; line-height: 1.5; }   /* #A16207 was 4.3:1 on the yellow */
-    .sd-notice-btn {
-        display: inline-flex; align-items: center; min-height: 40px; margin-top: 10px; padding: 0 16px;
-        border-radius: 10px; background: #B45309; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none;
-    }
+    /* Next step when not enrolled */
+    .sd-notice { display: flex; gap: 12px; align-items: flex-start; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 18px; }
+    .sd-notice svg { flex-shrink: 0; margin-top: 1px; color: #B45309; }
+    .sd-notice-title { font-size: 14px; font-weight: 700; color: #92400E; }
+    .sd-notice-text { font-size: 13px; color: #92400E; margin-top: 2px; line-height: 1.55; }
+    .sd-notice-btn { display: inline-flex; align-items: center; min-height: 40px; margin-top: 10px; padding: 0 16px; border-radius: 10px; background: #B45309; color: #fff; font-size: 13.5px; font-weight: 700; text-decoration: none; }
     .sd-notice-btn:hover { background: #92400E; }
 
-    /* ─── Grid ────────────────────────────────────────────────── */
-    .sd-grid { display: grid; gap: 14px; }
-    .sd-grid-3 { grid-template-columns: repeat(3, 1fr); }
-    .sd-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    /* Summary strip: each figure opens its page */
+    .sd-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 18px; overflow: hidden; }
+    .sd-stat { display: flex; align-items: center; gap: 14px; padding: 16px 20px; text-decoration: none; color: inherit; transition: background-color .15s ease; }
+    .sd-stat + .sd-stat { border-left: 1px solid var(--border); }
+    .sd-stat:hover { background: #F8FAFF; }
+    .sd-stat-ico { width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0; display: grid; place-items: center; background: var(--accent-lt); color: var(--accent-dark); }
+    .sd-stat-ico.warn { background: #FEF3C7; color: #B45309; }
+    .sd-stat-num { display: block; font-size: 24px; font-weight: 800; color: var(--text-1); line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .sd-stat-label { display: block; font-size: 13px; color: var(--text-2); margin-top: 2px; }
 
-    /* ─── Stat cards ──────────────────────────────────────────── */
-    .sd-stat { padding: 18px 20px; }
-    .sd-stat-top { display: flex; align-items: center; gap: 10px; }
-    .sd-ico {
-        width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        background: var(--accent-lt); color: var(--accent);
-    }
-    .sd-stat-label {
-        font-size: 12.5px; font-weight: 600; color: var(--text-2);
-    }
-    .sd-stat-num {
-        font-size: 30px; font-weight: 700; color: var(--text-1);
-        line-height: 1.1; margin-top: 12px; letter-spacing: -.02em;
-    }
-    .sd-stat-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+    /* Two columns */
+    .sd-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .sd-col { display: grid; gap: 18px; min-width: 0; }
+    .sd-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; }
+    .sd-panel-title { font-size: 15.5px; font-weight: 800; color: var(--text-1); }
+    .sd-panel-sub { font-size: 12.5px; color: var(--text-3); margin-top: 1px; }
+    .sd-link { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; font-size: 13px; font-weight: 700; color: var(--accent-dark); text-decoration: none; white-space: nowrap; }
+    .sd-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .sd-link svg { width: 14px; height: 14px; }
 
-    /* ─── Subject list ────────────────────────────────────────── */
-    .sd-subj {
-        display: flex; align-items: center; gap: 12px;
-        padding: 12px 14px;
-        border: 1px solid var(--border); border-radius: var(--r-md);
-        background: var(--surface);
-        transition: border-color .2s ease, background .2s ease;
-    }
-    .sd-subj:hover { border-color: var(--accent); background: var(--accent-lt); }
-    .sd-subj-name {
-        font-size: 13.5px; font-weight: 600; color: var(--text-1);
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .sd-subj-teacher {
-        font-size: 12px; color: var(--text-2); margin-top: 2px;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    /* Today's classes */
+    .sd-class { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 20px; border-top: 1px solid var(--border); }
+    .sd-class-time { font-size: 13px; font-weight: 700; color: var(--text-1); font-variant-numeric: tabular-nums; line-height: 1.35; }
+    .sd-class-time span { display: block; font-weight: 500; color: var(--text-3); }
+    .sd-class-name { font-size: 14px; font-weight: 700; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd-class-meta { font-size: 12.5px; color: var(--text-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd-class.now { background: #F5F8FF; box-shadow: inset 3px 0 0 var(--accent); }
+    .sd-class.done .sd-class-name, .sd-class.done .sd-class-time { color: var(--text-3); }
+    .sd-tag { padding: 3px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+    .sd-tag.now { background: var(--accent); color: #fff; }
+    .sd-tag.next { background: var(--accent-lt); color: var(--accent-dark); }
+    .sd-tag.done { background: #F1F5F9; color: var(--text-3); }
 
-    /* ─── Quick action cards ──────────────────────────────────── */
-    .sd-nav {
-        display: flex; align-items: center; gap: 14px;
-        padding: 16px 18px; min-height: 68px;   /* >=44px touch target */
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg);
-        box-shadow: var(--shadow-sm);
-        text-decoration: none; cursor: pointer;
-        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-    }
-    .sd-nav:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-        border-color: var(--accent);
-    }
-    .sd-nav:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-    }
-    .sd-nav-body { flex: 1; min-width: 0; }
-    .sd-nav-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
-    .sd-nav-desc  { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
-    .sd-nav-arrow { color: var(--text-3); flex-shrink: 0; transition: transform .2s ease, color .2s ease; }
-    .sd-nav:hover .sd-nav-arrow { color: var(--accent); transform: translateX(3px); }
+    /* To submit */
+    .sd-todo { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-top: 1px solid var(--border); text-decoration: none; color: inherit; transition: background-color .15s ease; }
+    .sd-todo:hover { background: #F8FAFF; }
+    .sd-todo-body { flex: 1; min-width: 0; }
+    .sd-todo-title { display: block; font-size: 14px; font-weight: 700; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd-todo-meta { display: block; font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+    .sd-due { font-size: 12px; font-weight: 700; white-space: nowrap; padding: 3px 9px; border-radius: 99px; background: #F1F5F9; color: var(--text-2); }
+    .sd-due.soon { background: #FEF3C7; color: #92400E; }
 
-    /* ─── Announcements ───────────────────────────────────────── */
-    .sd-ann { padding: 14px 0; border-bottom: 1px solid var(--border); }
-    .sd-ann:last-child { border-bottom: 0; padding-bottom: 0; }
-    .sd-ann:first-of-type { padding-top: 4px; }
-    .sd-ann-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
-    .sd-ann-title { font-size: 13.5px; font-weight: 600; color: var(--text-1); }
-    .sd-ann-body {
-        font-size: 12.5px; color: var(--text-2); margin-top: 3px; line-height: 1.55;
-        display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
+    /* Subjects */
+    .sd-subj { display: flex; align-items: center; gap: 12px; padding: 11px 20px; border-top: 1px solid var(--border); }
+    .sd-subj-mark { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; background: #F1F5F9; color: var(--text-2); font-size: 12.5px; font-weight: 800; }
+    .sd-subj-name { font-size: 14px; font-weight: 700; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd-subj-teacher { font-size: 12.5px; color: var(--text-2); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Announcements */
+    .sd-ann { padding: 12px 20px; border-top: 1px solid var(--border); }
+    .sd-ann-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+    .sd-ann-body { font-size: 13px; color: var(--text-2); margin-top: 3px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .sd-ann-meta { font-size: 12px; color: var(--text-3); margin-top: 5px; }
-    .sd-ann-time { font-size: 12px; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
 
-    /* ─── Empty state ─────────────────────────────────────────── */
-    .sd-empty { text-align: center; padding: 32px 16px; }
-    .sd-empty-ico {
-        width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 12px;
-        background: var(--bg); color: var(--text-3);
-        display: flex; align-items: center; justify-content: center;
-    }
-    .sd-empty-text { font-size: 13px; color: var(--text-2); }
-    .sd-empty-sub  { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+    .sd-empty { padding: 18px 20px 20px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-2); line-height: 1.5; }
+    .sd-empty b { display: block; color: var(--text-1); font-size: 14px; margin-bottom: 2px; }
 
-    /* ─── Spacing ─────────────────────────────────────────────── */
-    .sd-mb { margin-bottom: 18px; }
+    .sd-in { animation: sdIn .3s cubic-bezier(.22,.61,.36,1) both; }
+    @keyframes sdIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-    /* ─── Motion (subtle, 300-400ms) ──────────────────────────── */
-    .sd-in { animation: sdIn .35s cubic-bezier(.22,.61,.36,1) both; }
-    .sd-d1 { animation-delay: .04s; }
-    .sd-d2 { animation-delay: .09s; }
-    .sd-d3 { animation-delay: .14s; }
-    .sd-d4 { animation-delay: .19s; }
-    @keyframes sdIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-
-    /* ─── Responsive ──────────────────────────────────────────── */
-    @media (max-width: 860px) {
-        .sd-grid-3, .sd-grid-2 { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 560px) {
-        .sd-grid-2 { grid-template-columns: 1fr; }
-        /* compact 3-up stats instead of three tall cards with one number each */
-        .sd-grid-3 { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .sd-stat { padding: 14px; }
-        .sd-stat .sd-ico, .sd-stat-sub { display: none; }
-        .sd-stat-num { font-size: 24px; margin-top: 6px; }
-        .sd-stat-label { font-size: 12px; }
+    @media (max-width: 960px) { .sd-grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 600px) {
         .sd-greet { font-size: 21px; }
-        .sd-enroll { gap: 18px; }
-        .sd-pill { margin-left: 0; }
-        .sd-card-pad { padding: 16px 18px; }
+        .sd-stat { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px; }
+        .sd-stat-ico { width: 34px; height: 34px; }
+        .sd-stat-num { font-size: 21px; }
+        .sd-stat-label { font-size: 12px; }
+        .sd-class { grid-template-columns: 84px minmax(0, 1fr); padding: 12px 16px; }
+        .sd-class .sd-tag { grid-column: 2; justify-self: start; }
+        .sd-panel-head, .sd-todo, .sd-subj, .sd-ann, .sd-empty { padding-left: 16px; padding-right: 16px; }
     }
-
-    /* ─── Reduced motion ──────────────────────────────────────── */
-    @media (prefers-reduced-motion: reduce) {
-        .sd-in { animation: none; }
-        .sd-nav, .sd-subj, .sd-nav-arrow { transition: none; }
-        .sd-nav:hover { transform: none; }
-    }
+    @media (prefers-reduced-motion: reduce) { .sd-in { animation: none; } }
 </style>
 
-<div class="sd-wrap">
+@php
+    $chevron = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>';
+    $now = now();
+    // Mark the class in progress and the first one still to come, so the student sees where to be
+    $nextMarked = false;
+    $classes = $todayClasses->map(function ($c) use ($now, &$nextMarked) {
+        $start = $now->copy()->setTimeFromTimeString($c->start_time);
+        $end   = $now->copy()->setTimeFromTimeString($c->end_time);
+        $state = $now->gte($end) ? 'done' : ($now->gte($start) ? 'now' : 'later');
+        if ($state === 'later' && !$nextMarked) {
+            $state = 'next';
+            $nextMarked = true;
+        }
+        return (object) ['c' => $c, 'start' => $start, 'end' => $end, 'state' => $state];
+    });
+@endphp
 
-    {{-- ── Header ─────────────────────────────────────────────── --}}
+<div class="sd">
     <header class="sd-head sd-in">
-        <h1 class="sd-greet">
-            Good {{ now()->hour < 12 ? 'morning' : (now()->hour < 17 ? 'afternoon' : 'evening') }},
-            {{ explode(' ', $user->name)[0] }}
-        </h1>
-        <p class="sd-date">{{ now()->format('l, F j, Y') }}</p>
+        <div>
+            <h1 class="sd-greet">Good {{ $now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening') }}, {{ explode(' ', $user->name)[0] }}</h1>
+            <p class="sd-date">{{ $now->format('l, F j, Y') }}</p>
+        </div>
+        @if($enrollment)
+            <p class="sd-enrolled" aria-label="Enrollment">
+                <span><b>Grade {{ $grade }}</b></span><span class="sep" aria-hidden="true"></span>
+                <span><b>{{ $section->name ?? '—' }}</b></span><span class="sep" aria-hidden="true"></span>
+                <span>SY {{ $enrollment->school_year }}</span>
+                <span class="sd-pill">Enrolled</span>
+            </p>
+        @endif
+    </header>
 
-        {{-- Not enrolled yet: show the real next step (form / waiting for review / returned) --}}
-        @unless($enrollment)
-        <div class="sd-notice" role="status">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309"
-                 stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
-                 aria-hidden="true" style="flex-shrink:0;margin-top:1px;">
-                <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
-            </svg>
+    {{-- Not enrolled yet: the real next step (form / waiting for review / returned) --}}
+    @unless($enrollment)
+        <div class="sd-notice sd-in" role="status">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
             <div>
                 @if($enrollmentRequest?->status === 'pending')
                     <p class="sd-notice-title">Enrollment form submitted</p>
-                    <p class="sd-notice-text">
-                        Your adviser is reviewing it. Once approved, you'll be placed in a section and your
-                        subjects, modules, and grades will appear here.
-                    </p>
+                    <p class="sd-notice-text">Your adviser is reviewing it. Once approved, you'll be placed in a section and your subjects, modules and grades will appear here.</p>
                 @elseif($enrollmentRequest?->status === 'rejected')
-                    <p class="sd-notice-title">Your enrollment was not approved</p>
+                    <p class="sd-notice-title">Your adviser returned your enrollment form</p>
                     <p class="sd-notice-text">
                         @if($enrollmentRequest->remarks) Reason: {{ $enrollmentRequest->remarks }}<br> @endif
-                        Please check your details and submit the form again.
+                        Fix the details and submit it again — your previous answers are already filled in.
                     </p>
                     <a href="{{ route('student.enroll') }}" class="sd-notice-btn">Open enrollment form</a>
                 @else
                     <p class="sd-notice-title">Next step: fill out the enrollment form</p>
-                    <p class="sd-notice-text">
-                        Your adviser needs it to place you in a section. It takes about 5 minutes.
-                    </p>
+                    <p class="sd-notice-text">Your adviser needs it to place you in a section. It takes about 5 minutes.</p>
                     <a href="{{ route('student.enroll') }}" class="sd-notice-btn">Fill out the form</a>
                 @endif
             </div>
         </div>
-        @endunless
-    </header>
+    @endunless
 
-    {{-- ── Enrollment summary ─────────────────────────────────── --}}
-    @if($enrollment)
-    <section class="sd-card sd-card-pad sd-mb sd-in sd-d1" aria-label="Enrollment details">
-        <div class="sd-enroll">
-            <div class="sd-enroll-item">
-                <p class="sd-enroll-label">Grade Level</p>
-                <p class="sd-enroll-value">Grade {{ $grade }}</p>
-            </div>
-            <div class="sd-enroll-item">
-                <p class="sd-enroll-label">Section</p>
-                <p class="sd-enroll-value">{{ $section->name ?? '—' }}</p>
-            </div>
-            <div class="sd-enroll-item">
-                <p class="sd-enroll-label">School Year</p>
-                <p class="sd-enroll-value">{{ $enrollment->school_year }}</p>
-            </div>
-            <span class="sd-pill">
-                <span class="sd-pill-dot" aria-hidden="true"></span>
-                Enrolled
-            </span>
-        </div>
-    </section>
-    @endif
+    <nav class="sd-card sd-stats sd-in" aria-label="Summary">
+        <a class="sd-stat" href="{{ route('student.subjects') }}">
+            <span class="sd-stat-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+            <span><span class="sd-stat-num">{{ $subjectCount }}</span><span class="sd-stat-label">{{ \Illuminate\Support\Str::plural('Subject', $subjectCount) }}</span></span>
+        </a>
+        <a class="sd-stat" href="{{ route('student.quizzes') }}">
+            <span class="sd-stat-ico {{ $pendingAssignments ? 'warn' : '' }}" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span>
+            <span><span class="sd-stat-num">{{ $pendingAssignments }}</span><span class="sd-stat-label">To submit</span></span>
+        </a>
+        <a class="sd-stat" href="{{ route('student.messages') }}">
+            <span class="sd-stat-ico" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            <span><span class="sd-stat-num">{{ $unreadMessages }}</span><span class="sd-stat-label">Unread {{ $unreadMessages === 1 ? 'message' : 'messages' }}</span></span>
+        </a>
+    </nav>
 
-    {{-- ── Stats ──────────────────────────────────────────────── --}}
-    <section class="sd-grid sd-grid-3 sd-mb" aria-label="Summary">
-
-        <div class="sd-card sd-stat sd-in sd-d1">
-            <div class="sd-stat-top">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
-                </span>
-                <span class="sd-stat-label">Subjects</span>
-            </div>
-            <p class="sd-stat-num">{{ $subjectCount }}</p>
-            <p class="sd-stat-sub">Enrolled this term</p>
-        </div>
-
-        <div class="sd-card sd-stat sd-in sd-d2">
-            <div class="sd-stat-top">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
-                        <rect x="9" y="2" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>
-                    </svg>
-                </span>
-                <span class="sd-stat-label">Assignments</span>
-            </div>
-            <p class="sd-stat-num">{{ $pendingAssignments }}</p>
-            <p class="sd-stat-sub">{{ $pendingAssignments ? 'Still to submit' : 'Nothing due right now' }}</p>
-        </div>
-
-        <div class="sd-card sd-stat sd-in sd-d3">
-            <div class="sd-stat-top">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                </span>
-                <span class="sd-stat-label">Messages</span>
-            </div>
-            <p class="sd-stat-num">{{ $unreadMessages }}</p>
-            <p class="sd-stat-sub">Unread</p>
-        </div>
-    </section>
-
-    {{-- ── Subjects ───────────────────────────────────────────── --}}
-    @if($enrollment && $subjects->count())
-    <section class="sd-card sd-card-pad sd-mb sd-in sd-d2" aria-label="My subjects">
-        <h2 class="sd-section-title" style="margin-bottom:14px;">My Subjects</h2>
-        <div class="sd-grid sd-grid-2">
-            @foreach($subjects as $ts)
-            <div class="sd-subj">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
-                </span>
-                <div style="min-width:0;">
-                    <p class="sd-subj-name">{{ $ts->subject?->name ?? 'Subject removed' }}</p>
-                    <p class="sd-subj-teacher">{{ $ts->teacher->name ?? 'Teacher to be assigned' }}</p>
+    <div class="sd-grid">
+        <div class="sd-col">
+            <section class="sd-card sd-in" aria-labelledby="sdToday">
+                <div class="sd-panel-head">
+                    <div>
+                        <h2 class="sd-panel-title" id="sdToday">Today's classes</h2>
+                        <p class="sd-panel-sub">{{ $now->format('l') }}</p>
+                    </div>
+                    <a class="sd-link" href="{{ route('student.schedule') }}">Full schedule {!! $chevron !!}</a>
                 </div>
-            </div>
-            @endforeach
-        </div>
-    </section>
-    @endif
+                @forelse($classes as $row)
+                    <div class="sd-class {{ in_array($row->state, ['now', 'done'], true) ? $row->state : '' }}">
+                        <p class="sd-class-time">{{ $row->start->format('g:i A') }}<span>to {{ $row->end->format('g:i A') }}</span></p>
+                        <div style="min-width:0;">
+                            <p class="sd-class-name">{{ $row->c->subject->name ?? 'Subject' }}</p>
+                            <p class="sd-class-meta">{{ $row->c->teacher->name ?? 'Teacher to be assigned' }}{{ $row->c->room ? ' · ' . $row->c->room : '' }}</p>
+                        </div>
+                        @if($row->state === 'now')
+                            <span class="sd-tag now">Now</span>
+                        @elseif($row->state === 'next')
+                            <span class="sd-tag next">Next</span>
+                        @elseif($row->state === 'done')
+                            <span class="sd-tag done">Done</span>
+                        @endif
+                    </div>
+                @empty
+                    <div class="sd-empty">
+                        @if(!$enrollment)
+                            <b>No classes yet</b>Your schedule appears here once you are placed in a section.
+                        @elseif($now->isWeekend())
+                            <b>No classes today</b>Your schedule picks up again on Monday.
+                        @else
+                            <b>No classes scheduled today</b>Check the full schedule for the rest of the week.
+                        @endif
+                    </div>
+                @endforelse
+            </section>
 
-    {{-- ── Quick actions ──────────────────────────────────────── --}}
-    <section class="sd-mb sd-in sd-d3" aria-label="Quick actions">
-        <h2 class="sd-section-title" style="margin-bottom:12px;">Quick Actions</h2>
-        <div class="sd-grid sd-grid-2">
-
-            {{-- Most-used daily action --}}
-            <a href="{{ route('student.attendance') }}" class="sd-nav">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
-                        <rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 13h6M9 17h4"/>
-                    </svg>
-                </span>
-                <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">Class Attendance</span>
-                    <span class="sd-nav-desc" style="display:block;">Enter the code your teacher shows</span>
-                </span>
-                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-
-            <a href="{{ route('student.modules') }}" class="sd-nav">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
-                </span>
-                <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">Learning Modules</span>
-                    <span class="sd-nav-desc" style="display:block;">View and download your materials</span>
-                </span>
-                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-
-            <a href="{{ route('student.quizzes') }}" class="sd-nav">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
-                        <rect x="9" y="2" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>
-                    </svg>
-                </span>
-                <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">Quizzes</span>
-                    <span class="sd-nav-desc" style="display:block;">Take quizzes assigned by your teachers</span>
-                </span>
-                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-
-            <a href="{{ route('student.grades') }}" class="sd-nav">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>
-                    </svg>
-                </span>
-                <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">My Grades</span>
-                    <span class="sd-nav-desc" style="display:block;">View your academic performance</span>
-                </span>
-                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-
-            <a href="{{ route('student.messages') }}" class="sd-nav">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                </span>
-                <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">Messages</span>
-                    <span class="sd-nav-desc" style="display:block;">Chat with your teachers</span>
-                </span>
-                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-
-            <a href="{{ route('student.face.register') }}" class="sd-nav">
-                <span class="sd-ico" aria-hidden="true">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                        <circle cx="12" cy="11" r="2.5"/><path d="M8.5 16.5a4.5 4.5 0 0 1 7 0"/>
-                    </svg>
-                </span>
-                <span class="sd-nav-body">
-                    <span class="sd-nav-title" style="display:block;">Face Registration</span>
-                    <span class="sd-nav-desc" style="display:block;">Check your gate-camera status</span>
-                </span>
-                <svg class="sd-nav-arrow" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-            </a>
-        </div>
-    </section>
-
-    {{-- ── Announcements ──────────────────────────────────────── --}}
-    <section class="sd-card sd-card-pad sd-in sd-d4" aria-label="Recent announcements">
-        <h2 class="sd-section-title" style="margin-bottom:6px;">Recent Announcements</h2>
-
-        @forelse($announcements as $announcement)
-        <article class="sd-ann">
-            <div class="sd-ann-row">
-                <div style="min-width:0;">
-                    <h3 class="sd-ann-title">{{ $announcement->title }}</h3>
-                    <p class="sd-ann-body">{{ $announcement->body }}</p>
-                    <p class="sd-ann-meta">{{ $announcement->author->name ?? 'School Administration' }}</p>
+            <section class="sd-card sd-in" aria-labelledby="sdTodo">
+                <div class="sd-panel-head">
+                    <div>
+                        <h2 class="sd-panel-title" id="sdTodo">To submit</h2>
+                        <p class="sd-panel-sub">Quizzes and activities you haven't turned in</p>
+                    </div>
+                    <a class="sd-link" href="{{ route('student.quizzes') }}">All quizzes {!! $chevron !!}</a>
                 </div>
-                <time class="sd-ann-time" datetime="{{ $announcement->created_at->toIso8601String() }}">
-                    {{ $announcement->created_at->diffForHumans() }}
-                </time>
-            </div>
-        </article>
-        @empty
-        <div class="sd-empty">
-            <div class="sd-empty-ico" aria-hidden="true">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
-                    <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
-                </svg>
-            </div>
-            <p class="sd-empty-text">No announcements yet</p>
-            <p class="sd-empty-sub">New updates from your school will appear here.</p>
+                @forelse($dueSoon as $a)
+                    @php $soon = $a->due_date && $a->due_date->lte($now->copy()->addDays(2)); @endphp
+                    <a class="sd-todo" href="{{ route('student.quizzes.show', $a) }}">
+                        <span class="sd-todo-body">
+                            <span class="sd-todo-title">{{ $a->title }}</span>
+                            <span class="sd-todo-meta">{{ $a->subject->name ?? 'Subject' }}{{ $a->due_date ? ' · Due ' . $a->due_date->format('D, M j · g:i A') : '' }}</span>
+                        </span>
+                        <span class="sd-due {{ $soon ? 'soon' : '' }}">{{ $a->due_date ? 'Due ' . $a->due_date->diffForHumans() : 'No deadline' }}</span>
+                    </a>
+                @empty
+                    <div class="sd-empty"><b>You're all caught up</b>New quizzes and activities from your teachers appear here.</div>
+                @endforelse
+            </section>
         </div>
-        @endforelse
-    </section>
 
+        <div class="sd-col">
+            <section class="sd-card sd-in" aria-labelledby="sdSubjects">
+                <div class="sd-panel-head">
+                    <h2 class="sd-panel-title" id="sdSubjects">My subjects</h2>
+                    <a class="sd-link" href="{{ route('student.modules') }}">Modules {!! $chevron !!}</a>
+                </div>
+                @forelse($subjects as $ts)
+                    <div class="sd-subj">
+                        <span class="sd-subj-mark" aria-hidden="true">{{ mb_strtoupper(mb_substr($ts->subject?->name ?? '?', 0, 2)) }}</span>
+                        <div style="min-width:0;">
+                            <p class="sd-subj-name">{{ $ts->subject?->name ?? 'Subject removed' }}</p>
+                            <p class="sd-subj-teacher">{{ $ts->teacher->name ?? 'Teacher to be assigned' }}</p>
+                        </div>
+                    </div>
+                @empty
+                    <div class="sd-empty"><b>No subjects yet</b>They appear once you are placed in a section.</div>
+                @endforelse
+            </section>
+
+            <section class="sd-card sd-in" aria-labelledby="sdAnn">
+                <div class="sd-panel-head"><h2 class="sd-panel-title" id="sdAnn">Announcements</h2></div>
+                @forelse($announcements as $announcement)
+                    <article class="sd-ann">
+                        <h3 class="sd-ann-title">{{ $announcement->title }}</h3>
+                        <p class="sd-ann-body">{{ $announcement->body }}</p>
+                        <p class="sd-ann-meta">{{ $announcement->author->name ?? 'School Administration' }} · <time datetime="{{ $announcement->created_at->toIso8601String() }}">{{ $announcement->created_at->diffForHumans() }}</time></p>
+                    </article>
+                @empty
+                    <div class="sd-empty"><b>No announcements</b>Updates from your teachers and the school appear here.</div>
+                @endforelse
+            </section>
+        </div>
+    </div>
 </div>
 @endsection

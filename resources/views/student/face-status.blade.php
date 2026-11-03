@@ -7,9 +7,9 @@
 @endphp
 <style>
     /* layout tokens; no side padding of its own (the layout already pads the page) */
-    .fs-wrap { max-width:640px; margin:0 auto; padding:0 0 40px; }
+    .fs-wrap { max-width:760px; margin:0 auto; padding:0 0 40px; }
     .fs-h1 { font-size:24px; font-weight:800; color:var(--text-1); }
-    .fs-sub { font-size:13.5px; color:var(--text-2); margin:4px 0 20px; line-height:1.5; }
+    .fs-sub { font-size:14px; color:var(--text-2); margin:4px 0 20px; line-height:1.5; }
     .fs-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; box-shadow:var(--shadow-sm); margin-bottom:16px; text-align:center; }
     .fs-ic { width:84px; height:84px; border-radius:999px; display:grid; place-items:center; margin:0 auto 12px; }
     .fs-ic svg { width:44px; height:44px; }
@@ -25,7 +25,7 @@
 </style>
 
 <div class="fs-wrap">
-    <div class="fs-h1">Face Registration</div>
+    <h1 class="fs-h1">Face Registration</h1>
     <div class="fs-sub">Your face lets the school-gate camera recognize you, so your parent gets an "arrived at school" notification.</div>
 
     <div class="fs-card">

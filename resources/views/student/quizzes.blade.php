@@ -3,9 +3,9 @@
 
 @section('content')
 <style>
-    .sq-wrap { max-width: 920px; margin: 0 auto; }
+    .sq-wrap { max-width: 1040px; margin: 0 auto; }
     .sq-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
-    .sq-sub { font-size: 13.5px; color: var(--text-2); margin: 4px 0 22px; }
+    .sq-sub { font-size: 14px; color: var(--text-2); margin: 4px 0 22px; }
 
     .sq-card {
         display: flex; align-items: center; justify-content: space-between; gap: 14px;

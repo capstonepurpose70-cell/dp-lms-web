@@ -38,13 +38,26 @@ class StudentDashboardController extends Controller
 
         // Published, still open, and not yet submitted
         $sectionId = $user->studentSectionId();
-        $pendingAssignments = $sectionId
+        $pending = $sectionId
             ? Assignment::where('section_id', $sectionId)
                 ->where('is_published', true)
                 ->where(fn ($q) => $q->whereNull('due_date')->orWhere('due_date', '>', now()))
                 ->whereDoesntHave('submissions', fn ($q) => $q->where('user_id', $user->id))
-                ->count()
-            : 0;
+            : null;
+        $pendingAssignments = $pending ? (clone $pending)->count() : 0;
+        // Soonest deadline first; open-ended ones last
+        $dueSoon = $pending
+            ? $pending->with('subject:id,name')->orderByRaw('due_date IS NULL')->orderBy('due_date')->take(4)->get()
+            : collect();
+
+        // Today's classes (Monday–Friday only), same source as the My Schedule page
+        $todayClasses = $section && now()->isWeekday()
+            ? ClassSchedule::with(['subject:id,name', 'teacher:id,name'])
+                ->where('section_id', $section->id)
+                ->where('day_of_week', now()->dayOfWeekIso)
+                ->orderBy('start_time')
+                ->get()
+            : collect();
 
         return view('student.dashboard', [
             'user'               => $user,
@@ -56,6 +69,8 @@ class StudentDashboardController extends Controller
             'subjects'           => $subjects,
             'subjectCount'       => $subjects->count(),
             'pendingAssignments' => $pendingAssignments,
+            'dueSoon'            => $dueSoon,
+            'todayClasses'       => $todayClasses,
             'unreadMessages'     => $user->receivedMessages()->where('is_read', false)->count(),
             'announcements'      => Announcement::published()
                                         ->forAudience('student')
