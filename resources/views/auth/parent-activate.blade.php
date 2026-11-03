@@ -71,6 +71,11 @@
         <li data-rule="match">Passwords match</li>
     </ul>
 
+    <label class="ac-check">
+        <input type="checkbox" name="terms" value="1" required @checked(old('terms')) @error('terms') aria-invalid="true" @enderror>
+        <span>I agree to the <a href="{{ route('terms') }}" target="_blank" rel="noopener">Terms of Use</a> and the <a href="{{ route('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+    </label>
+
     <button type="submit" class="ac-btn" data-busy="Creating account…">Create account</button>
 </form>
 @endsection

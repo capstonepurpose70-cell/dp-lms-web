@@ -22,8 +22,11 @@ class ParentActivationController extends Controller
     public function activate(Request $request, ParentLinkService $links, TrustedDeviceService $devices)
     {
         $request->merge(ParentLinkService::prepareInput($request->only('contact_number', 'email')));
-        $data   = $request->validate(ParentLinkService::activationRules(), ParentLinkService::messages());
+        // The Terms checkbox is asked on the web form only; the app's activation API is unchanged
+        $data   = $request->validate(ParentLinkService::activationRules() + ['terms' => 'accepted'],
+            ParentLinkService::messages() + ['terms.accepted' => 'Please agree to the Terms of Use and Privacy Policy to create your account.']);
         $parent = $links->activate($data);
+        $parent->forceFill(['terms_accepted_at' => now()])->save();
 
         if ($parent->status !== 'approved') {
             return redirect()->route('login')->with('success',

@@ -10,7 +10,7 @@
 @endsection
 
 @section('heading', 'Activate your student account')
-@section('desc', 'First time here? Enter your LRN and full name exactly as they appear on your school class list.')
+@section('desc', 'Use your LRN and full name as they appear on your school class list.')
 
 @section('content')
 <form method="POST" action="{{ route('activate.start') }}" data-once novalidate>
@@ -22,7 +22,6 @@
         <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
     </div>
 
-    <p class="ac-section">School record</p>
     <div class="ac-grid">
         <div class="ac-group">
             <label for="lrn">LRN</label>
@@ -30,7 +29,7 @@
                    value="{{ old('lrn') }}" inputmode="numeric" pattern="\d{12}" maxlength="12" data-digits
                    autocomplete="off" placeholder="12-digit LRN" aria-describedby="lrn-hint"
                    @error('lrn') aria-invalid="true" @enderror required autofocus>
-            <p class="ac-hint" id="lrn-hint">Found on your report card or school ID.</p>
+            <p class="ac-hint" id="lrn-hint">On your report card or school ID.</p>
         </div>
 
         <div class="ac-group">
@@ -38,7 +37,7 @@
             <input class="ac-input @error('birthdate') is-error @enderror" type="date" id="birthdate" name="birthdate"
                    value="{{ old('birthdate') }}" autocomplete="bday" max="{{ now()->subYears(8)->toDateString() }}"
                    aria-describedby="birthdate-hint" @error('birthdate') aria-invalid="true" @enderror required>
-            <p class="ac-hint" id="birthdate-hint">Your adviser will compare this with your enrollment form.</p>
+            <p class="ac-hint" id="birthdate-hint">As on your birth certificate.</p>
         </div>
 
         <div class="ac-group ac-span">
@@ -49,7 +48,6 @@
         </div>
     </div>
 
-    <p class="ac-section">Your account</p>
     <div class="ac-grid">
         <div class="ac-group ac-span">
             <label for="email">Email address</label>
@@ -57,7 +55,7 @@
                    value="{{ old('email') }}" autocomplete="email" autocapitalize="none" spellcheck="false"
                    placeholder="you@gmail.com" maxlength="254" aria-describedby="email-hint"
                    @error('email') aria-invalid="true" @enderror required>
-            <p class="ac-hint" id="email-hint">We'll send a 6-digit code here. Use an email you can open — it's also used for password resets.</p>
+            <p class="ac-hint" id="email-hint">We'll send a 6-digit code here. Use one you can open.</p>
         </div>
 
         <div class="ac-group">
@@ -87,6 +85,11 @@
         <li data-rule="symbol">At least one symbol</li>
         <li data-rule="match">Passwords match</li>
     </ul>
+
+    <label class="ac-check">
+        <input type="checkbox" name="terms" value="1" required @checked(old('terms')) @error('terms') aria-invalid="true" @enderror>
+        <span>I agree to the <a href="{{ route('terms') }}" target="_blank" rel="noopener">Terms of Use</a> and the <a href="{{ route('privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+    </label>
 
     <button type="submit" class="ac-btn" data-busy="Sending code…">Continue</button>
 </form>

@@ -27,7 +27,9 @@ class StudentActivationController extends Controller
             return back()->with('error', 'We could not process your request. Please try again.');
         }
 
-        $data   = $request->validate(StudentActivationService::rules(), StudentActivationService::messages());
+        // The Terms checkbox is asked on the web form only; the app's activation API is unchanged
+        $data   = $request->validate(StudentActivationService::rules() + ['terms' => 'accepted'],
+            StudentActivationService::messages() + ['terms.accepted' => 'Please agree to the Terms of Use and Privacy Policy to activate your account.']);
         $result = $activation->start($data);
 
         session([
@@ -57,6 +59,8 @@ class StudentActivationController extends Controller
         $user = $activation->verify((string) session('activation_token'), $request->code);
 
         session()->forget(['activation_token', 'activation_email']);
+        // Agreed on step 1 (the code is only sent after the Terms box is ticked)
+        $user->forceFill(['terms_accepted_at' => now()])->save();
 
         auth()->login($user);
         $request->session()->regenerate();

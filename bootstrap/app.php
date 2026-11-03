@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'approved'    => \App\Http\Middleware\ApprovedMiddleware::class,
         'session.otp' => \App\Http\Middleware\SessionOtpMiddleware::class,
         'force.password' => \App\Http\Middleware\ForcePasswordChange::class,
+        'terms'       => \App\Http\Middleware\EnsureTermsAccepted::class,
     ]);
 
     // Prepended so it wraps everything: prioritised middleware (auth, bindings) is sorted ahead of

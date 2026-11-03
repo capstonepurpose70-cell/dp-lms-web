@@ -1,911 +1,164 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <title>Login — DP-LMS</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+@extends('layouts.auth-card')
 
-    <!-- Google Fonts (same family as Forgot / Reset password, for a consistent brand) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+@section('title', 'Sign in')
+@section('heading', 'Welcome back')
+@section('desc', 'Sign in with your email, LRN or mobile number.')
 
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-@include('partials.gsap-fallback')
+@section('content')
+<style>
+    .lg-status { min-height: 18px; margin-top: 5px; font-size: 12.5px; color: var(--text-3); }
+    .lg-status.is-ok { color: var(--ok-dk); }
+    .lg-status.is-bad { color: var(--danger); }
+    .ac-input.is-valid { border-color: #86efac; }
+    .lg-error { display: none; margin-top: 5px; font-size: 12.5px; color: var(--danger); }
+    .lg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 0 18px; font-size: 13.5px; }
+    .lg-row label { display: flex; align-items: center; gap: 8px; color: var(--text-2); cursor: pointer; }
+    .lg-row input { width: 17px; height: 17px; accent-color: var(--accent); }
+    .lg-row a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    .lg-row a:hover { text-decoration: underline; }
+    .ac-btn.loading { pointer-events: none; }
+    .lg-links { display: grid; gap: 6px; }
+</style>
 
-    <style>
-        :root {
-            --green-500: #16a34a;
-            --green-600: #15803d;
-            --green-700: #166534;
-            --green-50:  #f0fdf4;
-            --green-100: #dcfce7;
-            --red-50:    #fef2f2;
-            --red-500:   #ef4444;
-            --text-dark: #0f172a;
-            --text-mid:  #334155;
-            --text-muted:#64748b;
-            --border:    #e2e8f0;
-            --surface:   #f4f7f9;
-        }
+@if(session('signed_out'))
+    <div class="ac-alert ac-alert-ok" role="status">You have been signed out.</div>
+@endif
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate @if(session('signed_out')) data-signed-out @endif>
+    @csrf
 
-        html { scroll-behavior: smooth; }
-
-        body {
-            min-height: 100vh;
-            font-family: 'DM Sans', system-ui, sans-serif;
-            display: flex;                 /* form panel is FIRST → sits on the LEFT */
-            background: var(--surface);
-            overflow-x: hidden;
-            opacity: 0;
-        }
-
-        /* ══════════════════════════════════════
-           FORM PANEL (LEFT)  — distinct card look
-        ══════════════════════════════════════ */
-        .form-panel {
-            flex: 1;
-            height: 100vh;
-            overflow-y: auto;
-            background: linear-gradient(165deg, #e6f4ec 0%, #eef3f6 55%, #eaf2ee 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            /* top clearance so the fixed navbar never covers the card */
-            padding: 96px 40px 40px 40px;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 468px;
-            background: #ffffff;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
-            padding: 42px 44px 36px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Slim brand accent bar on top of the card */
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--green-500), var(--green-700));
-        }
-
-        .form-header {
-            margin-bottom: 24px;
-            opacity: 0;
-            transform: translateY(12px);
-        }
-        .form-header .eyebrow {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--green-600);
-            margin-bottom: 8px;
-        }
-        .form-header h1 {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 33px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-            line-height: 1.1;
-        }
-        .form-header p {
-            font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        /* Alerts */
-        .server-alert {
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: 0;
-        }
-        .server-alert.success {
-            background: var(--green-50);
-            color: var(--green-700);
-            border-left: 3px solid var(--green-500);
-        }
-        .server-alert.error {
-            background: var(--red-50);
-            color: #991b1b;
-            border-left: 3px solid var(--red-500);
-        }
-
-        /* Honeypot (bot trap — never shown to humans) */
-        .hp-field {
-            position: absolute !important;
-            left: -9999px !important;
-            top: auto;
-            width: 1px; height: 1px;
-            overflow: hidden;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-            opacity: 0;
-            transform: translateY(8px);
-        }
-
-        label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-mid);
-            margin-bottom: 6px;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 11px 14px;
-            font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text-dark);
-            background: #fff;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input:focus {
-            border-color: var(--green-500);
-            box-shadow: 0 0 0 3px rgba(22,163,74,0.18);
-        }
-        input.is-error {
-            border-color: var(--red-500);
-            box-shadow: 0 0 0 3px rgba(239,68,68,0.08);
-        }
-        input.is-valid { border-color: var(--green-500); }
-
-        /* #b91c1c / green-700: the old #ef4444 / #16a34a were ~3.5:1 on white — too faint for small text */
-        .error-msg {
-            font-size: 12px;
-            color: #b91c1c;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .email-status {
-            font-size: 12px;
-            margin-top: 4px;
-            min-height: 15px;
-            transition: color 0.2s;
-        }
-        .email-status.is-ok  { color: var(--green-700); }
-        .email-status.is-bad { color: #b91c1c; }
-
-        /* Password */
-        .password-wrapper { position: relative; }
-        .password-wrapper input { padding-right: 48px; }
-        .toggle-pw {
-            position: absolute;
-            right: 3px; top: 50%;
-            transform: translateY(-50%);
-            width: 40px; height: 40px;           /* was a 17px hit area */
-            border-radius: 6px;
-            background: none; border: none;
-            cursor: pointer;
-            color: #64748b;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.2s;
-        }
-        .toggle-pw:hover { color: var(--green-600); }
-        .toggle-pw svg { width: 17px; height: 17px; }
-        .pw-hide { display: none; }
-
-        /* Remember + Forgot row */
-        .login-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin: -2px 0 6px;
-            opacity: 0;
-        }
-        .remember {
-            display: flex; align-items: center; gap: 8px;
-            min-height: 44px;
-            cursor: pointer;
-            margin: 0;
-            font-size: 12.5px; font-weight: 500;
-            color: var(--text-mid);
-            text-transform: none; letter-spacing: 0;
-        }
-        .remember input {
-            width: 15px; height: 15px;
-            accent-color: var(--green-500);
-            cursor: pointer;
-        }
-        .login-row a {
-            display: inline-flex; align-items: center; min-height: 44px;
-            font-size: 12.5px; color: var(--text-muted);
-            text-decoration: none; font-weight: 500;
-            transition: color 0.2s;
-            white-space: nowrap;
-        }
-        .login-row a:hover { color: var(--green-600); text-decoration: underline; }
-
-        /* Submit */
-        .btn-submit {
-            width: 100%;
-            background: var(--green-600);        /* white on green-500 was 3.3:1 */
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 13px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            letter-spacing: 0.4px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: background 0.2s, transform 0.15s, opacity 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 8px;
-            opacity: 0;
-        }
-        .btn-submit:hover:not(.loading) { background: var(--green-700); }
-        .btn-submit:active:not(.loading) { transform: scale(0.985); }
-
-        .btn-spinner {
-            display: none;
-            width: 18px; height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 0.8s linear infinite;
-            position: absolute;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .btn-submit.loading .btn-text,
-        .btn-submit.loading .btn-ico { opacity: 0; }
-        .btn-submit.loading .btn-spinner { display: block; }
-
-        /* Footer */
-        .card-footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 13px;
-            color: var(--text-muted);
-            opacity: 0;
-        }
-        .card-footer a {
-            color: var(--green-600);
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .card-footer a:hover { text-decoration: underline; }
-
-        .copyright {
-            text-align: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 18px;
-            opacity: 0;
-        }
-
-        /* ══════════════════════════════════════
-           IMAGE PANEL (RIGHT)
-        ══════════════════════════════════════ */
-        .image-panel {
-            position: relative;
-            width: 46%;
-            height: 100vh;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        @keyframes bgPan {
-            0%   { transform: scale(1.08) translate(0px, 0px); }
-            50%  { transform: scale(1.1) translate(15px, -8px); }
-            100% { transform: scale(1.08) translate(-8px, 10px); }
-        }
-        /* gradient flipped (200deg) so it mirrors register's 160deg */
-        .image-panel::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                200deg,
-                rgba(0,0,0,0.18) 0%,
-                rgba(0,0,0,0.45) 50%,
-                rgba(6,78,59,0.88) 100%
-            );
-            z-index: 1;
-        }
-        .image-panel::after {
-            content: '';
-            position: absolute;
-            inset: -20px;
-            background-image: url('{{ asset("images/bg.jpg") }}');
-            background-size: cover;
-            background-position: center;
-            z-index: 0;
-            animation: bgPan 22s ease-in-out infinite alternate;
-            will-change: transform;
-        }
-
-        #particles-canvas {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .ip-center {
-            position: absolute;
-            top: 50%;
-            left: 0; right: 0;
-            transform: translateY(-50%);
-            z-index: 3;
-            padding: 0 44px;
-            text-align: center;
-            opacity: 0;
-        }
-        .ip-logo {
-            width: 140px;
-            height: 140px;
-            object-fit: contain;
-            background: white;
-            border-radius: 50%;
-            padding: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.35);
-        }
-        .ip-verse {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 18px;
-            font-weight: 400;
-            font-style: italic;
-            color: #ffffff;
-            line-height: 1.7;
-            max-width: 360px;
-            margin: 0 auto 10px;
-        }
-        .ip-verse-ref {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #ffffff;
-        }
-        .ip-bottom {
-            position: absolute;
-            bottom: 48px;
-            left: 0; right: 0;
-            z-index: 3;
-            padding: 0 44px;
-            text-align: right;               /* mirrored: text aligned right */
-            opacity: 0;
-        }
-        .ip-welcome {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: var(--green-500);
-            margin-bottom: 10px;
-        }
-        .ip-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 50px;
-            font-weight: 700;
-            line-height: 1.05;
-            color: #fff;
-            text-shadow: 0 4px 32px rgba(0,0,0,0.6);
-            margin-bottom: 12px;
-        }
-        .ip-subtitle {
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 400;
-            color: rgba(255,255,255,0.65);
-            line-height: 1.6;
-        }
-        .ip-bar {
-            width: 40px;
-            height: 3px;
-            background: var(--green-500);
-            border-radius: 2px;
-            margin: 0 0 18px auto;           /* mirrored: bar on the right */
-        }
-
-        /* Responsive — image hidden, form card full width */
-        @media (max-width: 960px) {
-            .image-panel { display: none; }
-            .form-panel { width: 100%; padding: 84px 20px 28px; }
-            .login-card {
-                border: none;
-                box-shadow: none;
-                background: transparent;
-                padding: 0;
-                max-width: 468px;
-                overflow: visible;   /* padding 0 + hidden clipped the first letter ("STO.") */
-            }
-            .login-card::before { display: none; }
-        }
-
-        /* ══ Extra responsive polish (mobile) ══ */
-        @media (max-width: 960px) {
-            /* tamang taas sa mobile browsers (address-bar safe) */
-            .form-panel { height: auto; min-height: 100vh; min-height: 100svh; }
-        }
-        /* Phones: form starts under the navbar instead of mid-screen (no big empty gap,
-           and it doesn't jump when the keyboard opens) */
-        @media (max-width: 600px) {
-            .form-panel { justify-content: flex-start; }
-        }
-        @media (max-width: 480px) {
-            .form-panel { padding: 92px 16px 24px; }
-            .form-header h1 { font-size: 26px; }
-            .form-header .eyebrow { font-size: 10px; letter-spacing: 2px; }
-            /* 16px = no iOS zoom on focus; 46px = touch-friendly */
-            input[type="text"], input[type="email"], input[type="password"] {
-                font-size: 16px;
-                min-height: 46px;
-            }
-            .btn-submit { min-height: 48px; font-size: 15px; }
-        }
-        @media (max-width: 360px) {
-            .form-panel { padding: 88px 12px 20px; }
-            .form-header h1 { font-size: 23px; }
-        }
-        /* short screens (landscape phone): do not center, or the top gets cut off */
-        @media (max-height: 640px) and (max-width: 960px) {
-            .form-panel { justify-content: flex-start; }
-        }
-
-        :focus-visible { outline: 3px solid var(--green-600); outline-offset: 2px; }
-        /* text fields already show a green border + ring */
-        input[type="text"]:focus-visible,
-        input[type="email"]:focus-visible,
-        input[type="password"]:focus-visible { outline: none; }
-
-        /* Reduced motion: no entrance animation — show everything at once (the script skips GSAP too).
-           .ip-center keeps its centering transform. */
-        @media (prefers-reduced-motion: reduce) {
-            .image-panel::after { animation: none; }
-            body, .form-panel, .image-panel, .gsap-card, .ip-bottom, .form-header, .form-group,
-            .login-row, .btn-submit, .card-footer, .copyright,
-            .server-alert { opacity: 1 !important; transform: none !important; }
-            .ip-center { opacity: 1 !important; }
-        }
-    </style>
-
-    <noscript>
-        <style>
-            body { opacity: 1 !important; }
-            .ip-bottom, .form-header, .form-group,
-            .login-row, .btn-submit, .card-footer, .copyright,
-            .server-alert { opacity: 1 !important; transform: none !important; }
-            .ip-center { opacity: 1 !important; }
-        </style>
-    </noscript>
-</head>
-<body>
-@include('partials.auth-navbar')
-
-    {{-- ── FORM PANEL (LEFT) ── --}}
-    <div class="form-panel">
-        <div class="login-card gsap-card">
-
-            <div class="form-header gsap-form-header">
-                <p class="eyebrow">Sto. Domingo NHS</p>
-                <h1>Welcome back</h1>
-                <p>Sign in to continue to your portal.</p>
-            </div>
-
-            @if(session('success'))
-                <div class="server-alert success gsap-alert" role="status">
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if(session('signed_out'))
-                <div class="server-alert success gsap-alert" role="status">
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    You have been signed out.
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="server-alert error gsap-alert" role="alert">
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                    {{ session('error') }}
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate @if(session('signed_out')) data-signed-out @endif>
-                @csrf
-
-                {{-- Honeypot bot trap. Real users never see or fill this.
-                     IMPORTANT: also reject server-side when this field is non-empty. --}}
-                <div class="hp-field" aria-hidden="true">
-                    <label for="company">Company</label>
-                    <input type="text" name="company" id="company" tabindex="-1" autocomplete="off">
-                </div>
-
-                {{-- Email, LRN, or mobile --}}
-                <div class="form-group gsap-field">
-                    <label for="emailInput">Email, LRN, or Mobile Number</label>
-                    <input type="text" name="email" id="emailInput"
-                        value="{{ old('email') }}"
-                        placeholder="Email, 12-digit LRN, or 09XXXXXXXXX"
-                        autocomplete="username"
-                        autocapitalize="none"
-                        spellcheck="false"
-                        maxlength="254"
-                        class="{{ $errors->has('email') ? 'is-error' : '' }}"
-                        aria-describedby="emailStatus @error('email') emailError @enderror"
-                        @error('email') aria-invalid="true" @enderror
-                        required>
-                    <p class="email-status" id="emailStatus" aria-live="polite"></p>
-                    @error('email')<p class="error-msg" id="emailError">{{ $message }}</p>@enderror
-                </div>
-
-                {{-- Password --}}
-                <div class="form-group gsap-field">
-                    <label for="passwordInput">Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" name="password" id="passwordInput"
-                            placeholder="Enter your password"
-                            autocomplete="current-password"
-                            maxlength="100"
-                            class="{{ $errors->has('password') ? 'is-error' : '' }}"
-                            aria-describedby="passwordError @error('password') passwordServerError @enderror"
-                            @error('password') aria-invalid="true" @enderror
-                            required>
-                        <button type="button" class="toggle-pw" onclick="togglePw('passwordInput', this)"
-                                aria-label="Show password" aria-pressed="false" aria-controls="passwordInput">
-                            <svg class="pw-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            <svg class="pw-hide" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                        </button>
-                    </div>
-                    @error('password')<p class="error-msg" id="passwordServerError">{{ $message }}</p>@enderror
-                    <p class="error-msg" id="passwordError" role="alert" style="display:none;"></p>
-                </div>
-
-                {{-- Remember me + Forgot --}}
-                <div class="login-row gsap-field">
-                    <label class="remember">
-                        <input type="checkbox" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
-                        <span>Remember me</span>
-                    </label>
-                    <a href="{{ route('password.request') }}">Forgot your password?</a>
-                </div>
-
-                {{-- Submit --}}
-                <button type="submit" class="btn-submit gsap-btn" id="submitBtn">
-                    <svg class="btn-ico" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-                    </svg>
-                    <span class="btn-text">Sign in</span>
-                    <div class="btn-spinner"></div>
-                </button>
-            </form>
-
-            <div class="card-footer gsap-footer">
-                <div>Student, first time here? <a href="{{ route('activate') }}" onclick="slideTo(this, event)">Activate your account</a></div>
-                <div style="margin-top:6px;">Parent? <a href="{{ route('parent.activate') }}">Link with your child's code</a></div>
-            </div>
-
-            <p class="copyright gsap-footer">
-                &copy; {{ date('Y') }} Sto. Domingo National High School
-            </p>
-        </div>
+    {{-- Honeypot: people never see or fill this; the server rejects it when filled --}}
+    <div class="ac-hp" aria-hidden="true">
+        <label for="company">Company</label>
+        <input type="text" name="company" id="company" tabindex="-1" autocomplete="off">
     </div>
 
-    {{-- ── IMAGE PANEL (RIGHT) ── --}}
-    <div class="image-panel">
-        <canvas id="particles-canvas"></canvas>
-
-        <div class="ip-center gsap-ip-center">
-            <img src="{{ asset('images/logo.png') }}" alt="DP-LMS Logo" class="ip-logo" style="margin: 0 auto 20px; display: block;">
-            <p class="ip-verse">
-                "The fear of the LORD is the beginning of knowledge."
-            </p>
-            <p class="ip-verse-ref">— Proverbs 1:7</p>
-        </div>
-
-        <div class="ip-bottom gsap-ip-bottom">
-            <div class="ip-bar"></div>
-            <p class="ip-welcome">Digital Portal</p>
-            <p class="ip-title">DP-LMS</p>
-            <p class="ip-subtitle">
-                Sto. Domingo National High School<br>
-                Learning Management System
-            </p>
-        </div>
+    <div class="ac-group">
+        <label for="emailInput">Email, LRN or mobile number</label>
+        <input type="text" name="email" id="emailInput" value="{{ old('email') }}"
+               class="ac-input {{ $errors->has('email') ? 'is-error' : '' }}"
+               placeholder="you@gmail.com · 12-digit LRN · 09XXXXXXXXX"
+               autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254"
+               aria-describedby="emailStatus" @error('email') aria-invalid="true" @enderror required autofocus>
+        <p class="lg-status" id="emailStatus" aria-live="polite"></p>
     </div>
 
+    <div class="ac-group">
+        <label for="passwordInput">Password</label>
+        <div class="ac-pw">
+            <input type="password" name="password" id="passwordInput"
+                   class="ac-input {{ $errors->has('password') ? 'is-error' : '' }}"
+                   autocomplete="current-password" maxlength="100" aria-describedby="passwordError"
+                   @error('password') aria-invalid="true" @enderror required>
+            <button type="button" class="ac-pw-toggle" data-pw-toggle="passwordInput" aria-pressed="false">Show</button>
+        </div>
+        <p class="lg-error" id="passwordError" role="alert"></p>
+    </div>
+
+    <div class="lg-row">
+        <label><input type="checkbox" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}> Remember me</label>
+        <a href="{{ route('password.request') }}">Forgot your password?</a>
+    </div>
+
+    <button type="submit" class="ac-btn" id="submitBtn">Sign in</button>
+</form>
+@endsection
+
+@section('footer')
+    <div class="lg-links">
+        <span>Student, first time here? <a href="{{ route('activate') }}">Activate your account</a></span>
+        <span>Parent? <a href="{{ route('parent.activate') }}">Link with your child's code</a></span>
+    </div>
+@endsection
+
+@push('scripts')
 <script>
-const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* ─────────────────────────────────────────────
-   PARTICLES  (lightweight canvas dots)
-   Only while the photo panel is visible — on phones it is hidden and the
-   loop used to keep running every frame for nothing.
-───────────────────────────────────────────── */
-(function() {
-    const canvas = document.getElementById('particles-canvas');
-    if (!canvas || reduceMotion) return;
-    const ctx = canvas.getContext('2d');
-    let W = 0, H = 0, running = false, dots = [];
-
-    function start() {
-        W = canvas.width = canvas.offsetWidth;
-        H = canvas.height = canvas.offsetHeight;
-        if (running || !W) return;
-        if (!dots.length) {
-            dots = Array.from({ length: 38 }, () => ({
-                x: Math.random() * W,
-                y: Math.random() * H,
-                r: Math.random() * 1.6 + 0.4,
-                vx: (Math.random() - 0.5) * 0.25,
-                vy: (Math.random() - 0.5) * 0.25,
-                a: Math.random() * 0.4 + 0.15
-            }));
-        }
-        running = true;
-        draw();
-    }
-    function draw() {
-        if (!canvas.offsetWidth) { running = false; return; }   // panel hidden (narrow screen)
-        ctx.clearRect(0, 0, W, H);
-        dots.forEach(d => {
-            d.x += d.vx; d.y += d.vy;
-            if (d.x < 0) d.x = W; if (d.x > W) d.x = 0;
-            if (d.y < 0) d.y = H; if (d.y > H) d.y = 0;
-            ctx.beginPath();
-            ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,255,255,${d.a})`;
-            ctx.fill();
-        });
-        requestAnimationFrame(draw);
-    }
-    start();
-    window.addEventListener('resize', start);
-})();
-
-/* ─────────────────────────────────────────────
-   PASSWORD TOGGLE
-───────────────────────────────────────────── */
-function togglePw(id, btn) {
-    const input = document.getElementById(id);
-    const reveal = input.type === 'password';
-    input.type = reveal ? 'text' : 'password';
-    btn.querySelector('.pw-show').style.display = reveal ? 'none' : 'block';
-    btn.querySelector('.pw-hide').style.display = reveal ? 'block' : 'none';
-    btn.setAttribute('aria-pressed', reveal ? 'true' : 'false');
-}
-
-/* Status line under the login field: ok = true (green), false (red), null (cleared) */
-function setStatus(el, text, ok) {
-    el.textContent = text;
-    el.classList.toggle('is-ok', ok === true);
-    el.classList.toggle('is-bad', ok === false);
-}
-
-/* ─────────────────────────────────────────────
-   EMAIL / LRN LIVE VALIDATION (UX only)
-───────────────────────────────────────────── */
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LRN_RE   = /^\d{12}$/;
-/* PH mobile: 09XXXXXXXXX or +63 9XX… (spaces/dashes allowed) — same as App\Support\PhoneNumber */
-const isMobile = (v) => /^[\d\s\-+()]+$/.test(v) && /^(0|\+?63)9\d{9}$/.test(v.replace(/[\s\-()]/g, ''));
-/* Digits only = probably an LRN; show the 12-digit hint. */
-const DIGITS_ONLY_RE = /^\d+$/;
-
-document.getElementById('emailInput').addEventListener('input', function() {
-    const val = this.value.trim();
-    const status = document.getElementById('emailStatus');
-    if (!val) { setStatus(status, '', null); this.classList.remove('is-valid','is-error'); return; }
-
-    if (EMAIL_RE.test(val) || LRN_RE.test(val) || isMobile(val)) {
-        setStatus(status, LRN_RE.test(val) ? '✓ Valid LRN format'
-            : (isMobile(val) ? '✓ Valid mobile number' : '✓ Valid email format'), true);
-        this.classList.remove('is-error');
-        this.classList.add('is-valid');
-        this.removeAttribute('aria-invalid');
-    } else {
-        setStatus(status, DIGITS_ONLY_RE.test(val)
-            ? 'LRN = 12 digits; mobile = 09XXXXXXXXX'
-            : 'Enter a valid email, 12-digit LRN, or mobile number', false);
-        this.classList.remove('is-valid');
-    }
-});
-
-/* ─────────────────────────────────────────────
-   SUBMIT: honeypot + validation + loading
-   (Server is the real gate — this is UX only)
-───────────────────────────────────────────── */
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-    const email    = document.getElementById('emailInput');
+(function () {
+    const form = document.getElementById('loginForm');
+    const email = document.getElementById('emailInput');
     const password = document.getElementById('passwordInput');
-    const honeypot = document.getElementById('company');
-    const emailStatus = document.getElementById('emailStatus');
-    const passError   = document.getElementById('passwordError');
+    const status = document.getElementById('emailStatus');
+    const passError = document.getElementById('passwordError');
+    const btn = document.getElementById('submitBtn');
+    const label = btn.textContent;
 
-    // Bot trap: silently block if the hidden field was filled
-    if (honeypot && honeypot.value.trim() !== '') {
-        e.preventDefault();
-        return;
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const LRN_RE = /^\d{12}$/;
+    // PH mobile: 09XXXXXXXXX or +63 9XX… (spaces/dashes allowed) — same rule as App\Support\PhoneNumber
+    const isMobile = (v) => /^[\d\s\-+()]+$/.test(v) && /^(0|\+?63)9\d{9}$/.test(v.replace(/[\s\-()]/g, ''));
+    const valid = (v) => EMAIL_RE.test(v) || LRN_RE.test(v) || isMobile(v);
+
+    function setStatus(text, ok) {
+        status.textContent = text;
+        status.classList.toggle('is-ok', ok === true);
+        status.classList.toggle('is-bad', ok === false);
     }
 
-    let valid = true;
-    let firstInvalid = null;
+    // Live hint — the server is the real check
+    email.addEventListener('input', function () {
+        const v = email.value.trim();
+        email.classList.remove('is-error', 'is-valid');
+        if (!v) { setStatus('', null); return; }
+        if (valid(v)) {
+            setStatus(LRN_RE.test(v) ? 'Valid LRN' : (isMobile(v) ? 'Valid mobile number' : 'Valid email'), true);
+            email.classList.add('is-valid');
+            email.removeAttribute('aria-invalid');
+        } else {
+            setStatus(/^\d+$/.test(v) ? 'An LRN has 12 digits; a mobile number starts with 09.' : 'Enter an email, a 12-digit LRN or a mobile number.', false);
+        }
+    });
 
-    const emailVal = email.value.trim();
-    if (emailVal === '') {
-        email.classList.add('is-error'); email.classList.remove('is-valid');
-        email.setAttribute('aria-invalid', 'true');
-        setStatus(emailStatus, 'Email, LRN, or mobile number is required.', false);
-        valid = false; firstInvalid = firstInvalid || email;
-    } else if (!EMAIL_RE.test(emailVal) && !LRN_RE.test(emailVal) && !isMobile(emailVal)) {
-        email.classList.add('is-error'); email.classList.remove('is-valid');
-        email.setAttribute('aria-invalid', 'true');
-        setStatus(emailStatus, DIGITS_ONLY_RE.test(emailVal)
-            ? 'LRN = 12 digits; mobile = 09XXXXXXXXX.'
-            : 'Please enter a valid email, 12-digit LRN, or mobile number.', false);
-        valid = false; firstInvalid = firstInvalid || email;
-    }
-
-    if (password.value === '') {
-        password.classList.add('is-error');
-        password.setAttribute('aria-invalid', 'true');
-        passError.textContent = 'Password is required.';
-        passError.style.display = 'flex';
-        valid = false; firstInvalid = firstInvalid || password;
-    } else {
-        passError.style.display = 'none';
+    password.addEventListener('input', function () {
         password.classList.remove('is-error');
         password.removeAttribute('aria-invalid');
-    }
+        passError.style.display = 'none';
+    });
 
-    if (!valid) {
-        e.preventDefault();
-        if (firstInvalid) {
-            firstInvalid.focus();
-            firstInvalid.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    form.addEventListener('submit', function (e) {
+        if (document.getElementById('company').value.trim() !== '') { e.preventDefault(); return; }   // bot trap
+
+        let first = null;
+        const v = email.value.trim();
+        if (!v || !valid(v)) {
+            email.classList.add('is-error');
+            email.setAttribute('aria-invalid', 'true');
+            setStatus(v ? 'Enter an email, a 12-digit LRN or a mobile number.' : 'Enter your email, LRN or mobile number.', false);
+            first = email;
         }
-        return;
-    }
+        if (password.value === '') {
+            password.classList.add('is-error');
+            password.setAttribute('aria-invalid', 'true');
+            passError.textContent = 'Enter your password.';
+            passError.style.display = 'block';
+            first = first || password;
+        }
+        if (first) { e.preventDefault(); first.focus(); return; }
 
-    const btn = document.getElementById('submitBtn');
-    btn.classList.add('loading');
-    btn.disabled = true;
-});
-
-document.getElementById('passwordInput').addEventListener('input', function() {
-    const passError = document.getElementById('passwordError');
-    this.classList.remove('is-error');
-    this.removeAttribute('aria-invalid');
-    passError.style.display = 'none';
-});
-
-/* Empty form, password hidden again. form.reset() goes back to what the server rendered:
-   nothing after a logout, the typed LRN/email (never the password) after a failed sign-in. */
-function resetLoginForm() {
-    const pw = document.getElementById('passwordInput');
-    document.getElementById('loginForm').reset();
-    pw.value = '';
-    if (pw.type !== 'password') togglePw('passwordInput', document.querySelector('.toggle-pw'));
-    document.getElementById('emailInput').classList.remove('is-valid');
-    setStatus(document.getElementById('emailStatus'), '', null);
-    document.getElementById('passwordError').style.display = 'none';
-}
-
-/* Clear the form right after logout, and whenever Back/Forward brings this page back —
-   browsers put the typed LRN and password back into the fields (even shown as text).
-   A page restored from the back/forward cache also comes back exactly as it was left:
-   button still spinning (after Sign in) or both panels faded out (after slideTo). */
-window.addEventListener('pageshow', function(e) {
-    const nav = performance.getEntriesByType('navigation')[0];
-    if (e.persisted || (nav && nav.type === 'back_forward')
-        || document.getElementById('loginForm').hasAttribute('data-signed-out')) {
-        resetLoginForm();
-    }
-    if (!e.persisted) return;
-    const btn = document.getElementById('submitBtn');
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    if (window.gsap) gsap.set(['.form-panel', '.image-panel'], { x: 0, opacity: 1 });
-});
-
-/* ─────────────────────────────────────────────
-   GSAP PAGE ENTRANCE (mirrored: form ← left, image → right)
-   Skipped with reduced motion — the CSS shows everything at once.
-───────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', function() {
-    if (reduceMotion) return;
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-    tl.to('body', { opacity: 1, duration: 0.01 })
-      .fromTo('.image-panel',
-        { x: 60, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.9 }, 0)
-      .fromTo('.form-panel',
-        { x: -40, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.8 }, 0.15)
-      .fromTo('.gsap-card',
-        { y: 24, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6 }, 0.35)
-      .to('.gsap-ip-center',
-        { opacity: 1, duration: 0.8 }, 0.5)
-      .fromTo('.gsap-ip-bottom',
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.8 }, 0.6)
-      .to('.gsap-form-header',
-        { opacity: 1, y: 0, duration: 0.5 }, 0.55)
-      .to('.gsap-alert',
-        { opacity: 1, duration: 0.4 }, 0.65)
-      .to('.gsap-field',
-        { opacity: 1, y: 0, stagger: 0.08, duration: 0.4 }, 0.7)
-      .to('.gsap-btn',
-        { opacity: 1, duration: 0.4 }, 1.0)
-      .to('.gsap-footer',
-        { opacity: 1, stagger: 0.08, duration: 0.4 }, 1.1);
-
-    const btn = document.getElementById('submitBtn');
-    btn.addEventListener('mouseenter', () => {
-        if (!btn.classList.contains('loading')) gsap.to(btn, { y: -2, scale: 1.01, duration: 0.2 });
+        btn.classList.add('loading');
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
     });
-    btn.addEventListener('mouseleave', () => {
-        if (!btn.classList.contains('loading')) gsap.to(btn, { y: 0, scale: 1, duration: 0.2 });
-    });
-});
 
-/* ─────────────────────────────────────────────
-   SLIDE-OUT NAV (to Activate)
-───────────────────────────────────────────── */
-function slideTo(anchor, e) {
-    if (reduceMotion) return;          // plain link
-    e.preventDefault();
-    const url = anchor.href;
-    gsap.to(['.form-panel', '.image-panel'], {
-        x: -60,
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power3.in',
-        stagger: 0.05,
-        onComplete: function() { window.location.href = url; }
+    // After logout, and whenever Back/Forward brings this page back, start from an empty form with the
+    // password hidden — browsers otherwise put the typed LRN and password back. A page restored from the
+    // back/forward cache also gets its button back.
+    window.addEventListener('pageshow', function (e) {
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (e.persisted || (nav && nav.type === 'back_forward') || form.hasAttribute('data-signed-out')) {
+            form.reset();
+            password.value = '';
+            const toggle = document.querySelector('[data-pw-toggle="passwordInput"]');
+            if (password.type !== 'password' && toggle) toggle.click();
+            email.classList.remove('is-valid');
+            setStatus('', null);
+            passError.style.display = 'none';
+        }
+        if (e.persisted) {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            btn.textContent = label;
+        }
     });
-}
+})();
 </script>
-</body>
-</html>
+@endpush

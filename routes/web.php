@@ -49,6 +49,14 @@ Route::get('/', function () {
 // PUBLIC — About page (viewable by everyone, logged in or not)
 // ═════════════════════════════════════════════════════════════════════════════
 Route::view('/about', 'about')->name('about');
+Route::view('/terms', 'legal.terms')->name('terms');
+Route::view('/privacy', 'legal.privacy')->name('privacy');
+
+// Accounts made before the Terms existed agree once, on their next sign-in (EnsureTermsAccepted)
+Route::middleware(['auth', 'approved'])->group(function () {
+    Route::get('/terms/accept',  [App\Http\Controllers\Auth\TermsController::class, 'show'])->name('terms.accept');
+    Route::post('/terms/accept', [App\Http\Controllers\Auth\TermsController::class, 'accept'])->name('terms.accept.submit');
+});
 
 // ═════════════════════════════════════════════════════════════════════════════
 // GUEST ROUTES — login, register, forgot password
@@ -142,7 +150,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
 // ═════════════════════════════════════════════════════════════════════════════
 // STUDENT ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth', 'role:student', 'approved'])
+Route::middleware(['auth', 'role:student', 'approved', 'terms'])
     ->prefix('student')
     ->name('student.')
     ->group(function () {
@@ -190,7 +198,7 @@ Route::get('/subjects',  [StudentDashboardController::class, 'subjects'])->name(
 // ═════════════════════════════════════════════════════════════════════════════
 // TEACHER ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
+Route::middleware(['auth', 'role:teacher', 'approved', 'terms', 'force.password'])
     ->prefix('teacher')
     ->name('teacher.')
     ->group(function () {
@@ -242,7 +250,7 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'force.password'])
 // ═════════════════════════════════════════════════════════════════════════════
 // PARENT ROUTES
 // ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth', 'role:parent', 'approved'])
+Route::middleware(['auth', 'role:parent', 'approved', 'terms'])
     ->prefix('parent')
     ->name('parent.')
     ->group(function () {

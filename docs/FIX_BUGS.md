@@ -32,6 +32,7 @@ Each entry has: **Problem** (what the user sees) → **Where** (file and method)
 | [11](#batch-11--admin-part-1-sign-in-page) | Admin sign-in page, layout script error, live dashboard, sidebar icons, profile modal, activity chart, dark mode, LRN Excel import | — | 8 |
 | [12](#batch-12--system-flow-check) | Enrolled student could reopen the form, returned-form prefill, age from birthdate, phone tables, sections layout, game access message | — | 5 |
 | [13](#batch-13--student-portal-polish) | Student/parent shell matched to the teacher side, dashboard with today's classes and to-submit list, consistent page widths, subjects cards | — | 4 |
+| [14](#batch-14--sign-in-pages-and-terms) | Login / Activate / auth pages redesigned (photo + form, no top bar, no scroll), Terms of Use and Privacy Policy with required agreement | — | 3 |
 
 ---
 
@@ -861,6 +862,37 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
 - **Tested:** PHPUnit — student pages 5/20, journey 5/67, parent portal 7/40, approved-web 2/5, logout 5/44.
   Real browser: 10 student pages and 2 parent pages at 1366 and 390 px — no JS errors, no sideways scroll; sidebar
   white with 10 links and the right one active; dashboard "Now"/"Next" checked against the demo schedule.
+
+---
+
+## Batch 14 — Sign-in pages and Terms
+
+### B14-1 ✅ Login, Activate and the other sign-in pages
+- **Problem:** a top bar (Login / Activate / About) above every page, a 910-line login page with its own look
+  (particles, slide animations), and an activate form long enough to scroll on a laptop.
+- **Where:** `layouts/auth-card.blade.php` (also used by activation code, OTP, forgot / reset password and parent
+  pages), `auth/login.blade.php`, `auth/activate.blade.php`.
+- **Fix:** one shell for all of them — the school photo with logo, verse and DP-LMS name on the left, the form on
+  the right, no top bar; Terms / Privacy / About links at the bottom; a slim school header on phones. The login
+  now uses this layout with the same fields, honeypot, live email/LRN/mobile hint, submit guard and the
+  clear-after-logout / Back behaviour. Activate fits a laptop screen without scrolling (two-column rows, shorter
+  hints).
+
+### B14-2 ✅ Terms of Use and Privacy Policy, agreed before use
+- **Where:** new `legal/terms`, `legal/privacy`, `legal/accept`, `Auth/TermsController`,
+  `Middleware/EnsureTermsAccepted` (alias `terms` on the student, teacher and parent routes), migration
+  `users.terms_accepted_at`; checkbox on `auth/activate` and `auth/parent-activate`.
+- **Fix:** student and parent activation cannot continue until the box is ticked (checked on the server; the time
+  is stored). Accounts made earlier are sent to a "Before you continue" page on their next sign-in and cannot open
+  any page until they agree (or sign out). The Privacy Policy follows the Data Privacy Act of 2012 (RA 10173):
+  what is collected (including face photos), why, who sees it, protection, retention and rights. The app's
+  activation API is unchanged.
+
+- **Tested:** PHPUnit — new Terms gate suite 6 tests / 41 assertions (public pages; every role stopped until
+  agreeing, JSON gets 403; agreeing is recorded and returns to the page they wanted; web activation and parent
+  activation refused without the box, no code e-mailed; API activation unchanged); all other suites pass (the
+  page suites skip the gate, which has its own suite). Real browser: login, activate, privacy and accept pages at
+  1920 / 1366 / 390 — login and activate fit 1366 × 900 without scrolling, no JS errors.
 
 ---
 
