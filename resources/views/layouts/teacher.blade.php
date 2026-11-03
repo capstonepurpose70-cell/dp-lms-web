@@ -612,22 +612,7 @@
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
     <main class="main-content">
-        @if(session('success'))
-            <div class="flash flash-success">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ session('success') }}
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="flash flash-error">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ session('error') }}
-            </div>
-        @endif
+        @include('partials.flash')
         @yield('content')
     </main>
 </div>
@@ -727,6 +712,7 @@
                 range.selectNode(curMain);
                 curMain.appendChild(range.createContextualFragment(newMain.innerHTML));   // runs the page's scripts
                 syncActive();
+                applyFocusPage();
                 window.scrollTo(0, 0);
                 requestAnimationFrame(() => {
                     curMain.style.transition = 'opacity .18s ease';
@@ -773,20 +759,36 @@
     curMain.style.opacity = '1';
     }
 
-    /* Collapse toggle */
+    /* Collapse toggle. A page that needs the room (Messages) marks itself with data-focus-page:
+       on a wide screen the menu tucks away while it is open, without changing the saved choice,
+       and the menu button still brings it back. */
     const body = document.body;
     const CKEY = 'dp-lms-collapsed';
-    if (localStorage.getItem(CKEY) === '1') body.classList.add('collapsed');
-
     const IS_MOBILE = () => window.matchMedia('(max-width: 768px)').matches;
+    const savedCollapsed = () => localStorage.getItem(CKEY) === '1';
+    if (savedCollapsed()) body.classList.add('collapsed');
+
+    function applyFocusPage() {
+        const focus = !IS_MOBILE() && !!document.querySelector('.main-content [data-focus-page]');
+        if (focus === body.hasAttribute('data-focus')) return;
+        body.toggleAttribute('data-focus', focus);
+        requestAnimationFrame(() => body.classList.toggle('collapsed', focus || savedCollapsed()));   // next frame, so it slides
+    }
+    applyFocusPage();
+
     document.getElementById('collapseBtn').addEventListener('click', () => {
         if (IS_MOBILE()) {
             body.classList.toggle('mobile-open');
         } else {
             body.classList.toggle('collapsed');
-            localStorage.setItem(CKEY, body.classList.contains('collapsed') ? '1' : '0');
+            if (!body.hasAttribute('data-focus')) localStorage.setItem(CKEY, body.classList.contains('collapsed') ? '1' : '0');
         }
     });
+
+    // Unsent message drafts stay on this device only while signed in (school computers are shared)
+    document.querySelectorAll('form[action$="/logout"]').forEach(f => f.addEventListener('submit', () => {
+        try { Object.keys(localStorage).forEach(k => { if (k.indexOf('dp-draft:') === 0) localStorage.removeItem(k); }); } catch (e) {}
+    }));
     const _backdrop = document.getElementById('sidebarBackdrop');
     if (_backdrop) _backdrop.addEventListener('click', () => body.classList.remove('mobile-open'));
     const _snav = document.getElementById('sidebarNav');
@@ -928,5 +930,6 @@ setInterval(loadNotifs, 30000);
 window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 </script>
 <script src="{{ asset('js/scroll-cue.js') }}?v={{ filemtime(public_path('js/scroll-cue.js')) }}" defer></script>
+@include('partials.flash-toast')
 </body>
 </html>

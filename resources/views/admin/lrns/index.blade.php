@@ -2,7 +2,7 @@
 @section('title', 'LRN Master List')
 
 @section('content')
-@include('admin.lrns.partials.styles')
+@include('admin.partials.list-ui')
 
 @php
     $filters = array_filter(['q' => $q ?: null, 'grade' => $grade]);
@@ -80,7 +80,7 @@
                         <tr>
                             <th scope="col">LRN</th>
                             <th scope="col">Student name</th>
-                            <th scope="col">Grade</th>
+                            <th scope="col">Grade &amp; section</th>
                             <th scope="col">Status</th>
                             <th scope="col">Account</th>
                             <th scope="col"><span class="lm-sr">Actions</span></th>
@@ -91,7 +91,10 @@
                             <tr>
                                 <td class="lm-lrn" data-label="LRN">{{ $row->lrn }}</td>
                                 <td class="lm-name" data-label="Name">{{ $row->student_name ?: '—' }}</td>
-                                <td data-label="Grade">@if ($row->grade_level)<span class="lm-grade">{{ $row->grade_level }}</span>@else<span class="lm-muted">—</span>@endif</td>
+                                <td data-label="Grade">
+                                    @if ($row->grade_level)<span class="lm-grade">{{ $row->grade_level }}</span>@else<span class="lm-muted">—</span>@endif
+                                    @if ($row->section)<span class="lm-sec">{{ $row->section->name }}</span>@endif
+                                </td>
                                 <td data-label="Status">
                                     @if ($row->claimed_by)
                                         <span class="lm-status on">Activated</span>
@@ -179,6 +182,7 @@
                 <ul class="lm-steps">
                     <li>The file needs a header row with <b>LRN</b> and the <b>student name</b> (one name column, or last / first / middle).</li>
                     <li>You will see every row on the next page. Nothing is saved until you confirm.</li>
+                    <li>A <b>Section</b> column is optional (7-Gutierrez). Each student's enrollment form then goes straight to that adviser.</li>
                     <li>LRNs already on the list are reported and left unchanged.</li>
                 </ul>
             </div>
@@ -226,6 +230,15 @@
                         <option value="{{ $g }}" @selected($openSingle && old('grade_level') === $g)>Grade {{ $g }}</option>
                     @endforeach
                 </select>
+
+                <label class="lm-field" for="lmSection">Section <span>optional</span></label>
+                <select id="lmSection" name="section_id" class="lm-input @error('section_id', 'single') bad @enderror">
+                    <option value="">Not set — any adviser of the grade can take the form</option>
+                    @foreach ($sections as $s)
+                        <option value="{{ $s->id }}" data-grade="{{ $s->grade_level }}" @selected($openSingle && (string) old('section_id') === (string) $s->id)>{{ $s->grade_level }}-{{ $s->name }}</option>
+                    @endforeach
+                </select>
+                @error('section_id', 'single')<span class="lm-err">{{ $message }}</span>@else<p class="lm-help">The enrollment form goes straight to this section's adviser.</p>@enderror
             </div>
             <div class="lm-dialog-foot end">
                 <button type="button" class="lm-btn" data-close>Cancel</button>
@@ -321,6 +334,13 @@
         count.classList.toggle('ok', v.length === 12);
     }
     if (lrn && count) { lrn.addEventListener('input', digits); digits(); }
+
+    // Picking a section sets its grade
+    var sec = document.getElementById('lmSection'), gradeSel = document.getElementById('lmGrade');
+    if (sec && gradeSel) sec.addEventListener('change', function () {
+        var o = sec.options[sec.selectedIndex];
+        if (o && o.dataset.grade) gradeSel.value = o.dataset.grade;
+    });
 
     // File picker: show the chosen file, accept a dropped file, refuse other types right away
     var file = document.getElementById('lmFile'), drop = document.getElementById('lmDrop'), text = document.getElementById('lmDropText');

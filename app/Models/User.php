@@ -41,6 +41,7 @@ protected $fillable = [
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'terms_accepted_at' => 'datetime',
         'birthdate'         => 'date',
         'password'          => 'hashed',
         'otp_verified'      => 'boolean',

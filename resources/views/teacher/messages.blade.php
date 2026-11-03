@@ -48,6 +48,7 @@
     .msg-when { font-size: 12px; color: var(--text-3); flex-shrink: 0; }
     .msg-prev { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
     .msg-conv.unread .msg-name, .msg-conv.unread .msg-prev { color: var(--text-1); font-weight: 700; }
+    .msg-conv[data-draft] .msg-prev::before { content: 'Draft: '; color: #DC2626; font-weight: 700; }
     .msg-unread {
         min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; flex-shrink: 0;
         background: var(--accent); color: #fff; font-size: 11px; font-weight: 800;
@@ -127,7 +128,7 @@
     $initial = fn ($name) => mb_strtoupper(mb_substr($name ?? '?', 0, 1));
 @endphp
 
-<div class="msg-wrap" id="msgApp" data-base="{{ route('teacher.messages') }}"
+<div class="msg-wrap" id="msgApp" data-base="{{ route('teacher.messages') }}" data-me="{{ auth()->id() }}" data-focus-page
      style="@if($activeUser)--list-display:none;--thread-display:flex;@else--list-display:flex;--thread-display:none;@endif">
 
     <div class="tp-head">
@@ -288,6 +289,24 @@
             .then(html => new DOMParser().parseFromString(html, 'text/html'));
     }
 
+    // Drafts: what is typed stays per chat on this device until it is sent (cleared on sign-out by the layout)
+    const ME = app.dataset.me;
+    const draftKey = (id) => 'dp-draft:' + ME + ':' + id;
+    function draftGet(id) { try { return localStorage.getItem(draftKey(id)) || ''; } catch (e) { return ''; } }
+    function draftSet(id, text) {
+        if (!id) return;
+        try { text.trim() ? localStorage.setItem(draftKey(id), text) : localStorage.removeItem(draftKey(id)); } catch (e) {}
+    }
+    function markDrafts() {
+        const cur = activeId();
+        document.querySelectorAll('#msgList .msg-conv').forEach(a => a.toggleAttribute('data-draft', a.dataset.id !== cur && draftGet(a.dataset.id) !== ''));
+    }
+    function restoreDraft() {
+        const t = $('msgText');
+        if (t && !t.value) { t.value = draftGet(activeId()); fit(t); }
+        markDrafts();
+    }
+
     function applySearch() {
         const q = ($('msgSearch')?.value || '').trim().toLowerCase();
         document.querySelectorAll('#msgList .msg-conv').forEach(a => { a.hidden = q !== '' && !a.dataset.name.includes(q); });
@@ -305,6 +324,7 @@
             $('msgThread').innerHTML = next.querySelector('#msgThread').innerHTML;
             if (push) history.pushState(null, '', url);
             applySearch();
+            restoreDraft();
             toBottom();
             const t = $('msgText');
             if (t && window.matchMedia('(min-width: 769px)').matches) t.focus();
@@ -319,7 +339,7 @@
         fetchPage(location.href).then(doc => {
             if (my !== seq || gone()) return;   // the teacher switched chats meanwhile
             const list = doc.getElementById('msgList');
-            if (list && list.innerHTML !== $('msgList').innerHTML) { $('msgList').innerHTML = list.innerHTML; applySearch(); }
+            if (list && list.innerHTML !== $('msgList').innerHTML) { $('msgList').innerHTML = list.innerHTML; applySearch(); markDrafts(); }
             const body = doc.getElementById('msgBody'), cur = $('msgBody');
             if (body && cur && body.innerHTML !== cur.innerHTML) {
                 const stick = atBottom(cur);
@@ -331,7 +351,7 @@
 
     // Send without reloading (same form post: CSRF, bad-word filter and validation stay on the server)
     function send(form) {
-        const t = $('msgText'), btn = $('msgSend');
+        const t = $('msgText'), btn = $('msgSend'), chat = activeId();
         if (!t.value.trim() || busy) return;
         busy = true; btn.disabled = true;
         const my = ++seq;
@@ -346,8 +366,9 @@
                 const body = next.querySelector('#msgBody');
                 if (body) $('msgBody').innerHTML = body.innerHTML;
                 applySearch();
+                markDrafts();
             }
-            if (!$('msgError').textContent) { t.value = ''; fit(t); }
+            if (!$('msgError').textContent) { t.value = ''; fit(t); draftSet(chat, ''); }
             toBottom();
         }).catch(e => {
             if (e.message !== 'left') $('msgError').textContent = 'The message was not sent. Check your connection and try again.';
@@ -377,7 +398,7 @@
         }
     });
     app.addEventListener('input', e => {
-        if (e.target.id === 'msgText') fit(e.target);
+        if (e.target.id === 'msgText') { fit(e.target); draftSet(activeId(), e.target.value); }
         if (e.target.id === 'msgSearch') applySearch();
     });
     app.addEventListener('change', e => {
@@ -387,6 +408,7 @@
         }
     });
 
+    restoreDraft();
     toBottom();
     if ($('msgText')) fit($('msgText'));
     timer = setInterval(refresh, POLL_MS);

@@ -11,6 +11,7 @@ use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ClassScheduleController extends Controller
@@ -54,21 +55,41 @@ class ClassScheduleController extends Controller
         ));
     }
 
+    /** Add a class on one or more days (days[]), all or nothing: one clash and none are saved. */
     public function store(Request $request)
     {
-        $data = $this->validated($request);
-        $this->guardAgainstConflicts($data);
+        $request->validate([
+            'days'   => 'nullable|array|min:1|max:5',
+            'days.*' => 'integer|between:1,5|distinct',
+        ], ['days.min' => 'Choose at least one day.', 'days.*.between' => 'Classes can only be scheduled Monday to Friday.']);
 
-        $schedule = ClassSchedule::create($data);
-        $this->grantLoad($schedule);
+        $days = $request->filled('days')
+            ? array_values(array_unique(array_map('intval', $request->input('days'))))
+            : [(int) $request->input('day_of_week')];
+        sort($days);
+        $base = $this->validated($request->merge(['day_of_week' => $days[0]]));
 
-        AuditLogService::log(
-            'Created class schedule',
-            'Schedules',
-            $this->describe($schedule)
-        );
+        $created = DB::transaction(function () use ($days, $base) {
+            $rows = [];
+            foreach ($days as $day) {
+                $data = ['day_of_week' => $day] + $base;
+                $this->guardAgainstConflicts($data);
+                $rows[] = ClassSchedule::create($data);
+            }
 
-        return back()->with('success', 'Schedule added.');
+            return $rows;
+        });
+        $this->grantLoad($created[0]);
+
+        foreach ($created as $schedule) {
+            AuditLogService::log('Created class schedule', 'Schedules', $this->describe($schedule));
+        }
+
+        $dayNames = implode(', ', array_map(fn ($d) => substr(ClassSchedule::DAYS[$d], 0, 3), $days));
+
+        return back()
+            ->with('success', ($created[0]->subject?->name ?? 'Class') . " added on {$dayNames}.")
+            ->with('sch_last', ['days' => $days, 'end' => substr((string) $base['end_time'], 0, 5)]);
     }
 
     public function update(Request $request, ClassSchedule $schedule)
@@ -176,8 +197,8 @@ class ClassScheduleController extends Controller
             }
         }
 
-        $data['room']        = $data['room'] !== null ? trim($data['room']) : null;
-        $data['room']        = $data['room'] === '' ? null : $data['room'];
+        $room                = trim((string) ($data['room'] ?? ''));   // the field may be left out entirely
+        $data['room']        = $room === '' ? null : $room;
         $data['school_year'] = $section->school_year
             ?? optional(SchoolYear::current())->label
             ?? '2026-2027';

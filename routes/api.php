@@ -16,6 +16,11 @@ Route::post('/activate/resend', [App\Http\Controllers\Api\StudentActivationContr
 Route::post('/forgot-password',       [App\Http\Controllers\Api\AuthController::class, 'forgotPassword'])->middleware('throttle:10,1');
 Route::post('/forgot-password/reset', [App\Http\Controllers\Api\AuthController::class, 'resetPassword'])->middleware('throttle:20,1');
 
+// ── Public: Teacher activation (employee ID + name from the Faculty Master List + email code) ──
+Route::post('/teacher/activate',        [App\Http\Controllers\Api\TeacherActivationController::class, 'start'])->middleware('throttle:20,1');
+Route::post('/teacher/activate/verify', [App\Http\Controllers\Api\TeacherActivationController::class, 'verify'])->middleware('throttle:20,1');
+Route::post('/teacher/activate/resend', [App\Http\Controllers\Api\TeacherActivationController::class, 'resend'])->middleware('throttle:5,10');
+
 // ── Public: Parent activation / recovery (code from the child's account) ──
 Route::middleware('throttle:30,1')->group(function () {
     Route::post('/parent/activate', [App\Http\Controllers\Api\ParentLinkController::class, 'activate']);
@@ -27,6 +32,9 @@ Route::middleware('throttle:30,1')->group(function () {
 Route::middleware(['auth:sanctum', 'approved'])->group(function () {
 
     Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+    // One-time Terms of Use / Privacy Policy agreement — same as the web's "Before you continue"
+    Route::get('/terms',         [App\Http\Controllers\Api\TermsController::class, 'show']);
+    Route::post('/terms/accept', [App\Http\Controllers\Api\TermsController::class, 'accept']);
     Route::get('/user',    fn(Request $r) => $r->user());
 
     // ── In-app notifications (every role) — e.g. "Juan arrived at school" ──

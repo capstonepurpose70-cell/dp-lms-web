@@ -13,8 +13,9 @@ use Illuminate\Http\Request;
  * Enrollment review — ADVISER-driven (DepEd setup, no HR/Faculty).
  *
  * A teacher assigned as a section's ADVISER reviews the enrollment requests.
- * New students have no section yet, so every adviser sees the "unassigned"
- * pool; on approval the student is placed in the adviser's section.
+ * A student listed in a section on the LRN Master List goes straight to that
+ * section's adviser; the rest wait in their grade's pool, which every adviser
+ * of the grade sees. On approval the student is placed in the adviser's section.
  */
 class EnrollmentController extends Controller
 {
@@ -37,11 +38,11 @@ class EnrollmentController extends Controller
         $myGrades = Section::whereIn('id', $mySectionIds)->pluck('grade_level')->unique()->all();
 
         $enrollments = EnrollmentRequest::with('student')
-            ->when($tab === 'pending', function ($q) use ($myGrades) {
+            ->when($tab === 'pending', function ($q) use ($myGrades, $mySectionIds) {
                 $q->where('status', 'pending');
                 // Only advisers review (the principal's rule). No advisory class =
                 // no requests listed, since they could not open them anyway.
-                $q->whereIn('grade_level', $myGrades ?: ['__none__']);
+                EnrollmentService::adviserQueue($q, $mySectionIds, $myGrades);
             })
             ->when($tab === 'approved', fn($q) =>
                 $q->where('status', 'approved')->where('reviewed_by', auth()->id()))
@@ -59,9 +60,7 @@ class EnrollmentController extends Controller
             ->withQueryString();
 
         $counts = [
-            'pending'  => EnrollmentRequest::where('status', 'pending')
-                            ->whereIn('grade_level', $myGrades ?: ['__none__'])
-                            ->count(),
+            'pending'  => EnrollmentService::adviserQueue(EnrollmentRequest::where('status', 'pending'), $mySectionIds, $myGrades)->count(),
             'approved' => EnrollmentRequest::where('status', 'approved')->where('reviewed_by', auth()->id())->count(),
             'rejected' => EnrollmentRequest::where('status', 'rejected')->where('reviewed_by', auth()->id())->count(),
         ];
@@ -79,9 +78,17 @@ class EnrollmentController extends Controller
      */
     private function authorizeReview(EnrollmentRequest $enrollment): void
     {
-        $myGrades = Section::whereIn('id', $this->myAdvisorySectionIds())->pluck('grade_level')
+        $mySectionIds = $this->myAdvisorySectionIds();
+        $myGrades = Section::whereIn('id', $mySectionIds)->pluck('grade_level')
             ->map(fn ($g) => (string) $g)->all();
         abort_if(empty($myGrades), 403, 'Only section advisers can review enrollments.');
+
+        // Listed in a section: only that section's adviser
+        if ($listed = EnrollmentService::listedSection($enrollment->student)) {
+            abort_unless(in_array($listed->id, $mySectionIds), 403, "This form goes to the adviser of {$listed->name}.");
+
+            return;
+        }
 
         $requestGrade = (string) $enrollment->grade_level;
         abort_if(
@@ -118,6 +125,7 @@ class EnrollmentController extends Controller
     // ── APPROVE — place the student in a section + email ─────────────────────
     public function approve(Request $request, EnrollmentRequest $enrollment, EnrollmentService $enrollments)
     {
+        $this->authorizeReview($enrollment);
         $data = $request->validate([
             'section_id' => 'required|exists:sections,id',
         ]);

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\FaceVerificationController;
 use App\Http\Controllers\Admin\LrnController;
+use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Teacher\EnrollmentController as TeacherEnrollmentController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\ClassScheduleController;
@@ -68,6 +69,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/login',    [LoginController::class,    'submit'])->name('login.submit');
     // No public registration — old links go to activation
     Route::redirect('/register', '/activate', 301);
+
+    // Teacher activation (first time): employee ID + name from the Faculty Master List + email code
+    Route::get('/activate/teacher',         [App\Http\Controllers\Auth\TeacherActivationController::class, 'show'])->name('teacher.activate');
+    Route::post('/activate/teacher',        [App\Http\Controllers\Auth\TeacherActivationController::class, 'start'])
+        ->middleware('throttle:20,1')->name('teacher.activate.start');
+    Route::get('/activate/teacher/verify',  [App\Http\Controllers\Auth\TeacherActivationController::class, 'showVerify'])->name('teacher.activate.verify');
+    Route::post('/activate/teacher/verify', [App\Http\Controllers\Auth\TeacherActivationController::class, 'verify'])
+        ->middleware('throttle:20,1')->name('teacher.activate.verify.submit');
+    Route::post('/activate/teacher/resend', [App\Http\Controllers\Auth\TeacherActivationController::class, 'resend'])
+        ->middleware('throttle:5,10')->name('teacher.activate.resend');
 
     // Student activation (first time): LRN + name + email code
     Route::get('/activate',         [StudentActivationController::class, 'show'])->name('activate');
@@ -323,6 +334,19 @@ Route::patch('/profile/update-password',
             Route::post('/',         [LrnController::class, 'confirm'])->name('lrns.import.confirm');
             Route::delete('/',       [LrnController::class, 'cancel'])->name('lrns.import.cancel');
             Route::get('/fix.xlsx',  [LrnController::class, 'problems'])->name('lrns.import.problems');
+        });
+
+        // ── Faculty Master List (teachers activate with employee ID + name) ──
+        Route::get('/faculty',              [FacultyController::class, 'index'])->name('faculty.index');
+        Route::post('/faculty',             [FacultyController::class, 'store'])->name('faculty.store');
+        Route::delete('/faculty/{faculty}', [FacultyController::class, 'destroy'])->whereNumber('faculty')->name('faculty.destroy');
+        Route::get('/faculty/template',     [FacultyController::class, 'template'])->name('faculty.template');
+        Route::post('/faculty/import',      [FacultyController::class, 'import'])->middleware('throttle:10,1')->name('faculty.import');
+        Route::prefix('/faculty/import/{token}')->where(['token' => '[A-Za-z0-9]{32}'])->group(function () {
+            Route::get('/',         [FacultyController::class, 'preview'])->name('faculty.import.show');
+            Route::post('/',        [FacultyController::class, 'confirm'])->name('faculty.import.confirm');
+            Route::delete('/',      [FacultyController::class, 'cancel'])->name('faculty.import.cancel');
+            Route::get('/fix.xlsx', [FacultyController::class, 'problems'])->name('faculty.import.problems');
         });
 
         // ── Sections & Advisers ─────────────────────────

@@ -1100,6 +1100,14 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                 <span class="nav-link-label">LRN Master List</span>
             </a>
 
+            <a href="{{ route('admin.faculty.index') }}"
+               class="nav-link {{ request()->routeIs('admin.faculty.*') ? 'active' : '' }}"
+               data-tooltip="Faculty Master List"
+               data-barba-prevent="self">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+                <span class="nav-link-label">Faculty Master List</span>
+            </a>
+
             <a href="{{ route('admin.sections.index') }}"
                class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}"
                data-tooltip="Sections & Advisers"
@@ -1237,14 +1245,7 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
          MAIN CONTENT
     ════════════════════════════════ --}}
     <main class="main-content" id="mainContent">
-        @if(session('success'))
-            <div class="alert-success" id="appToast" role="alert">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ session('success') }}
-            </div>
-        @endif
+        @include('partials.flash')
 
         @yield('content')
     </main>
@@ -2160,18 +2161,6 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
 
 <script>
 (function () {
-    var t = document.getElementById('appToast');
-    if (!t) return;
-    requestAnimationFrame(function () { t.classList.add('show'); });
-    setTimeout(function () {
-        t.classList.remove('show');
-        setTimeout(function () { if (t && t.parentNode) t.parentNode.removeChild(t); }, 480);
-    }, 3000);
-})();
-</script>
-
-<script>
-(function () {
     var btn = document.getElementById('darkToggle');
     if (!btn) return;
     btn.addEventListener('click', function () {
@@ -2191,5 +2180,6 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
 window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 </script>
 <script src="{{ asset('js/scroll-cue.js') }}?v={{ filemtime(public_path('js/scroll-cue.js')) }}" defer></script>
+@include('partials.flash-toast')
 </body>
 </html>

@@ -12,11 +12,14 @@ use Illuminate\Support\Facades\DB;
  * from LIS — no reformatting needed.
  *
  * analyze() finds the header row (a cell named "LRN" plus the student-name column, or separate last / first /
- * middle name columns), checks every row and labels it:
+ * middle name columns; grade and section columns are optional), checks every row and labels it:
  *   ready  — will be added
  *   exists — the LRN is already on the list; it is reported and never changed
  *   fix    — something is wrong with the row (the note says what)
  * Rows with no LRN and no student name (totals, notes, blank lines) are left out and only counted.
+ *
+ * A row's section ("7-Gutierrez", or just "Gutierrez" when the row has a grade) must be an active section:
+ * the student's enrollment form then goes straight to that section's adviser.
  *
  * commit() adds the ready rows in one transaction: all of them or none.
  */
@@ -29,6 +32,8 @@ class LrnImportService
     private const NAME_PATTERN = "/^[\pL\pM\s.,'\-]+$/u";
     // Name columns in SF1 that are not the learner's own name
     private const NOT_LEARNER = ['FATHER', 'MOTHER', 'GUARDIAN', 'PARENT', 'TEACHER', 'ADVISER', 'SCHOOL', 'PRINCIPAL', 'HEAD'];
+
+    public function __construct(private TeacherRosterService $roster) {}
 
     /**
      * @param list<array{name: string, rows: array<int, array<int, string>>}> $sheets from SpreadsheetReader
@@ -53,6 +58,7 @@ class LrnImportService
 
         $rows = [];
         $seen = [];
+        $sections = [];   // section text → Section|null, looked up once each
         $ignored = 0;
 
         foreach ($sheet['rows'] as $rowNo => $cells) {
@@ -62,6 +68,7 @@ class LrnImportService
             $lrnRaw = $cells[$layout['lrn']] ?? '';
             $name = $this->name($cells, $layout);
             $gradeRaw = $layout['grade'] !== null ? ($cells[$layout['grade']] ?? '') : '';
+            $sectionRaw = $layout['section'] !== null ? trim((string) preg_replace('/\s+/u', ' ', $cells[$layout['section']] ?? '')) : '';
 
             // Totals, notes and blank lines: no LRN and nothing that reads like a person's name
             if ($lrnRaw === '' && !$this->looksLikeName($name)) {
@@ -72,7 +79,7 @@ class LrnImportService
                 throw new UnreadableSpreadsheet('The file has more than ' . number_format(self::MAX_ROWS) . ' students. Split it into smaller files (for example one per grade).');
             }
 
-            $row = ['row' => $rowNo, 'lrn' => $lrnRaw, 'name' => $name, 'grade' => null, 'status' => 'fix', 'note' => ''];
+            $row = ['row' => $rowNo, 'lrn' => $lrnRaw, 'name' => $name, 'grade' => null, 'section' => $sectionRaw, 'section_id' => null, 'status' => 'fix', 'note' => ''];
             [$lrn, $problem] = $this->lrn($lrnRaw);
             if ($problem === null) {
                 $row['lrn'] = $lrn;
@@ -80,6 +87,9 @@ class LrnImportService
             }
             if ($problem === null) {
                 [$row['grade'], $problem] = $this->grade($gradeRaw, $gradeForAll);
+            }
+            if ($problem === null && $sectionRaw !== '') {
+                [$row['section_id'], $row['grade'], $problem] = $this->section($sectionRaw, $row['grade'], $sections);
             }
             if ($problem === null && isset($seen[$lrn])) {
                 $problem = "Same LRN as row {$seen[$lrn]}.";
@@ -123,6 +133,7 @@ class LrnImportService
                     'lrn'          => $r['lrn'],
                     'student_name' => $r['name'],
                     'grade_level'  => $r['grade'],
+                    'section_id'   => $r['section_id'] ?? null,
                     'created_at'   => $now,
                     'updated_at'   => $now,
                 ], $chunk));
@@ -163,7 +174,7 @@ class LrnImportService
                 $dataFrom = $rowNo + 1;
             }
 
-            $layout = ['lrn' => $lrnCol, 'name' => null, 'last' => null, 'first' => null, 'middle' => null, 'grade' => null];
+            $layout = ['lrn' => $lrnCol, 'name' => null, 'last' => null, 'first' => null, 'middle' => null, 'grade' => null, 'section' => null];
             foreach ($header as $c => $text) {
                 if ($c === $lrnCol) {
                     continue;
@@ -181,6 +192,9 @@ class LrnImportService
                     $layout['first'] = $c;
                 } elseif ($layout['middle'] === null && preg_match('/^MIDDLE(NAME|INITIAL)?$|^MI$/', $k)) {
                     $layout['middle'] = $c;
+                } elseif ($layout['section'] === null && preg_match('/SECTION|^ADVISORY/', $k)) {
+                    // Before the grade check: "Grade/Section" and "Year & Section" are section columns
+                    $layout['section'] = $c;
                 } elseif ($layout['grade'] === null && preg_match('/^(GRADE|YEARLEVEL)/', $k)) {
                     $layout['grade'] = $c;
                 }
@@ -198,6 +212,9 @@ class LrnImportService
             }
             if ($layout['grade'] !== null) {
                 $labels['Grade'] = $this->label($header[$layout['grade']], $layout['grade']);
+            }
+            if ($layout['section'] !== null) {
+                $labels['Section'] = $this->label($header[$layout['section']], $layout['section']);
             }
 
             return $layout + ['header' => $rowNo, 'dataFrom' => $dataFrom, 'labels' => $labels];
@@ -301,6 +318,27 @@ class LrnImportService
         }
 
         return [null, "Grade \"{$raw}\" is not 7 to 12."];
+    }
+
+    /**
+     * "7-Gutierrez", "Grade 8 - Tuvera", or "Gutierrez" with the row's grade → an active section.
+     * @return array{0: ?int, 1: ?string, 2: ?string} [section id, grade, problem]
+     */
+    private function section(string $raw, ?string $grade, array &$cache): array
+    {
+        if (!array_key_exists($raw, $cache)) {
+            $cache[$raw] = $this->roster->findSection($raw) ?? ($grade ? $this->roster->findSection("{$grade}-{$raw}") : null);
+        }
+        $section = $cache[$raw];
+
+        if (!$section) {
+            return [null, $grade, "No active section \"{$raw}\". Add it under Sections & Advisers first, or write it as grade-section (7-Gutierrez)."];
+        }
+        if ($grade !== null && $grade !== (string) $section->grade_level) {
+            return [null, $grade, "Section {$section->name} is Grade {$section->grade_level}, but this row says Grade {$grade}."];
+        }
+
+        return [$section->id, (string) $section->grade_level, null];
     }
 
     /** Rows whose LRN is already on the list become "exists" (never changed). */

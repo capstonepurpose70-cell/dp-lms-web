@@ -31,7 +31,8 @@
 | 2 | `FLUTTER_PROMPT_PARENT_ARRIVAL.md` | **Core feature.** FCM setup, token register/unregister, the "child arrived at school" push, foreground display, tap handling, notification inbox, arrival history. |
 | 3 | `FLUTTER_PROMPT_CLASS_ATTENDANCE.md` | Teacher opens class attendance, students enter the 4-digit code, parents are notified. Reuses the FCM setup from #2. |
 | 4 | `FLUTTER_PROMPT_FACE_KIOSK_QR.md` | Teacher (adviser) shows a one-time QR on the phone; the student holds it up to the Raspberry Pi kiosk to register their face. Same as the website. |
-| 5 | `IOT_ARRIVAL_NOTIFICATIONS.md` | Reference: the full Raspberry Pi → server → parent flow, when no push is sent, and how to test end to end without the gate camera (§4). |
+| 5 | `FLUTTER_PROMPT_TERMS_TEACHER_ENROLLMENT.md` | Terms of Use screen for every role, teacher self-activation with the employee ID, enrollment states from the dashboard, chat drafts, 3-second messages. Same steps as the website. |
+| 6 | `IOT_ARRIVAL_NOTIFICATIONS.md` | Reference: the full Raspberry Pi → server → parent flow, when no push is sent, and how to test end to end without the gate camera (§4). |
 
 ---
 

@@ -197,12 +197,7 @@
                 <h1 class="ac-heading">@yield('heading')</h1>
                 <p class="ac-desc">@yield('desc')</p>
 
-                @if(session('success'))
-                    <div class="ac-alert ac-alert-ok" role="status">{{ session('success') }}</div>
-                @endif
-                @if(session('error'))
-                    <div class="ac-alert ac-alert-err" role="alert">{{ session('error') }}</div>
-                @endif
+                @include('partials.flash')
                 @if($errors->any())
                     <div class="ac-alert ac-alert-err" role="alert">
                         @if($errors->count() === 1)
@@ -328,5 +323,6 @@
         });
     });
 </script>
+@include('partials.flash-toast')
 </body>
 </html>

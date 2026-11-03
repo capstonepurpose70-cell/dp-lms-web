@@ -1,4 +1,4 @@
-{{-- Shared by the LRN Master List and the import preview. Layout tokens only, so dark mode follows. --}}
+{{-- Shared list-page UI for admin pages (LRN Master List, import preview, Sections): header, summary, tabs, table, dialogs. Layout tokens only, so dark mode follows. --}}
 <style>
     .lm { max-width: 1180px; margin: 0 auto; --lm-line: var(--border-default); --lm-blue: #1D4ED8; }
     .lm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -84,6 +84,7 @@
     .lm-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .8; }
     .lm-status.on { background: #DCFCE7; color: #166534; }
     [data-theme="dark"] .lm-status.on { background: rgba(22,163,74,.16); color: #86EFAC; }
+    .lm-sec { margin-left: 6px; font-size: 12.5px; font-weight: 600; color: var(--slate-600); }
     .lm-acct { display: block; font-weight: 600; color: var(--slate-900); }
     .lm-email { display: block; margin-top: 1px; font-size: 12.5px; color: var(--slate-500); }
     .lm-act { width: 1%; text-align: right; }

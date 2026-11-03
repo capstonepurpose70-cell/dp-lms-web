@@ -2,6 +2,7 @@
 @section('title', 'Class Schedules')
 
 @section('content')
+@include('admin.partials.list-ui')
 @php
     $days = \App\Models\ClassSchedule::DAYS;
 
@@ -23,6 +24,15 @@
     // Restore edit mode after a failed update (validation error)
     $editingId = (int) old('_editing');
     $editing   = $editingId ? $all->firstWhere('id', $editingId) : null;
+
+    // Add mode: the days and times to start from. After a save it continues where the last class ended.
+    $last = session('sch_last');
+    $pickedDays = array_map('intval', (array) old('days', $last['days'] ?? array_keys($days)));
+    $startDefault = '07:30'; $endDefault = '08:20';
+    if (is_array($last) && preg_match('/^\d{2}:\d{2}$/', $last['end'] ?? '')) {
+        $next = collect($periods)->first(fn ($p) => $p[0] >= $last['end']);
+        [$startDefault, $endDefault] = $next ?? [$last['end'], date('H:i', strtotime($last['end']) + 50 * 60)];
+    }
 
     $palette = ['#2563eb', '#16a34a', '#9333ea', '#ea580c', '#0891b2', '#db2777', '#ca8a04', '#4f46e5', '#0d9488', '#dc2626'];
     $colorOf = fn ($subjectId) => $palette[((int) $subjectId) % count($palette)];
@@ -73,6 +83,18 @@
     .sch-cancel:hover { background:var(--slate-50); }
     .sch-mode { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px;
         border-radius:6px; background:rgba(22,163,74,.12); color:#15803d; margin-left:6px; vertical-align:middle; }
+    .sch-days { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+    .sch-daychip { position:relative; }
+    .sch-daychip input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+    .sch-daychip span { display:inline-grid; place-items:center; min-width:46px; height:36px; padding:0 10px; border-radius:9px; border:1.5px solid var(--border-default);
+        font-size:12.5px; font-weight:700; color:var(--slate-600); background:var(--white); transition:background-color .15s, border-color .15s, color .15s; }
+    .sch-daychip input:checked + span { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
+    .sch-daychip input:focus-visible + span { outline:2px solid #2563eb; outline-offset:2px; }
+    .sch-daychip:hover span { border-color:#2563eb; }
+    .sch-alldays { border:0; background:none; padding:0 4px; font-size:12px; font-weight:700; color:#2563eb; cursor:pointer; }
+    .sch-alldays:hover { text-decoration:underline; }
+    .sch-preset[aria-pressed="true"] { border-color:#2563eb; background:rgba(37,99,235,.1); color:#1d4ed8; }
+    [data-theme="dark"] .sch-preset[aria-pressed="true"] { color:#93c5fd; }
     .sch-hint { font-size:12px; color:var(--slate-500); margin-top:12px; line-height:1.55; }
 
     .sch-todo { margin-top:16px; border-top:1px solid var(--border-default); padding-top:14px; }
@@ -218,28 +240,43 @@
                     @endforeach
                 </select>
 
-                <label class="sch-label" for="day_of_week">Day</label>
-                <select name="day_of_week" id="day_of_week" class="sch-in" required>
-                    @foreach($days as $num => $label)
-                        <option value="{{ $num }}" @selected((string) old('day_of_week') === (string) $num)>{{ $label }}</option>
-                    @endforeach
-                </select>
+                {{-- Add: several days at once. Edit: the one day of that class. --}}
+                <div id="schDaysWrap" @if($editing) hidden @endif>
+                    <span class="sch-label" id="schDaysLabel">Days <span class="opt">(same time each day)</span></span>
+                    <div class="sch-days" role="group" aria-labelledby="schDaysLabel">
+                        @foreach($days as $num => $label)
+                            <label class="sch-daychip" title="{{ $label }}">
+                                <input type="checkbox" name="days[]" value="{{ $num }}" @checked(in_array($num, $pickedDays, true)) @disabled($editing)>
+                                <span>{{ substr($label, 0, 3) }}</span>
+                            </label>
+                        @endforeach
+                        <button type="button" class="sch-alldays" id="schAllDays">Every day</button>
+                    </div>
+                </div>
+                <div id="schDayWrap" @unless($editing) hidden @endunless>
+                    <label class="sch-label" for="day_of_week">Day</label>
+                    <select name="day_of_week" id="day_of_week" class="sch-in" required @disabled(!$editing)>
+                        @foreach($days as $num => $label)
+                            <option value="{{ $num }}" @selected((string) old('day_of_week') === (string) $num)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="sch-row2">
                     <div>
                         <label class="sch-label" for="start_time">Start</label>
                         <input type="time" name="start_time" id="start_time" class="sch-in"
-                               value="{{ old('start_time', '07:30') }}" required>
+                               value="{{ old('start_time', $startDefault) }}" required>
                     </div>
                     <div>
                         <label class="sch-label" for="end_time">End</label>
                         <input type="time" name="end_time" id="end_time" class="sch-in"
-                               value="{{ old('end_time', '08:20') }}" required>
+                               value="{{ old('end_time', $endDefault) }}" required>
                     </div>
                 </div>
                 <div class="sch-presets" aria-label="Bell schedule periods">
                     @foreach($periods as [$ps, $pe])
-                        <button type="button" class="sch-preset" data-start="{{ $ps }}" data-end="{{ $pe }}">
+                        <button type="button" class="sch-preset" data-start="{{ $ps }}" data-end="{{ $pe }}" aria-pressed="false">
                             {{ \App\Models\ClassSchedule::formatTime($ps) }}–{{ \App\Models\ClassSchedule::formatTime($pe) }}
                         </button>
                     @endforeach
@@ -304,12 +341,8 @@
                                     </div>
                                     <div class="sch-item-act">
                                         <button type="button" class="sch-link edit js-edit">Edit</button>
-                                        <form method="POST" action="{{ route('admin.schedules.destroy', $p) }}"
-                                              onsubmit="return confirm('Remove this class from the schedule?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="sch-link del">Remove</button>
-                                        </form>
+                                        <button type="button" class="sch-link del js-remove" data-url="{{ route('admin.schedules.destroy', $p) }}"
+                                                data-label="{{ $p->subject?->name ?? 'This class' }}, {{ $p->day_name }} {{ $p->time_range }}">Remove</button>
                                     </div>
                                 </div>
                             @empty
@@ -323,6 +356,20 @@
 
     </div>
     @endif
+
+    <dialog class="lm-dialog small" id="schRemove" aria-labelledby="schRemoveTitle">
+        <form method="POST" action="" class="lm-dialog-box" id="schRemoveForm">
+            @csrf @method('DELETE')
+            <div class="lm-dialog-body">
+                <h2 class="lm-confirm-title" id="schRemoveTitle">Remove this class?</h2>
+                <p class="lm-help first"><b id="schRemoveName"></b> will be taken off the timetable. Students and the teacher stop seeing it.</p>
+            </div>
+            <div class="lm-dialog-foot end">
+                <button type="button" class="lm-btn" data-close autofocus>Keep</button>
+                <button type="submit" class="lm-btn danger">Remove</button>
+            </div>
+        </form>
+    </dialog>
 </div>
 
 <script>
@@ -334,13 +381,51 @@
     var method = $('schMethod'), editing = $('schEditing'), title = $('schFormTitle'), tag = $('schModeTag'),
         submit = $('schSubmit'), cancel = $('schCancel');
 
-    // Bell schedule quick-fill
-    document.querySelectorAll('.sch-preset').forEach(function (b) {
+    var dayBoxes = document.querySelectorAll('#schDaysWrap input[type="checkbox"]');
+    var presets = document.querySelectorAll('.sch-preset');
+
+    // Bell schedule quick-fill; the period that matches the times is shown as chosen
+    function markPreset() {
+        presets.forEach(function (b) {
+            b.setAttribute('aria-pressed', b.dataset.start === $('start_time').value && b.dataset.end === $('end_time').value ? 'true' : 'false');
+        });
+    }
+    presets.forEach(function (b) {
         b.addEventListener('click', function () {
             $('start_time').value = b.dataset.start;
             $('end_time').value   = b.dataset.end;
+            markPreset();
         });
     });
+    $('start_time').addEventListener('input', markPreset);
+    $('end_time').addEventListener('input', markPreset);
+
+    function isEditing() { return !method.disabled; }
+    function addLabel() {
+        var n = Array.prototype.filter.call(dayBoxes, function (c) { return c.checked; }).length;
+        submit.textContent = n > 1 ? 'Add on ' + n + ' days' : 'Add to Schedule';
+    }
+    dayBoxes.forEach(function (c) { c.addEventListener('change', addLabel); });
+    $('schAllDays').addEventListener('click', function () {
+        dayBoxes.forEach(function (c) { c.checked = true; });
+        addLabel();
+    });
+    form.addEventListener('submit', function (e) {
+        if (!isEditing() && !Array.prototype.some.call(dayBoxes, function (c) { return c.checked; })) {
+            e.preventDefault();
+            if (window.dpToast) window.dpToast('Choose at least one day.', 'warning');
+            return;
+        }
+        submit.disabled = true;
+        submit.textContent = 'Saving…';
+    });
+
+    function setMode(edit) {
+        $('schDaysWrap').hidden = edit;
+        $('schDayWrap').hidden = !edit;
+        dayBoxes.forEach(function (c) { c.disabled = edit; });
+        $('day_of_week').disabled = !edit;
+    }
 
     function setTitle(text) { title.firstChild.nodeValue = text + ' '; }
     function clearHighlight() { document.querySelectorAll('.sch-item.editing').forEach(function (el) { el.classList.remove('editing'); }); }
@@ -354,10 +439,12 @@
             editing.value = card.dataset.id;
             $('subject_id').value  = card.dataset.subject || '';
             $('teacher_id').value  = card.dataset.teacher || '';
+            setMode(true);
             $('day_of_week').value = card.dataset.day;
             $('start_time').value  = card.dataset.start;
             $('end_time').value    = card.dataset.end;
             $('room').value        = card.dataset.room || '';
+            markPreset();
             setTitle('Edit Class'); tag.style.display = '';
             submit.textContent = 'Save Changes'; submit.classList.add('edit');
             cancel.style.display = '';
@@ -375,11 +462,29 @@
         $('subject_id').value = ''; $('teacher_id').value = ''; $('room').value = '';
         $('day_of_week').selectedIndex = 0;
         $('start_time').value = '07:30'; $('end_time').value = '08:20';
+        setMode(false);
+        dayBoxes.forEach(function (c) { c.checked = true; });
         setTitle('Add a Class'); tag.style.display = 'none';
-        submit.textContent = 'Add to Schedule'; submit.classList.remove('edit');
+        submit.classList.remove('edit');
+        addLabel();
+        markPreset();
         cancel.style.display = 'none';
         clearHighlight();
     });
+
+    // Remove: confirm in a dialog
+    var dlg = $('schRemove');
+    document.querySelectorAll('.js-remove').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            $('schRemoveForm').action = btn.dataset.url;
+            $('schRemoveName').textContent = btn.dataset.label;
+            dlg.showModal();
+        });
+    });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+
+    markPreset();
+    if (!isEditing()) addLabel();
 })();
 </script>
 @endsection

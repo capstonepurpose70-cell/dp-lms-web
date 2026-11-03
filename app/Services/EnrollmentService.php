@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\EnrollmentRequest;
+use App\Models\OfficialLrn;
 use App\Models\SchoolYear;
 use App\Models\Section;
 use App\Models\StudentEnrollment;
@@ -69,6 +70,36 @@ class EnrollmentService
                 ->where('school_year', $schoolYear)->exists()
             || StudentEnrollment::where('user_id', $student->id)->where('status', 'enrolled')
                 ->where('school_year', $schoolYear)->exists();
+    }
+
+    /**
+     * The section a student's form goes to: the one they are listed in on the LRN Master List,
+     * while it is active and has an adviser. Null = the form waits in the grade's shared pool.
+     */
+    public static function listedSection(?User $student): ?Section
+    {
+        $sectionId = $student?->lrn ? OfficialLrn::where('lrn', $student->lrn)->value('section_id') : null;
+
+        return $sectionId ? Section::whereKey($sectionId)->where('is_active', true)->whereNotNull('adviser_id')->first() : null;
+    }
+
+    /**
+     * Pending forms one adviser handles: the ones routed to their sections, plus the pool of their grades
+     * (forms of students who are not listed in a section with an adviser).
+     */
+    public static function adviserQueue($query, array $sectionIds, array $grades)
+    {
+        $routed = fn ($s) => $s->select(DB::raw(1))->from('users')
+            ->join('official_lrns', 'official_lrns.lrn', '=', 'users.lrn')
+            ->join('sections', 'sections.id', '=', 'official_lrns.section_id')
+            ->whereColumn('users.id', 'enrollment_requests.user_id')
+            ->where('sections.is_active', true)
+            ->whereNotNull('sections.adviser_id');
+
+        return $query->where(function ($w) use ($routed, $sectionIds, $grades) {
+            $w->where(fn ($pool) => $pool->whereIn('grade_level', $grades ?: ['__none__'])->whereNotExists($routed))
+              ->orWhereExists(fn ($s) => $routed($s)->whereIn('sections.id', $sectionIds ?: [0]));
+        });
     }
 
     public static function currentSchoolYear(): string

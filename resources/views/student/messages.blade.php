@@ -22,6 +22,7 @@
     .ms-c-main { flex: 1; min-width: 0; }
     .ms-c-name, .ms-c-last { display: block; }
     .ms-c-name { font-size: 13.5px; font-weight: 700; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ms-contact[data-draft] .ms-c-last::before { content: 'Draft: '; color: #DC2626; font-weight: 700; }
     .ms-c-last { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
     .ms-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
 
@@ -66,7 +67,7 @@
     }
 </style>
 
-<div class="ms-wrap">
+<div class="ms-wrap" data-focus-page>
     <h1 class="ms-title">Messages</h1>
     <p class="ms-sub">Chat with your teachers. Pick a teacher to see your conversation.</p>
 
@@ -82,7 +83,7 @@
                     @foreach($contacts as $c)
                         @php $isActive = $active && $active->id === $c->id; @endphp
                         <li>
-                            <a class="ms-contact" href="{{ route('student.messages', ['with' => $c->id]) }}" @if($isActive) aria-current="true" @endif>
+                            <a class="ms-contact" href="{{ route('student.messages', ['with' => $c->id]) }}" data-id="{{ $c->id }}" @if($isActive) aria-current="true" @endif>
                                 <span class="ms-av" aria-hidden="true">{{ mb_strtoupper(mb_substr($c->name, 0, 1)) }}</span>
                                 <span class="ms-c-main">
                                     <span class="ms-c-name">{{ $c->name }}</span>
@@ -137,7 +138,7 @@
                 </div>
 
                 @if($active->canMessage)
-                    <form method="POST" action="{{ route('student.messages.store') }}" id="msForm">
+                    <form method="POST" action="{{ route('student.messages.store') }}" id="msForm" data-draft-key="dp-draft:{{ auth()->id() }}:{{ $active->id }}">
                         @csrf
                         <input type="hidden" name="teacher_id" value="{{ $active->id }}">
                         @if($errors->any())
@@ -164,10 +165,21 @@
         const t = document.getElementById('msThread');
         if (t) t.scrollTop = t.scrollHeight;
 
+        // Drafts: what is typed stays per teacher on this device until it is sent (cleared on sign-out)
+        const prefix = 'dp-draft:{{ auth()->id() }}:';
+        const read = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+        document.querySelectorAll('.ms-contact[data-id]').forEach(function (a) {
+            if (a.getAttribute('aria-current') !== 'true' && read(prefix + a.dataset.id)) a.setAttribute('data-draft', '');
+        });
+
         const form = document.getElementById('msForm');
         if (!form) return;
         const btn = form.querySelector('.ms-send');
         const box = document.getElementById('msBody');
+        const key = form.dataset.draftKey;
+        function save() { try { box.value.trim() ? localStorage.setItem(key, box.value) : localStorage.removeItem(key); } catch (e) {} }
+        if (box.value) save(); else box.value = read(key);
+        box.addEventListener('input', save);
         // Enter sends, Shift+Enter = new line
         box.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
@@ -175,6 +187,7 @@
         form.addEventListener('submit', function (e) {
             if (!box.value.trim()) { e.preventDefault(); return; }
             btn.disabled = true; btn.textContent = 'Sending…';
+            try { localStorage.removeItem(key); } catch (err) {}   // a rejected message comes back in the box (old input)
         });
         window.addEventListener('pageshow', function (e) { if (e.persisted) { btn.disabled = false; btn.textContent = 'Send'; } });
     })();

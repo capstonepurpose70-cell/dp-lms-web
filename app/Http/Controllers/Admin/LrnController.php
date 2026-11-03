@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\OfficialLrn;
+use App\Models\Section;
 use App\Services\AuditLogService;
 use App\Services\LrnImportService;
 use App\Support\NameMatcher;
@@ -30,7 +31,7 @@ class LrnController extends Controller
         $status = in_array($request->query('status'), ['available', 'claimed'], true) ? $request->query('status') : 'all';
         $grade  = in_array($request->query('grade'), LrnImportService::GRADES, true) ? $request->query('grade') : null;
 
-        $lrns = OfficialLrn::with('claimedBy:id,name,email')
+        $lrns = OfficialLrn::with(['claimedBy:id,name,email', 'section:id,name,grade_level'])
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($w) use ($q) {
                     $w->where('lrn', 'like', "%{$q}%")
@@ -57,6 +58,7 @@ class LrnController extends Controller
             'total'     => $total,
             'claimed'   => $claimed,
             'available' => $total - $claimed,
+            'sections'  => Section::where('is_active', true)->orderByRaw('CAST(grade_level AS UNSIGNED)')->orderBy('name')->get(['id', 'name', 'grade_level']),
         ]);
     }
 
@@ -75,7 +77,9 @@ class LrnController extends Controller
                 },
             ],
             'grade_level'  => ['nullable', Rule::in(LrnImportService::GRADES)],
+            'section_id'   => ['nullable', 'integer', Rule::exists('sections', 'id')->where('is_active', true)],
         ], [
+            'section_id.exists'     => 'Choose an active section.',
             'lrn.digits'            => 'The LRN must be exactly 12 digits.',
             'lrn.unique'            => 'This LRN is already on the list.',
             'student_name.required' => 'Enter the student name — it is checked when the student activates the account.',
@@ -83,6 +87,14 @@ class LrnController extends Controller
         ]);
 
         $data['student_name'] = trim((string) preg_replace('/\s+/u', ' ', $data['student_name']));
+        // The section decides the grade; a different grade picked by hand is a mistake
+        if (!empty($data['section_id'])) {
+            $sectionGrade = (string) Section::whereKey($data['section_id'])->value('grade_level');
+            if (!empty($data['grade_level']) && $data['grade_level'] !== $sectionGrade) {
+                return back()->withErrors(['section_id' => "That section is Grade {$sectionGrade}, not Grade {$data['grade_level']}."], 'single')->withInput();
+            }
+            $data['grade_level'] = $sectionGrade;
+        }
         OfficialLrn::create($data);
         AuditLogService::log("Added LRN: {$data['lrn']}", 'LRN Master List');
 
@@ -171,14 +183,14 @@ class LrnController extends Controller
             return $this->expired();
         }
 
-        $rows = [['Row in your file', 'LRN', 'Student name', 'Grade', 'What to fix']];
+        $rows = [['Row in your file', 'LRN', 'Student name', 'Grade', 'Section', 'What to fix']];
         foreach ($import['rows'] as $r) {
             if ($r['status'] === 'fix') {
-                $rows[] = [(string) $r['row'], $r['lrn'], $r['name'], (string) $r['grade'], $r['note']];
+                $rows[] = [(string) $r['row'], $r['lrn'], $r['name'], (string) $r['grade'], (string) ($r['section'] ?? ''), $r['note']];
             }
         }
 
-        $path = XlsxWriter::write('Rows to fix', $rows, [16, 16, 40, 8, 70], [1]);
+        $path = XlsxWriter::write('Rows to fix', $rows, [16, 16, 40, 8, 16, 70], [1]);
 
         return response()->download($path, 'lrn-rows-to-fix.xlsx')->deleteFileAfterSend();
     }
@@ -186,8 +198,8 @@ class LrnController extends Controller
     public function template()
     {
         $path = XlsxWriter::write('LRN list', [
-            ['LRN', 'Student name (Last, First Middle)', 'Grade', '', 'One student per row. LRN: 12 digits. Grade: 7 to 12, or leave blank and pick the grade when you upload.'],
-        ], [18, 40, 10, 4, 90], [0, 2]);
+            ['LRN', 'Student name (Last, First Middle)', 'Grade', 'Section', '', 'One student per row. LRN: 12 digits. Grade: 7 to 12. Section (optional): grade-section, for example 7-Gutierrez; the form then goes to that adviser.'],
+        ], [18, 40, 10, 16, 4, 110], [0, 2]);
 
         return response()->download($path, 'lrn-import-template.xlsx')->deleteFileAfterSend();
     }

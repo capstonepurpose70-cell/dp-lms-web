@@ -905,6 +905,88 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
   page suites skip the gate, which has its own suite). Real browser: login, activate, privacy and accept pages at
   1920 / 1366 / 390 — login and activate fit 1366 × 900 without scrolling, no JS errors.
 
+### B14-4 ✅ Sections & Advisers page
+- **Problem:** every row was an always-open edit form (name box, adviser list, Active box, Save and Delete on all
+  rows), easy to change by accident; delete used the browser's confirm(); the create form took a column; no quick
+  way to see the sections still missing an adviser; capitalised headings; a 760 px table on phones.
+- **Where:** `admin/sections/index.blade.php`; shared list styles moved to `admin/partials/list-ui.blade.php`
+  (also used by the LRN pages). No controller or rule changes.
+- **Fix:** read-only rows with the adviser picker kept for quick assigning (Save appears only after a change);
+  rename / turn off / delete in an Edit dialog (delete disabled when the section has students, confirmed in its
+  own dialog); "New section" dialog that reopens with the error; tabs All / Need an adviser / Inactive, grade
+  filter and search; summary with "N of M active sections have an adviser"; cards on phones. A current adviser
+  whose account is no longer approved stays selected in the dialog, so saving does not drop them.
+- **Tested:** PHPUnit 4 tests / 25 assertions (renders; quick assign keeps name and status; edit renames and turns
+  off; duplicate name reopens the dialog; section in use cannot be deleted, empty one can); LRN suite still
+  passes. Real browser at 1366 and 390: tabs, search, Save shown only after a change, Edit dialog centred and
+  filled, no JS errors, no sideways scroll.
+
+---
+
+## Batch 15 — Teacher accounts, enrollment routing, schedules, toasts, messages
+
+### B15-1 ✅ Faculty Master List and teacher self-activation
+- **Problem:** teachers could only get an account through an admin invite, one at a time — a bottleneck at the
+  start of the school year.
+- **Where:** new `faculty_records` table and `FacultyRecord`; `TeacherActivationService`; web
+  `Auth/TeacherActivationController` (`/activate/teacher`), app `Api/TeacherActivationController`
+  (`/api/teacher/activate`, `/verify`, `/resend`); admin `FacultyController`, `FacultyImportService`,
+  `admin/faculty/*`; sidebar link; "Teacher, first time here?" link on the login page.
+- **Fix:** the admin imports the faculty list (Excel/CSV, preview → confirm, rows to fix as .xlsx, template) or adds
+  one teacher; each entry may name an advisory section. A teacher activates with employee ID + name as listed +
+  email code + Terms. Same protections as student activation: one generic "do not match" message (never says
+  whether an ID exists), 5 tries per hour / 10 per day per ID, hashed 6-digit code (5 tries, 3 resends, 10 minutes),
+  encrypted pending data, row lock against double activation, honeypot, throttles, audit log. On activation the
+  teacher is approved and becomes adviser of the listed section only if it still has no adviser. An activated
+  entry cannot be removed. `GET /api/terms` and `POST /api/terms/accept` added for the app.
+- **Tested:** PHPUnit 4 tests / 59 assertions (web and app activation, wrong name / unknown ID give the same error,
+  lockout, terms, honeypot, wrong code, single-use token, advisory not stolen) and 3 tests / 45 assertions for the
+  admin page (import preview → confirm once, another admin cannot open the preview, reserved advisory refused,
+  activated entry protected, guests blocked).
+
+### B15-2 ✅ Enrollment forms go straight to the student's adviser
+- **Problem:** every pending form of a grade was shown to every adviser of that grade; each adviser had to find
+  their own students and pick the section by hand.
+- **Where:** migration `official_lrns.section_id`; `LrnImportService` (optional Section / "Year & Section" /
+  Advisory column), `LrnController` (section on "Add one LRN", template, rows-to-fix); `EnrollmentService`
+  (`listedSection`, `adviserQueue`); `SectionBalanceService::suggest`; `Teacher/EnrollmentController`.
+- **Fix:** a student listed in a section (with an adviser) is shown only to that adviser, with the section already
+  chosen — one click to approve. Students not listed, or listed in a section with no adviser yet, stay in the
+  grade's pool as before. Another adviser gets 403 on the form and on approve (approve now runs the same review
+  check as the form page). The adviser still reviews every form; nothing is auto-approved.
+- **Tested:** PHPUnit 3 tests / 29 assertions; the LRN import suite (9 tests) still passes after updating the
+  rows-to-fix column order (Section column added).
+
+### B15-3 ✅ Class schedules: several days in one save
+- **Problem:** one class per save — about 40 saves per section; delete used the browser's confirm().
+- **Where:** `ClassScheduleController::store`, `admin/schedules/index.blade.php`.
+- **Fix:** Mon–Fri day chips (all ticked by default); one save adds the class on every chosen day, all or nothing
+  when any day clashes; after saving, the form keeps the days and moves to the next bell period; the matching bell
+  period is highlighted; remove is confirmed in a dialog. The single `day_of_week` form still works.
+- **Bug found while testing:** a request without the `room` field crashed with a 500 (`$data['room']` read
+  directly) — now treated as no room.
+- **Tested:** PHPUnit 3 tests / 17 assertions (three days in one save, teaching load given once, next period
+  prefilled, one clash saves nothing, bad / empty days refused, old single-day form).
+
+### B15-4 ✅ Messages as toasts that leave by themselves
+- **Where:** `partials/flash-toast` (engine, `window.dpToast(text, type)`), `partials/flash` (session messages) in
+  the admin, student/parent, teacher and sign-in layouts; the old flash boxes and the admin-only toast removed.
+- **Fix:** success / error / info / warning / "You have been signed out" slide in at the top, stay about 3 seconds
+  (longer only for long text), pause on hover or focus, can be closed. Text is inserted as text, never HTML. Works
+  after the admin page swaps too.
+- **Bug found while testing:** with Windows "reduce motion" on, the layouts shorten every animation to 0.001 ms, so a
+  toast timed by its CSS bar vanished at once — the timer is now JavaScript; the bar is hidden in that mode.
+
+### B15-5 ✅ Messages page: menu tucks away, drafts kept
+- **Where:** `layouts/teacher`, `layouts/app`, `teacher/messages`, `student/messages`.
+- **Fix:** on a laptop the menu folds to icons while Messages is open (the menu button brings it back; the saved
+  choice for other pages is not changed; it opens again when leaving, also with the in-page navigation). What is
+  typed is kept per chat on this device until it is sent; chats with an unsent draft show "Draft:". Drafts are
+  wiped on sign-out (shared school computers).
+- **Tested:** real browser 1366 / 390: menu folded on Messages only, draft back after reload, menu back on
+  Dashboard, toast shows and leaves, toast refuses HTML, no JS errors, no sideways scroll; login, teacher
+  activation, Faculty, Schedules and LRN pages checked at both widths.
+
 ---
 
 ## Found, not fixed yet
@@ -917,3 +999,4 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
 | 🔧 | No "change password" inside the app for students/teachers/parents | CLAUDE.md §13 #14 |
 | 🔧 | `GET /api/messages/thread/{id}` has no contact check | CLAUDE.md §13 #16 |
 | 🔧 | Admin layout not audited yet | `resources/views/layouts/admin.blade.php` |
+| 🔧 | The API does not refuse calls before the Terms are agreed (the web does) — switch on after the app shows the Terms screen | `routes/api.php` + `EnsureTermsAccepted` — needs the Flutter update first |

@@ -2,7 +2,7 @@
 @section('title', 'Check the import')
 
 @section('content')
-@include('admin.lrns.partials.styles')
+@include('admin.partials.list-ui')
 
 @php
     $c = $import['counts'];
@@ -13,6 +13,7 @@
     ];
     $first = $c['fix'] ? 'fix' : ($c['ready'] ? 'ready' : 'exists');
     $byStatus = collect($import['rows'])->groupBy('status');
+    $hasSection = isset($import['columns']['Section']);
     $shown = 500;   // rows drawn per group; the counts above are always complete
     $readFrom = 'Read ' . collect($import['columns'])->map(fn ($where, $what) => "{$what} from {$where}")->implode(', ')
         . ($import['grade'] ? "; grade {$import['grade']} for rows without one." : '.');
@@ -61,6 +62,7 @@
                                     <th scope="col">LRN</th>
                                     <th scope="col">Student name</th>
                                     <th scope="col">Grade</th>
+                                    @if ($hasSection)<th scope="col">Section</th>@endif
                                     @if ($key !== 'ready')<th scope="col">{{ $key === 'fix' ? 'What to fix' : 'Note' }}</th>@endif
                                 </tr>
                             </thead>
@@ -71,6 +73,7 @@
                                         <td data-label="LRN" class="lm-lrn">{{ $r['lrn'] !== '' ? $r['lrn'] : '—' }}</td>
                                         <td data-label="Name" class="lm-name">{{ $r['name'] !== '' ? $r['name'] : '—' }}</td>
                                         <td data-label="Grade">@if ($r['grade'])<span class="lm-grade">{{ $r['grade'] }}</span>@else<span class="lm-muted">—</span>@endif</td>
+                                        @if ($hasSection)<td data-label="Section">{{ ($r['section'] ?? '') !== '' ? $r['section'] : '—' }}</td>@endif
                                         @if ($key !== 'ready')<td data-label="{{ $key === 'fix' ? 'Fix' : 'Note' }}" class="lmp-why">{{ $r['note'] }}</td>@endif
                                     </tr>
                                 @endforeach

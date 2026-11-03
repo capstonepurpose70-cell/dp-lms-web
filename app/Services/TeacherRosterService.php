@@ -198,7 +198,7 @@ class TeacherRosterService
     }
 
     /** "7-GUTIERREZ", "Grade 11 - SMAW WORKER", "12 ABM SPECIALIST" → active Section. */
-    private function findSection(string $text): ?Section
+    public function findSection(string $text): ?Section
     {
         if (!preg_match('/^\s*(?:grade\s*)?(7|8|9|10|11|12)\s*[-–:]?\s*(.+)$/iu', $text, $m)) {
             return null;

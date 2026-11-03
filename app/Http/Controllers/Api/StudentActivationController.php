@@ -51,6 +51,7 @@ class StudentActivationController extends Controller
                 'role'        => $user->role,
                 'grade_level' => $user->grade_level,
                 'status'      => $user->status,
+                'terms_accepted' => $user->terms_accepted_at !== null,   // false: show the Terms screen (POST /api/terms/accept)
             ],
         ], 201);
     }

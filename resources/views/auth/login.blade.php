@@ -20,10 +20,6 @@
     .lg-links { display: grid; gap: 6px; }
 </style>
 
-@if(session('signed_out'))
-    <div class="ac-alert ac-alert-ok" role="status">You have been signed out.</div>
-@endif
-
 <form method="POST" action="{{ route('login.submit') }}" id="loginForm" novalidate @if(session('signed_out')) data-signed-out @endif>
     @csrf
 
@@ -67,6 +63,7 @@
 @section('footer')
     <div class="lg-links">
         <span>Student, first time here? <a href="{{ route('activate') }}">Activate your account</a></span>
+        <span>Teacher, first time here? <a href="{{ route('teacher.activate') }}">Activate with your employee ID</a></span>
         <span>Parent? <a href="{{ route('parent.activate') }}">Link with your child's code</a></span>
     </div>
 @endsection

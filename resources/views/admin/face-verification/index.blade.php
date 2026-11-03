@@ -53,9 +53,6 @@
     <p class="fv-sub">Faces used by the Raspberry Pi gate camera to send "arrived at school" notifications to parents.
         Register faces at the kiosk with a one-time QR (saved and approved right away). Remove any face that belongs to the wrong person.</p>
 
-    @if (session('error'))
-        <div class="fv-alert" role="alert">{{ session('error') }}</div>
-    @endif
     @if ($errors->any())
         <div class="fv-alert" role="alert">{{ $errors->first() }}</div>
     @endif

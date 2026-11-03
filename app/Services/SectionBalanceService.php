@@ -99,6 +99,12 @@ class SectionBalanceService
             return null;
         }
 
+        // The school's own class list comes first: the section the student is listed in
+        $listed = EnrollmentService::listedSection($request->student);
+        if ($listed && (string) $listed->grade_level === $grade && ($allowedIds === null || in_array($listed->id, $allowedIds))) {
+            return $listed->id;
+        }
+
         $band   = self::band($request->general_average !== null ? (float) $request->general_average : null);
         $gender = $request->gender;
 

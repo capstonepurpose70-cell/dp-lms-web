@@ -11,8 +11,15 @@ class OfficialLrn extends Model
         'lrn',
         'student_name',
         'grade_level',
+        'section_id',
         'claimed_by',
     ];
+
+    /** The section the student is listed in; their enrollment form goes to its adviser. */
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
+    }
 
     /** The user account that claimed this LRN (null = not used yet). */
     public function claimedBy()

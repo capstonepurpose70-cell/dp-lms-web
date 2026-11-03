@@ -27,11 +27,29 @@ class DashboardController extends Controller
             'user'          => $user->only(['id','name','email','grade_level','role']),
             'section'       => $section?->only(['id','name']),
             'subject_count' => $subjects->count(),
+            // Same states as the web dashboard: none → pending → enrolled, or returned with the adviser's remarks
+            'enrollment'    => $this->enrollmentState($user),
             'announcements' => Announcement::published()
                 ->forAudience('student')->visibleToSections([$section?->id])
                 ->with('author')->latest()->take(5)->get()
                 ->map(fn($a) => ['id'=>$a->id,'title'=>$a->title,'body'=>$a->body,'date'=>$a->created_at->toDateString(),'author'=>$a->author?->name]),
         ]);
+    }
+
+    private function enrollmentState($user): array
+    {
+        $latest = $user->enrollmentRequest()->first();   // fresh, never a cached relation
+        $status = EnrollmentService::isEnrolled($user) ? 'enrolled' : match ($latest?->status) {
+            'pending'  => 'pending',
+            'rejected' => 'returned',
+            default    => 'none',
+        };
+
+        return [
+            'status'      => $status,
+            'remarks'     => $status === 'returned' ? $latest->remarks : null,
+            'school_year' => EnrollmentService::currentSchoolYear(),
+        ];
     }
 
     public function subjects()
