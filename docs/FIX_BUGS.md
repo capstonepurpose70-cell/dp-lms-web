@@ -987,6 +987,18 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
   Dashboard, toast shows and leaves, toast refuses HTML, no JS errors, no sideways scroll; login, teacher
   activation, Faculty, Schedules and LRN pages checked at both widths.
 
+### B15-6 ✅ Follow-ups after the user's check
+- **Admin sign-out:** the admin login page has its own layout, so "You have signed out" stayed as a box — now the
+  same toast ("You have been signed out.") as the other sign-in pages (`admin/login.blade.php`).
+- **User Management:** "Import Teachers" and "Add Teacher" (the older invite flow) sat next to the new Faculty Master
+  List — two ways to do one thing. The header now has one **Faculty Master List** button; the invite pages still
+  work at their URLs.
+- **Deploy safety:** reading or making .xlsx needs PHP zip. If the server lacks it, the import now says to upload a
+  CSV instead of failing with a 500 (`SpreadsheetReader`, `XlsxWriter`).
+- **Checked for the Railway deploy:** `main` has no commits missing from this branch (fast-forward merge);
+  `config:cache` and `route:cache` succeed; cache/session use the database tables that are in the migrations;
+  `bootstrap/cache` is ignored by git; the local-only dev packages (Boost, IDE helper) are not used by app code.
+
 ---
 
 ## Found, not fixed yet

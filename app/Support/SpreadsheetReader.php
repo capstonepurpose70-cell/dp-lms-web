@@ -36,6 +36,11 @@ final class SpreadsheetReader
 
     private static function xlsx(string $path, int $maxRows): array
     {
+        // A server without PHP's zip extension cannot open .xlsx — say so instead of failing with a 500
+        if (!class_exists(ZipArchive::class) || !class_exists(XMLReader::class)) {
+            throw new UnreadableSpreadsheet('This server cannot open Excel files yet. In Excel choose File → Save As → CSV UTF-8 and upload that file, or ask the system administrator to turn on PHP zip.');
+        }
+
         $zip = new ZipArchive();
         if ($zip->open($path, ZipArchive::RDONLY) !== true) {
             throw new UnreadableSpreadsheet('This file is not a valid .xlsx workbook. Open it in Excel and save it again as .xlsx.');

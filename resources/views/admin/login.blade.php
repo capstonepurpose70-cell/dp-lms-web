@@ -231,10 +231,7 @@
                         <span>{{ session('error') }}</span>
                     </div>
                 @elseif (session('signed_out'))
-                    <div class="notice ok" role="status">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        <span>You have signed out.</span>
-                    </div>
+                    <div class="dp-flash" data-type="success" hidden>You have been signed out.</div>
                 @endif
 
                 <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm" novalidate
@@ -393,5 +390,6 @@
     }
 })();
 </script>
+@include('partials.flash-toast')
 </body>
 </html>

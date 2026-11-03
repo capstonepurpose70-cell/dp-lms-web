@@ -20,6 +20,9 @@ final class XlsxWriter
      */
     public static function write(string $sheetName, array $rows, array $widths, array $textColumns = []): string
     {
+        if (!class_exists(ZipArchive::class)) {
+            throw new RuntimeException('PHP zip is not enabled on this server, so .xlsx files cannot be made.');
+        }
         $path = tempnam(sys_get_temp_dir(), 'xlsx');
         $zip = new ZipArchive();
         if ($path === false || $zip->open($path, ZipArchive::OVERWRITE) !== true) {

@@ -200,13 +200,10 @@
             </div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a href="{{ route('admin.users.import-teachers', [], false) }}" class="um-add" style="background:transparent; color:var(--slate-700); border:1px solid var(--border-default); box-shadow:none;">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                Import Teachers
-            </a>
-            <a href="{{ route('admin.users.create-teacher') }}" class="um-add" data-no-spa>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                Add Teacher
+            {{-- Teachers activate their own accounts from the Faculty Master List (the older invite pages stay at their URLs) --}}
+            <a href="{{ route('admin.faculty.index', [], false) }}" class="um-add" title="Add teachers to the faculty list; they activate their own accounts">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6"/></svg>
+                Faculty Master List
             </a>
         </div>
     </div>
