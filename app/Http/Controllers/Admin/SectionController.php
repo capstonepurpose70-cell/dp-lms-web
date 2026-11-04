@@ -100,6 +100,27 @@ class SectionController extends Controller
         AuditLogService::log("Updated section: {$section->name}", 'Sections',
             "Adviser ID: " . ($data['adviser_id'] ?? 'none'));
 
+        // Quick assign from the list: answer in place, no page reload
+        if ($request->expectsJson()) {
+            $section->load('adviser:id,name');
+            $label = "Grade {$section->grade_level} {$section->name}";
+
+            return response()->json([
+                'ok'      => true,
+                'message' => $section->adviser ? "{$section->adviser->name} is now the adviser of {$label}." : "{$label} has no adviser now.",
+                'section' => [
+                    'id'           => $section->id,
+                    'adviser_id'   => $section->adviser_id ? (int) $section->adviser_id : null,
+                    'adviser_name' => $section->adviser?->name,
+                    'state'        => !$section->is_active ? 'off' : ($section->adviser_id ? 'ok' : 'need'),
+                ],
+                // every section each teacher advises, so the other lists can say "also advises …"
+                'advises' => Section::whereNotNull('adviser_id')->get(['id', 'name', 'grade_level', 'adviser_id'])
+                    ->groupBy('adviser_id')
+                    ->map(fn ($rows) => $rows->map(fn ($s) => ['id' => $s->id, 'label' => $s->grade_level . '-' . $s->name])->values()),
+            ]);
+        }
+
         return back()->with('success', "Section {$section->name} updated.");
     }
 

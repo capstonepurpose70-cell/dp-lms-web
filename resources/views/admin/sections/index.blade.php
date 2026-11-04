@@ -34,6 +34,7 @@
     .sx-adv select:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.16); }
     .sx-adv .lm-btn { min-height: 36px; padding: 0 12px; font-size: 13px; }
     .sx-adv .lm-btn[hidden] { display: none; }
+    .sx-row[aria-busy="true"] .sx-adv select { opacity: .6; cursor: progress; }
     .sx-need { display: inline-flex; padding: 2px 9px; border-radius: 99px; background: #FEF3C7; color: #92400E; font-size: 12px; font-weight: 700; white-space: nowrap; }
     [data-theme="dark"] .sx-need { background: rgba(251,191,36,.14); color: #FBBF24; }
     .lm-count { display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 8px; border-radius: 7px; background: var(--slate-100); color: var(--slate-700); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -129,8 +130,8 @@
                                 <td data-label="Section"><span class="sx-name">{{ $s->name }}</span></td>
                                 <td data-label="Students"><span class="lm-count">{{ $s->students_count }}</span></td>
                                 <td data-label="Adviser">
-                                    {{-- Quick assign: the other fields are sent unchanged; Save shows only after a change --}}
-                                    <form class="sx-adv" method="POST" action="{{ route('admin.sections.update', $s->id) }}">
+                                    {{-- Quick assign: saves as soon as an adviser is picked, without reloading the page --}}
+                                    <form class="sx-adv" method="POST" action="{{ route('admin.sections.update', $s->id) }}" data-section="{{ $s->id }}" data-label="{{ $s->name }}">
                                         @csrf @method('PUT')
                                         <input type="hidden" name="name" value="{{ $s->name }}">
                                         <input type="hidden" name="grade_level" value="{{ $s->grade_level }}">
@@ -143,7 +144,7 @@
                                             @endif
                                             @foreach ($teachers as $t)
                                                 @php $also = $advisesText($t->id, $s->id); @endphp
-                                                <option value="{{ $t->id }}" @selected((int) $s->adviser_id === (int) $t->id)>{{ $t->name }}{{ $also ? ' — also advises ' . $also : '' }}</option>
+                                                <option value="{{ $t->id }}" data-name="{{ $t->name }}" @selected((int) $s->adviser_id === (int) $t->id)>{{ $t->name }}{{ $also ? ' — also advises ' . $also : '' }}</option>
                                             @endforeach
                                         </select>
                                         <button type="submit" class="lm-btn primary" hidden>Save</button>
@@ -330,10 +331,75 @@
         if (t.tagName === 'DIALOG') close(t);
     });
 
-    // Quick assign: Save appears only when the adviser was changed
+    // Quick assign: picking an adviser saves it right away (no page reload); the row, counts and lists update in place
+    var CSRF = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    function toast(msg, type) { if (window.dpToast) window.dpToast(msg, type); }
+    function refreshCounts() {
+        var rows = root.querySelectorAll('.sx-row'), active = 0, need = 0;
+        rows.forEach(function (tr) { if (tr.dataset.state !== 'off') active++; if (tr.dataset.state === 'need') need++; });
+        var figs = root.querySelectorAll('.lm-figures > div');
+        if (figs[1]) { var b = figs[1].querySelector('b'); b.textContent = need.toLocaleString(); b.style.color = need ? '#B45309' : ''; }
+        var pct = active ? Math.round((active - need) / active * 100) : 0;
+        var bar = root.querySelector('.lm-progress .lm-bar');
+        if (bar) { bar.setAttribute('aria-valuenow', pct); bar.querySelector('i').style.width = pct + '%'; }
+        var txt = root.querySelector('.lm-progress > span');
+        if (txt) txt.textContent = (active - need) + ' of ' + active + ' active sections have an adviser';
+        var tab = root.querySelector('.sx-tab[data-show="need"] span');
+        if (tab) tab.textContent = need;
+    }
+    function statusBadge(state) {
+        var el = document.createElement('span');
+        if (state === 'off') { el.className = 'lm-status'; el.textContent = 'Inactive'; }
+        else if (state === 'need') { el.className = 'sx-need'; el.textContent = 'Needs an adviser';
+            el.title = "Enrollment forms for this section can't be reviewed until it has an adviser"; }
+        else { el.className = 'lm-status on'; el.textContent = 'Active'; }
+        return el;
+    }
+    function relabel(advises) {
+        root.querySelectorAll('.sx-adv').forEach(function (f) {
+            var own = f.dataset.section;
+            f.querySelectorAll('option[data-name]').forEach(function (o) {
+                var also = (advises[o.value] || []).filter(function (x) { return String(x.id) !== own; })
+                    .map(function (x) { return x.label; }).join(', ');
+                o.textContent = o.dataset.name + (also ? ' — also advises ' + also : '');
+            });
+        });
+    }
     root.querySelectorAll('.sx-adv select').forEach(function (sel) {
-        var btn = sel.form.querySelector('button[type="submit"]');
-        sel.addEventListener('change', function () { btn.hidden = sel.value === (sel.dataset.initial || ''); });
+        var form = sel.form, tr = sel.closest('tr');
+        sel.addEventListener('change', function () {
+            var before = sel.dataset.initial || '';
+            if (sel.value === before) return;
+            sel.disabled = true;
+            tr.setAttribute('aria-busy', 'true');
+            var body = new FormData(form);
+            body.set('adviser_id', sel.value);
+            fetch(form.action, { method: 'POST', body: body, credentials: 'same-origin',
+                                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF } })
+                .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
+                .then(function (res) {
+                    if (!res.ok || !res.d.ok) {
+                        sel.value = before;
+                        var errs = res.d.errors ? Object.values(res.d.errors)[0] : null;
+                        toast((errs && errs[0]) || res.d.message || (res.status === 419 ? 'The page expired. Reload it and try again.' : 'Could not save the adviser.'), 'error');
+                        return;
+                    }
+                    var sec = res.d.section;
+                    sel.dataset.initial = sec.adviser_id ? String(sec.adviser_id) : '';
+                    tr.dataset.state = sec.state;
+                    tr.dataset.search = (form.dataset.label + ' ' + (sec.adviser_name || '')).toLowerCase();
+                    var cell = tr.querySelector('td[data-label="Status"]');
+                    if (cell) cell.replaceChildren(statusBadge(sec.state));
+                    var edit = tr.querySelector('[data-edit]');
+                    if (edit) edit.dataset.adviser = sel.dataset.initial;
+                    relabel(res.d.advises || {});
+                    refreshCounts();
+                    filter();
+                    toast(res.d.message, 'success');
+                })
+                .catch(function () { sel.value = before; toast('No connection. The adviser was not saved.', 'error'); })
+                .finally(function () { sel.disabled = false; tr.removeAttribute('aria-busy'); });
+        });
     });
 
     // One click per submit

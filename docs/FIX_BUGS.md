@@ -1173,6 +1173,18 @@ scrolling.
 
 ---
 
+## Batch 22 — Sections & Advisers: change an adviser without reloading
+
+### B22-1 ✅ Adviser saved in place
+- Picking an adviser in the list saved through a full page reload (pick, press Save, wait). It now saves as soon as
+  it is picked: the row's status, the "Need an adviser" count, the progress bar and every list's "also advises"
+  labels update in place, with a 3-second toast. A refused change (not an active teacher, expired page, no
+  connection) puts the previous adviser back and says why.
+- `PUT /admin/sections/{id}` answers JSON when asked (`Accept: application/json`); the normal form and the Edit
+  dialog work as before.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |
