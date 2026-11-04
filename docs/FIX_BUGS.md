@@ -1076,6 +1076,7 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
 - Teachers who left no longer appear in the Class Schedules teacher list and cannot be chosen as a class teacher or
   a section adviser (checked on the server too).
 - New status value `inactive` on `users.status`.
+- App: `POST /api/login` answers `403 { message: "This account is no longer active. Please contact the school.", status: "inactive" }`; every non-approved `403` now carries `status`. Flutter steps: `docs/FLUTTER_PROMPT_SEMESTER_LEAVE_NAMES.md`.
 
 ### B17-3 ✅ Teacher pages
 - One outline icon set (`<x-ui-icon>`) for the menu, shortcuts, bell and log out; the old mixed icons drew badly at

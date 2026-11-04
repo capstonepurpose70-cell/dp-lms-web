@@ -30,7 +30,12 @@ class AuthController extends Controller
  
         if ($user->status !== 'approved') {
             AuditLogService::log('Login blocked (not approved)', 'Auth', $user->email, $user);
-            return response()->json(['message' => 'Account not yet approved.'], 403);
+            // "inactive": a teacher who left the school (retired, resigned, transferred)
+            $message = $user->status === 'inactive'
+                ? 'This account is no longer active. Please contact the school.'
+                : 'Account not yet approved.';
+
+            return response()->json(['message' => $message, 'status' => $user->status], 403);
         }
 
         // Temporary password (old single "Create Teacher" accounts): no mobile token
