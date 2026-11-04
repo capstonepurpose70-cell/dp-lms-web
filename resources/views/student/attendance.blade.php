@@ -16,9 +16,6 @@
     .sa-timer b { display:block; font-size:24px; font-weight:900; color:#0F172A; font-variant-numeric:tabular-nums; }
     .sa-timer span { font-size:12px; color:#64748B; }
     .sa-form { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
-    .sa-code { flex:1; min-width:150px; height:58px; border:2px solid #E5E9F0; border-radius:16px; text-align:center; font-size:30px; font-weight:900;
-        letter-spacing:12px; color:#0F172A; background:#F8FAFC; font-family:ui-monospace, Consolas, monospace; }
-    .sa-code:focus { outline:none; border-color:#2563EB; background:#fff; box-shadow:0 0 0 4px rgba(37,99,235,.12); }
     .sa-btn { flex:1; min-width:170px; height:58px; border:0; border-radius:16px; font-size:17px; font-weight:900; cursor:pointer; color:#fff;
         transition:background .2s, transform .1s; }
     .sa-btn:active { transform:scale(.98); }
@@ -41,7 +38,7 @@
 
 <div class="sa-wrap">
     <h1 class="sa-h1">Attendance</h1>
-    <div class="sa-sub">When your teacher opens attendance, enter the <b>4-digit code</b> shown in class.
+    <div class="sa-sub">When your teacher sends attendance, tap the button once.
         On time = <b style="color:#16A34A;">present</b>, after the time limit = <b style="color:#A16207;">late</b>,
         not checked in when it closes = <b style="color:#DC2626;">absent</b>. Your parent is notified.</div>
 
@@ -69,11 +66,9 @@
             @else
                 <form method="POST" action="{{ route('student.attendance.mark', $s) }}" class="sa-form js-form">
                     @csrf
-                    <input type="text" name="code" class="sa-code" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="off"
-                           placeholder="••••" aria-label="Class code for {{ $s->subject?->name }}" required>
                     <button type="submit" class="sa-btn g js-btn">I'm present</button>
                 </form>
-                @error('code_' . $s->id)<div class="sa-err" role="alert">{{ $message }}</div>@enderror
+                @error('checkin_' . $s->id)<div class="sa-err" role="alert">{{ $message }}</div>@enderror
                 <div class="sa-hint js-hint">Present until {{ $s->on_time_until->format('g:i A') }}{{ $s->late_minutes ? ' · late until ' . $s->closes_at->format('g:i A') : '' }}</div>
             @endif
         </div>
@@ -120,11 +115,8 @@
     tick(); setInterval(tick, 1000);
 
     document.querySelectorAll('.js-form').forEach(function (f) {
-        var input = f.querySelector('.sa-code');
-        input.addEventListener('input', function () { input.value = input.value.replace(/\D/g, '').slice(0, 4); });
-        f.addEventListener('submit', function (e) {
-            if (input.value.length !== 4) { e.preventDefault(); input.focus(); return; }
-            var b = f.querySelector('.js-btn'); b.disabled = true; b.textContent = 'Checking…';
+        f.addEventListener('submit', function () {
+            var b = f.querySelector('.js-btn'); b.disabled = true; b.textContent = 'Saving…';
         });
     });
 

@@ -156,7 +156,7 @@
                 </div>
                 <ul class="td-list">
                     @foreach([
-                        ['teacher.attendance.index',    'Take attendance',      'Open a class and show the code',  'attendance'],
+                        ['teacher.attendance.index',    'Take attendance',      'Send it to a class and watch it live', 'attendance'],
                         ['teacher.gradebook.index',     'Encode grades',        'Quarter scores in the gradebook', 'gradebook'],
                         ['teacher.materials.index',     'Upload a material',    'Handouts, slides and videos',     'materials'],
                         ['teacher.announcements.index', 'Post an announcement', 'For your classes or parents',     'announcements'],

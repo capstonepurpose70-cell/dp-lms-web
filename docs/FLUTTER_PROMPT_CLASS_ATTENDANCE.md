@@ -1,5 +1,10 @@
 # Task for the Flutter app: class attendance (teacher opens it, students enter the code)
 
+> **Update 2026-11-05: there is no class code any more.** The teacher sends attendance to a class, and the student taps
+> once. Remove the code entry, the code display and "New code" from the app. `POST /api/student/class-attendance/{id}`
+> needs no body (a `code` sent by an older app is ignored). Everything below about codes no longer applies; the rest
+> (time windows, statuses, close, teacher corrections, parent results) is unchanged.
+
 > Paste this whole file into the Claude Code session of the Flutter project (`dp_lms`).
 > Backend: Laravel `dp-lms-web`. All endpoints below were verified end-to-end on 2026-10-21
 > (34 automated checks: open → notify → code → present/late → auto-absent → teacher correction → parent).

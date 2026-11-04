@@ -9,7 +9,7 @@ use App\Services\ClassAttendanceService;
 use Illuminate\Http\Request;
 
 /**
- * Teacher › Attendance — open a class attendance window, show the code, watch it live,
+ * Teacher › Attendance — send attendance to a class, watch it live,
  * correct marks, close early. (Replaces the old page that listed gate-camera scans.)
  */
 class ClassAttendanceController extends Controller
@@ -47,7 +47,7 @@ class ClassAttendanceController extends Controller
         }
 
         return redirect()->route('teacher.attendance.show', $session)
-            ->with('success', 'Attendance is open. Students were notified — show them the code.');
+            ->with('success', 'Attendance sent. The students of this class were notified.');
     }
 
     public function show(ClassAttendanceSession $session)
@@ -67,7 +67,6 @@ class ClassAttendanceController extends Controller
 
         return response()->json([
             'open'   => $session->isOpen(),
-            'code'   => $session->isOpen() ? $session->code : null,
             'counts' => $sheet['counts'],
             'rows'   => $sheet['rows']->map(fn ($r) => [
                 'id'        => $r['student']->id,
@@ -76,17 +75,6 @@ class ClassAttendanceController extends Controller
                 'by'        => $r['record']?->marked_by,
             ])->values(),
         ]);
-    }
-
-    public function code(ClassAttendanceSession $session)
-    {
-        try {
-            $code = $this->svc->newCodeFor(auth()->user(), $session);
-        } catch (ActionNotAllowed $e) {
-            return $this->fail($e);
-        }
-
-        return request()->wantsJson() ? response()->json(['ok' => true, 'code' => $code]) : back()->with('success', 'New code: ' . $code);
     }
 
     public function close(ClassAttendanceSession $session)

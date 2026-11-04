@@ -46,6 +46,7 @@ class SubmissionService
             'assignment_id' => $assignment->id,
             'user_id'       => $student->id,
         ]);
+        $isNew = !$submission->exists;
 
         if ($submission->exists && $submission->status === 'graded') {
             throw new ActionNotAllowed('This activity has already been graded. Submissions are locked.', 422);
@@ -64,6 +65,8 @@ class SubmissionService
         $submission->status       = 'submitted';
         $submission->submitted_at = now();
         $submission->save();
+
+        $this->notifier->submissionReceived($assignment, $student, $isNew);
 
         return $submission;
     }

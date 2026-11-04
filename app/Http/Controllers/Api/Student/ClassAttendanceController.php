@@ -8,7 +8,7 @@ use App\Models\ClassAttendanceSession;
 use App\Services\ClassAttendanceService;
 use Illuminate\Http\Request;
 
-/** Flutter — student class attendance (enter the code shown in class). */
+/** Flutter — student class attendance (one tap; the time decides present or late). */
 class ClassAttendanceController extends Controller
 {
     public function __construct(private ClassAttendanceService $svc) {}
@@ -42,13 +42,11 @@ class ClassAttendanceController extends Controller
         ]);
     }
 
-    /** POST /api/student/class-attendance/{id} { code } */
+    /** POST /api/student/class-attendance/{id} — no body needed (an old app's `code` is ignored) */
     public function mark(Request $request, ClassAttendanceSession $session)
     {
-        $data = $request->validate(['code' => 'required|string|max:10']);
-
         try {
-            $r = $this->svc->mark($request->user(), $session, $data['code']);
+            $r = $this->svc->mark($request->user(), $session);
         } catch (ActionNotAllowed $e) {
             return $e->toJson();
         }

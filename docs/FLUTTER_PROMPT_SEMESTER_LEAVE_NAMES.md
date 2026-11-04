@@ -123,10 +123,32 @@ the inbox: show the title with a default icon. `instructor` can be empty, so do 
 
 ---
 
-## 5. Checklist
+## 5. Class attendance without a code
+
+- **Student:** replace the code field with one button. `POST /api/student/class-attendance/{id}` with no body answers
+  `{ "ok": true, "status": "present" | "late", "marked_at": "…", "message": "…" }`. A `code` from an older app is ignored,
+  so nothing breaks before this update. Errors keep their shape: `403` not in this class, `422` closed or already marked.
+- **Teacher:** remove the code display and "New code". Label the start action "Send attendance". The live list works as
+  before. `code` may still be present in the responses; ignore it, and do not show it.
+- The push now reads "Check in by 7:12 AM to be present".
+
+## 6. Teacher notifications
+
+The teacher's inbox (`GET /api/notifications`) now has two kinds:
+
+| `type` | `title` | `data.subject` | `data.url` on the web | Open in the app |
+|---|---|---|---|---|
+| `submission` | `New submission: Quiz 1` or `Updated submission: Quiz 1` | student's name | `/teacher/assignments/{id}` | That quiz's submissions |
+| `enrollment` | `New enrollment form` | `Garcia, Mika, Grade 7` | `/teacher/enrollments/{id}` | That form |
+
+---
+
+## 7. Checklist
 
 - [ ] `POST /api/login` `403` shows `message`; `status: "inactive"` hides activation/resend actions.
 - [ ] `401` while signed in returns to a fresh login screen (existing rule).
 - [ ] Greeting uses the given name; avatar shows two letters; "Dela Cruz, Juan Reyes" → "Juan", "JD".
 - [ ] Full name still shown in profile, chat and lists.
 - [ ] Inbox shows `announcement` and `enrollment` rows and opens the right screen.
+- [ ] Student checks in with one tap; no code anywhere for students or teachers.
+- [ ] Teacher inbox shows `submission` and `enrollment` rows.

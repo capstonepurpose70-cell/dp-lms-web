@@ -93,6 +93,18 @@ class StudentNotifier
         });
     }
 
+    /** A student turned in work: the bell of the teacher who posted it. */
+    public function submissionReceived(Assignment $assignment, User $student, bool $isNew): void
+    {
+        $this->safely('Submission', function () use ($assignment, $student, $isNew) {
+            User::find($assignment->user_id)?->notify(new ActivityAssigned(
+                title: ($isNew ? 'New submission: ' : 'Updated submission: ') . $assignment->title,
+                subject: $student->name, instructor: '', type: 'submission',
+                url: '/teacher/assignments/' . $assignment->id,
+            ));
+        });
+    }
+
     private function send($students, ActivityAssigned $notification, string $title, string $body, array $data): void
     {
         foreach ($students as $student) {

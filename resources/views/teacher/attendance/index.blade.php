@@ -46,9 +46,9 @@
     <div class="tp-head">
         <div>
             <h1 class="tp-title">Class attendance</h1>
-            <p class="tp-sub">Open attendance for a class: students get a notification and enter the 4-digit code you show.
+            <p class="tp-sub">Send attendance to a class: its students get a notification and tap once to check in.
                 Before the on-time limit they are present, after it late, and anyone who has not checked in when it closes
-                is absent. Parents are notified of every result.</p>
+                is absent. You watch it live, and parents are notified of every result.</p>
         </div>
     </div>
 
@@ -62,12 +62,12 @@
                 <b><span class="ca-dot" aria-hidden="true"></span>{{ $s->subject?->name }}, Grade {{ $s->section?->grade_level }} {{ $s->section?->name }} is open</b>
                 <span>Present until {{ $s->on_time_until->format('g:i A') }}, closes at {{ $s->closes_at->format('g:i A') }}</span>
             </div>
-            <a href="{{ route('teacher.attendance.show', $s) }}" class="ca-btn" style="height:38px;">Show code &amp; live list</a>
+            <a href="{{ route('teacher.attendance.show', $s) }}" class="ca-btn" style="height:38px;">Open live list</a>
         </div>
     @endforeach
 
     <div class="ca-card">
-        <h2>Start attendance</h2>
+        <h2>Send attendance</h2>
         @if ($classes->isEmpty())
             <div class="ca-empty">You have no classes yet. The admin assigns your classes in <b>Class Schedules</b>.</div>
         @else
@@ -108,7 +108,7 @@
                     <span class="ca-chip r">Absent after that</span>
                 </div>
                 <div style="margin-top:14px;">
-                    <button type="submit" class="ca-btn" id="caStart">Start attendance &amp; notify students</button>
+                    <button type="submit" class="ca-btn" id="caStart">Send attendance to the class</button>
                 </div>
             </form>
         @endif

@@ -1227,6 +1227,26 @@ scrolling.
 
 ---
 
+## Batch 25 — Attendance without a code, teacher's bell and menu
+
+### B25-1 ✅ Class attendance: one tap, the clock decides
+- No more code to show or enter. The teacher sends attendance to one class; its students are notified and tap once. Within
+  the on-time limit = present, after it = late, no tap by closing = absent. The teacher watches it live and can correct
+  anyone. Only students of that class can check in, once. Parent results are unchanged.
+- Trade-off: without a code, a student can tap from anywhere while it is open. The teacher sees who tapped and can correct it.
+- The web `POST /teacher/attendance/{session}/code` route is gone. The app's endpoints stay, so an app not yet updated keeps
+  working (a sent `code` is ignored). The `code` column stays because it is required, but nothing uses it.
+
+### B25-2 ✅ Teacher's bell
+- Nothing ever notified a teacher, so the bell stayed empty. It now rings for a quiz submission (the teacher who posted it)
+  and a new enrollment form (the listed section's adviser, else every adviser of that grade); each opens the right page.
+- Opening a notification now counts as read (the request was cancelled by the page change).
+
+### B25-3 ✅ Teacher layout
+- Same school logo and smooth menu as the student pages (B24-1, B24-2); the notification list fits small phones.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

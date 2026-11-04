@@ -17,9 +17,7 @@
     .lv-top { display:grid; grid-template-columns: 1.1fr 1fr; gap:14px; margin-bottom:14px; }
     .lv-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; }
     .lv-code-lbl { font-size:14px; font-weight:800; color:var(--text-1); }
-    .lv-code-hint { font-size:12.5px; color:var(--text-2); margin-top:2px; }
-    .lv-code { font-size:64px; font-weight:900; letter-spacing:14px; color:var(--text-1); font-family:ui-monospace, Consolas, monospace; line-height:1.1; margin:6px 0 10px; }
-    .lv-code.closed { font-size:22px; letter-spacing:0; color:var(--text-3); font-family:inherit; }
+    .lv-code-hint { font-size:13px; color:var(--text-2); margin:6px 0 14px; line-height:1.55; }
     .lv-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .lv-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:38px; padding:0 14px; border-radius:10px; font-size:13px; font-weight:700;
         cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--text-1); }
@@ -66,14 +64,7 @@
     .lv-err { background:rgba(220,38,38,.08); border:1px solid rgba(220,38,38,.3); color:#b91c1c; padding:11px 14px; border-radius:12px; font-size:13px; margin-bottom:14px; }
     .lv-scroll { overflow-x:auto; }
 
-    /* Full-screen code for the projector */
-    .lv-full { position:fixed; inset:0; z-index:2000; background:#0b1220; color:#fff; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:20px; }
-    .lv-full.on { display:flex; }
-    .lv-full .fc { font-size:min(28vw, 260px); font-weight:900; letter-spacing:.12em; font-family:ui-monospace, Consolas, monospace; line-height:1; }
-    .lv-full .fs { font-size:clamp(16px, 3vw, 28px); opacity:.85; }
-    .lv-full .ft { font-size:clamp(22px, 5vw, 48px); font-weight:800; font-variant-numeric:tabular-nums; }
-    .lv-full button { margin-top:10px; background:transparent; color:#fff; border:1px solid rgba(255,255,255,.4); border-radius:10px; padding:8px 16px; cursor:pointer; }
-    @media (max-width: 760px) { .lv-top { grid-template-columns:1fr; } .lv-code { font-size:48px; letter-spacing:10px; } }
+    @media (max-width: 760px) { .lv-top { grid-template-columns:1fr; } }
 </style>
 
 <div class="tp-page" id="lvRoot">
@@ -100,15 +91,10 @@
 
     <div class="lv-top">
         <div class="lv-card">
-            <h2 class="lv-code-lbl">Class code</h2>
+            <h2 class="lv-code-lbl">{{ $isOpen ? 'Attendance sent to the class' : 'Attendance closed' }}</h2>
             @if ($isOpen)
-                <p class="lv-code-hint">Show it to the class; students enter it in DP-LMS.</p>
-            @endif
-            <div class="lv-code {{ $isOpen ? '' : 'closed' }}" id="lvCode">{{ $isOpen ? $session->code : 'Attendance closed' }}</div>
-            @if ($isOpen)
+                <p class="lv-code-hint">Students tap once in DP-LMS. Until {{ $session->on_time_until->format('g:i A') }} they are present{{ $session->late_minutes ? ', until ' . $session->closes_at->format('g:i A') . ' late' : '' }}, and anyone who has not checked in by {{ $session->closes_at->format('g:i A') }} is absent. The list below updates by itself.</p>
                 <div class="lv-actions" id="lvOpenActions">
-                    <button type="button" class="tp-btn ghost sm" id="lvFullBtn">Full screen for the projector</button>
-                    <button type="button" class="tp-btn ghost sm" id="lvNewCode">New code</button>
                     <form method="POST" action="{{ route('teacher.attendance.close', $session) }}" style="margin:0;"
                           data-confirm="Close attendance now?" data-confirm-text="Students who have not checked in will be marked absent and their parents notified." data-confirm-ok="Close attendance" data-confirm-danger>
                         @csrf
@@ -169,19 +155,11 @@
     </div>
 </div>
 
-<div class="lv-full" id="lvFull" role="dialog" aria-label="Class code">
-    <div class="fs">{{ $session->subject?->name }}, Grade {{ $session->section?->grade_level }} {{ $session->section?->name }}. Enter this code in DP-LMS.</div>
-    <div class="fc" id="lvFullCode">{{ $isOpen ? $session->code : '' }}</div>
-    <div class="ft" id="lvFullTimer"></div>
-    <button type="button" id="lvFullClose">Exit full screen (Esc)</button>
-</div>
-
 <script>
 (function () {
     var CSRF   = @json(csrf_token());
     var LIVE   = @json(route('teacher.attendance.live', $session));
     var MARK   = @json(route('teacher.attendance.mark', $session));
-    var CODE   = @json(route('teacher.attendance.code', $session));
     var OPEN   = @json($isOpen);
     var tOn    = Date.parse(@json($session->on_time_until->toIso8601String()));
     var tClose = Date.parse(@json($session->closes_at->toIso8601String()));
@@ -212,7 +190,6 @@
             phase.className = 'lv-badge x'; phase.textContent = 'Closing…';
             $('lvTimer').textContent = '00:00'; $('lvTimerLbl').textContent = 'Marking absents…';
         }
-        $('lvFullTimer').textContent = $('lvTimer').textContent + ', ' + phase.textContent.toLowerCase();
     }
 
     function paint(id, status, time, byTeacher) {
@@ -250,24 +227,6 @@
                 .catch(function () { window.dpToast('No connection. Please try again.', 'error'); });
         });
     });
-
-    if ($('lvNewCode')) $('lvNewCode').addEventListener('click', function () {
-        window.dpConfirm({ title: 'Make a new code?', text: 'The current code will stop working.', ok: 'Make new code' }).then(function (yes) {
-            if (!yes) return;
-            fetch(CODE, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } })
-                .then(function (r) { return r.json(); })
-                .then(function (d) { if (d.ok) { $('lvCode').textContent = d.code; $('lvFullCode').textContent = d.code; window.dpToast('New code: ' + d.code, 'success'); } else { window.dpToast(d.message || 'Could not make a new code.', 'error'); } })
-                .catch(function () { window.dpToast('No connection. Please try again.', 'error'); });
-        });
-    });
-
-    if ($('lvFullBtn')) $('lvFullBtn').addEventListener('click', function () {
-        $('lvFull').classList.add('on');
-        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {});
-    });
-    function exitFull() { $('lvFull').classList.remove('on'); if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {}); }
-    $('lvFullClose').addEventListener('click', exitFull);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('lvFull')) exitFull(); });
 
     tick(); timers.push(setInterval(tick, 1000));
     if (OPEN) timers.push(setInterval(poll, 5000));

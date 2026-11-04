@@ -6,9 +6,8 @@ use App\Exceptions\ActionNotAllowed;
 use App\Http\Controllers\Controller;
 use App\Models\ClassAttendanceSession;
 use App\Services\ClassAttendanceService;
-use Illuminate\Http\Request;
 
-/** Student › Attendance — enter the class code to be marked present (green) or late (yellow). */
+/** Student › Attendance — one tap: the time decides present (green) or late (yellow). */
 class ClassAttendanceController extends Controller
 {
     public function __construct(private ClassAttendanceService $svc) {}
@@ -23,15 +22,13 @@ class ClassAttendanceController extends Controller
         ]);
     }
 
-    public function mark(Request $request, ClassAttendanceSession $session)
+    public function mark(ClassAttendanceSession $session)
     {
-        $data = $request->validate(['code' => 'required|string|max:10'], ['code.required' => 'Enter the code shown by your teacher.']);
-
         try {
-            $record = $this->svc->mark(auth()->user(), $session, $data['code']);
+            $record = $this->svc->mark(auth()->user(), $session);
         } catch (ActionNotAllowed $e) {
             // If it just closed, its card is gone from the page — show the message at the top instead
-            $key = $session->fresh()->isOpen() ? 'code_' . $session->id : 'general';
+            $key = $session->fresh()->isOpen() ? 'checkin_' . $session->id : 'general';
             return back()->withErrors([$key => $e->getMessage()]);
         }
 

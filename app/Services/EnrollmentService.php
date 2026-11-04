@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -123,7 +124,7 @@ class EnrollmentService
         $fields = collect($data)->only(array_keys(static::rules()))->all();
         $fields['age'] = Carbon::parse($data['birthdate'])->age;
 
-        return EnrollmentRequest::updateOrCreate(
+        $form = EnrollmentRequest::updateOrCreate(
             ['user_id' => $student->id, 'status' => 'pending'],
             $fields + [
                 'grade_level' => $student->grade_level ?: 'To be assigned',
@@ -131,6 +132,30 @@ class EnrollmentService
                 'status'      => 'pending',
             ]
         );
+
+        if ($form->wasRecentlyCreated) {
+            $this->tellAdvisers($form, $student);
+        }
+
+        return $form;
+    }
+
+    /** The bell of whoever reviews this form: the listed section's adviser, else every adviser of the grade. */
+    private function tellAdvisers(EnrollmentRequest $form, User $student): void
+    {
+        try {
+            $listed = static::listedSection($student);
+            $adviserIds = $listed ? [$listed->adviser_id]
+                : Section::where('is_active', true)->where('grade_level', $form->grade_level)->whereNotNull('adviser_id')->pluck('adviser_id')->unique()->all();
+
+            $advisers = User::whereIn('id', $adviserIds)->where('role', 'teacher')->where('status', 'approved')->get();
+            Notification::send($advisers, new ActivityAssigned(
+                title: 'New enrollment form', subject: "{$student->name}, Grade {$form->grade_level}", instructor: '',
+                type: 'enrollment', url: '/teacher/enrollments/' . $form->id,
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('Enrollment notification to advisers failed: ' . $e->getMessage());
+        }
     }
 
     // ─── Reviewer (admin o adviser) ───────────────────────────────────────────

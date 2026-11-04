@@ -219,7 +219,6 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'terms', 'force.password'
         Route::post('/attendance',                   [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'store'])->name('attendance.store');
         Route::get('/attendance/{session}',          [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'show'])->whereNumber('session')->name('attendance.show');
         Route::get('/attendance/{session}/live',     [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'live'])->whereNumber('session')->name('attendance.live');
-        Route::post('/attendance/{session}/code',    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'code'])->whereNumber('session')->name('attendance.code');
         Route::post('/attendance/{session}/close',   [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'close'])->whereNumber('session')->name('attendance.close');
         Route::post('/attendance/{session}/mark',    [App\Http\Controllers\Teacher\ClassAttendanceController::class, 'mark'])->whereNumber('session')->name('attendance.mark');
 

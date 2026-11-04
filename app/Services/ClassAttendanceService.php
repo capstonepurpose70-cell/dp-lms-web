@@ -16,16 +16,15 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Class attendance — teacher-posted, student-marked (web + API share this service).
  *
  *  1. Teacher opens a session for a section + subject they teach (teacher_subjects),
- *     choosing the on-time window and the late window. A 4-digit code is generated.
+ *     choosing the on-time window and the late window.
  *  2. Students of that section get a push + in-app notification.
- *  3. Student enters the code shown in class:  within on-time → PRESENT (green),
- *     after it but before closing → LATE (yellow). 5 wrong codes = locked for that session.
+ *  3. Student taps once:  within on-time → PRESENT (green), after it but before closing → LATE (yellow).
+ *     Only students of that class can check in, and only once.
  *  4. At closing (or "Close now"), every student without a mark becomes ABSENT.
  *  5. Parents get a push for every result (present / late / absent / teacher correction).
  *
@@ -37,7 +36,6 @@ class ClassAttendanceService
     public const ON_TIME_MIN = 1;
     public const ON_TIME_MAX = 120;
     public const LATE_MAX    = 180;
-    public const WRONG_CODE_LIMIT = 5;
 
     public function __construct(private PushNotificationService $push) {}
 
@@ -193,7 +191,7 @@ class ClassAttendanceService
 
     // ── Student ──────────────────────────────────────────────────────────────
 
-    public function mark(User $student, ClassAttendanceSession $session, string $code): ClassAttendanceRecord
+    public function mark(User $student, ClassAttendanceSession $session): ClassAttendanceRecord
     {
         $this->finalizeIfDue($session);
         if (!$this->rosterIds($session)->contains((int) $student->id)) {
@@ -208,19 +206,6 @@ class ClassAttendanceService
             throw new ActionNotAllowed("You are already marked {$existing->status} for this class.", 422);
         }
 
-        $key = "class-att:{$session->id}:{$student->id}";
-        if (RateLimiter::tooManyAttempts($key, self::WRONG_CODE_LIMIT)) {
-            throw new ActionNotAllowed('Too many wrong codes. Please ask your teacher to mark you.', 429);
-        }
-        $given = preg_replace('/\D/', '', $code);
-        if ($given === '' || !hash_equals((string) $session->code, $given)) {
-            RateLimiter::hit($key, 3600);
-            $left = max(0, self::WRONG_CODE_LIMIT - RateLimiter::attempts($key));
-            throw new ActionNotAllowed($left > 0
-                ? "Wrong code. {$left} " . ($left === 1 ? 'try' : 'tries') . ' left.'
-                : 'Too many wrong codes. Please ask your teacher to mark you.', $left > 0 ? 422 : 429);
-        }
-
         try {
             $record = ClassAttendanceRecord::create([
                 'session_id' => $session->id,
@@ -232,7 +217,6 @@ class ClassAttendanceService
         } catch (UniqueConstraintViolationException) {
             throw new ActionNotAllowed('You are already marked for this class.', 422);
         }
-        RateLimiter::clear($key);
 
         $record->load(['student.parent', 'session.subject']);
         $this->later(fn () => $this->notifyParents(collect([$record])));
@@ -365,7 +349,7 @@ class ClassAttendanceService
         $this->push->sendToUsers(
             $students->pluck('id')->all(),
             "Attendance is open — {$subject}",
-            'Enter the class code by ' . $session->on_time_until->format('g:i A') . ' to be present'
+            'Check in by ' . $session->on_time_until->format('g:i A') . ' to be present'
                 . ($session->late_minutes ? ' (late until ' . $session->closes_at->format('g:i A') . ').' : '.'),
             [
                 'type'          => 'attendance_open',
