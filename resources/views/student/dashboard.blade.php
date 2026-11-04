@@ -119,7 +119,7 @@
 <div class="sd">
     <header class="sd-head sd-in">
         <div>
-            <h1 class="sd-greet">Good {{ $now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening') }}, {{ explode(' ', $user->name)[0] }}</h1>
+            <h1 class="sd-greet">Good {{ $now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening') }}@if($user->greetingName() !== ''), {{ $user->greetingName() }}@endif</h1>
             <p class="sd-date">{{ $now->format('l, F j, Y') }}</p>
         </div>
         @if($enrollment)

@@ -80,7 +80,7 @@
         @endphp
         <section class="cr-child" id="child-{{ $child->id }}" aria-labelledby="child-{{ $child->id }}-name">
             <div class="cr-head">
-                <span class="cr-av" aria-hidden="true">{{ mb_strtoupper(mb_substr($child->name, 0, 1)) }}</span>
+                <span class="cr-av" aria-hidden="true">{{ $child->initials() }}</span>
                 <div class="cr-who">
                     <h2 class="cr-name" id="child-{{ $child->id }}-name">{{ $child->name }}</h2>
                     <p class="cr-meta">

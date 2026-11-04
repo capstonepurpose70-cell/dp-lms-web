@@ -84,7 +84,7 @@
                         @php $isActive = $active && $active->id === $c->id; @endphp
                         <li>
                             <a class="ms-contact" href="{{ route('student.messages', ['with' => $c->id]) }}" data-id="{{ $c->id }}" @if($isActive) aria-current="true" @endif>
-                                <span class="ms-av" aria-hidden="true">{{ mb_strtoupper(mb_substr($c->name, 0, 1)) }}</span>
+                                <span class="ms-av" aria-hidden="true">{{ $c->initials() }}</span>
                                 <span class="ms-c-main">
                                     <span class="ms-c-name">{{ $c->name }}</span>
                                     <span class="ms-c-last">
@@ -106,7 +106,7 @@
 
             <section class="ms-card" aria-label="Conversation with {{ $active->name }}">
                 <div class="ms-head">
-                    <span class="ms-av" aria-hidden="true">{{ mb_strtoupper(mb_substr($active->name, 0, 1)) }}</span>
+                    <span class="ms-av" aria-hidden="true">{{ $active->initials() }}</span>
                     <div><b>{{ $active->name }}</b><span class="ms-head-role">Teacher</span></div>
                 </div>
 

@@ -229,7 +229,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="msg-thread-empty">No messages yet. Say hello to {{ explode(' ', trim($activeUser->name))[0] }}.</div>
+                        <div class="msg-thread-empty">No messages yet. Say hello to {{ $activeUser->greetingName() ?: $activeUser->name }}.</div>
                     @endforelse
                 </div>
 

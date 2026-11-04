@@ -1140,6 +1140,39 @@ text. 32 page views (desktop and phone, detail pages included): no JS errors, no
 
 ---
 
+## Batch 20 — Student names from the LRN list, easier Class Schedules
+
+### B20-1 ✅ The account uses the school's spelling of the name
+- A student typed "Anna Mendoza Lopez" for the listed "Mendoza, Ana Lopez"; two of three words matched, so the
+  activation went through and the typed spelling became the account name. The account now takes the name from the
+  LRN list (web and app). An all-capitals entry, as SF1 exports it, is written in normal case
+  ("DELA CRUZ, MARÍA" → "Dela Cruz, María"). The emailed code still greets by the typed name.
+
+### B20-2 ✅ Class Schedules: what is left is shown first
+- The grade's subjects are listed right under the section picker with "Not yet" or "5 a week"; picking one fills the
+  form and moves to Teacher. Before, the "not scheduled yet" list sat at the bottom of the form, out of view.
+- Previous / next buttons beside the section list.
+- An empty timetable shows one message with what to do, instead of "No classes" in every day.
+- Days: "tap a day to leave it out"; buttons say "Add to timetable" / "Save changes".
+
+---
+
+## Batch 21 — Student and parent portal QA
+
+Checked: every student and parent page needs the right role (guests, teachers, admins, and the other role are
+refused). A student cannot open, submit or check in to another section's quiz, material or class attendance, even
+with the right code, while the same requests work for their own section. A parent sees only their own child; a child
+id in the address changes nothing. Parent sign-up codes: 8 characters from 31, 24 hours, 30 tries a minute per
+device. Typed text shows as text. No browser pop-ups. 22 page views (desktop and phone): no JS errors, no sideways
+scrolling.
+
+### B21-1 ✅ Greeting and initials with names written surname first
+- Student dashboard, parent dashboard and the teacher's empty chat said "Good evening, Mendoza," / "Say hello to
+  Mendoza,". They now use the given name ("Ana"); avatars show two letters ("AM") in the student and parent pages.
+  Matters now that student accounts carry the school list's spelling (B20-1).
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

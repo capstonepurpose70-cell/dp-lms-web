@@ -20,6 +20,13 @@
     });
     $scheduledSubjectIds = $all->pluck('subject_id')->unique()->all();
     $unscheduled = $subjects->reject(fn ($sub) => in_array($sub->id, $scheduledSubjectIds));
+    $perSubject  = $all->countBy('subject_id');   // classes a week per subject
+
+    // Previous / next section (same order as the list)
+    $pos         = $section ? $sections->search(fn ($s) => $s->id === $section->id) : false;
+    $prevSection = $pos !== false && $pos > 0 ? $sections[$pos - 1] : null;
+    $nextSection = $pos !== false && $pos < $sections->count() - 1 ? $sections[$pos + 1] : null;
+    $sectionUrl  = fn ($s) => route('admin.schedules.index', ['section_id' => $s->id], false);
 
     // Restore edit mode after a failed update (validation error)
     $editingId = (int) old('_editing');
@@ -106,6 +113,36 @@
     [data-theme="dark"] .sch-preset[aria-pressed="true"] { color:#93c5fd; }
     .sch-hint { font-size:12px; color:var(--slate-500); margin-top:12px; line-height:1.55; }
 
+    .sch-pickrow { display:flex; gap:8px; align-items:stretch; }
+    .sch-pickrow select { flex:1; min-width:0; }
+    .sch-step { display:inline-grid; place-items:center; width:42px; border-radius:10px; border:1px solid var(--border-default);
+                background:var(--white); color:var(--slate-700); text-decoration:none; flex-shrink:0; }
+    .sch-step:hover { border-color:#2563eb; color:#1d4ed8; }
+    .sch-step[aria-disabled="true"] { opacity:.35; pointer-events:none; }
+    .sch-step svg { width:18px; height:18px; }
+
+    .sch-plan { margin-bottom:16px; }
+    .sch-plan-h { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:12px; }
+    .sch-plan-h h2 { margin:0; font-size:15px; font-weight:800; color:var(--slate-900); }
+    .sch-plan-h p { margin:0; font-size:13px; color:var(--slate-500); }
+    .sch-plan-list { display:flex; flex-wrap:wrap; gap:8px; }
+    .sch-subj { display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:6px 12px 6px 10px; border-radius:10px;
+                border:1px solid var(--border-default); background:var(--white); color:var(--slate-900); font:inherit; font-size:13px;
+                font-weight:700; cursor:pointer; text-align:left; transition:border-color .15s ease, background-color .15s ease; }
+    .sch-subj:hover { border-color:var(--c); }
+    .sch-subj:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
+    .sch-subj i { width:9px; height:9px; border-radius:50%; background:var(--c); flex-shrink:0; }
+    .sch-subj span { font-size:12px; font-weight:600; color:var(--slate-500); }
+    .sch-subj.todo { border-style:dashed; }
+    .sch-subj.todo span { color:#b45309; }
+    .sch-subj.done span { color:#15803d; }
+    .sch-subj.picked { border-color:var(--c); background:color-mix(in srgb, var(--c) 9%, transparent); }
+    [data-theme="dark"] .sch-subj.todo span { color:#fbbf24; }
+    [data-theme="dark"] .sch-subj.done span { color:#4ade80; }
+
+    .sch-blank { grid-column:1 / -1; text-align:center; padding:48px 20px; border:1.5px dashed var(--border-default); border-radius:14px;
+                 color:var(--slate-500); font-size:13.5px; line-height:1.6; background:var(--white); }
+    .sch-blank b { display:block; font-size:15px; color:var(--slate-900); margin-bottom:4px; }
     .sch-todo { margin-top:16px; border-top:1px solid var(--border-default); padding-top:14px; }
     .sch-todo h4 { margin:0 0 8px; font-size:12.5px; font-weight:800; color:var(--slate-700); }
     .sch-chip { display:inline-block; margin:0 6px 6px 0; padding:4px 9px; border-radius:7px; font-size:12px; font-weight:600;
@@ -180,6 +217,11 @@
     <div class="sch-card sch-picker">
         <form method="GET" action="{{ route('admin.schedules.index') }}" class="pick">
             <label class="sch-label" for="sectionPicker">Section</label>
+            <div class="sch-pickrow">
+            <a class="sch-step" href="{{ $prevSection ? $sectionUrl($prevSection) : '#' }}" @if(!$prevSection) aria-disabled="true" tabindex="-1" @endif
+               aria-label="Previous section{{ $prevSection ? ': Grade '.$prevSection->grade_level.' – '.$prevSection->name : '' }}" title="Previous section">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>
+            </a>
             <select name="section_id" id="sectionPicker" class="sch-in" onchange="this.form.submit()">
                 @forelse($sections->groupBy('grade_level') as $grade => $group)
                     <optgroup label="Grade {{ $grade }}">
@@ -193,13 +235,17 @@
                     <option value="">No active sections</option>
                 @endforelse
             </select>
+            <a class="sch-step" href="{{ $nextSection ? $sectionUrl($nextSection) : '#' }}" @if(!$nextSection) aria-disabled="true" tabindex="-1" @endif
+               aria-label="Next section{{ $nextSection ? ': Grade '.$nextSection->grade_level.' – '.$nextSection->name : '' }}" title="Next section">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 6 6 6-6 6"/></svg>
+            </a>
+            </div>
             <noscript><button type="submit" class="sch-btn" style="width:auto;padding:9px 16px;">Show</button></noscript>
         </form>
         @if($section)
             <div class="sch-sum">
                 <div class="sch-pill"><b>{{ $classCount }}</b>{{ Str::plural('class', $classCount) }} / week</div>
                 <div class="sch-pill"><b>{{ intdiv($weekMinutes, 60) }}h{{ $weekMinutes % 60 ? ' '.($weekMinutes % 60).'m' : '' }}</b>total time</div>
-                <div class="sch-pill"><b>{{ $subjects->count() - $unscheduled->count() }}/{{ $subjects->count() }}</b>subjects scheduled</div>
             </div>
             @if($isShs)
                 {{-- Senior High: each semester has its own timetable --}}
@@ -229,6 +275,29 @@
             </div>
         </div>
     @else
+    @if($subjects->isNotEmpty())
+        <div class="sch-card sch-plan">
+            <div class="sch-plan-h">
+                <h2>Grade {{ $section->grade_level }} subjects</h2>
+                <p>
+                    @if($unscheduled->isEmpty())
+                        Every subject has a class. Pick one to add more.
+                    @else
+                        {{ $subjects->count() - $unscheduled->count() }} of {{ $subjects->count() }} have a class. Pick a subject to add it.
+                    @endif
+                </p>
+            </div>
+            <div class="sch-plan-list">
+                @foreach($subjects as $sub)
+                    @php $n = (int) ($perSubject[$sub->id] ?? 0); @endphp
+                    <button type="button" class="sch-subj {{ $n ? 'done' : 'todo' }}" data-subject="{{ $sub->id }}" style="--c: {{ $colorOf($sub->id) }};">
+                        <i aria-hidden="true"></i>{{ $sub->name }}
+                        <span>{{ $n ? $n . ' a week' : 'Not yet' }}</span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    @endif
     <div class="sch-grid">
 
         {{-- ── Add / Edit form ── --}}
@@ -270,7 +339,7 @@
 
                 {{-- Add: several days at once. Edit: the one day of that class. --}}
                 <div id="schDaysWrap" @if($editing) hidden @endif>
-                    <span class="sch-label" id="schDaysLabel">Days <span class="opt">(same time each day)</span></span>
+                    <span class="sch-label" id="schDaysLabel">Days <span class="opt">(same time each day; tap a day to leave it out)</span></span>
                     <div class="sch-days" role="group" aria-labelledby="schDaysLabel">
                         @foreach($days as $num => $label)
                             <label class="sch-daychip" title="{{ $label }}">
@@ -315,7 +384,7 @@
                        value="{{ old('room') }}" placeholder="e.g. Room 5, Science Lab">
 
                 <button type="submit" id="schSubmit" class="sch-btn {{ $editing ? 'edit' : '' }}" @disabled($subjects->isEmpty())>
-                    {{ $editing ? 'Save Changes' : 'Add to Schedule' }}
+                    {{ $editing ? 'Save changes' : 'Add to timetable' }}
                 </button>
                 <button type="button" id="schCancel" class="sch-cancel" @if(!$editing) style="display:none" @endif>Cancel editing</button>
 
@@ -329,22 +398,16 @@
                 </p>
             </form>
 
-            @if($subjects->isNotEmpty())
-                <div class="sch-todo">
-                    @if($unscheduled->isEmpty())
-                        <div class="sch-alldone">✓ Every Grade {{ $section->grade_level }} subject has at least one class.</div>
-                    @else
-                        <h4>Not scheduled yet ({{ $unscheduled->count() }})</h4>
-                        @foreach($unscheduled as $sub)
-                            <span class="sch-chip">{{ $sub->name }}</span>
-                        @endforeach
-                    @endif
-                </div>
-            @endif
         </div>
 
         {{-- ── Weekly grid ── --}}
         <div>
+            @if($classCount === 0)
+                <div class="sch-blank">
+                    <b>No classes yet for Grade {{ $section->grade_level }} – {{ $section->name }}</b>
+                    Pick a subject above, choose its teacher, the days and the period, then press Add.
+                </div>
+            @else
             <div class="sch-week">
                 @foreach($days as $num => $label)
                     @php $dayItems = $schedules[$num] ?? collect(); @endphp
@@ -380,6 +443,7 @@
                     </div>
                 @endforeach
             </div>
+            @endif
         </div>
 
     </div>
@@ -431,7 +495,7 @@
     function isEditing() { return !method.disabled; }
     function addLabel() {
         var n = Array.prototype.filter.call(dayBoxes, function (c) { return c.checked; }).length;
-        submit.textContent = n > 1 ? 'Add on ' + n + ' days' : 'Add to Schedule';
+        submit.textContent = n > 1 ? 'Add on ' + n + ' days' : 'Add to timetable';
     }
     dayBoxes.forEach(function (c) { c.addEventListener('change', addLabel); });
     $('schAllDays').addEventListener('click', function () {
@@ -474,12 +538,29 @@
             $('room').value        = card.dataset.room || '';
             markPreset();
             setTitle('Edit class'); tag.style.display = '';
-            submit.textContent = 'Save Changes'; submit.classList.add('edit');
+            submit.textContent = 'Save changes'; submit.classList.add('edit');
             cancel.style.display = '';
             clearHighlight(); card.classList.add('editing');
             $('schFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
+
+    // Subject checklist: pick a subject to add it (leaves edit mode first)
+    var subjButtons = document.querySelectorAll('.sch-subj');
+    function markSubject() {
+        subjButtons.forEach(function (b) { b.classList.toggle('picked', b.dataset.subject === $('subject_id').value); });
+    }
+    subjButtons.forEach(function (b) {
+        b.addEventListener('click', function () {
+            if (isEditing()) cancel.click();
+            $('subject_id').value = b.dataset.subject;
+            markSubject();
+            if (window.matchMedia('(max-width: 900px)').matches) $('schFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            $('teacher_id').focus({ preventScroll: true });
+        });
+    });
+    $('subject_id').addEventListener('change', markSubject);
+    markSubject();
 
     // Cancel: back to "Add a class"
     cancel.addEventListener('click', function () {
@@ -498,6 +579,7 @@
         markPreset();
         cancel.style.display = 'none';
         clearHighlight();
+        if (typeof markSubject === 'function') markSubject();
     });
 
     // Remove: confirm in a dialog

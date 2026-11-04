@@ -87,6 +87,10 @@ Rule:
 }
 ```
 
+**Student activation now stores the school's spelling.** After `POST /api/activate/verify`, `user.name` is the name
+from the school's LRN list (for example `"Mendoza, Ana Lopez"`), not what the student typed (`"Anna Mendoza Lopez"`).
+Show `user.name` from the response and from later API calls; never keep the typed name in the app.
+
 Always show the **full** `name` where the person is identified (profile, chat header, lists); the short form is
 only for greetings and avatars. The API is unchanged — no new fields.
 

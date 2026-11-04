@@ -73,7 +73,7 @@
 @endphp
 
 <div class="pd-wrap">
-    <h1 class="pd-title">{{ $greeting }}, {{ Str::of(auth()->user()->name)->explode(' ')->first() }}</h1>
+    <h1 class="pd-title">{{ $greeting }}@if(auth()->user()->greetingName() !== ''), {{ auth()->user()->greetingName() }}@endif</h1>
     <p class="pd-sub">
         {{ now()->format('l, F j, Y') }}
         @if($children->isNotEmpty())
@@ -91,7 +91,7 @@
         @endphp
         <section class="pd-card" aria-label="{{ $child->name }}">
             <div class="pd-child">
-                <span class="pd-av" aria-hidden="true">{{ mb_strtoupper(mb_substr($child->name, 0, 1)) }}</span>
+                <span class="pd-av" aria-hidden="true">{{ $child->initials() }}</span>
                 <div class="pd-who">
                     <p class="pd-name">{{ $child->name }}</p>
                     <p class="pd-meta">

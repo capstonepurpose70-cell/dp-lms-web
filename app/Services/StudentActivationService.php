@@ -108,7 +108,9 @@ class StudentActivationService
         $code    = $this->newCode();
         $payload = [
             'lrn'           => $lrn,
-            'name'          => trim($data['name']),
+            // The account carries the school's spelling (the name on the class list), not the typed one
+            'name'          => self::listName($official->student_name),
+            'typed_name'    => trim($data['name']),
             'birthdate'     => Carbon::parse($data['birthdate'])->toDateString(),
             'email'         => Str::lower(trim($data['email'])),
             'password_hash' => Hash::make($data['password']),
@@ -208,6 +210,17 @@ class StudentActivationService
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /** "juan.delacruz@gmail.com" → "ju•••••••••••@gmail.com" */
+    /** The name as the school lists it; an all-capitals entry (as SF1 exports it) is written in normal case. */
+    public static function listName(string $name): string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name));
+        if ($name !== '' && $name === mb_strtoupper($name)) {
+            $name = mb_convert_case(mb_strtolower($name), MB_CASE_TITLE, 'UTF-8');
+        }
+
+        return $name;
+    }
+
     public static function maskEmail(string $email): string
     {
         [$local, $domain] = array_pad(explode('@', $email, 2), 2, '');
@@ -241,7 +254,7 @@ class StudentActivationService
     private function sendCode(string $token, array $payload, string $code): void
     {
         try {
-            Mail::to($payload['email'])->send(new OtpMail($code, $payload['name']));
+            Mail::to($payload['email'])->send(new OtpMail($code, $payload['typed_name'] ?? $payload['name']));
         } catch (\Throwable $e) {
             $this->forget($token);
             report($e);

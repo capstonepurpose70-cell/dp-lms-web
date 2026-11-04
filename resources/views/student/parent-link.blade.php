@@ -108,7 +108,7 @@
     @elseif($parent)
         <div class="pl-card">
             <div class="pl-row">
-                <div class="pl-avatar" aria-hidden="true">{{ strtoupper(mb_substr($parent->name, 0, 1)) }}</div>
+                <div class="pl-avatar" aria-hidden="true">{{ $parent->initials() }}</div>
                 <div style="flex:1;min-width:0;">
                     <div class="pl-name">{{ $parent->name }}</div>
                     <div class="pl-meta">Linked parent</div>

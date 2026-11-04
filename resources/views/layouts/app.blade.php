@@ -159,7 +159,7 @@
             width: 32px; height: 32px; border-radius: 50%;
             background: var(--accent); color: #fff;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 800; flex-shrink: 0;
+            font-size: 12px; font-weight: 800; letter-spacing: .02em; flex-shrink: 0;
         }
         .user-name { font-size: 13.5px; font-weight: 700; color: var(--text-1); line-height: 1.25; }
         .user-role { font-size: 12px; color: var(--text-3); font-weight: 500; }
@@ -492,7 +492,7 @@
     </div>
 </div>
         <div class="user-chip">
-            <div class="user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
+            <div class="user-avatar" aria-hidden="true">{{ auth()->user()->initials() }}</div>
             <div>
                 <div class="user-name">{{ auth()->user()->name }}</div>
                 <div class="user-role">{{ ucfirst(auth()->user()->role) }}</div>
