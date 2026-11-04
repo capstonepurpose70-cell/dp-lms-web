@@ -9,6 +9,7 @@ use App\Models\Section;
 use App\Models\StudentEnrollment;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Notifications\ActivityAssigned;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -202,6 +203,7 @@ class EnrollmentService
             'request'      => $request,
             'subjectCount' => static::subjectCount($grade),
         ]);
+        $this->bell($student, 'Your enrollment was approved', "Grade {$grade}, {$section->name}", '/student/dashboard');
 
         return $student;
     }
@@ -223,6 +225,7 @@ class EnrollmentService
             'student' => $student,
             'remarks' => $remarks,
         ]);
+        $this->bell($student, 'Your enrollment form was returned', 'Open it to see what to fix', '/student/enroll');
 
         return $student;
     }
@@ -243,6 +246,16 @@ class EnrollmentService
 
         return $request->student
             ?? throw ValidationException::withMessages(['general' => 'Student record not found for this request.']);
+    }
+
+    /** The student's bell. A failure here must not undo the decision. */
+    private function bell(User $student, string $title, string $detail, string $url): void
+    {
+        try {
+            $student->notify(new ActivityAssigned(title: $title, subject: $detail, instructor: '', type: 'enrollment', url: $url));
+        } catch (\Throwable $e) {
+            Log::warning('Enrollment notification failed: ' . $e->getMessage());
+        }
     }
 
     private function mail(string $view, User $student, string $subject, array $data): void

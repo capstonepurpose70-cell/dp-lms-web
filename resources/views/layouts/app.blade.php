@@ -55,6 +55,8 @@
             /* Layout */
             --sidebar-w:            264px;
             --sidebar-w-collapsed:   72px;
+            --menu-time: .32s;
+            --menu-ease: cubic-bezier(.22,.61,.36,1);
             --nav-h:                 64px;
 
             /* Radii & shadows */
@@ -102,10 +104,9 @@
             display: flex; align-items: center; padding: 0 16px;
             height: 100%;
             border-right: 1px solid var(--sb-border);
-            transition: width .28s cubic-bezier(.4,0,.2,1), padding .28s cubic-bezier(.4,0,.2,1);
+            transition: width var(--menu-time) var(--menu-ease), padding var(--menu-time) var(--menu-ease);
         }
         body.collapsed .nav-brand-zone { width: var(--sidebar-w-collapsed); padding: 0 17px; }
-        body.collapsed .logo-mark { width: 38px; height: 38px; }
 
         /* Sidebar toggle — first control of the top bar */
         .collapse-btn {
@@ -122,10 +123,10 @@
             display: flex; align-items: center; gap: 12px;
             min-width: 0; text-decoration: none;
         }
-        .logo-mark { flex-shrink: 0; width: 38px; height: 38px; display: block; }
+        .logo-mark { flex-shrink: 0; width: 38px; height: 38px; display: block; border-radius: 50%; object-fit: cover; }
         .brand-text {
             min-width: 0; white-space: nowrap; overflow: hidden;
-            transition: opacity .18s ease, max-width .28s cubic-bezier(.4,0,.2,1);
+            transition: opacity .2s ease .08s, max-width var(--menu-time) var(--menu-ease);
             max-width: 196px;
         }
         .brand-title {
@@ -133,7 +134,7 @@
             letter-spacing: -.01em; line-height: 1.2;
         }
         .brand-sub { display: block; font-size: 12px; font-weight: 500; color: var(--text-3); line-height: 1.3; margin-top: 1px; }
-        body.collapsed .brand-text { opacity: 0; max-width: 0; }
+        body.collapsed .brand-text { opacity: 0; max-width: 0; transition: opacity .12s ease, max-width var(--menu-time) var(--menu-ease); }
 
         /* Nav right */
         .nav-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
@@ -178,7 +179,7 @@
             background: var(--sb-bg);
             border-right: 1px solid var(--sb-border);
             display: flex; flex-direction: column; overflow: hidden;
-            transition: width .28s cubic-bezier(.4,0,.2,1);
+            transition: width var(--menu-time) var(--menu-ease);
             z-index: 90;
         }
         body.collapsed .sidebar { width: var(--sidebar-w-collapsed); overflow: visible; }   /* tooltips escape */
@@ -195,7 +196,7 @@
         /* ── Nav link ── */
         .sidebar-nav a {
             display: flex; align-items: center; gap: 12px;
-            min-height: 42px; padding: 0 12px; border-radius: var(--r-sm);
+            min-height: 42px; padding: 0 14px; border-radius: var(--r-sm);   /* the icon then sits at the centre of the narrow menu */
             font-size: 14px; font-weight: 600; color: var(--sb-text);
             text-decoration: none; white-space: nowrap; position: relative;
             transition: background-color .15s ease, color .15s ease;
@@ -215,12 +216,10 @@
 
         .nav-label {
             white-space: nowrap; overflow: hidden;
-            max-width: 180px; flex: 1; min-width: 0;
-            transition: opacity .18s ease, max-width .28s cubic-bezier(.4,0,.2,1);
+            flex: 1; min-width: 0;
+            transition: opacity .2s ease .08s;
         }
-        body.collapsed .nav-label { opacity: 0; max-width: 0; }
-        body.collapsed .sidebar-nav a { justify-content: center; padding: 0; }
-        body.collapsed .sidebar-nav a.active::before { display: none; }
+        body.collapsed .nav-label { opacity: 0; transition: opacity .12s ease; }
 
         /* Tooltip (collapsed sidebar only) */
         .sb-tooltip {
@@ -241,7 +240,7 @@
         .sidebar-footer { padding: 12px; border-top: 1px solid var(--sb-border); }
         .logout-btn {
             display: flex; align-items: center; gap: 12px;
-            width: 100%; min-height: 42px; padding: 0 12px; border-radius: var(--r-sm);
+            width: 100%; min-height: 42px; padding: 0 14px; border-radius: var(--r-sm);
             border: none; cursor: pointer; background: transparent; text-align: left;
             font-family: inherit; font-size: 14px; font-weight: 600;
             color: var(--sb-text); white-space: nowrap; position: relative;
@@ -251,8 +250,6 @@
         .logout-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .logout-icon svg { width: 20px; height: 20px; stroke: var(--sb-icon); stroke-width: 1.8; transition: stroke .15s ease; }
         .logout-btn:hover .logout-icon svg { stroke: #B91C1C; }
-        body.collapsed .logout-btn { justify-content: center; padding: 0; }
-        body.collapsed .logout-btn .nav-label { opacity: 0; max-width: 0; overflow: hidden; }
 
         /* ═══════════════════════════════════════════
            MAIN CONTENT
@@ -260,7 +257,7 @@
         .main-content {
             flex: 1; margin-left: var(--sidebar-w);
             padding: 32px 40px 48px;
-            transition: margin-left .28s cubic-bezier(.4,0,.2,1);
+            transition: margin-left var(--menu-time) var(--menu-ease);
             min-width: 0;
             animation: contentIn .22s ease-out both;
         }
@@ -323,11 +320,7 @@
             }
             body.mobile-open .sidebar { transform: translateX(0); box-shadow: 8px 0 24px rgba(15,23,42,.10); }
             body.collapsed .sidebar { width: 272px !important; overflow: hidden; }
-            body.collapsed .sidebar-nav a,
-            body.collapsed .logout-btn { justify-content: flex-start; padding: 0 12px; }
-            body.collapsed .sidebar-nav a.active::before { display: block; }
-            body.collapsed .nav-label,
-            body.collapsed .logout-btn .nav-label { opacity: 1 !important; max-width: none !important; }
+            body.collapsed .nav-label { opacity: 1 !important; }
             body.collapsed .sb-tooltip { display: none; }
 
             .main-content,
@@ -335,6 +328,8 @@
                 margin-left: 0 !important;
                 padding: 18px 16px;
             }
+            /* The notification list is placed against the screen, so it fits every phone */
+            #notifDropdown { position: fixed !important; top: calc(var(--nav-h) + 8px) !important; left: 12px !important; right: 12px !important; width: auto !important; }
             /* Phone top bar: menu button, then the school, then notifications + avatar */
             .top-nav { padding-right: 12px; }
             .collapse-btn { order: -1; margin: 0 0 0 12px; }
@@ -420,22 +415,26 @@
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
             * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+            /* Exception: the menu moves only when the person presses the menu button */
+            .sidebar, .nav-brand-zone, .main-content { transition-duration: var(--menu-time) !important; }
+            .brand-text { transition-duration: .2s, var(--menu-time) !important; }
+            body.collapsed .brand-text { transition-duration: .12s, var(--menu-time) !important; }
+            .nav-label { transition-duration: .2s !important; }
+            body.collapsed .nav-label { transition-duration: .12s !important; }
         }
     </style>
 </head>
 <body>
+<script>
+    try { if (localStorage.getItem('dp-lms-collapsed') === '1' && window.innerWidth > 768) document.body.classList.add('collapsed'); } catch (e) {}
+</script>
 
 {{-- ════════════════════════ TOP NAV ════════════════════════ --}}
 <nav class="top-nav">
     <div class="nav-brand-zone">
         {{-- Logo mark + school name --}}
         <a class="nav-brand" href="{{ auth()->user()->role === 'parent' ? route('parent.dashboard') : route('student.dashboard') }}" aria-label="Sto. Domingo NHS, go to the dashboard">
-            <svg class="logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M20 2.5L5 8.5v10.2c0 8.7 6.4 16.7 15 18.8 8.6-2.1 15-10.1 15-18.8V8.5L20 2.5z" fill="#1D4ED8"/>
-                <path d="M12 15.5c2.6-1.4 5.3-2 8-2s5.4.6 8 2v9.5c-2.6-1.4-5.3-2-8-2s-5.4.6-8 2v-9.5z" fill="#fff"/>
-                <path d="M20 13.5v9.5" stroke="#1D4ED8" stroke-width="1.4" stroke-linecap="round"/>
-                <circle cx="20" cy="9.3" r="1.9" fill="#fff"/>
-            </svg>
+            <img class="logo-mark" src="{{ asset('images/logo.png') }}" alt="" width="38" height="38">
             <span class="brand-text">
                 <span class="brand-title">Sto. Domingo NHS</span>
                 <span class="brand-sub">Learning Management System</span>
@@ -469,7 +468,7 @@
     {{-- Dropdown --}}
     <div id="notifDropdown" style="
         display:none; position:absolute; top:calc(100% + 10px); right:0;
-        width:320px; background:var(--surface); border-radius:var(--r-lg);
+        width:min(320px, calc(100vw - 24px)); background:var(--surface); border-radius:var(--r-lg);
         border:1px solid var(--border); box-shadow:var(--shadow-lg);
         z-index:500; overflow:hidden;
     ">
@@ -709,8 +708,7 @@ const NAV_ITEMS = [
     const body = document.body;
     const CKEY = 'dp-lms-collapsed';
     const IS_MOBILE = () => window.matchMedia('(max-width: 768px)').matches;
-    const savedCollapsed = () => localStorage.getItem(CKEY) === '1';
-    if (savedCollapsed()) body.classList.add('collapsed');
+    const savedCollapsed = () => { try { return localStorage.getItem(CKEY) === '1'; } catch (e) { return false; } };
 
     function applyFocusPage() {
         const focus = !IS_MOBILE() && !!document.querySelector('.main-content [data-focus-page]');
@@ -725,7 +723,7 @@ const NAV_ITEMS = [
             body.classList.toggle('mobile-open');
         } else {
             body.classList.toggle('collapsed');
-            if (!body.hasAttribute('data-focus')) localStorage.setItem(CKEY, body.classList.contains('collapsed') ? '1' : '0');
+            if (!body.hasAttribute('data-focus')) { try { localStorage.setItem(CKEY, body.classList.contains('collapsed') ? '1' : '0'); } catch (e) {} }
         }
     });
 
@@ -778,6 +776,8 @@ const TYPE_ICONS = {
     arrival:    { bg:'#f0fdf4', stroke:'#16a34a', path:'M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z' },
     quiz:       { bg:'#faf5ff', stroke:'#a855f7', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
     module:     { bg:'#eff6ff', stroke:'#3b82f6', path:'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+    announcement: { bg:'#fefce8', stroke:'#ca8a04', path:'M3.5 10.5v3a1 1 0 001 1H7l7 4.5V5L7 9.5H4.5a1 1 0 00-1 1zM7 14.5L8.2 20h2.3l-.9-4.6M17.5 9.5a3.5 3.5 0 010 5' },
+    enrollment:   { bg:'#f0fdf4', stroke:'#16a34a', path:'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
     assignment: { bg:'#fff7ed', stroke:'#f97316', path:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
 };
 
@@ -828,7 +828,7 @@ function loadNotifs() {
                             ${esc(n.title)}
                         </p>
                         <p style="font-size:11px;color:var(--text-2);margin-top:2px;">
-                            ${esc(n.subject)} &nbsp;·&nbsp; ${esc(n.instructor)}
+                            ${[n.subject, n.instructor].filter(Boolean).map(esc).join(' &nbsp;·&nbsp; ')}
                         </p>
                         <p style="font-size:10px;color:var(--text-3);margin-top:3px;">${esc(n.time)}</p>
                     </div>
@@ -840,7 +840,7 @@ function loadNotifs() {
                         method: 'POST',
                         keepalive: true,
                         headers: { 'X-CSRF-TOKEN': CSRF() }
-                    }).catch(() => {});
+                    }).then(() => { if (el.getAttribute('href') === '#') loadNotifs(); }).catch(() => {});
                 });
                 notifList.appendChild(el);
             });

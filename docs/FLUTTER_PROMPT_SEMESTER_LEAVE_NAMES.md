@@ -108,9 +108,25 @@ The API has no timetable endpoint yet, so there is nothing to change today. For 
 
 ---
 
-## 4. Checklist
+## 4. Student notifications: two new kinds in the inbox
+
+`GET /api/notifications` now also lists these for students (same shape as the others):
+
+| `type` | `title` | `data.url` on the web | Open in the app |
+|---|---|---|---|
+| `announcement` | the announcement's title (`data.subject` is `"Announcement"`, `data.instructor` the teacher) | `/student/dashboard` | Home / announcements |
+| `enrollment` | `Your enrollment was approved` (`data.subject`: `Grade 7, PRACTICE`) | `/student/dashboard` | Home |
+| `enrollment` | `Your enrollment form was returned` (`data.subject`: `Open it to see what to fix`) | `/student/enroll` | Enrollment form with the reason |
+
+The announcement push is unchanged, so a student gets the push and an inbox entry. Unknown `type` values must not crash
+the inbox: show the title with a default icon. `instructor` can be empty, so do not print a separator after `subject`.
+
+---
+
+## 5. Checklist
 
 - [ ] `POST /api/login` `403` shows `message`; `status: "inactive"` hides activation/resend actions.
 - [ ] `401` while signed in returns to a fresh login screen (existing rule).
 - [ ] Greeting uses the given name; avatar shows two letters; "Dela Cruz, Juan Reyes" → "Juan", "JD".
 - [ ] Full name still shown in profile, chat and lists.
+- [ ] Inbox shows `announcement` and `enrollment` rows and opens the right screen.

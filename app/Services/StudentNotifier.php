@@ -77,21 +77,19 @@ class StudentNotifier
         });
     }
 
-    /** Push only (no in-app) for an announcement. */
+    /** Announcement: the bell and a phone push, for the students it was posted to. */
     public function announcement(iterable $studentIds, string $title, string $body, int $id, string $teacherName): void
     {
         $this->safely('Announcement', function () use ($studentIds, $title, $body, $id, $teacherName) {
-            $approved = User::whereIn('id', collect($studentIds)->all())
+            $students = User::whereIn('id', collect($studentIds)->all())
                 ->where('status', 'approved')
-                ->pluck('id')
-                ->all();
+                ->get();
 
-            $this->push->sendToUsers(
-                $approved,
-                '📢 ' . $title,
-                'From ' . $teacherName . ': ' . $body,
-                ['type' => 'announcement', 'id' => $id, 'teacher' => $teacherName],
-            );
+            $this->send($students, new ActivityAssigned(
+                title: $title, subject: 'Announcement', instructor: $teacherName,
+                type: 'announcement', url: '/student/dashboard',
+            ), '📢 ' . $title, 'From ' . $teacherName . ': ' . $body,
+               ['type' => 'announcement', 'id' => $id, 'teacher' => $teacherName]);
         });
     }
 

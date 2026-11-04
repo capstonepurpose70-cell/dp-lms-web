@@ -1204,6 +1204,29 @@ scrolling.
 
 ---
 
+## Batch 24 — Student menu, logo and notifications
+
+### B24-1 ✅ The menu hides smoothly
+- On a computer with Windows animation effects off, the browser asks for reduced motion and the layout cut every
+  movement to nothing, so the menu jumped. The menu moves only when the person presses the button, so it now keeps its
+  movement (0.32 s), as in the admin portal. Other animations still follow the setting.
+- Icons stay exactly in place while the menu closes (they used to jump to the centre at the first frame); labels and
+  the school name fade. The saved menu state is applied before the page draws, so changing pages no longer flashes
+  the wide menu.
+
+### B24-2 ✅ School logo
+- Student and parent pages use the same school logo as the admin portal.
+
+### B24-3 ✅ Notifications
+- Checked from real teacher actions: quizzes and materials reach the bell, every link opens, a person can only read
+  their own, "Mark all read" works. No notification is queued, so none waits on a worker.
+- Announcements only went to phones, and enrollment decisions only by email, so the website bell stayed silent. Both
+  now reach the bell: an announcement (not the parents-only kind), "Your enrollment was approved", and "Your enrollment
+  form was returned", which opens the form. App inbox: `docs/FLUTTER_PROMPT_SEMESTER_LEAVE_NAMES.md` §4.
+- The list no longer runs off the left of small phones, and no stray dot shows when there is no teacher name.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |
