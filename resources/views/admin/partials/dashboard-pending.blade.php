@@ -12,7 +12,7 @@
         <div class="pending-actions">
             <span class="role-pill {{ $user->role }}">{{ ucfirst($user->role) }}</span>
             <form method="POST" action="{{ route('admin.users.approve', $user) }}"
-                  data-msg="Approve {{ $user->name }}? They will be able to log in." onsubmit="return confirm(this.dataset.msg);">
+                  data-confirm="Approve {{ $user->name }}?" data-confirm-text="They will be able to sign in." data-confirm-ok="Approve">
                 @csrf @method('PATCH')
                 <button type="submit" class="action-btn approve" aria-label="Approve {{ $user->name }}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -20,7 +20,7 @@
                 </button>
             </form>
             <form method="POST" action="{{ route('admin.users.reject', $user) }}"
-                  data-msg="Reject {{ $user->name }}? They will not be able to log in." onsubmit="return confirm(this.dataset.msg);">
+                  data-confirm="Reject {{ $user->name }}?" data-confirm-text="They will not be able to sign in." data-confirm-ok="Reject" data-confirm-danger>
                 @csrf @method('PATCH')
                 <button type="submit" class="action-btn reject" aria-label="Reject {{ $user->name }}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>

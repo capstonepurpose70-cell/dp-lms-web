@@ -1088,6 +1088,36 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
 
 ---
 
+## Batch 18 — Admin portal QA
+
+Checked: all 67 admin routes sit behind the admin guard (only `POST admin/logout` is open, on purpose); 21 admin pages
+open without errors, also with odd filter input (quotes, `<script>`, wrong ids); no student, teacher or guest can
+open any of them; search text is shown escaped; no SQL is built from user input. 22 page views (desktop and phone):
+no JS errors, no sideways scrolling.
+
+### B18-1 ✅ Pop-ups replaced by an in-page dialog
+- Enrollment used the browser's `prompt()` / `confirm()` / `alert()` for Approve and Reject. It now uses a dialog
+  on the page (reason box for a returned form, section named on Approve).
+- Every other admin confirmation (approve/reject account, new activation link, reset account, unlink child) uses one
+  shared dialog: any form with `data-confirm="Question?"` (`data-confirm-text`, `data-confirm-ok`,
+  `data-confirm-danger`). Cancel sends nothing; Confirm submits the same form as before.
+
+### B18-2 ✅ Same word for the same state
+- An enrollment form sent back to the student is "Returned" everywhere (admin said "Rejected", the teacher and student
+  pages said "Returned"). The button is "Return form". Stored status is unchanged (`rejected`).
+
+### B18-3 ✅ Phone layout
+- User Management: rows become cards on phones (name and view button on top, details under it); all three tabs fit.
+  Before, the view button was off-screen and needed sideways scrolling.
+- Sections & Advisers: the adviser list no longer runs past the card on phones.
+
+### B18-4 ✅ Small fixes
+- Admin notification list escapes titles before showing them (it is empty today; this keeps names typed by people
+  from ever running as HTML).
+- Class Schedules: "Add a class" / "Edit class" in sentence case like the rest of the page.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

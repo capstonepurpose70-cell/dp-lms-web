@@ -234,7 +234,7 @@
         {{-- ── Add / Edit form ── --}}
         <div class="sch-card" id="schFormCard">
             <h3 id="schFormTitle">
-                {{ $editing ? 'Edit Class' : 'Add a Class' }}
+                {{ $editing ? 'Edit class' : 'Add a class' }}
                 <span class="sch-mode" id="schModeTag" @if(!$editing) style="display:none" @endif>Editing</span>
             </h3>
             <form method="POST" id="schForm"
@@ -473,7 +473,7 @@
             $('end_time').value    = card.dataset.end;
             $('room').value        = card.dataset.room || '';
             markPreset();
-            setTitle('Edit Class'); tag.style.display = '';
+            setTitle('Edit class'); tag.style.display = '';
             submit.textContent = 'Save Changes'; submit.classList.add('edit');
             cancel.style.display = '';
             clearHighlight(); card.classList.add('editing');
@@ -481,7 +481,7 @@
         });
     });
 
-    // Cancel: back to "Add a Class"
+    // Cancel: back to "Add a class"
     cancel.addEventListener('click', function () {
         form.action = form.dataset.storeUrl;
         method.disabled = true;
@@ -492,7 +492,7 @@
         $('start_time').value = '07:30'; $('end_time').value = '08:20';
         setMode(false);
         dayBoxes.forEach(function (c) { c.checked = true; });
-        setTitle('Add a Class'); tag.style.display = 'none';
+        setTitle('Add a class'); tag.style.display = 'none';
         submit.classList.remove('edit');
         addLabel();
         markPreset();

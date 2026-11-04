@@ -95,6 +95,19 @@
     .en-btn-approve:hover { background:#15803d; }
     .en-btn-reject { background:transparent; color:#dc2626; border:1px solid rgba(220,38,38,.35); }
     .en-btn-reject:hover { background:rgba(220,38,38,.08); }
+    .en-dlg { border:0; padding:0; border-radius:16px; width:min(440px, calc(100vw - 32px)); background:var(--surface-card, #fff); color:var(--slate-900);
+              box-shadow:0 24px 60px rgba(15,23,42,.28); }
+    .en-dlg::backdrop { background:rgba(15,23,42,.45); }
+    .en-dlg form { padding:22px 22px 18px; margin:0; }
+    .en-dlg h2 { font-size:17px; font-weight:800; margin:0 0 6px; }
+    .en-dlg p { font-size:13.5px; color:var(--slate-600); line-height:1.5; margin:0; }
+    .en-dlg label { display:block; margin-top:14px; font-size:13px; font-weight:700; color:var(--slate-700); }
+    .en-dlg label span { font-weight:500; color:var(--slate-500); }
+    .en-dlg textarea { width:100%; margin-top:6px; min-height:88px; padding:10px 12px; border:1px solid var(--border-default); border-radius:10px;
+                       font:inherit; font-size:13.5px; resize:vertical; background:transparent; color:inherit; }
+    .en-dlg textarea:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.16); }
+    .en-dlg-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+    .en-dlg-foot .en-btn { height:40px; padding:0 16px; font-size:13px; }
     .en-btn-more { background:transparent; color:var(--slate-700); border:1px solid var(--border-default); }
     .en-btn-more:hover { border-color:#2563eb; color:#2563eb; }
     .en-nosec { font-size:12px; font-weight:600; color:#b45309; text-align:right; }
@@ -155,7 +168,7 @@
         <a href="{{ $tabUrl(null) }}" class="en-tab {{ !$status ? 'on' : '' }}">All <span class="n">{{ $allCount }}</span></a>
         <a href="{{ $tabUrl('pending') }}" class="en-tab pend {{ $status === 'pending' ? 'on' : '' }}">Pending <span class="n">{{ $counts['pending'] ?? 0 }}</span></a>
         <a href="{{ $tabUrl('approved') }}" class="en-tab {{ $status === 'approved' ? 'on' : '' }}">Approved <span class="n">{{ $counts['approved'] ?? 0 }}</span></a>
-        <a href="{{ $tabUrl('rejected') }}" class="en-tab {{ $status === 'rejected' ? 'on' : '' }}">Rejected <span class="n">{{ $counts['rejected'] ?? 0 }}</span></a>
+        <a href="{{ $tabUrl('rejected') }}" class="en-tab {{ $status === 'rejected' ? 'on' : '' }}">Returned <span class="n">{{ $counts['rejected'] ?? 0 }}</span></a>
     </nav>
 
     <form method="GET" class="en-filterbar" role="search">
@@ -224,7 +237,7 @@
                             <div class="en-small">{{ $enrollment->created_at?->diffForHumans() }}</div>
                         </td>
                         <td>
-                            <span class="en-badge en-badge-{{ $st }}">{{ ucfirst($st) }}</span>
+                            <span class="en-badge en-badge-{{ $st }}">{{ $st === 'rejected' ? 'Returned' : ucfirst($st) }}</span>
                             @if($st === 'approved' && $stu?->section)
                                 <div class="en-small" style="margin-top:4px;">{{ $stu->section->name }}</div>
                             @endif
@@ -265,8 +278,8 @@
                                         @method('PATCH')
                                         <input type="hidden" name="remarks" value="">
                                         <button type="submit" class="en-btn en-btn-reject">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                            Reject
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+                                            Return form
                                         </button>
                                     </form>
                                 @endif
@@ -353,6 +366,22 @@
 
 </div>
 
+{{-- One confirmation dialog for Approve and Return (instead of the browser's pop-ups) --}}
+<dialog class="en-dlg" id="enDlg" aria-labelledby="enDlgTitle">
+    <form method="dialog">
+        <h2 id="enDlgTitle"></h2>
+        <p id="enDlgText"></p>
+        <div id="enDlgReason" hidden>
+            <label for="enDlgRemarks">Reason <span>optional, the student sees this</span></label>
+            <textarea id="enDlgRemarks" maxlength="500" placeholder="e.g. Please upload a clearer copy of your report card."></textarea>
+        </div>
+        <div class="en-dlg-foot">
+            <button type="submit" value="cancel" class="en-btn en-btn-more">Cancel</button>
+            <button type="submit" value="ok" class="en-btn" id="enDlgOk"></button>
+        </div>
+    </form>
+</dialog>
+
 <script>
 (function () {
     // Details toggle
@@ -367,22 +396,49 @@
         });
     });
 
+    var dlg = document.getElementById('enDlg');
+    function ask(opts, onOk) {
+        if (!dlg || typeof dlg.showModal !== 'function') { onOk(''); return; }   // very old browser: just submit
+        document.getElementById('enDlgTitle').textContent = opts.title;
+        document.getElementById('enDlgText').textContent = opts.text;
+        document.getElementById('enDlgReason').hidden = !opts.reason;
+        var remarks = document.getElementById('enDlgRemarks');
+        remarks.value = '';
+        var ok = document.getElementById('enDlgOk');
+        ok.textContent = opts.ok;
+        ok.className = 'en-btn ' + (opts.danger ? 'en-btn-reject' : 'en-btn-approve');
+        dlg.returnValue = '';
+        dlg.onclose = function () { if (dlg.returnValue === 'ok') onOk(remarks.value.trim().slice(0, 500)); };
+        dlg.showModal();
+        (opts.reason ? remarks : ok).focus();
+    }
+    if (dlg) dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close('cancel'); });
+
     // Approve: confirm with the chosen section
     document.querySelectorAll('.js-approve').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.confirmed) return;
+            e.preventDefault();
             var sel = form.querySelector('select[name="section_id"]');
-            if (!sel.value) { e.preventDefault(); alert('Please select a section first.'); sel.focus(); return; }
+            if (!sel.value) { sel.focus(); sel.reportValidity && sel.reportValidity(); return; }
             var label = sel.options[sel.selectedIndex].text.split(' — ')[0].replace('★', '').trim();
-            if (!confirm('Enroll ' + form.dataset.name + ' in ' + label + '?')) e.preventDefault();
+            ask({ title: 'Enroll ' + form.dataset.name + '?', text: 'They will be placed in ' + label + ' and can see their classes right away.', ok: 'Enroll' },
+                function () { form.dataset.confirmed = '1'; form.requestSubmit ? form.requestSubmit() : form.submit(); });
         });
     });
 
-    // Reject: ask for an optional reason (sent to the student by email)
+    // Return: the form goes back to the student with an optional reason
     document.querySelectorAll('.js-reject').forEach(function (form) {
         form.addEventListener('submit', function (e) {
-            var reason = prompt('Reject the enrollment of ' + form.dataset.name + '?\n\nReason (optional — the student will see this):', '');
-            if (reason === null) { e.preventDefault(); return; }
-            form.querySelector('input[name="remarks"]').value = reason.trim().slice(0, 500);
+            if (form.dataset.confirmed) return;
+            e.preventDefault();
+            ask({ title: 'Return the form to ' + form.dataset.name + '?', text: 'The student can fix their answers and send the form again.',
+                  ok: 'Return form', danger: true, reason: true },
+                function (reason) {
+                    form.querySelector('input[name="remarks"]').value = reason;
+                    form.dataset.confirmed = '1';
+                    form.requestSubmit ? form.requestSubmit() : form.submit();
+                });
         });
     });
 })();

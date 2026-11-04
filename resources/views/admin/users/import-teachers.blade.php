@@ -213,8 +213,7 @@
                                 <td><span class="it-exp {{ $expired ? 'expired' : '' }}">{{ $t->invite_expires_at ? ($expired ? 'Expired ' : '') . $t->invite_expires_at->format('M j, Y') : '—' }}</span></td>
                                 <td style="text-align:right;">
                                     <form method="POST" action="{{ route('admin.users.activation-link', $t) }}" style="margin:0;"
-                                          data-msg="Make a new activation link for {{ $t->name }}? Their old link will stop working."
-                                          onsubmit="return confirm(this.dataset.msg);">
+                                          data-confirm="Make a new activation link for {{ $t->name }}?" data-confirm-text="Their old link will stop working." data-confirm-ok="Make new link">
                                         @csrf
                                         <button type="submit" class="it-btn ghost sm">New link</button>
                                     </form>

@@ -184,6 +184,29 @@
     @media (max-width: 640px) {
         .um-head { align-items:flex-start; }
         .um-search { max-width:none; }
+
+        /* three tabs side by side, nothing hidden past the edge */
+        .um-tabs { width:100%; }
+        .um-tab { flex:1 1 0; justify-content:center; padding:9px 8px; }
+        .um-tab svg { display:none; }
+
+        /* rows become cards: person and the view button on top, details underneath (no sideways scroll) */
+        .um-scroll { overflow:visible; }
+        .um-table { min-width:0; }
+        .um-table thead { display:none; }
+        .um-table, .um-table tbody { display:block; }
+        .um-table tbody tr { display:grid; grid-template-columns:minmax(0, 1fr) auto; column-gap:12px; row-gap:6px;
+                             padding:12px 16px; border-bottom:1px solid var(--border-default); }
+        .um-table tbody tr:last-child { border-bottom:0; }
+        .um-table tbody tr:hover td { background:transparent; }
+        .um-table td { display:block; padding:0; border:0; }
+        .um-table td:first-child { grid-column:1; grid-row:1; }
+        .um-table td.r { grid-column:2; grid-row:1; align-self:center; }
+        .um-table td:not(:first-child):not(.r) { grid-column:1 / -1; padding-left:50px; font-size:13px; }
+        .um-table td.um-date { display:none; }
+        .um-table td[colspan] { grid-column:1 / -1; padding-left:0; }
+        .um-table td:not(:first-child):not(.r):not([colspan]) { display:flex; flex-wrap:wrap; align-items:baseline; }
+        .um-table td .um-sub::before { content:', '; }
     }
 </style>
 

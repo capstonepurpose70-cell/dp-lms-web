@@ -50,7 +50,8 @@
         .sx-grade { display: block; }
         .sx-grade td { display: block; }
         .sx-grade td::before { display: none; }
-        .sx-adv select { max-width: none; flex: 1; }
+        .sx-adv { flex: 1 1 auto; min-width: 0; }
+        .sx-adv select { max-width: none; flex: 1 1 auto; min-width: 0; width: 100%; }
     }
 </style>
 

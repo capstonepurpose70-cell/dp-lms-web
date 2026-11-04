@@ -1502,14 +1502,16 @@ ul.pagination li.disabled > span { opacity:.45; cursor:default; }
                         <p>No new notifications</p>
                     </div>`;
             } else {
+                // titles may one day carry names people typed: never insert them as HTML
+                const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
                 let html = '';
                 notifications.forEach(notif => {
                     html += `
                         <div class="notif-item">
                             <span class="notif-dot ${notif.is_read ? 'read' : 'unread'}" aria-hidden="true"></span>
                             <div class="notif-body">
-                                <div class="notif-title">${notif.title}</div>
-                                <div class="notif-meta">${notif.created_at}</div>
+                                <div class="notif-title">${esc(notif.title)}</div>
+                                <div class="notif-meta">${esc(notif.created_at)}</div>
                             </div>
                         </div>`;
                 });
@@ -2180,6 +2182,63 @@ document.getElementById('mainContent').addEventListener('click', function(e) {
 window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 </script>
 <script src="{{ asset('js/scroll-cue.js') }}?v={{ filemtime(public_path('js/scroll-cue.js')) }}" defer></script>
+{{-- Confirmation for any form marked data-confirm="Question?" (instead of the browser's pop-up).
+     Optional: data-confirm-text (details), data-confirm-ok (button label), data-confirm-danger. --}}
+<dialog class="ad-confirm" id="adConfirm" aria-labelledby="adConfirmTitle">
+    <form method="dialog">
+        <h2 id="adConfirmTitle"></h2>
+        <p id="adConfirmText"></p>
+        <div class="ad-confirm-foot">
+            <button type="submit" value="cancel" class="ad-confirm-cancel">Cancel</button>
+            <button type="submit" value="ok" class="ad-confirm-ok" id="adConfirmOk">Confirm</button>
+        </div>
+    </form>
+</dialog>
+<style>
+    .ad-confirm { border:0; padding:0; border-radius:16px; width:min(420px, calc(100vw - 32px)); background:var(--surface-card, #fff);
+                  color:var(--slate-900, #0f172a); box-shadow:0 24px 60px rgba(15,23,42,.28); }
+    .ad-confirm::backdrop { background:rgba(15,23,42,.45); }
+    .ad-confirm form { padding:22px 22px 18px; margin:0; }
+    .ad-confirm h2 { font-size:17px; font-weight:800; margin:0 0 6px; line-height:1.35; }
+    .ad-confirm p { font-size:13.5px; color:var(--slate-600, #475569); line-height:1.55; margin:0; }
+    .ad-confirm p:empty { display:none; }
+    .ad-confirm-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+    .ad-confirm-foot button { min-height:40px; padding:0 16px; border-radius:10px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+    .ad-confirm-cancel { background:transparent; border:1px solid var(--border-default, #e2e8f0); color:var(--slate-700, #334155); }
+    .ad-confirm-ok { background:#1d4ed8; border:1px solid #1d4ed8; color:#fff; }
+    .ad-confirm-ok.danger { background:#dc2626; border-color:#dc2626; }
+</style>
+<script>
+(function () {
+    var dlg = document.getElementById('adConfirm');
+    if (!dlg || typeof dlg.showModal !== 'function') return;   // very old browser: forms submit as before
+    var pending = null;
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+        if (form.dataset.confirmed) { delete form.dataset.confirmed; return; }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        pending = { form: form, submitter: e.submitter || null };
+        document.getElementById('adConfirmTitle').textContent = form.dataset.confirm;
+        document.getElementById('adConfirmText').textContent = form.dataset.confirmText || '';
+        var ok = document.getElementById('adConfirmOk');
+        ok.textContent = form.dataset.confirmOk || 'Confirm';
+        ok.classList.toggle('danger', form.hasAttribute('data-confirm-danger'));
+        dlg.returnValue = '';
+        dlg.showModal();
+        ok.focus();
+    }, true);
+    dlg.addEventListener('close', function () {
+        var p = pending; pending = null;
+        if (!p || dlg.returnValue !== 'ok') return;
+        p.form.dataset.confirmed = '1';
+        if (p.form.requestSubmit) p.form.requestSubmit(p.submitter && p.form.contains(p.submitter) ? p.submitter : undefined);
+        else p.form.submit();
+    });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close('cancel'); });
+})();
+</script>
 @include('partials.flash-toast')
 </body>
 </html>

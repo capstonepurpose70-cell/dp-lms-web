@@ -499,7 +499,7 @@
 {{-- Reset account — for reports that someone else activated this LRN --}}
 @if($user->role === 'student' && $user->lrn)
 <form method="POST" action="{{ route('admin.users.release-lrn', $user) }}"
-      onsubmit="return confirm('Reset this account?\n\nThe account will be disabled and LRN {{ $user->lrn }} will be released so its real owner can activate it. Only do this when someone reports they did not activate it.');"
+      data-confirm="Reset this account?" data-confirm-text="The account will be disabled and LRN {{ $user->lrn }} will be released so its real owner can activate it. Only do this when someone reports they did not activate it." data-confirm-ok="Reset account" data-confirm-danger
       style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:16px 28px 20px;border-top:1px solid var(--border-default,#e5e7eb);">
     @csrf @method('PATCH')
     <p style="font-size:12.5px;color:var(--slate-500,#64748b);margin:0;line-height:1.5;">
@@ -612,8 +612,7 @@
                     </div>
                 </div>
                 <form method="POST" action="{{ route('admin.users.unlink-child', [$user, $child]) }}"
-                      data-msg="Unlink {{ $child->name }} from this parent?"
-                      onsubmit="return confirm(this.dataset.msg);" style="margin:0;">
+                      data-confirm="Unlink {{ $child->name }} from this parent?" data-confirm-ok="Unlink" data-confirm-danger style="margin:0;">
                     @csrf @method('DELETE')
                     <button type="submit" style="border:1px solid var(--danger,#dc2626);color:var(--danger,#dc2626);background:#fff;border-radius:var(--r-md,10px);padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;">
                         Unlink
