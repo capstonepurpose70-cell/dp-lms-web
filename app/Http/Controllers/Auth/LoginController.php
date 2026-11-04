@@ -57,6 +57,10 @@ class LoginController extends Controller
             return back()->with('error', 'Your account is awaiting administrator approval.');
         }
 
+        if ($user->status === 'inactive') {
+            return back()->with('error', 'This account is no longer active. Please contact the school if you think this is a mistake.');
+        }
+
         if ($user->status === 'rejected') {
             return back()->with('error', 'Your registration was not approved. Please contact the school.');
         }

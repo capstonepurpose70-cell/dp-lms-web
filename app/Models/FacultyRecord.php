@@ -9,6 +9,8 @@ class FacultyRecord extends Model
 {
     protected $fillable = ['employee_id', 'name', 'section_id', 'claimed_by'];
 
+    protected $casts = ['left_at' => 'datetime'];
+
     public function section()
     {
         return $this->belongsTo(Section::class);

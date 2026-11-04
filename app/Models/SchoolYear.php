@@ -12,12 +12,14 @@ class SchoolYear extends Model
         'starts_at',
         'ends_at',
         'is_active',
+        'current_semester',
     ];
 
     protected $casts = [
         'starts_at' => 'date',
         'ends_at'   => 'date',
         'is_active' => 'boolean',
+        'current_semester' => 'integer',
     ];
 
     // ── Scopes ─────────────────────────────────────────────────────────────────
@@ -43,5 +45,11 @@ class SchoolYear extends Model
     public static function current(): ?self
     {
         return static::where('is_active', true)->first();
+    }
+
+    /** The semester Senior High is in now (1 or 2); 1 when no school year is active. */
+    public static function currentSemester(): int
+    {
+        return (int) (static::current()?->current_semester ?: 1) === 2 ? 2 : 1;
     }
 }

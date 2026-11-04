@@ -30,10 +30,15 @@ class ClassScheduleController extends Controller
 
         $schedules = collect();
         $subjects  = collect();
+        // Senior High: one semester at a time (the one in the address, else the current one)
+        $currentSemester = SchoolYear::currentSemester();
+        $isShs = $section && ClassSchedule::isShsGrade($section->grade_level);
+        $semester = $isShs ? (in_array($request->integer('semester'), [1, 2], true) ? $request->integer('semester') : $currentSemester) : null;
 
         if ($section) {
             $schedules = ClassSchedule::with(['subject', 'teacher'])
                 ->where('section_id', $section->id)
+                ->when($isShs, fn ($q) => $q->where('semester', $semester))
                 ->orderBy('day_of_week')
                 ->orderBy('start_time')
                 ->get()
@@ -47,12 +52,28 @@ class ClassScheduleController extends Controller
         }
 
         $teachers = User::where('role', 'teacher')
+            ->where('status', '!=', 'inactive')   // teachers who left the school
             ->orderBy('name')
             ->get(['id', 'name', 'status']);
 
         return view('admin.schedules.index', compact(
-            'sections', 'section', 'schedules', 'subjects', 'teachers'
+            'sections', 'section', 'schedules', 'subjects', 'teachers', 'isShs', 'semester', 'currentSemester'
         ));
+    }
+
+    /** Which semester Senior High students see now (the school's switch from 1st to 2nd semester). */
+    public function setSemester(Request $request)
+    {
+        $data = $request->validate(['semester' => 'required|integer|in:1,2'], ['semester.in' => 'Choose the 1st or 2nd semester.']);
+        $year = SchoolYear::current();
+        if (!$year) {
+            return back()->withErrors(['general' => 'Set an active school year first.']);
+        }
+        $year->forceFill(['current_semester' => (int) $data['semester']])->save();
+        $label = ClassSchedule::SEMESTERS[(int) $data['semester']];
+        AuditLogService::log("Current semester set to {$label}", 'Schedules', "School year {$year->label}");
+
+        return back()->with('success', "Grade 11 and 12 students now see the {$label} timetable.");
     }
 
     /** Add a class on one or more days (days[]), all or nothing: one clash and none are saved. */
@@ -171,13 +192,25 @@ class ClassScheduleController extends Controller
             'start_time'  => 'required|date_format:H:i',
             'end_time'    => 'required|date_format:H:i|after:start_time',
             'room'        => 'nullable|string|max:60',
+            'semester'    => 'nullable|integer|in:1,2',
         ], [
+            'semester.in'         => 'Choose the 1st or 2nd semester.',
             'day_of_week.between' => 'Classes can only be scheduled Monday to Friday.',
             'end_time.after'      => 'End time must be later than the start time.',
         ]);
 
         $section = Section::findOrFail($data['section_id']);
         $subject = Subject::findOrFail($data['subject_id']);
+
+        // Senior High classes belong to one semester; Junior High classes run the whole year
+        if (ClassSchedule::isShsGrade($section->grade_level)) {
+            if (empty($data['semester'])) {
+                throw ValidationException::withMessages(['semester' => 'Choose the 1st or 2nd semester for a Senior High class.']);
+            }
+            $data['semester'] = (int) $data['semester'];
+        } else {
+            $data['semester'] = null;
+        }
 
         // Grade levels must match — no Grade 7 Math in a Grade 10 section
         if ((string) $subject->grade_level !== (string) $section->grade_level) {
@@ -189,10 +222,10 @@ class ClassScheduleController extends Controller
 
         // The selected user must really be a teacher
         if (!empty($data['teacher_id'])) {
-            $isTeacher = User::where('id', $data['teacher_id'])->where('role', 'teacher')->exists();
+            $isTeacher = User::where('id', $data['teacher_id'])->where('role', 'teacher')->where('status', '!=', 'inactive')->exists();
             if (!$isTeacher) {
                 throw ValidationException::withMessages([
-                    'teacher_id' => 'The selected person is not a teacher.',
+                    'teacher_id' => 'The selected person is not an active teacher.',
                 ]);
             }
         }
@@ -241,7 +274,7 @@ class ClassScheduleController extends Controller
         $s->loadMissing(['section', 'subject']);
 
         return sprintf(
-            '%s — %s, %s (%s)',
+            '%s — %s, %s (%s)' . ($s->semester ? ', ' . ClassSchedule::SEMESTERS[$s->semester] : ''),
             $s->section?->name ?? '?',
             $s->subject?->name ?? '?',
             $s->day_name,

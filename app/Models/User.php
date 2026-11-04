@@ -294,6 +294,42 @@ public function studentProfile()
 {
     return $this->hasOne(StudentProfile::class);
 }
+/**
+ * The name a person is greeted by. School lists write names surname first
+ * ("Dela Cruz, Juan Reyes"), so the given name comes after the comma.
+ */
+public function greetingName(): string
+{
+    [$given] = $this->nameParts();
+
+    return $given === '' ? '' : (preg_split('/\s+/u', $given)[0] ?? '');
+}
+
+/** Two letters for an avatar: given name, then surname ("Dela Cruz, Juan" → "JD"). */
+public function initials(): string
+{
+    [$given, $surname] = $this->nameParts();
+    $first = mb_substr($given, 0, 1);
+    $last  = $surname === '' ? '' : mb_substr($surname, 0, 1);
+    $out   = mb_strtoupper($first . $last);
+
+    return $out === '' ? '?' : $out;
+}
+
+/** @return array{0: string, 1: string} given name(s), surname */
+private function nameParts(): array
+{
+    $name = trim((string) $this->name);
+    if (str_contains($name, ',')) {
+        [$surname, $given] = array_map('trim', explode(',', $name, 2));
+
+        return [$given !== '' ? $given : $surname, $given !== '' ? $surname : ''];
+    }
+    $words = $name === '' ? [] : preg_split('/\s+/u', $name);
+
+    return [$words[0] ?? '', count($words) > 1 ? end($words) : ''];
+}
+
 // Get subjects count based on grade level
 public function getSubjectCountAttribute(): int
 {

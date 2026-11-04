@@ -10,6 +10,11 @@
     $pct = $total ? (int) round($claimed / $total * 100) : 0;
     $openImport = $errors->import->any();
     $openSingle = $errors->single->any();
+    $reasons = \App\Services\TeacherOffboardingService::REASONS;
+    // after a refused "Mark as left", reopen the dialog for the same teacher (only a real leave address is accepted)
+    $leaveAction = (string) old('_leave_action', '');
+    $leaveAction = preg_match('#^' . preg_quote(url('/admin/faculty'), '#') . '/\d+/leave$#', $leaveAction) ? $leaveAction : '';
+    $openLeave = $leaveAction !== '' && ($errors->has('reason') || $errors->has('replacement_id'));
 @endphp
 
 <div class="lm" id="lmRoot">
@@ -57,6 +62,9 @@
                 <a href="{{ $tab('all') }}" @if ($status === 'all') aria-current="page" @endif>All <span>{{ number_format($total) }}</span></a>
                 <a href="{{ $tab('available') }}" @if ($status === 'available') aria-current="page" @endif>Not activated <span>{{ number_format($available) }}</span></a>
                 <a href="{{ $tab('claimed') }}" @if ($status === 'claimed') aria-current="page" @endif>Activated <span>{{ number_format($claimed) }}</span></a>
+                @if ($left || $status === 'left')
+                    <a href="{{ $tab('left') }}" @if ($status === 'left') aria-current="page" @endif>Left the school <span>{{ number_format($left) }}</span></a>
+                @endif
             </nav>
             <form method="GET" action="{{ route('admin.faculty.index') }}" class="lm-filters" role="search">
                 @if ($status !== 'all')<input type="hidden" name="status" value="{{ $status }}">@endif
@@ -94,7 +102,9 @@
                                     @endif
                                 </td>
                                 <td data-label="Status">
-                                    @if ($row->claimedBy)
+                                    @if ($row->claimedBy && $row->left_at)
+                                        <span class="lm-status off" title="Since {{ $row->left_at->format('M j, Y') }}">{{ $reasons[$row->left_reason] ?? 'Left' }}</span>
+                                    @elseif ($row->claimedBy)
                                         <span class="lm-status on">Activated</span>
                                     @elseif ($gone)
                                         <span class="lm-status">Account removed</span>
@@ -111,6 +121,14 @@
                                     @endif
                                 </td>
                                 <td class="lm-act">
+                                    @if ($row->claimedBy && $row->left_at)
+                                        <form method="POST" action="{{ route('admin.faculty.reinstate', $row->id) }}" data-busy="Reinstating…">
+                                            @csrf
+                                            <button type="submit" class="lm-btn sm">Reinstate</button>
+                                        </form>
+                                    @elseif ($row->claimedBy)
+                                        <button type="button" class="lm-btn sm" data-leave="{{ route('admin.faculty.leave', $row->id) }}" data-teacher="{{ $row->claimedBy->id }}" data-label="{{ $row->claimedBy->name }}">Mark as left</button>
+                                    @endif
                                     @unless ($row->claimedBy)
                                         <button type="button" class="lm-icon-btn" data-remove="{{ route('admin.faculty.destroy', $row->id) }}" data-label="{{ $row->name }} ({{ $row->employee_id }})" aria-label="Remove {{ $row->name }}">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>
@@ -228,6 +246,45 @@
         </form>
     </dialog>
 
+    {{-- A teacher leaves the school --}}
+    <dialog class="lm-dialog small" id="lmLeave" aria-labelledby="lmLeaveTitle" @if ($openLeave) data-autoopen @endif>
+        <form method="POST" action="{{ $leaveAction }}" class="lm-dialog-box" id="lmLeaveForm" data-busy="Saving…">
+            @csrf
+            <input type="hidden" name="_leave_action" id="lmLeaveAction" value="{{ $leaveAction }}">
+            <div class="lm-dialog-head">
+                <h2 id="lmLeaveTitle">Teacher leaving the school</h2>
+                <button type="button" class="lm-close" data-close aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+            <div class="lm-dialog-body">
+                <p class="lm-help first"><b id="lmLeaveName">{{ old('_leave_name') }}</b> will no longer be able to sign in on the website or the app. Their grades, materials and messages stay on record.</p>
+                <input type="hidden" name="_leave_name" id="lmLeaveNameInput" value="{{ old('_leave_name') }}">
+
+                <label class="lm-field" for="lmReason">Reason</label>
+                <select id="lmReason" name="reason" class="lm-input @error('reason') bad @enderror" required>
+                    @foreach ($reasons as $key => $label)
+                        <option value="{{ $key }}" @selected(old('reason', 'retired') === $key)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('reason')<span class="lm-err">{{ $message }}</span>@enderror
+
+                <label class="lm-field" for="lmReplace">Hand over to <span>optional</span></label>
+                <select id="lmReplace" name="replacement_id" class="lm-input @error('replacement_id') bad @enderror">
+                    <option value="">No one yet</option>
+                    @foreach ($activeTeachers as $t)
+                        <option value="{{ $t->id }}" @selected((string) old('replacement_id') === (string) $t->id)>{{ $t->name }}</option>
+                    @endforeach
+                </select>
+                @error('replacement_id')<span class="lm-err">{{ $message }}</span>@else<p class="lm-help">Their advisory section, class schedules and teaching load move to this teacher. With no one chosen, they wait in Sections and Class Schedules for a new teacher.</p>@enderror
+            </div>
+            <div class="lm-dialog-foot end">
+                <button type="button" class="lm-btn" data-close>Cancel</button>
+                <button type="submit" class="lm-btn danger">Mark as left</button>
+            </div>
+        </form>
+    </dialog>
+
     {{-- Remove confirmation --}}
     <dialog class="lm-dialog small" id="lmRemove" aria-labelledby="lmRemoveTitle">
         <form method="POST" action="" class="lm-dialog-box" id="lmRemoveForm" data-busy="Removing…">
@@ -274,6 +331,22 @@
             document.getElementById('lmRemoveForm').action = remove.dataset.remove;
             document.getElementById('lmRemoveName').textContent = remove.dataset.label;
             open('lmRemove');
+            return;
+        }
+
+        var leave = e.target.closest('[data-leave]');
+        if (leave) {
+            document.getElementById('lmLeaveForm').action = leave.dataset.leave;
+            document.getElementById('lmLeaveAction').value = leave.dataset.leave;
+            document.getElementById('lmLeaveName').textContent = leave.dataset.label;
+            document.getElementById('lmLeaveNameInput').value = leave.dataset.label;
+            // a teacher cannot hand over to themselves
+            document.querySelectorAll('#lmReplace option').forEach(function (o) {
+                o.hidden = o.disabled = o.value !== '' && o.value === leave.dataset.teacher;
+            });
+            var pick = document.getElementById('lmReplace');
+            if (pick.selectedOptions[0] && pick.selectedOptions[0].disabled) pick.value = '';
+            open('lmLeave');
             return;
         }
 

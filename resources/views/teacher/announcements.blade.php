@@ -4,7 +4,7 @@
 @section('content')
 {{-- Plain CSS + layout tokens (the Tailwind build is stale: sm:col-span-2 / py-14 / w-14 were missing). --}}
 <style>
-    .ta-wrap { max-width: 880px; margin: 0 auto; }
+    .ta-wrap { max-width: 1040px; margin: 0 auto; }
     .ta-head { margin-bottom: 20px; }
     .ta-title { font-size: 24px; font-weight: 800; color: var(--text-1); letter-spacing: -.01em; }
     .ta-sub { font-size: 13px; color: var(--text-3); margin-top: 4px; }

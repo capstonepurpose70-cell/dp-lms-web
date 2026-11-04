@@ -8,6 +8,7 @@ use App\Models\Section;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\FacultyImportService;
+use App\Services\TeacherOffboardingService;
 use App\Support\NameMatcher;
 use App\Support\SpreadsheetReader;
 use App\Support\UnreadableSpreadsheet;
@@ -29,21 +30,23 @@ class FacultyController extends Controller
     public function index(Request $request)
     {
         $q      = trim((string) $request->query('q', ''));
-        $status = in_array($request->query('status'), ['available', 'claimed'], true) ? $request->query('status') : 'all';
+        $status = in_array($request->query('status'), ['available', 'claimed', 'left'], true) ? $request->query('status') : 'all';
 
         $records = FacultyRecord::with(['claimedBy:id,name,email', 'section:id,name,grade_level'])
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(fn ($w) => $w->where('employee_id', 'like', "%{$q}%")->orWhere('name', 'like', "%{$q}%"));
             })
             ->when($status === 'available', fn ($query) => $query->whereNull('claimed_by'))
-            ->when($status === 'claimed', fn ($query) => $query->whereNotNull('claimed_by'))
+            ->when($status === 'claimed', fn ($query) => $query->whereNotNull('claimed_by')->whereNull('left_at'))
+            ->when($status === 'left', fn ($query) => $query->whereNotNull('left_at'))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate(25)
             ->withQueryString();
 
-        $claimed = FacultyRecord::whereNotNull('claimed_by')->count();
-        $total   = FacultyRecord::count();
+        $left    = FacultyRecord::whereNotNull('left_at')->count();
+        $claimed = FacultyRecord::whereNotNull('claimed_by')->count() - $left;
+        $total   = FacultyRecord::count() - $left;
 
         return view('admin.faculty.index', [
             'records'   => $records,
@@ -52,7 +55,10 @@ class FacultyController extends Controller
             'total'     => $total,
             'claimed'   => $claimed,
             'available' => $total - $claimed,
+            'left'      => $left,
             'sections'  => $this->openSections(),
+            // who can take over a leaving teacher's advisory and classes
+            'activeTeachers' => User::where('role', 'teacher')->where('status', 'approved')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -191,6 +197,52 @@ class FacultyController extends Controller
     }
 
     /* ─────────────────────────────────────────────────────────────────────────── */
+
+    /**
+     * A teacher leaves (retired, resigned, transferred): the account closes but is kept for the records;
+     * the advisory, classes and teaching load go to the replacement, or wait for a new teacher.
+     */
+    public function leave(Request $request, FacultyRecord $faculty, TeacherOffboardingService $offboarding)
+    {
+        $data = $request->validate([
+            'reason'         => ['required', 'string', 'in:' . implode(',', array_keys(TeacherOffboardingService::REASONS))],
+            'replacement_id' => ['nullable', 'integer'],
+        ], ['reason.in' => 'Choose why the teacher is leaving.']);
+
+        $teacher = $faculty->claimedBy;
+        if (!$teacher || $faculty->left_at) {
+            return back()->withErrors(['general' => $teacher ? 'This teacher has already been marked as left.'
+                : 'This teacher has not activated an account yet. Remove the entry instead.']);
+        }
+        $replacement = null;
+        if (!empty($data['replacement_id'])) {
+            $replacement = User::whereKey($data['replacement_id'])->where('role', 'teacher')->where('status', 'approved')->first();
+            if (!$replacement || $replacement->id === $teacher->id) {
+                return back()->withErrors(['replacement_id' => 'Choose another active teacher to take over.']);
+            }
+        }
+
+        $moved = $offboarding->leave($faculty, $data['reason'], $replacement);
+        $label = TeacherOffboardingService::REASONS[$data['reason']];
+        AuditLogService::log("Teacher left ({$label}): {$teacher->name}", 'Faculty Master List',
+            "Employee ID {$faculty->employee_id}; " . ($replacement ? "handed over to {$replacement->name}" : 'no replacement')
+            . "; advisory {$moved['sections']}, classes {$moved['classes']}, teaching load {$moved['loads']}");
+
+        $what = $moved['sections'] + $moved['classes'] ? ($replacement ? " Their advisory and classes now belong to {$replacement->name}." : ' Their advisory and classes are waiting for a new teacher.') : '';
+        return back()->with('success', "{$teacher->name} is marked as {$label} and can no longer sign in.{$what}");
+    }
+
+    /** The teacher returns: the account opens again (classes are assigned anew). */
+    public function reinstate(FacultyRecord $faculty, TeacherOffboardingService $offboarding)
+    {
+        if (!$faculty->claimedBy || !$faculty->left_at) {
+            return back()->withErrors(['general' => 'Only a teacher who has left can be reinstated.']);
+        }
+        $offboarding->reinstate($faculty);
+        AuditLogService::log("Teacher reinstated: {$faculty->claimedBy->name}", 'Faculty Master List', "Employee ID {$faculty->employee_id}");
+
+        return back()->with('success', "{$faculty->claimedBy->name} can sign in again. Assign their advisory and classes again if needed.");
+    }
 
     /** Delete — only while no account uses the entry (or that account has since been removed). */
     public function destroy(FacultyRecord $faculty)

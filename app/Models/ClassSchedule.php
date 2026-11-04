@@ -19,11 +19,22 @@ class ClassSchedule extends Model
         'end_time',
         'room',
         'school_year',
+        'semester',
     ];
 
     protected $casts = [
         'day_of_week' => 'integer',
+        'semester'    => 'integer',
     ];
+
+    /** Senior High runs in two semesters; Junior High classes have no semester (the whole year). */
+    public const SHS_GRADES = ['11', '12'];
+    public const SEMESTERS = [1 => '1st semester', 2 => '2nd semester'];
+
+    public static function isShsGrade($grade): bool
+    {
+        return in_array((string) $grade, self::SHS_GRADES, true);
+    }
 
     /** 1 = Lunes ... 5 = Biyernes */
     public const DAYS = [
@@ -88,6 +99,12 @@ class ClassSchedule extends Model
      * even though no time is the same. And 8:00–9:00 and 9:00–10:00 do NOT
      * overlap — they are back to back — so it is `<` and `>`, not `<=`.
      */
+    /** Classes that run in this semester: the whole-year ones and that semester's. */
+    public function scopeForTerm(Builder $q, ?int $semester): Builder
+    {
+        return $semester === null ? $q : $q->where(fn ($w) => $w->whereNull('semester')->orWhere('semester', $semester));
+    }
+
     public function scopeOverlapping(Builder $q, string $start, string $end): Builder
     {
         return $q->where('start_time', '<', $end)
@@ -104,6 +121,8 @@ class ClassSchedule extends Model
     {
         $base = fn () => static::query()
             ->where('school_year', $data['school_year'])
+            // a whole-year class meets every semester; semester classes only meet whole-year and same-semester ones
+            ->forTerm($data['semester'] ?? null)
             ->where('day_of_week', $data['day_of_week'])
             ->overlapping($data['start_time'], $data['end_time'])
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))

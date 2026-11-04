@@ -62,6 +62,15 @@
     .sch-picker .pick { flex:1; min-width:240px; }
     .sch-picker .pick .sch-label { margin-top:0; }
     .sch-sum { display:flex; gap:10px; flex-wrap:wrap; }
+    .sch-term { flex-basis:100%; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px;
+        padding-top:12px; border-top:1px solid var(--border-default); }
+    .sch-term-tabs { display:inline-flex; padding:3px; border-radius:10px; background:var(--slate-100); }
+    .sch-term-tabs a { padding:7px 14px; border-radius:8px; font-size:13px; font-weight:700; color:var(--slate-600); text-decoration:none; }
+    .sch-term-tabs a[aria-current="page"] { background:var(--white); color:var(--slate-900); box-shadow:var(--shadow-sm); }
+    .sch-term-now { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0; font-size:13px; color:var(--slate-600); }
+    .sch-term-now b { color:var(--slate-900); }
+    .sch-term-switch { border:1px solid #2563eb; background:transparent; color:#2563eb; border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:700; cursor:pointer; }
+    .sch-term-switch:hover { background:rgba(37,99,235,.08); }
     .sch-pill { background:var(--slate-100); color:var(--slate-700); border-radius:10px; padding:8px 12px; font-size:12.5px; font-weight:600; }
     .sch-pill b { color:var(--slate-900); font-size:14px; margin-right:3px; }
 
@@ -192,6 +201,24 @@
                 <div class="sch-pill"><b>{{ intdiv($weekMinutes, 60) }}h{{ $weekMinutes % 60 ? ' '.($weekMinutes % 60).'m' : '' }}</b>total time</div>
                 <div class="sch-pill"><b>{{ $subjects->count() - $unscheduled->count() }}/{{ $subjects->count() }}</b>subjects scheduled</div>
             </div>
+            @if($isShs)
+                {{-- Senior High: each semester has its own timetable --}}
+                <div class="sch-term">
+                    <nav class="sch-term-tabs" aria-label="Semester">
+                        @foreach(\App\Models\ClassSchedule::SEMESTERS as $num => $label)
+                            <a href="{{ route('admin.schedules.index', ['section_id' => $section->id, 'semester' => $num], false) }}" @if($semester === $num) aria-current="page" @endif>{{ $label }}</a>
+                        @endforeach
+                    </nav>
+                    <form method="POST" action="{{ route('admin.schedules.semester') }}" class="sch-term-now">
+                        @csrf
+                        <span>Students now see the <b>{{ \App\Models\ClassSchedule::SEMESTERS[$currentSemester] }}</b>.</span>
+                        @if($semester !== $currentSemester)
+                            <input type="hidden" name="semester" value="{{ $semester }}">
+                            <button type="submit" class="sch-term-switch">Switch students to the {{ \App\Models\ClassSchedule::SEMESTERS[$semester] }}</button>
+                        @endif
+                    </form>
+                </div>
+            @endif
         @endif
     </div>
 
@@ -217,6 +244,7 @@
                 <input type="hidden" name="_method" value="PUT" id="schMethod" @disabled(!$editing)>
                 <input type="hidden" name="_editing" value="{{ $editing?->id }}" id="schEditing">
                 <input type="hidden" name="section_id" value="{{ $section->id }}">
+                @if($isShs)<input type="hidden" name="semester" value="{{ $semester }}">@endif
 
                 <label class="sch-label" for="subject_id">Subject</label>
                 <select name="subject_id" id="subject_id" class="sch-in" required>

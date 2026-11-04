@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Assignment;
 use App\Models\ClassSchedule;
+use App\Models\SchoolYear;
 use App\Models\Grade;
 use App\Models\LearningMaterial;
 use App\Models\MaterialView;
@@ -54,6 +55,7 @@ class StudentDashboardController extends Controller
         $todayClasses = $section && now()->isWeekday()
             ? ClassSchedule::with(['subject:id,name', 'teacher:id,name'])
                 ->where('section_id', $section->id)
+                ->forTerm(SchoolYear::currentSemester())   // Senior High: this semester only
                 ->where('day_of_week', now()->dayOfWeekIso)
                 ->orderBy('start_time')
                 ->get()
@@ -141,6 +143,7 @@ class StudentDashboardController extends Controller
         $schedules = $section
             ? ClassSchedule::with(['subject', 'teacher'])
                 ->where('section_id', $section->id)
+                ->forTerm(SchoolYear::currentSemester())   // Senior High: this semester only
                 ->orderBy('day_of_week')
                 ->orderBy('start_time')
                 ->get()

@@ -1057,6 +1057,36 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
 
 ---
 
+## Batch 17 — Senior High semesters, teachers who leave, teacher pages
+
+### B17-1 ✅ Senior High timetable per semester
+- Grade 11 and 12 classes belong to the 1st or 2nd semester (`class_schedules.semester`); Junior High classes stay
+  whole-year (`semester` empty). A 1st-semester class and a 2nd-semester class in the same slot do not clash; a
+  whole-year class still blocks the teacher, room and section in both semesters.
+- Class Schedules shows one semester at a time for a Senior High section. "Switch students to the 2nd semester"
+  sets `school_years.current_semester`; students then see only that semester's classes (plus whole-year ones).
+
+### B17-2 ✅ A teacher retires, resigns or transfers
+- Faculty Master List → **Mark as left** (reason: retired, resigned, transferred, other; optional teacher to hand
+  over to). The advisory section, class schedules and teaching load move to that teacher, or are freed and wait for
+  a new teacher. The account becomes `inactive`: web and app sign-in refused, app tokens and trusted devices
+  removed. Grades, materials and messages stay on record.
+- The employee ID stays tied to the old account, so it cannot be used to activate a new one. **Reinstate** opens the
+  account again (classes are assigned anew).
+- Teachers who left no longer appear in the Class Schedules teacher list and cannot be chosen as a class teacher or
+  a section adviser (checked on the server too).
+- New status value `inactive` on `users.status`.
+
+### B17-3 ✅ Teacher pages
+- One outline icon set (`<x-ui-icon>`) for the menu, shortcuts, bell and log out; the old mixed icons drew badly at
+  20 px (Announcements, Materials).
+- Names written surname first ("Dela Cruz, Juan Reyes") now greet as "Good evening, Juan" and show "JD" in the
+  avatar; the full name stays in the top bar (`User::greetingName()`, `User::initials()`, display only).
+- Face Registration: the three steps no longer touch the card edge. Dashboard and Announcements use the same width
+  as the other teacher pages. "My students" title in sentence case; the stat icon no longer wobbles on hover.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

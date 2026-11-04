@@ -41,7 +41,7 @@ class SectionController extends Controller
     /** The adviser must be a teacher — checked on create as well as update. */
     private function adviserRule(): array
     {
-        return ['nullable', Rule::exists('users', 'id')->where('role', 'teacher')];
+        return ['nullable', Rule::exists('users', 'id')->where('role', 'teacher')->whereNot('status', 'inactive')];
     }
 
     /** No two sections with the same name in one grade. */

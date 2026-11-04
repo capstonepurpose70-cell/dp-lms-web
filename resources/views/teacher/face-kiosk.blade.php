@@ -8,7 +8,7 @@
     $total = $students->count();
 @endphp
 <style>
-    .fr-steps { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 20px; counter-reset:step; }
+    .fr-steps { list-style:none; margin:0; padding:18px 20px; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 20px; counter-reset:step; }
     .fr-steps li { display:flex; gap:10px; font-size:13.5px; color:var(--text-2); line-height:1.5; counter-increment:step; }
     .fr-steps li::before { content:counter(step); width:26px; height:26px; border-radius:50%; background:var(--accent-lt); color:var(--accent-dark);
                            display:grid; place-items:center; font-weight:800; font-size:12.5px; flex-shrink:0; }

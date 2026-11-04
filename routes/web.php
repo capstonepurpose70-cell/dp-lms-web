@@ -340,6 +340,8 @@ Route::patch('/profile/update-password',
         Route::get('/faculty',              [FacultyController::class, 'index'])->name('faculty.index');
         Route::post('/faculty',             [FacultyController::class, 'store'])->name('faculty.store');
         Route::delete('/faculty/{faculty}', [FacultyController::class, 'destroy'])->whereNumber('faculty')->name('faculty.destroy');
+        Route::post('/faculty/{faculty}/leave',     [FacultyController::class, 'leave'])->whereNumber('faculty')->name('faculty.leave');
+        Route::post('/faculty/{faculty}/reinstate', [FacultyController::class, 'reinstate'])->whereNumber('faculty')->name('faculty.reinstate');
         Route::get('/faculty/template',     [FacultyController::class, 'template'])->name('faculty.template');
         Route::post('/faculty/import',      [FacultyController::class, 'import'])->middleware('throttle:10,1')->name('faculty.import');
         Route::prefix('/faculty/import/{token}')->where(['token' => '[A-Za-z0-9]{32}'])->group(function () {
@@ -358,6 +360,7 @@ Route::patch('/profile/update-password',
         // Class schedules (Lunes-Biyernes, per section)
         Route::get('/schedules',              [ClassScheduleController::class, 'index'])->name('schedules.index');
         Route::post('/schedules',             [ClassScheduleController::class, 'store'])->name('schedules.store');
+        Route::post('/schedules/semester',    [ClassScheduleController::class, 'setSemester'])->name('schedules.semester');
         Route::put('/schedules/{schedule}',   [ClassScheduleController::class, 'update'])->name('schedules.update');
         Route::delete('/schedules/{schedule}',[ClassScheduleController::class, 'destroy'])->name('schedules.destroy');
         Route::patch('/face/{registration}/reject',  [FaceVerificationController::class, 'reject'])->name('face.reject');

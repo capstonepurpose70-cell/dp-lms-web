@@ -160,9 +160,10 @@
             width: 32px; height: 32px; border-radius: 50%;
             background: var(--accent); color: #fff;
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 800; flex-shrink: 0;
+            font-size: 12px; font-weight: 800; letter-spacing: .02em; flex-shrink: 0;
         }
-        .user-name { font-size: 13.5px; font-weight: 700; color: var(--text-1); line-height: 1.25; }
+        .user-meta { min-width: 0; }
+        .user-name { font-size: 13.5px; font-weight: 700; color: var(--text-1); line-height: 1.25; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-role { font-size: 12px; color: var(--text-3); font-weight: 500; }
 
         /* ═══════════════════════════════════════════
@@ -517,9 +518,7 @@
     <div class="nav-right">
      <div style="position:relative;" id="notifWrapper">
     <button class="nav-icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifDropdown">
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
-            <path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-        </svg>
+        <x-ui-icon name="bell" size="18" stroke="1.9" />
         <span id="notifBadge" style="
             display:none; position:absolute; top:-5px; right:-5px;
             min-width:18px; height:18px; border-radius:9px;
@@ -556,9 +555,9 @@
     </div>
 </div>
         <div class="user-chip">
-            <div class="user-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-            <div>
-                <div class="user-name">{{ auth()->user()->name }}</div>
+            <div class="user-avatar" aria-hidden="true">{{ auth()->user()->initials() }}</div>
+            <div class="user-meta">
+                <div class="user-name" title="{{ auth()->user()->name }}">{{ auth()->user()->name }}</div>
                 <div class="user-role">{{ ucfirst(auth()->user()->role) }}</div>
             </div>
         </div>
@@ -573,16 +572,16 @@
              only adds in-page navigation to these links --}}
         @php
             $navItems = [
-                ['teacher.dashboard', 'Dashboard', '<rect x="3" y="3" width="7" height="7" rx="1.5"/> <rect x="14" y="3" width="7" height="7" rx="1.5"/> <rect x="3" y="14" width="7" height="7" rx="1.5"/> <rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
-                ['teacher.gradebook.index', 'Gradebook', '<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0 V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0 V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>'],
-                ['teacher.materials.index', 'Materials', '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>'],
-                ['teacher.assignments.index', 'Quizzes', '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2 M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2 m-3 7h3m-3 4h3m-5-4h.01M9 16h.01"/>'],
-                ['teacher.announcements.index', 'Announcements', '<path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 16h2a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 5.882A2 2 0 0112.83 4h.842a2 2 0 011.995 1.858L17 16H8.343M11 5.882L8.343 16"/>'],
-                ['teacher.students.index', 'Students', '<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857 M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857 m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>'],
-                ['teacher.enrollments.index', 'Enrollments', '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'],
-                ['teacher.attendance.index', 'Attendance', '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>'],
-                ['teacher.face-kiosk.index', 'Face Registration', '<path stroke-linecap="round" stroke-linejoin="round" d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2 M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 005 0"/>'],
-                ['teacher.messages', 'Messages', '<path stroke-linecap="round" stroke-linejoin="round" d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'],
+                ['teacher.dashboard',           'Dashboard',         'dashboard'],
+                ['teacher.gradebook.index',     'Gradebook',         'gradebook'],
+                ['teacher.materials.index',     'Materials',         'materials'],
+                ['teacher.assignments.index',   'Quizzes',           'quizzes'],
+                ['teacher.announcements.index', 'Announcements',     'announcements'],
+                ['teacher.students.index',      'Students',          'students'],
+                ['teacher.enrollments.index',   'Enrollments',       'enrollments'],
+                ['teacher.attendance.index',    'Attendance',        'attendance'],
+                ['teacher.face-kiosk.index',    'Face Registration', 'face'],
+                ['teacher.messages',            'Messages',          'messages'],
             ];
         @endphp
         <nav class="sidebar-nav" id="sidebarNav" aria-label="Main">
@@ -590,7 +589,7 @@
                 @php $navHref = route($navRoute); $navPath = trim(parse_url($navHref, PHP_URL_PATH) ?? '', '/'); @endphp
                 <a href="{{ $navHref }}" @class(['active' => request()->is($navPath, $navPath . '/*')]) @if (request()->is($navPath, $navPath . '/*')) aria-current="page" @endif>
                     <span class="nav-icon" aria-hidden="true">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="1.8">{!! $navIcon !!}</svg>
+                        <x-ui-icon :name="$navIcon" />
                     </span>
                     <span class="nav-label">{{ $navLabel }}</span>
                     <span class="sb-tooltip" aria-hidden="true">{{ $navLabel }}</span>
@@ -600,10 +599,7 @@
         <div class="sidebar-footer">
             <button class="logout-btn" id="logoutTrigger" type="button">
                 <span class="logout-icon">
-                    <svg fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
+                    <x-ui-icon name="logout" />
                 </span>
                 <span class="nav-label">Log out</span>
             </button>

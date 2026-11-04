@@ -1,5 +1,5 @@
 @extends('layouts.teacher')
-@section('title', 'My Students')
+@section('title', 'My students')
 
 @section('content')
 <style>
@@ -47,7 +47,6 @@
         flex-shrink: 0;
         transition: transform .28s cubic-bezier(0.34,1.56,0.64,1);
     }
-    .stu-stat-card:hover .stu-stat-icon { transform: scale(1.12) rotate(-5deg); }
     .stu-stat-number { font-size: 26px; font-weight: 800; color: #0F172A; line-height: 1; }
     .stu-stat-label  { font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 2px; }
 
@@ -389,7 +388,7 @@
 
     {{-- ── Header ── --}}
     <div class="stu-head fade-up fade-up-1">
-        <h1 class="stu-title">My Students</h1>
+        <h1 class="stu-title">My students</h1>
         <p class="stu-sub">Students in your classes and advisory section. Select a student to see their details and grades.</p>
     </div>
 
@@ -397,7 +396,7 @@
     <div class="stu-stat-strip fade-up fade-up-1">
         <div class="stu-stat-card">
             <div class="stu-stat-icon" style="background:var(--accent-lt);color:var(--accent);" aria-hidden="true">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <x-ui-icon name="students" />
             </div>
             <div>
                 <p class="stu-stat-number">{{ $students->count() }}</p>
