@@ -1033,6 +1033,28 @@ parameterless page of the four roles at 1366 and 390 px (41 pages: no JS errors,
   129, field phone 141; triangles ≤ 61k. Peaks during attack effects: 351 desktop, 207 phone. Headless browser FPS is
   software-rendered and not a measure of real devices.
 
+### B16-6 ✅ Scientists modelled in Blender, with real body language
+- **Models:** `public/games/strata-rush/models/humans.glb` (80 KB, ~19k triangles per person): realistic proportions
+  (about 7.5 heads tall), pelvis/legs, torso, open lab coat with lapels, upper arm, forearm with cuff, hand with
+  fingers, head with jaw, nose, brow ridge and eye sockets; hair styles (fade with textured top, slick-back, neat
+  side part), stubble, brows, lips, goggles worn on the forehead, glasses, field hat. Own design — not the earlier
+  box figure.
+- **Game:** each fighter is dressed in their own colours once the file loads (the box figure stays otherwise); the
+  left arm is the right arm mirrored; new eyes sit in the sockets and still blink. Poses at the waist, neck,
+  shoulders and elbows: guard stance with breathing and weight shift; wind-up → strike → follow-through (the arm
+  nearer the camera strikes); recoil, raised arms, squint and a red flash when hit; slump then fall when defeated.
+
+### B16-7 ✅ Lab environment and combat effects
+- **Environment:** `lab_env.glb` (270 KB): vinyl-tile floor with base colour, roughness and normal maps baked from a
+  procedural shader (repeated every 2.4 m), lab benches (steel cabinets, drawers, handles, black epoxy top,
+  gooseneck tap) with baked ambient occlusion. Replaces the neon grid floor and the box benches. A neutral studio
+  environment map lights the lab subtly (intensity 0.35) for reflections on epoxy, chrome and glass.
+- **Effects:** a jagged electric arc between the fighters, two pooled point lights (caster's hand, point of impact)
+  that flash and decay — created at start with zero intensity so no shader recompiles mid-fight —, a 70 ms
+  hit-stop, dust that spreads, rises and thins out, and debris chips that fall under gravity and bounce on the floor.
+- **Measured during play:** lab desktop 270 draws avg (≤ 300), lab phone 124 avg (≤ 150); peaks 351 / 209 during
+  effects; triangles ≤ 144k desktop, ≤ 67k phone. No JS errors.
+
 ---
 
 ## Found, not fixed yet

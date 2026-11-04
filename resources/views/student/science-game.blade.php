@@ -257,6 +257,10 @@
         // Lab glassware modelled in Blender (source: resources/art/strata-rush/lab_glassware.blend)
         labGlassware: @json(asset('games/strata-rush/models/lab_glassware.glb')),
         dracoPath:    @json(asset('vendor/three-r128/draco') . '/'),
+        // Scientists modelled in Blender: realistic proportions, split at the joints the game animates
+        humans: @json(asset('games/strata-rush/models/humans.glb')),
+        // Lab floor (baked tile maps) and lab bench (baked AO), also from Blender
+        labEnv: @json(asset('games/strata-rush/models/lab_env.glb')),
     };
     const isG11 = CFG.grade === '11';   // Formula Clash (battle) vs Field Researcher (collect)
 
@@ -374,8 +378,9 @@
         // Without the shadow pass (phones) a soft blob keeps each scientist standing on the floor
         if (renderer && !renderer.shadowMap.enabled) {
             const blob = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
-            blob.rotation.x = -Math.PI / 2; blob.position.y = 0.02; ch.add(blob);
+            blob.rotation.x = -Math.PI / 2; blob.position.y = 0.02; blob.userData.keep = true; ch.add(blob);
         }
+        if (HUMAN.parts) dressHuman(ch); else HUMAN.waiting.push(ch);
         ch.userData.baseX=ch.position.x; ch.userData.baseY=ch.position.y; ch.userData.baseZ=ch.position.z;
         ch.userData.lungeX=lungeX||0; ch.userData.phase=Math.random()*Math.PI*2;
         ch.userData.baseRY=ch.rotation.y;
@@ -391,9 +396,10 @@
         sfx('hit'); addShake(0.5); screenFlash(color);
         const ring=new THREE.Mesh(new THREE.RingGeometry(0.1,0.2,20), new THREE.MeshBasicMaterial({color,transparent:true,opacity:0.9,side:THREE.DoubleSide}));
         ring.position.set(x,y,z); if(camera) ring.lookAt(camera.position); scene.add(ring); sparks.push({m:ring,t:0,dur:0.4,ring:true});
-        for(let i=0;i<7;i++){ const pc=new THREE.Mesh(new THREE.SphereGeometry(0.05,6,6), new THREE.MeshBasicMaterial({color,transparent:true}));
+        for(let i=0;i<7;i++){ const pc=new THREE.Mesh(new THREE.SphereGeometry(0.028,6,6), new THREE.MeshBasicMaterial({color,transparent:true}));
             const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*2.2; pc.position.set(x,y,z); scene.add(pc);
             sparks.push({m:pc,t:0,dur:0.5,vx:Math.cos(a)*sp,vy:1.4+Math.random()*2.2,vz:Math.sin(a)*sp}); }
+        impactFX(x, y, z, color, y > 0.6);
     }
     const cam = { az: 0.0, pol: 1.15, rad: 18, target: new THREE.Vector3(0, 1.6, 0) };
     const DEF = Object.assign({}, cam);
@@ -471,7 +477,272 @@
             const brg=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.014,0.014), M('#1c2230')); brg.position.set(0,0.04,FZ); head.add(brg);
         }
         g.userData.head = head; g.userData.armL = armL; g.userData.armR = armR;
+        g.userData.pal = p;
         return g;
+    }
+
+    // A neutral studio environment (generated once): image-based light and reflections for the lab
+    let labEnvMap = null;
+    function studioEnv() {
+        if (!labEnvMap && THREE.RoomEnvironment) {
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            labEnvMap = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+            pmrem.dispose();
+        }
+        return labEnvMap;
+    }
+    // Keep the environment light subtle on authored materials, so the lab's own lights stay the key light
+    function softenEnv(root) {
+        root.traverse(o => {
+            const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+            ms.forEach(m => { if (m.isMeshStandardMaterial && !m.userData.envSet && !m.envMap) { m.envMapIntensity = 0.35; m.userData.envSet = true; } });
+        });
+    }
+
+    // Blender lab floor (vinyl tiles: colour, roughness and normal maps) and lab benches (baked AO).
+    // The old floor, neon grid and box benches stay if the file cannot load.
+    function loadLabEnv(parts) {
+        if (!THREE.GLTFLoader || !THREE.DRACOLoader || !CFG.labEnv) return;
+        const { loader, draco } = gltfLoader();
+        loader.load(CFG.labEnv, (gltf) => {
+            const src = {};
+            gltf.scene.traverse(o => { if (o.userData && o.userData.dplms_env) src[o.userData.dplms_env] = o; });
+            const aniso = renderer.capabilities.getMaxAnisotropy();
+            const prep = (o, cast) => o.traverse(m => {
+                if (!m.isMesh) return;
+                m.receiveShadow = true; m.castShadow = cast && renderer.shadowMap.enabled;
+                ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap'].forEach(k => { if (m.material[k]) m.material[k].anisotropy = aniso; });
+            });
+            if (src.LabFloor) {
+                const f = src.LabFloor.clone(true); f.position.set(0, 0, 0); prep(f, false);
+                // a mid-grey vinyl under the lab lights: darker base and fewer reflections, so it sits with the navy walls
+                f.traverse(m => { if (m.isMesh) { m.material.color.multiplyScalar(0.45); m.material.envMapIntensity = 0.2; m.material.userData.envSet = true; } });
+                scene.add(f);
+                parts.floor.visible = false; parts.grid.visible = false;
+            }
+            if (src.LabBench) parts.benches.forEach(gp => {
+                const b = src.LabBench.clone(true); b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); prep(b, true);
+                gp.children.forEach(c => { c.visible = false; }); gp.add(b);
+                if (Math.abs(gp.position.x) > 15) gp.rotation.y = gp.position.x < 0 ? Math.PI / 2 : -Math.PI / 2;   // side benches face the room
+            });
+            if (scene.environment) softenEnv(scene);
+            draco.dispose();
+        }, undefined, () => draco.dispose());
+    }
+
+    // ── Combat effects: an electric arc, short-lived lights, a hit-stop, dust and debris ──
+    const fx = [], fxLights = [], ARC = { lines: [], life: 0, dur: 0.24, a: null, b: null };
+    let hitStop = 0, _smokeTex = null, _chipGeo = null, _chipMat = null;
+    function smokeTex() {
+        if (_smokeTex) return _smokeTex;
+        const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+        const g = x.createRadialGradient(32, 32, 4, 32, 32, 31);
+        g.addColorStop(0, 'rgba(255,255,255,0.85)'); g.addColorStop(0.5, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+        return (_smokeTex = new THREE.CanvasTexture(c));
+    }
+    // Lights exist from the start with zero intensity: adding lights later would recompile every shader
+    function setupFxLights() {
+        const n = renderer.shadowMap.enabled ? 2 : 1;
+        for (let i = 0; i < n; i++) { const l = new THREE.PointLight(0xffffff, 0, 8, 2); l.userData.lin = true; scene.add(l); fxLights.push(l); }
+    }
+    function fxFlash(slot, x, y, z, color, power, dur) {
+        const l = fxLights[Math.min(slot, fxLights.length - 1)]; if (!l) return;
+        l.color.setHex(color).convertSRGBToLinear(); l.position.set(x, y, z);
+        Object.assign(l.userData, { t: 0, dur, power });
+    }
+    function startArc(a, b, color) {
+        if (!ARC.lines.length) for (let i = 0; i < 3; i++) {
+            const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(18 * 3), 3));
+            const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+            line.frustumCulled = false; scene.add(line); ARC.lines.push(line);
+        }
+        ARC.lines.forEach((l, i) => { l.material.color.setHex(i ? color : 0xffffff); l.visible = true; });
+        ARC.a = a; ARC.b = b; ARC.life = ARC.dur;
+    }
+    // Contact: a brief freeze, a burst of light on the target, dust that spreads and rises, chips that bounce
+    function impactFX(x, y, z, color, full) {
+        if (full) { hitStop = 0.07; fxFlash(1, x, y, z, color, 3.2, 0.35); }
+        for (let i = 0; i < (full ? 6 : 8); i++) {
+            const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex(), color: new THREE.Color(0x9aa3ad).convertSRGBToLinear(), transparent: true, opacity: 0, depthWrite: false }));
+            sp.position.set(x + (Math.random() - 0.5) * 0.3, y - 0.15 + Math.random() * 0.3, z + (Math.random() - 0.5) * 0.3);
+            sp.scale.setScalar(0.3); scene.add(sp);
+            fx.push({ smoke: true, o: sp, t: 0, dur: 1.1 + Math.random() * 0.6, vx: (Math.random() - 0.5) * 0.6, vy: 0.2 + Math.random() * 0.25, vz: (Math.random() - 0.5) * 0.6, grow: 1.2 + Math.random() });
+        }
+        if (!full) return;
+        if (!_chipGeo) { _chipGeo = new THREE.BoxGeometry(0.05, 0.02, 0.035); _chipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x3a4252).convertSRGBToLinear(), roughness: 0.8 }); }
+        for (let i = 0; i < 8; i++) {
+            const c = new THREE.Mesh(_chipGeo, _chipMat); const a = Math.random() * Math.PI * 2, sp = 1 + Math.random() * 2.2;
+            c.position.set(x, y, z); scene.add(c);
+            fx.push({ o: c, t: 0, dur: 1.6, vx: Math.cos(a) * sp, vy: 1.5 + Math.random() * 2.5, vz: Math.sin(a) * sp, spin: 8 + Math.random() * 12 });
+        }
+    }
+    function updateFX(dt) {
+        fxLights.forEach(l => { const u = l.userData; if (u.dur) { u.t += dt; const k = Math.max(0, 1 - u.t / u.dur); l.intensity = u.power * k * k; if (k <= 0) u.dur = 0; } });
+        if (ARC.life > 0) {
+            ARC.life -= dt;
+            const fade = Math.max(0, ARC.life / ARC.dur);
+            ARC.lines.forEach((l, li) => {
+                const pos = l.geometry.attributes.position.array, n = pos.length / 3, amp = li ? 0.16 : 0.07;
+                for (let i = 0; i < n; i++) {
+                    const s = i / (n - 1), j = Math.sin(s * Math.PI) * amp;   // pinned at both ends, jagged in between
+                    pos[i * 3] = ARC.a.x + (ARC.b.x - ARC.a.x) * s + (Math.random() - 0.5) * j * 0.5;
+                    pos[i * 3 + 1] = ARC.a.y + (ARC.b.y - ARC.a.y) * s + (Math.random() - 0.5) * j * 2;
+                    pos[i * 3 + 2] = ARC.a.z + (ARC.b.z - ARC.a.z) * s + (Math.random() - 0.5) * j * 2;
+                }
+                l.geometry.attributes.position.needsUpdate = true;
+                l.material.opacity = fade * (li ? 0.85 : 1);
+                if (ARC.life <= 0) l.visible = false;
+            });
+        }
+        for (let i = fx.length - 1; i >= 0; i--) {
+            const f = fx[i]; f.t += dt; const p = f.t / f.dur;
+            if (p >= 1) { scene.remove(f.o); if (f.smoke) f.o.material.dispose(); fx.splice(i, 1); continue; }
+            if (f.smoke) {
+                f.vx *= 0.96; f.vz *= 0.96;
+                f.o.position.set(f.o.position.x + f.vx * dt, f.o.position.y + f.vy * dt, f.o.position.z + f.vz * dt);
+                f.o.scale.setScalar(0.3 + f.grow * p);
+                f.o.material.opacity = 0.42 * Math.sin(Math.min(p * 4, 1) * Math.PI / 2) * (1 - p);
+            } else {
+                f.vy -= 9.8 * dt;
+                f.o.position.x += f.vx * dt; f.o.position.y += f.vy * dt; f.o.position.z += f.vz * dt;
+                if (f.o.position.y < 0.015) { f.o.position.y = 0.015; f.vy *= -0.35; f.vx *= 0.6; f.vz *= 0.6; f.spin *= 0.5; }
+                f.o.rotation.x += f.spin * dt; f.o.rotation.z += f.spin * 0.7 * dt;
+                if (p > 0.8) f.o.scale.setScalar((1 - p) / 0.2);
+            }
+        }
+    }
+
+    function gltfLoader() {
+        const loader = new THREE.GLTFLoader(), draco = new THREE.DRACOLoader();
+        draco.setDecoderPath(CFG.dracoPath);
+        loader.setDRACOLoader(draco);
+        return { loader, draco };
+    }
+
+    // ── Blender scientists (resources/art/strata-rush): realistic proportions, posed at the joints ──
+    // Until the file arrives (or if it cannot load) the simple box figure keeps playing.
+    const HUMAN = { parts: null, waiting: [] };
+    const HAIR_BY_LOOK = (p) => p.facialHair ? 'Hair_Slick' : (p.glasses ? 'Hair_Neat' : 'Hair_Fade');
+    function loadHumans() {
+        if (!THREE.GLTFLoader || !THREE.DRACOLoader || !CFG.humans) return;
+        const { loader, draco } = gltfLoader();
+        loader.load(CFG.humans, (gltf) => {
+            const parts = {};
+            gltf.scene.traverse(o => { if (o.userData && o.userData.dplms_part) parts[o.userData.dplms_part] = o; });
+            if (parts.Lower && parts.Torso && parts.Head) {
+                HUMAN.parts = parts;
+                HUMAN.waiting.splice(0).forEach(dressHuman);
+            }
+            draco.dispose();
+        }, undefined, () => draco.dispose());
+    }
+
+    function dressHuman(ch) {
+        const u = ch.userData, p = u.pal, P = HUMAN.parts;
+        if (!P || !p || u.spine) return;
+        const lin = (hex) => new THREE.Color(hex).convertSRGBToLinear();
+        const mat = (hex, rough, extra) => { const m = new THREE.MeshStandardMaterial(Object.assign({ color: lin(hex), roughness: rough }, extra || {})); m.userData.lin = true; return m; };
+        const skin = mat(p.skin, 0.55), shirt = mat(p.shirt, 0.85), pants = mat(p.pants, 0.9);
+        const coat = p.outfit === 'labcoat' ? mat(p.coat, 0.8) : shirt;
+        const hair = mat(p.hair, 0.6);
+        const byName = {
+            Hum_Skin: skin, Hum_Shirt: shirt, Hum_Pants: pants, Hum_Coat: coat, Hum_Hair: hair,
+            Hum_Shoe: mat('#15171c', 0.4), Hum_Lips: mat('#a0655a', 0.45),
+            Hum_Stubble: mat('#' + lin(p.skin).lerp(lin(p.hair), 0.6).convertLinearToSRGB().getHexString(), 0.95),
+            Hum_Frame: mat('#1f2430', 0.35, { metalness: 0.4 }), Hum_Accent: mat(p.accent || '#2563eb', 0.35),
+            Hum_Lens: mat('#8fd3ff', 0.1, { metalness: 0.3, transparent: true, opacity: 0.75 }),
+        };
+        const shadows = renderer.shadowMap.enabled;
+        const add = (name, parent, only) => {
+            const src = P[name]; if (!src) return null;
+            const o = src.clone(true); o.position.set(0, 0, 0);
+            o.traverse(m => { if (m.isMesh) { m.material = only || byName[m.material.name] || m.material; m.castShadow = shadows; } });
+            parent.add(o); return o;
+        };
+        // Hide the box figure but keep the group: the game moves and turns it
+        ch.children.forEach(c => { if (!c.userData.keep) c.visible = false; });
+        const rig = new THREE.Group(); ch.add(rig);
+        add('Lower', rig);
+        const spine = new THREE.Group(); spine.position.set(0, 1.45, 0); rig.add(spine);      // waist pivot
+        add('Torso', spine);
+        if (p.outfit === 'labcoat') add('Coat', spine);
+        const head = new THREE.Group(); head.position.set(0, 0.95, -0.02); spine.add(head);   // neck top
+        add('Head', head); add('Brows', head, hair); add('Lips', head);
+        add(HAIR_BY_LOOK(p), head, hair);
+        if (p.facialHair) add('Stubble', head);
+        if (p.acc === 'goggles') { add('Goggles_Strap', head, byName.Hum_Accent); add('Goggles', head, byName.Hum_Lens); }
+        if (p.glasses) add('Glasses', head, byName.Hum_Frame);
+        if (p.acc === 'hat') add('Hat', head, mat(p.accent || '#7a5a2a', 0.85));
+        // Eyes in the sockets (anchors measured in Blender); the lids drive blinking, squinting and closing
+        const eyes = [];
+        [-0.037, 0.037].forEach(x => {
+            const at = (m, dz) => { m.position.set(x, 0.168, 0.1036 + dz); head.add(m); return m; };
+            const w = at(new THREE.Mesh(new THREE.SphereGeometry(0.0145, 12, 10), mat('#f4f1ec', 0.25)), 0); w.scale.set(1, 0.62, 0.5);
+            const iris = at(new THREE.Mesh(new THREE.SphereGeometry(0.0078, 10, 8), mat(p.eye || '#3a2f25', 0.3)), 0.0042); iris.scale.set(1, 1, 0.4);
+            const pup = at(new THREE.Mesh(new THREE.SphereGeometry(0.0038, 8, 6), mat('#0b0b10', 0.2)), 0.0062);
+            const shine = at(new THREE.Mesh(new THREE.SphereGeometry(0.0016, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff })), 0.0078);
+            shine.position.x += 0.003; shine.position.y += 0.003;
+            const lid = at(new THREE.Mesh(new THREE.SphereGeometry(0.0158, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), skin), -0.0005);
+            lid.scale.set(1, 0.15, 0.55);
+            eyes.push({ w, iris, pup, shine, lid });
+        });
+        // Arms: shoulder pivot → elbow pivot; the left arm is the right arm mirrored
+        const arm = (side) => {
+            const sh = new THREE.Group(); sh.position.set(side * 0.3, 0.75, 0); spine.add(sh);
+            if (side < 0) sh.scale.x = -1;
+            add('ArmUpper', sh, coat);
+            const el = new THREE.Group(); el.position.set(0.012, -0.47, -0.005); sh.add(el);
+            add('ArmFore', el, coat); add('Hand', el, skin);
+            sh.userData.elbow = el; sh.userData.side = side;
+            return sh;
+        };
+        Object.assign(u, { rig, spine, head, eyes, armL: arm(-1), armR: arm(1), flash: [skin, shirt, coat, pants], hitT: 0 });
+        if (scene.environment) softenEnv(ch);
+    }
+
+    // Realistic body language on top of the game's moves (lunge, knock-back, fall):
+    // idle guard stance with breathing, wind-up → strike → follow-through, recoil when hit, slump and fall.
+    const ease = (q) => q < 0.5 ? 2 * q * q : 1 - Math.pow(-2 * q + 2, 2) / 2;
+    const easeOut = (q) => 1 - Math.pow(1 - q, 3);
+    const mixPose = (a, b, k) => { const o = {}; for (const key in a) o[key] = a[key] + (b[key] - a[key]) * k; return o; };
+    function poseHuman(ch, t) {
+        const u = ch.userData;
+        if (!u.spine) return;
+        const br = Math.sin(t * 1.7 + u.phase), shift = Math.sin(t * 0.55 + u.phase * 1.3);
+        // the arm nearer the camera does the striking, so the move reads clearly
+        const atkArm = (u.lungeX || 1) > 0 ? -1 : 1;
+        let P = { lean: 0.05 + br * 0.014, twist: shift * 0.05, side: shift * 0.02, crouch: 0,
+                  hx: -0.02 + Math.sin(t * 0.9 + u.phase) * 0.03, hy: Math.sin(t * 0.4 + u.phase) * 0.14, hz: 0,
+                  aX: -0.1 + br * 0.03, aZ: 0.14, aE: -0.45, oX: 0.06 - br * 0.03, oZ: 0.12, oE: -0.3 };
+        if (u.atk) {
+            const p = Math.min(u.atk.t / 0.6, 1);
+            const W = Object.assign({}, P, { lean: -0.12, twist: atkArm * 0.42, crouch: -0.03, hx: 0.04, aX: 0.65, aZ: 0.25, aE: -1.75, oX: -0.45, oE: -1.2 });
+            const S = Object.assign({}, P, { lean: 0.2, twist: -atkArm * 0.5, crouch: -0.05, hx: -0.08, aX: -1.5, aZ: 0.06, aE: -0.05, oX: 0.5, oE: -0.5 });
+            if (p < 0.28) P = mixPose(P, W, easeOut(p / 0.28));
+            else if (p < 0.45) P = mixPose(W, S, easeOut((p - 0.28) / 0.17));
+            else P = mixPose(S, P, ease((p - 0.45) / 0.55));
+        }
+        if (u.hurt) {
+            const k = Math.sin(Math.min(u.hurt.t / 0.45, 1) * Math.PI);
+            P.lean -= 0.3 * k; P.twist += 0.15 * k; P.hx -= 0.45 * k; P.hz += 0.2 * k;
+            P.aX -= 0.7 * k; P.oX -= 0.6 * k; P.aZ += 0.35 * k; P.oZ += 0.3 * k; P.aE -= 0.6 * k; P.oE -= 0.6 * k;
+            u.hitT = k;
+        } else u.hitT = 0;
+        if (u.death) {
+            const p = Math.min(u.death.t / 1.0, 1), slump = Math.sin(Math.min(p * 2.2, 1) * Math.PI * 0.5);
+            P = Object.assign(P, { lean: 0.45 * slump - 0.35 * Math.max(0, p - 0.55) / 0.45, twist: 0.1, side: 0.12 * slump,
+                hx: 0.5 * slump, hy: 0.25 * slump, hz: 0.15, aX: 0.15, aZ: 0.12 + 0.8 * Math.max(0, p - 0.6), aE: -0.1, oX: 0.1, oZ: 0.1 + 0.7 * Math.max(0, p - 0.6), oE: -0.15 });
+        }
+        u.spine.rotation.set(P.lean, P.twist, P.side);
+        u.rig.position.y = P.crouch;
+        u.head.rotation.set(P.hx, P.hy, P.hz);
+        const A = atkArm < 0 ? u.armL : u.armR, O = atkArm < 0 ? u.armR : u.armL;
+        A.rotation.set(P.aX, 0, A.userData.side * P.aZ); A.userData.elbow.rotation.x = P.aE;
+        O.rotation.set(P.oX, 0, O.userData.side * P.oZ); O.userData.elbow.rotation.x = P.oE;
+        // red flash on the body while the hit lands
+        const f = u.hitT * 0.45;
+        u.flash.forEach(m => m.emissive.setRGB(f, f * 0.08, f * 0.08));
     }
 
     // r128 reads hex colours as linear light while the output is sRGB, which washed every colour out.
@@ -496,21 +767,13 @@
     // The shapes stay if the file or the decoder cannot load.
     function loadLabGlassware(spots) {
         if (!THREE.GLTFLoader || !THREE.DRACOLoader || !CFG.labGlassware) return;
-        const loader = new THREE.GLTFLoader();
-        const draco = new THREE.DRACOLoader();
-        draco.setDecoderPath(CFG.dracoPath);
-        loader.setDRACOLoader(draco);
+        const { loader, draco } = gltfLoader();
         loader.load(CFG.labGlassware, (gltf) => {
             // Each prop carries its kind as a Blender custom property (glTF extras → userData)
             const src = {};
             gltf.scene.traverse(o => { if (o.userData && o.userData.dplms_kind) src[o.userData.dplms_kind] = o; });
-            // Studio reflections for the props only, so chrome and glass read as metal and glass
-            let env = null;
-            if (THREE.RoomEnvironment) {
-                const pmrem = new THREE.PMREMGenerator(renderer);
-                env = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
-                pmrem.dispose();
-            }
+            // Studio reflections so chrome and glass read as metal and glass
+            const env = studioEnv();
             spots.forEach(sp => {
                 const proto = src[sp.kind];
                 if (!proto) return;
@@ -570,6 +833,9 @@
 
         if (isG11) buildArena(); else buildField();
         linearizeColors(scene);
+        if (isG11) { scene.environment = studioEnv(); softenEnv(scene); }
+        setupFxLights();
+        loadHumans();
 
         clock = new THREE.Clock();
         window.addEventListener('resize', resize);
@@ -742,6 +1008,7 @@
         const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,44), M(0x1a2438,{metalness:0.45,roughness:0.35}));
         floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
         const grid=new THREE.GridHelper(60,30,0x27406e,0x1c2c4e); grid.position.y=0.012; scene.add(grid);
+        const envParts = { floor, grid, benches: [] };
         // battle rings (player / rival) + spotlights
         [[-3.4,0x22d3ee],[3.4,0xef4444]].forEach(([x,col])=>{
             const ring=new THREE.Mesh(new THREE.RingGeometry(1.3,1.62,40), new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.8,side:THREE.DoubleSide}));
@@ -779,7 +1046,7 @@
         function bench(bx,bz,rot){ const gp=new THREE.Group();
             const top=new THREE.Mesh(new THREE.BoxGeometry(4.6,0.22,1.5), M(0x2a3a5e,{metalness:0.35,roughness:0.45})); top.position.y=1.08; gp.add(top);
             const base=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.0,1.3), M(0x1b2946,{roughness:0.8})); base.position.y=0.52; gp.add(base);
-            gp.position.set(bx,0,bz); gp.rotation.y=rot||0; scene.add(gp); }
+            gp.position.set(bx,0,bz); gp.rotation.y=rot||0; scene.add(gp); envParts.benches.push(gp); }
         // benches with equipment (back + sides)
         bench(-8.5,-8,0); bench(8.5,-8,0); bench(-19,0,Math.PI/2); bench(19,0,Math.PI/2);
         beaker(-9.6,1.48,-8,0x6ee7ff,0.55); beaker(-8.9,1.44,-8,0x86efac,0.48); beaker(-8.2,1.5,-8,0xfde68a,0.6);
@@ -806,10 +1073,11 @@
         rival = buildCharacter({ skin:'#e6b27e', hair:'#3a1414', eye:'#6b3220', shirt:'#241c2e', pants:'#2a2230', accent:'#ef4444', acc:'goggles', outfit:'labcoat', coat:'#3a2330', facialHair:true, mood:'smirk' });
         rival.position.set(3.4, 0, 2.5); rival.rotation.y = -Math.PI*0.5; scene.add(rival); registerActor(rival, -1);
         // lab supervisor NPC (watching the clash)
-        const npc = buildCharacter({ skin:'#e8c4a0', hair:'#2a2a2a', eye:'#3a3a30', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
+        const npc = buildCharacter({ skin:'#e8c4a0', hair:'#8e939b', eye:'#3a3a30', shirt:'#1f6f5c', pants:'#26303f', accent:'#2563eb', outfit:'labcoat', coat:'#eef2f7', glasses:true, mood:'happy' });
         npc.position.set(0,0,-7.5); npc.scale.setScalar(0.92); scene.add(npc); registerActor(npc, 0); professor=npc;
 
         loadLabGlassware(glassSpots);
+        loadLabEnv(envParts);
 
         beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1,8), new THREE.MeshBasicMaterial({ color:0x6ee7ff, transparent:true, opacity:0 }));
         beam.rotation.z = Math.PI/2; scene.add(beam);
@@ -1008,7 +1276,10 @@
     function flashBeam(from, to, color) {
         if (!beam) return;
         const a=from.position, b=to.position;
-        beam.material.color.setHex(color); beam.material.opacity=0.9;
+        beam.material.color.setHex(color); beam.material.opacity=0.35;
+        const dir = Math.sign(b.x - a.x) || 1;
+        startArc(new THREE.Vector3(a.x + dir * 0.5, 1.95, a.z), new THREE.Vector3(b.x - dir * 0.3, 1.85, b.z), color);
+        fxFlash(0, a.x + dir * 0.5, 1.95, a.z, color, 2.2, 0.28);
         beam.position.set((a.x+b.x)/2, 1.8, (a.z+b.z)/2);
         beam.scale.set(1, Math.max(0.2, Math.abs(b.x-a.x)), 1);
         setTimeout(()=>{ if(beam) beam.material.opacity=0; }, 240);
@@ -1108,6 +1379,8 @@
     function animate() {
         requestAnimationFrame(animate);
         const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
+        hitStop = Math.max(0, hitStop - dt); const adt = hitStop > 0 ? 0 : dt;
+        updateFX(dt);
         // floating/spinning samples
         samples.forEach(s=>{ if(s.visible){ s.userData.core.rotation.y+=dt*1.3; s.userData.core.position.y=1+Math.sin(t*2+s.position.x)*0.15; } });
         // characters: idle breathing/sway + attack lunge + hurt knockback
@@ -1115,12 +1388,13 @@
             const u=ch.userData; if(u.baseX===undefined) return;
             // ── defeat: dramatic collapse (fall back, eyes close, dust) ──
             if (u.death){
-                u.death.t+=dt; const p=Math.min(u.death.t/1.0,1), e=p*p*p;
+                u.death.t+=adt; const p=Math.min(u.death.t/1.0,1), e=p*p*p;
                 ch.rotation.x = -e*Math.PI*0.485;
                 ch.position.y = u.baseY + Math.sin(Math.min(p*3,1)*Math.PI)*0.12;
                 if (u.eyes) for(const ey of u.eyes){ ey.lid.scale.y=0.15+Math.min(p*2,1)*0.62; ey.shine.visible=false; }
                 if (!u.death.dust && p>=0.72){ u.death.dust=true;
                     hitSpark(ch.position.x, 0.4, ch.position.z, 0x9aa3ad); addShake(0.35); }
+                poseHuman(ch, t);
                 return; // dead characters skip idle/attack anims
             }
             const breathe = Math.sin(t*1.8 + u.phase)*0.02;
@@ -1137,7 +1411,7 @@
                 for(const e of ch.userData.eyes){ e.lid.scale.y=0.15+lidK*0.62; e.shine.visible=lidK<0.6; }
             }
             let lunge=0, hop=0, knock=0, flinch=0, twist=0;
-            if (u.atk){ u.atk.t+=dt; const p=Math.min(u.atk.t/0.6,1);
+            if (u.atk){ u.atk.t+=adt; const p=Math.min(u.atk.t/0.6,1);
                 // 3-phase: anticipation (windup) → explosive strike → recoil
                 let k;
                 if (p<0.28){ const q=p/0.28; k=-0.3*Math.sin(q*Math.PI*0.5); }               // lean back
@@ -1149,7 +1423,7 @@
                 if (u.head) u.head.rotation.x=-Math.max(0,k)*0.14;
                 if (p>=1) u.atk=null;
             }
-            if (u.hurt){ u.hurt.t+=dt; const p=Math.min(u.hurt.t/0.45,1), k=Math.sin(p*Math.PI);
+            if (u.hurt){ u.hurt.t+=adt; const p=Math.min(u.hurt.t/0.45,1), k=Math.sin(p*Math.PI);
                 knock=-u.lungeX*k*0.6; flinch=-k*0.09;
                 if (u.head){ u.head.rotation.z=k*0.2; u.head.rotation.x=k*0.12; }
                 if (ch.userData.eyes) for(const e of ch.userData.eyes){ e.lid.scale.y=0.15+k*0.55; } // squint in pain
@@ -1158,6 +1432,7 @@
             ch.rotation.y = u.baseRY + twist*Math.sign(u.lungeX||1);
             ch.position.x = u.baseX + lunge + knock;
             ch.position.y = u.baseY + breathe + hop + flinch;
+            poseHuman(ch, t);
         });
         // hit sparks (rings expand+fade, particles fly+fall)
         for(let i=sparks.length-1;i>=0;i--){ const s=sparks[i]; s.t+=dt; const p=s.t/s.dur;
