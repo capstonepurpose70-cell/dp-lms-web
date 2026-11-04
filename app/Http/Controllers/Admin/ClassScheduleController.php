@@ -67,13 +67,21 @@ class ClassScheduleController extends Controller
         $data = $request->validate(['semester' => 'required|integer|in:1,2'], ['semester.in' => 'Choose the 1st or 2nd semester.']);
         $year = SchoolYear::current();
         if (!$year) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Set an active school year first.', 'errors' => ['general' => ['Set an active school year first.']]], 422);
+            }
             return back()->withErrors(['general' => 'Set an active school year first.']);
         }
         $year->forceFill(['current_semester' => (int) $data['semester']])->save();
         $label = ClassSchedule::SEMESTERS[(int) $data['semester']];
         AuditLogService::log("Current semester set to {$label}", 'Schedules', "School year {$year->label}");
 
-        return back()->with('success', "Grade 11 and 12 students now see the {$label} timetable.");
+        $message = "Grade 11 and 12 students now see the {$label} timetable.";
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 
     /** Add a class on one or more days (days[]), all or nothing: one clash and none are saved. */
@@ -107,10 +115,16 @@ class ClassScheduleController extends Controller
         }
 
         $dayNames = implode(', ', array_map(fn ($d) => substr(ClassSchedule::DAYS[$d], 0, 3), $days));
+        $message  = ($created[0]->subject?->name ?? 'Class') . " added on {$dayNames}.";
+        $last     = ['days' => $days, 'end' => substr((string) $base['end_time'], 0, 5)];
 
-        return back()
-            ->with('success', ($created[0]->subject?->name ?? 'Class') . " added on {$dayNames}.")
-            ->with('sch_last', ['days' => $days, 'end' => substr((string) $base['end_time'], 0, 5)]);
+        // From the page itself: answer in place; the refreshed timetable continues at the next period
+        if ($request->expectsJson()) {
+            session()->flash('sch_last', $last);
+            return response()->json(['ok' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message)->with('sch_last', $last);
     }
 
     public function update(Request $request, ClassSchedule $schedule)
@@ -129,10 +143,15 @@ class ClassScheduleController extends Controller
             $this->describe($schedule->fresh())
         );
 
+        if ($request->expectsJson()) {
+            $fresh = $schedule->fresh(['subject']);
+            return response()->json(['ok' => true, 'message' => ($fresh->subject?->name ?? 'Class') . " on {$fresh->day_name} updated."]);
+        }
+
         return back()->with('success', 'Schedule updated.');
     }
 
-    public function destroy(ClassSchedule $schedule)
+    public function destroy(Request $request, ClassSchedule $schedule)
     {
         $label  = $this->describe($schedule);
         $before = $schedule->only(['teacher_id', 'subject_id', 'section_id']);
@@ -140,6 +159,10 @@ class ClassScheduleController extends Controller
         $this->releaseLoad($before);
 
         AuditLogService::log('Deleted class schedule', 'Schedules', $label);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Class removed from the timetable.']);
+        }
 
         return back()->with('success', 'Schedule removed.');
     }

@@ -1185,6 +1185,25 @@ scrolling.
 
 ---
 
+## Batch 23 — Class Schedules without page reloads, even layout
+
+### B23-1 ✅ Everything happens on the page
+- Adding, editing and removing a class, switching section (list, previous / next), switching the semester tab and
+  "Switch students to the … semester" used to reload the whole page (or swap the whole content with a loading
+  skeleton). Now only the timetable area refreshes in place; the scroll position stays.
+- A clash ("This section already has … on Monday, 1:00 PM – 1:50 PM") stays in the form until the next try, with the
+  answers kept. Success is a 3-second toast. After an add, the form continues at the next bell period with the same
+  days, as before.
+- Clicking a class card (or Enter on it) opens it in the form; Remove still asks first.
+- The server answers JSON for these when asked (`Accept: application/json`); the normal forms work as before.
+
+### B23-2 ✅ Even layout
+- Every control is 44 px tall (section list, previous / next, totals, inputs, buttons); the five day buttons and the
+  bell-period buttons sit in equal columns; subjects form an even grid with the status on the right; a class time
+  no longer breaks inside "1:50 PM"; the form stays in view while scrolling the week on a wide screen.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

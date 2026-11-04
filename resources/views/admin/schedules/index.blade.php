@@ -47,18 +47,21 @@
 <style>
     /* Uses admin layout tokens (--white, --slate-*, --border-default) so dark mode works */
     .sch-page { animation: sch-fade .22s ease both; }
+    .sch-page.sch-swapped { animation: none; }
+    .sch-page[aria-busy="true"] .sch-week, .sch-page[aria-busy="true"] .sch-blank,
+    .sch-page[aria-busy="true"] .sch-plan-list { opacity: .55; transition: opacity .15s ease; pointer-events: none; }
     @keyframes sch-fade { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none;} }
 
     .sch-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
     .sch-head h1 { font-size:26px; font-weight:800; margin:0; color:var(--slate-900); letter-spacing:-0.01em; }
     .sch-head p  { margin:4px 0 0; font-size:14px; color:var(--slate-600); line-height:1.5; }
 
-    .sch-card { background:var(--white); border:1px solid var(--border-default); border-radius:16px; padding:18px; box-shadow:var(--shadow-sm); }
+    .sch-card { background:var(--white); border:1px solid var(--border-default); border-radius:16px; padding:20px; box-shadow:var(--shadow-sm); }
     .sch-card h3 { margin:0 0 4px; font-size:14.5px; font-weight:800; color:var(--slate-900); }
     .sch-label { display:block; font-size:12px; font-weight:700; margin:12px 0 5px; color:var(--slate-700); }
     .sch-label .opt { font-weight:500; color:var(--slate-400); }
     .sch-in {
-        width:100%; padding:10px 12px; border:1.5px solid var(--border-default); border-radius:10px;
+        width:100%; min-height:44px; padding:10px 12px; border:1.5px solid var(--border-default); border-radius:10px;
         font-size:13.5px; background:var(--white); color:var(--slate-900); box-sizing:border-box; transition:border-color .15s, box-shadow .15s;
     }
     .sch-in:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.15); }
@@ -78,31 +81,33 @@
     .sch-term-now b { color:var(--slate-900); }
     .sch-term-switch { border:1px solid #2563eb; background:transparent; color:#2563eb; border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:700; cursor:pointer; }
     .sch-term-switch:hover { background:rgba(37,99,235,.08); }
-    .sch-pill { background:var(--slate-100); color:var(--slate-700); border-radius:10px; padding:8px 12px; font-size:12.5px; font-weight:600; }
+    .sch-pill { display:inline-flex; align-items:center; gap:4px; min-height:44px; background:var(--slate-100); color:var(--slate-700);
+                border-radius:10px; padding:0 14px; font-size:12.5px; font-weight:600; white-space:nowrap; }
     .sch-pill b { color:var(--slate-900); font-size:14px; margin-right:3px; }
 
     .sch-grid { display:grid; grid-template-columns: 330px minmax(0,1fr); gap:16px; align-items:start; }
 
-    .sch-presets { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .sch-presets { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; margin-top:8px; }
     .sch-preset { border:1px solid var(--border-default); background:var(--white); color:var(--slate-700); border-radius:8px;
-        padding:5px 8px; font-size:11.5px; font-weight:600; cursor:pointer; transition:border-color .15s, color .15s; }
+        min-height:34px; padding:4px 6px; font-size:11.5px; font-weight:600; text-align:center; cursor:pointer; transition:border-color .15s, color .15s; }
     .sch-preset:hover { border-color:#2563eb; color:#2563eb; }
 
-    .sch-btn { margin-top:14px; width:100%; padding:11px; border:0; border-radius:10px; font-weight:700; font-size:13.5px;
+    .sch-btn { margin-top:16px; width:100%; min-height:44px; padding:11px; border:0; border-radius:10px; font-weight:700; font-size:13.5px;
         cursor:pointer; background:#1d4ed8; color:#fff; transition:background .15s; }
     .sch-btn:hover { background:#1e40af; }
     .sch-btn:disabled { background:#94a3b8; cursor:not-allowed; }
     .sch-btn.edit { background:#15803d; }
     .sch-btn.edit:hover { background:#166534; }
-    .sch-cancel { margin-top:8px; width:100%; padding:9px; border:1px solid var(--border-default); border-radius:10px; background:transparent;
+    .sch-cancel { margin-top:8px; width:100%; min-height:40px; padding:9px; border:1px solid var(--border-default); border-radius:10px; background:transparent;
         color:var(--slate-700); font-weight:600; font-size:13px; cursor:pointer; }
     .sch-cancel:hover { background:var(--slate-50); }
     .sch-mode { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px;
         border-radius:6px; background:rgba(22,163,74,.12); color:#15803d; margin-left:6px; vertical-align:middle; }
-    .sch-days { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+    .sch-days { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:6px; }
+    .sch-days-foot { display:flex; justify-content:flex-end; margin-top:6px; }
     .sch-daychip { position:relative; }
     .sch-daychip input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
-    .sch-daychip span { display:inline-grid; place-items:center; min-width:46px; height:36px; padding:0 10px; border-radius:9px; border:1.5px solid var(--border-default);
+    .sch-daychip span { display:grid; place-items:center; width:100%; height:40px; padding:0 4px; border-radius:9px; border:1.5px solid var(--border-default);
         font-size:12.5px; font-weight:700; color:var(--slate-600); background:var(--white); transition:background-color .15s, border-color .15s, color .15s; }
     .sch-daychip input:checked + span { background:#1d4ed8; border-color:#1d4ed8; color:#fff; }
     .sch-daychip input:focus-visible + span { outline:2px solid #2563eb; outline-offset:2px; }
@@ -125,14 +130,14 @@
     .sch-plan-h { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin-bottom:12px; }
     .sch-plan-h h2 { margin:0; font-size:15px; font-weight:800; color:var(--slate-900); }
     .sch-plan-h p { margin:0; font-size:13px; color:var(--slate-500); }
-    .sch-plan-list { display:flex; flex-wrap:wrap; gap:8px; }
+    .sch-plan-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:8px; }
     .sch-subj { display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:6px 12px 6px 10px; border-radius:10px;
                 border:1px solid var(--border-default); background:var(--white); color:var(--slate-900); font:inherit; font-size:13px;
                 font-weight:700; cursor:pointer; text-align:left; transition:border-color .15s ease, background-color .15s ease; }
     .sch-subj:hover { border-color:var(--c); }
     .sch-subj:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
     .sch-subj i { width:9px; height:9px; border-radius:50%; background:var(--c); flex-shrink:0; }
-    .sch-subj span { font-size:12px; font-weight:600; color:var(--slate-500); }
+    .sch-subj span { margin-left:auto; padding-left:8px; font-size:12px; font-weight:600; color:var(--slate-500); white-space:nowrap; }
     .sch-subj.todo { border-style:dashed; }
     .sch-subj.todo span { color:#b45309; }
     .sch-subj.done span { color:#15803d; }
@@ -160,8 +165,9 @@
     .sch-day.today .sch-day-h { color:#1d4ed8; }
     .sch-day-b { padding:10px; display:flex; flex-direction:column; gap:8px; }
 
-    .sch-item { border:1px solid var(--border-default); border-left:4px solid var(--c, #2563eb); border-radius:10px; padding:9px 10px;
-        background:var(--white); transition:box-shadow .15s, transform .15s; }
+    .sch-item { border:1px solid var(--border-default); border-left:4px solid var(--c, #2563eb); border-radius:10px; padding:10px 11px;
+        background:var(--white); cursor:pointer; transition:box-shadow .15s, border-color .15s; }
+    .sch-item:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
     .sch-item:hover { box-shadow:var(--shadow-md); }
     .sch-item.editing { box-shadow:0 0 0 3px rgba(22,163,74,.35); }
     .sch-item-time { font-size:11.5px; font-weight:800; color:var(--c, #2563eb); }
@@ -186,6 +192,7 @@
     .sch-empty-state { text-align:center; padding:40px 16px; color:var(--slate-500); font-size:13.5px; }
     .sch-empty-state a { color:#2563eb; font-weight:700; }
 
+    @media (min-width:1101px) { #schFormCard { position:sticky; top:16px; } }
     @media (max-width:1280px) { .sch-week { grid-template-columns:repeat(3, minmax(0,1fr)); } }
     @media (max-width:1100px) { .sch-grid { grid-template-columns:1fr; } }
     @media (max-width:700px)  { .sch-week { grid-template-columns:1fr; } }
@@ -218,11 +225,11 @@
         <form method="GET" action="{{ route('admin.schedules.index') }}" class="pick">
             <label class="sch-label" for="sectionPicker">Section</label>
             <div class="sch-pickrow">
-            <a class="sch-step" href="{{ $prevSection ? $sectionUrl($prevSection) : '#' }}" @if(!$prevSection) aria-disabled="true" tabindex="-1" @endif
+            <a class="sch-step js-swap" data-no-spa href="{{ $prevSection ? $sectionUrl($prevSection) : '#' }}" @if(!$prevSection) aria-disabled="true" tabindex="-1" @endif
                aria-label="Previous section{{ $prevSection ? ': Grade '.$prevSection->grade_level.' – '.$prevSection->name : '' }}" title="Previous section">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>
             </a>
-            <select name="section_id" id="sectionPicker" class="sch-in" onchange="this.form.submit()">
+            <select name="section_id" id="sectionPicker" class="sch-in">
                 @forelse($sections->groupBy('grade_level') as $grade => $group)
                     <optgroup label="Grade {{ $grade }}">
                         @foreach($group as $s)
@@ -235,12 +242,12 @@
                     <option value="">No active sections</option>
                 @endforelse
             </select>
-            <a class="sch-step" href="{{ $nextSection ? $sectionUrl($nextSection) : '#' }}" @if(!$nextSection) aria-disabled="true" tabindex="-1" @endif
+            <a class="sch-step js-swap" data-no-spa href="{{ $nextSection ? $sectionUrl($nextSection) : '#' }}" @if(!$nextSection) aria-disabled="true" tabindex="-1" @endif
                aria-label="Next section{{ $nextSection ? ': Grade '.$nextSection->grade_level.' – '.$nextSection->name : '' }}" title="Next section">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 6 6 6-6 6"/></svg>
             </a>
             </div>
-            <noscript><button type="submit" class="sch-btn" style="width:auto;padding:9px 16px;">Show</button></noscript>
+            <noscript><button type="submit" class="sch-btn" style="width:auto;padding:9px 16px;margin-top:8px;">Show</button></noscript>
         </form>
         @if($section)
             <div class="sch-sum">
@@ -252,7 +259,7 @@
                 <div class="sch-term">
                     <nav class="sch-term-tabs" aria-label="Semester">
                         @foreach(\App\Models\ClassSchedule::SEMESTERS as $num => $label)
-                            <a href="{{ route('admin.schedules.index', ['section_id' => $section->id, 'semester' => $num], false) }}" @if($semester === $num) aria-current="page" @endif>{{ $label }}</a>
+                            <a class="js-swap" data-no-spa href="{{ route('admin.schedules.index', ['section_id' => $section->id, 'semester' => $num], false) }}" @if($semester === $num) aria-current="page" @endif>{{ $label }}</a>
                         @endforeach
                     </nav>
                     <form method="POST" action="{{ route('admin.schedules.semester') }}" class="sch-term-now">
@@ -306,6 +313,7 @@
                 {{ $editing ? 'Edit class' : 'Add a class' }}
                 <span class="sch-mode" id="schModeTag" @if(!$editing) style="display:none" @endif>Editing</span>
             </h3>
+            <div class="sch-alert sch-err" id="schFormErr" role="alert" hidden style="margin:12px 0 0;"></div>
             <form method="POST" id="schForm"
                   action="{{ $editing ? route('admin.schedules.update', $editing) : route('admin.schedules.store') }}"
                   data-store-url="{{ route('admin.schedules.store') }}">
@@ -339,7 +347,7 @@
 
                 {{-- Add: several days at once. Edit: the one day of that class. --}}
                 <div id="schDaysWrap" @if($editing) hidden @endif>
-                    <span class="sch-label" id="schDaysLabel">Days <span class="opt">(same time each day; tap a day to leave it out)</span></span>
+                    <span class="sch-label" id="schDaysLabel">Days <span class="opt">(tap a day to leave it out)</span></span>
                     <div class="sch-days" role="group" aria-labelledby="schDaysLabel">
                         @foreach($days as $num => $label)
                             <label class="sch-daychip" title="{{ $label }}">
@@ -347,8 +355,8 @@
                                 <span>{{ substr($label, 0, 3) }}</span>
                             </label>
                         @endforeach
-                        <button type="button" class="sch-alldays" id="schAllDays">Every day</button>
                     </div>
+                    <div class="sch-days-foot"><button type="button" class="sch-alldays" id="schAllDays">Every day</button></div>
                 </div>
                 <div id="schDayWrap" @unless($editing) hidden @endunless>
                     <label class="sch-label" for="day_of_week">Day</label>
@@ -415,7 +423,8 @@
                         <div class="sch-day-h">{{ $label }} <span>{{ $dayItems->count() ?: '' }}</span></div>
                         <div class="sch-day-b">
                             @forelse($dayItems as $p)
-                                <div class="sch-item {{ $editing && $editing->id === $p->id ? 'editing' : '' }}" style="--c: {{ $colorOf($p->subject_id) }};"
+                                <div class="sch-item {{ $editing && $editing->id === $p->id ? 'editing' : '' }}" style="--c: {{ $colorOf($p->subject_id) }};" tabindex="0"
+                                     aria-label="Edit {{ $p->subject?->name ?? 'class' }}, {{ $p->day_name }} {{ $p->time_range }}"
                                      data-id="{{ $p->id }}"
                                      data-url="{{ route('admin.schedules.update', $p) }}"
                                      data-subject="{{ $p->subject_id }}"
@@ -424,7 +433,7 @@
                                      data-start="{{ substr((string) $p->start_time, 0, 5) }}"
                                      data-end="{{ substr((string) $p->end_time, 0, 5) }}"
                                      data-room="{{ $p->room }}">
-                                    <div class="sch-item-time">{{ $p->time_range }}</div>
+                                    <div class="sch-item-time">{{ str_replace([' AM', ' PM'], ["\u{00A0}AM", "\u{00A0}PM"], $p->time_range) }}</div>
                                     <div class="sch-item-subj">{{ $p->subject?->name ?? 'Subject removed' }}</div>
                                     <div class="sch-item-meta">
                                         @if($p->teacher) {{ $p->teacher->name }} @else <span class="nt">No teacher yet</span> @endif
@@ -466,66 +475,171 @@
 
 <script>
 (function () {
-    var form = document.getElementById('schForm');
-    if (!form) return;
+    var INDEX = @json(route('admin.schedules.index', [], false));
+    var CSRF  = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    var swapping = 0;
 
-    var $ = function (id) { return document.getElementById(id); };
-    var method = $('schMethod'), editing = $('schEditing'), title = $('schFormTitle'), tag = $('schModeTag'),
-        submit = $('schSubmit'), cancel = $('schCancel');
+    function toast(msg, type) { if (window.dpToast) window.dpToast(msg, type); }
+    function page() { return document.querySelector('.sch-page'); }
+    function here() { return location.pathname + location.search; }
 
-    var dayBoxes = document.querySelectorAll('#schDaysWrap input[type="checkbox"]');
-    var presets = document.querySelectorAll('.sch-preset');
-
-    // Bell schedule quick-fill; the period that matches the times is shown as chosen
-    function markPreset() {
-        presets.forEach(function (b) {
-            b.setAttribute('aria-pressed', b.dataset.start === $('start_time').value && b.dataset.end === $('end_time').value ? 'true' : 'false');
-        });
+    // Put a fresh copy of the timetable area in place of the current one (no full reload, no skeleton)
+    function swap(url, push) {
+        var cur = page();
+        if (!cur) { location.href = url; return; }
+        var id = ++swapping;
+        cur.setAttribute('aria-busy', 'true');
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) {
+                if (r.status === 401 || r.status === 419) { location.href = url; throw new Error('signed out'); }
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                if (id !== swapping) return;
+                var fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('.sch-page');
+                if (!fresh) { location.href = url; return; }
+                fresh.classList.add('sch-swapped');
+                page().replaceWith(document.importNode(fresh, true));
+                if (push && url !== here()) history.pushState(null, '', url);
+                init();
+            })
+            .catch(function (err) {
+                if (id !== swapping || (err && err.message === 'signed out')) return;
+                var p = page(); if (p) p.removeAttribute('aria-busy');
+                toast('Could not load the timetable. Check the connection and try again.', 'error');
+            });
     }
-    presets.forEach(function (b) {
-        b.addEventListener('click', function () {
-            $('start_time').value = b.dataset.start;
-            $('end_time').value   = b.dataset.end;
-            markPreset();
-        });
-    });
-    $('start_time').addEventListener('input', markPreset);
-    $('end_time').addEventListener('input', markPreset);
 
-    function isEditing() { return !method.disabled; }
-    function addLabel() {
-        var n = Array.prototype.filter.call(dayBoxes, function (c) { return c.checked; }).length;
-        submit.textContent = n > 1 ? 'Add on ' + n + ' days' : 'Add to timetable';
+    // Send a form in the background; the server answers JSON
+    function send(f) {
+        return fetch(f.action, { method: 'POST', body: new FormData(f), credentials: 'same-origin',
+                                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF } })
+            .then(function (r) {
+                return r.json().catch(function () { return {}; })
+                    .then(function (d) { d = d || {}; return { ok: r.ok && !!d.ok, status: r.status, d: d }; });
+            });
     }
-    dayBoxes.forEach(function (c) { c.addEventListener('change', addLabel); });
-    $('schAllDays').addEventListener('click', function () {
-        dayBoxes.forEach(function (c) { c.checked = true; });
-        addLabel();
-    });
-    form.addEventListener('submit', function (e) {
-        if (!isEditing() && !Array.prototype.some.call(dayBoxes, function (c) { return c.checked; })) {
+    function problems(res) {
+        if (res.status === 419) return ['This page expired. Reload the page and try again.'];
+        if (res.status === 401) return ['You were signed out. Sign in again to continue.'];
+        var out = [];
+        if (res.d.errors) Object.keys(res.d.errors).forEach(function (k) { out = out.concat(res.d.errors[k]); });
+        if (!out.length) out.push(res.d.message || 'Could not save. Please try again.');
+        return out;
+    }
+
+    function init() {
+        var root = page();
+        if (!root) return;
+        var $ = function (id) { return document.getElementById(id); };
+
+        // Section and semester: switch in place
+        var picker = $('sectionPicker');
+        if (picker) picker.addEventListener('change', function () {
+            swap(INDEX + '?section_id=' + encodeURIComponent(picker.value), true);
+        });
+        root.querySelectorAll('.js-swap').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                if (a.getAttribute('aria-disabled') === 'true') return;
+                swap(a.getAttribute('href'), true);
+            });
+        });
+        var term = root.querySelector('form.sch-term-now');
+        if (term) term.addEventListener('submit', function (e) {
             e.preventDefault();
-            if (window.dpToast) window.dpToast('Choose at least one day.', 'warning');
-            return;
+            var b = term.querySelector('button[type="submit"]');
+            if (b) b.disabled = true;
+            send(term).then(function (res) {
+                if (!res.ok) { toast(problems(res)[0], 'error'); if (b) b.disabled = false; return; }
+                toast(res.d.message, 'success');
+                swap(here(), false);
+            }).catch(function () { toast('No connection. Nothing was changed.', 'error'); if (b) b.disabled = false; });
+        });
+
+        var form = $('schForm');
+        if (!form) return;
+        var method = $('schMethod'), editing = $('schEditing'), title = $('schFormTitle'), tag = $('schModeTag'),
+            submit = $('schSubmit'), cancel = $('schCancel'), errBox = $('schFormErr');
+        var dayBoxes = root.querySelectorAll('#schDaysWrap input[type="checkbox"]');
+        var presets  = root.querySelectorAll('.sch-preset');
+        var subjButtons = root.querySelectorAll('.sch-subj');
+
+        // Bell schedule quick-fill; the period that matches the times is shown as chosen
+        function markPreset() {
+            presets.forEach(function (b) {
+                b.setAttribute('aria-pressed', b.dataset.start === $('start_time').value && b.dataset.end === $('end_time').value ? 'true' : 'false');
+            });
         }
-        submit.disabled = true;
-        submit.textContent = 'Saving…';
-    });
+        function markSubject() {
+            subjButtons.forEach(function (b) { b.classList.toggle('picked', b.dataset.subject === $('subject_id').value); });
+        }
+        presets.forEach(function (b) {
+            b.addEventListener('click', function () {
+                $('start_time').value = b.dataset.start;
+                $('end_time').value   = b.dataset.end;
+                markPreset();
+            });
+        });
+        $('start_time').addEventListener('input', markPreset);
+        $('end_time').addEventListener('input', markPreset);
 
-    function setMode(edit) {
-        $('schDaysWrap').hidden = edit;
-        $('schDayWrap').hidden = !edit;
-        dayBoxes.forEach(function (c) { c.disabled = edit; });
-        $('day_of_week').disabled = !edit;
-    }
+        function isEditing() { return !method.disabled; }
+        function addLabel() {
+            var n = Array.prototype.filter.call(dayBoxes, function (c) { return c.checked; }).length;
+            submit.textContent = n > 1 ? 'Add on ' + n + ' days' : 'Add to timetable';
+        }
+        dayBoxes.forEach(function (c) { c.addEventListener('change', addLabel); });
+        $('schAllDays').addEventListener('click', function () {
+            dayBoxes.forEach(function (c) { c.checked = true; });
+            addLabel();
+        });
 
-    function setTitle(text) { title.firstChild.nodeValue = text + ' '; }
-    function clearHighlight() { document.querySelectorAll('.sch-item.editing').forEach(function (el) { el.classList.remove('editing'); }); }
+        function showErrors(list) {
+            var strong = document.createElement('strong'), ul = document.createElement('ul');
+            strong.textContent = 'Could not save this class:';
+            list.forEach(function (m) { var li = document.createElement('li'); li.textContent = m; ul.appendChild(li); });
+            errBox.replaceChildren(strong, ul);
+            errBox.hidden = false;
+            errBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        function clearErrors() { errBox.hidden = true; errBox.replaceChildren(); }
 
-    // Edit: load the class into the form and switch it to the update route (PUT)
-    document.querySelectorAll('.js-edit').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var card = btn.closest('.sch-item');
+        // Save: stays on the page; on success the timetable refreshes in place
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!isEditing() && !Array.prototype.some.call(dayBoxes, function (c) { return c.checked; })) {
+                toast('Choose at least one day.', 'warning');
+                return;
+            }
+            clearErrors();
+            var label = submit.textContent;
+            submit.disabled = true;
+            submit.textContent = 'Saving…';
+            send(form).then(function (res) {
+                if (!res.ok) { showErrors(problems(res)); submit.disabled = false; submit.textContent = label; return; }
+                toast(res.d.message, 'success');
+                swap(here(), false);
+            }).catch(function () {
+                showErrors(['No connection. The class was not saved.']);
+                submit.disabled = false; submit.textContent = label;
+            });
+        });
+
+        function setMode(edit) {
+            $('schDaysWrap').hidden = edit;
+            $('schDayWrap').hidden = !edit;
+            dayBoxes.forEach(function (c) { c.disabled = edit; });
+            $('day_of_week').disabled = !edit;
+        }
+        function setTitle(text) { title.firstChild.nodeValue = text + ' '; }
+        function clearHighlight() { root.querySelectorAll('.sch-item.editing').forEach(function (el) { el.classList.remove('editing'); }); }
+
+        // Edit: the whole class card opens it in the form (update route, PUT)
+        function startEdit(card) {
+            clearErrors();
             form.action = card.dataset.url;
             method.disabled = false;
             editing.value = card.dataset.id;
@@ -537,64 +651,86 @@
             $('end_time').value    = card.dataset.end;
             $('room').value        = card.dataset.room || '';
             markPreset();
+            markSubject();
             setTitle('Edit class'); tag.style.display = '';
             submit.textContent = 'Save changes'; submit.classList.add('edit');
             cancel.style.display = '';
             clearHighlight(); card.classList.add('editing');
             $('schFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        root.querySelectorAll('.sch-item').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('.js-remove')) return;
+                startEdit(card);
+            });
+            card.addEventListener('keydown', function (e) {
+                if (e.target === card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); startEdit(card); }
+            });
         });
-    });
 
-    // Subject checklist: pick a subject to add it (leaves edit mode first)
-    var subjButtons = document.querySelectorAll('.sch-subj');
-    function markSubject() {
-        subjButtons.forEach(function (b) { b.classList.toggle('picked', b.dataset.subject === $('subject_id').value); });
-    }
-    subjButtons.forEach(function (b) {
-        b.addEventListener('click', function () {
-            if (isEditing()) cancel.click();
-            $('subject_id').value = b.dataset.subject;
+        // Subject checklist: pick a subject to add it (leaves edit mode first)
+        subjButtons.forEach(function (b) {
+            b.addEventListener('click', function () {
+                if (isEditing()) cancel.click();
+                $('subject_id').value = b.dataset.subject;
+                markSubject();
+                if (window.matchMedia('(max-width: 1100px)').matches) $('schFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                $('teacher_id').focus({ preventScroll: true });
+            });
+        });
+        $('subject_id').addEventListener('change', markSubject);
+
+        // Cancel: back to "Add a class"
+        cancel.addEventListener('click', function () {
+            clearErrors();
+            form.action = form.dataset.storeUrl;
+            method.disabled = true;
+            editing.value = '';
+            form.reset();
+            $('subject_id').value = ''; $('teacher_id').value = ''; $('room').value = '';
+            $('day_of_week').selectedIndex = 0;
+            $('start_time').value = '07:30'; $('end_time').value = '08:20';
+            setMode(false);
+            dayBoxes.forEach(function (c) { c.checked = true; });
+            setTitle('Add a class'); tag.style.display = 'none';
+            submit.classList.remove('edit');
+            addLabel();
+            markPreset();
+            cancel.style.display = 'none';
+            clearHighlight();
             markSubject();
-            if (window.matchMedia('(max-width: 900px)').matches) $('schFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            $('teacher_id').focus({ preventScroll: true });
         });
-    });
-    $('subject_id').addEventListener('change', markSubject);
-    markSubject();
 
-    // Cancel: back to "Add a class"
-    cancel.addEventListener('click', function () {
-        form.action = form.dataset.storeUrl;
-        method.disabled = true;
-        editing.value = '';
-        form.reset();
-        $('subject_id').value = ''; $('teacher_id').value = ''; $('room').value = '';
-        $('day_of_week').selectedIndex = 0;
-        $('start_time').value = '07:30'; $('end_time').value = '08:20';
-        setMode(false);
-        dayBoxes.forEach(function (c) { c.checked = true; });
-        setTitle('Add a class'); tag.style.display = 'none';
-        submit.classList.remove('edit');
-        addLabel();
+        // Remove: confirm in the dialog, then take it off in place
+        var dlg = $('schRemove'), rform = $('schRemoveForm');
+        root.querySelectorAll('.js-remove').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                rform.action = btn.dataset.url;
+                $('schRemoveName').textContent = btn.dataset.label;
+                dlg.showModal();
+            });
+        });
+        dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+        rform.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var b = rform.querySelector('button[type="submit"]');
+            b.disabled = true;
+            send(rform).then(function (res) {
+                dlg.close();
+                b.disabled = false;
+                if (!res.ok) { toast(problems(res)[0], 'error'); return; }
+                toast(res.d.message, 'success');
+                swap(here(), false);
+            }).catch(function () { b.disabled = false; toast('No connection. The class was not removed.', 'error'); });
+        });
+
         markPreset();
-        cancel.style.display = 'none';
-        clearHighlight();
-        if (typeof markSubject === 'function') markSubject();
-    });
+        markSubject();
+        if (!isEditing()) addLabel();
+    }
 
-    // Remove: confirm in a dialog
-    var dlg = $('schRemove');
-    document.querySelectorAll('.js-remove').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            $('schRemoveForm').action = btn.dataset.url;
-            $('schRemoveName').textContent = btn.dataset.label;
-            dlg.showModal();
-        });
-    });
-    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
-
-    markPreset();
-    if (!isEditing()) addLabel();
+    init();
 })();
 </script>
 @endsection
