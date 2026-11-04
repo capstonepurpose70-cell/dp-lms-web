@@ -77,7 +77,9 @@
                 <div class="qz-actions">
                     <a href="{{ route('teacher.assignments.show', $a) }}" class="tp-btn sm {{ $toGrade ? '' : 'ghost' }}">{{ $toGrade ? 'Grade' : 'Open' }}</a>
                     <form method="POST" action="{{ route('teacher.assignments.publish', $a) }}"
-                          onsubmit="return confirm('{{ $a->is_published ? 'Unpublish this quiz? Students will no longer see it.' : 'Publish this quiz? Students in the section will be notified.' }}');">
+                          data-confirm="{{ $a->is_published ? 'Unpublish this quiz?' : 'Publish this quiz?' }}"
+                          data-confirm-text="{{ $a->is_published ? 'Students will no longer see it.' : 'Students in the section will be notified.' }}"
+                          data-confirm-ok="{{ $a->is_published ? 'Unpublish' : 'Publish' }}">
                         @csrf
                         @method('PATCH')
                         <button type="submit" class="tp-btn ghost sm">{{ $a->is_published ? 'Unpublish' : 'Publish' }}</button>

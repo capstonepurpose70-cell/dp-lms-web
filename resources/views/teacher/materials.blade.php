@@ -463,13 +463,15 @@
                             onclick="dmOpen('{{ route('teacher.materials.show', $material) }}', '{{ route('teacher.materials.destroy', $material) }}')"
                             aria-label="Details of {{ $material->title }}">Details</button>
                     <form method="POST" action="{{ route('teacher.materials.publish', $material) }}"
-                          onsubmit="return confirm('{{ $material->is_published ? 'Unpublish this material? Students will no longer see it.' : 'Publish this material? Students will be notified.' }}');">
+                          data-confirm="{{ $material->is_published ? 'Unpublish this material?' : 'Publish this material?' }}"
+                          data-confirm-text="{{ $material->is_published ? 'Students will no longer see it.' : 'Students will be notified.' }}"
+                          data-confirm-ok="{{ $material->is_published ? 'Unpublish' : 'Publish' }}">
                         @csrf
                         @method('PATCH')
                         <button type="submit" class="tp-btn sm {{ $material->is_published ? 'ghost' : '' }}">{{ $material->is_published ? 'Unpublish' : 'Publish' }}</button>
                     </form>
                     <form method="POST" action="{{ route('teacher.materials.destroy', $material) }}"
-                          onsubmit="return confirm('Delete this material? This cannot be undone.');">
+                          data-confirm="Delete this material?" data-confirm-text="This cannot be undone." data-confirm-ok="Delete" data-confirm-danger>
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="tp-btn danger sm" aria-label="Delete {{ $material->title }}">Delete</button>
@@ -703,7 +705,7 @@
             <div class="dm-loading">Loading…</div>
         </div>
         <div class="dm-foot">
-            <form id="dmDeleteForm" method="POST" onsubmit="return confirm('Delete this material? This cannot be undone.');">
+            <form id="dmDeleteForm" method="POST" data-confirm="Delete this material?" data-confirm-text="This cannot be undone." data-confirm-ok="Delete" data-confirm-danger>
                 <input type="hidden" name="_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="_method" value="DELETE">
                 <button type="submit" class="dm-del">Delete material</button>
@@ -848,7 +850,7 @@
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
         if (file.size > 20 * 1048576) {
-            alert('This file is larger than 20 MB. Please choose a smaller file.');
+            window.dpToast('This file is larger than 20 MB. Please choose a smaller file.', 'error');
             umClearFile();
             return;
         }

@@ -926,6 +926,75 @@ setInterval(loadNotifs, 30000);
 window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 </script>
 <script src="{{ asset('js/scroll-cue.js') }}?v={{ filemtime(public_path('js/scroll-cue.js')) }}" defer></script>
+{{-- Confirmation for any form marked data-confirm="Question?" (instead of the browser's pop-up), and
+     window.dpConfirm({title, text, ok, danger}) -> Promise<boolean> for scripts.
+     Optional on forms: data-confirm-text (details), data-confirm-ok (button label), data-confirm-danger. --}}
+<dialog class="tc-confirm" id="tcConfirm" aria-labelledby="tcConfirmTitle">
+    <form method="dialog">
+        <h2 id="tcConfirmTitle"></h2>
+        <p id="tcConfirmText"></p>
+        <div class="tc-confirm-foot">
+            <button type="submit" value="cancel" class="tc-confirm-cancel">Cancel</button>
+            <button type="submit" value="ok" class="tc-confirm-ok" id="tcConfirmOk">Confirm</button>
+        </div>
+    </form>
+</dialog>
+<style>
+    .tc-confirm { border:0; padding:0; border-radius:16px; width:min(420px, calc(100vw - 32px)); background:var(--surface, #fff);
+                  color:var(--text-1, #0f172a); box-shadow:0 24px 60px rgba(15,23,42,.28); }
+    .tc-confirm::backdrop { background:rgba(15,23,42,.45); }
+    .tc-confirm form { padding:22px 22px 18px; margin:0; }
+    .tc-confirm h2 { font-size:17px; font-weight:800; margin:0 0 6px; line-height:1.35; }
+    .tc-confirm p { font-size:13.5px; color:var(--text-2, #475569); line-height:1.55; margin:0; }
+    .tc-confirm p:empty { display:none; }
+    .tc-confirm-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+    .tc-confirm-foot button { min-height:40px; padding:0 16px; border-radius:10px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+    .tc-confirm-cancel { background:transparent; border:1px solid var(--border, #e2e8f0); color:var(--text-1, #334155); }
+    .tc-confirm-ok { background:var(--accent, #1d4ed8); border:1px solid var(--accent, #1d4ed8); color:#fff; }
+    .tc-confirm-ok.danger { background:#dc2626; border-color:#dc2626; }
+</style>
+<script>
+(function () {
+    var dlg = document.getElementById('tcConfirm');
+    var supported = dlg && typeof dlg.showModal === 'function';
+    var done = null;
+
+    window.dpConfirm = function (opts) {
+        opts = opts || {};
+        if (!supported) return Promise.resolve(window.confirm(opts.title + (opts.text ? '\n\n' + opts.text : '')));
+        if (dlg.open) dlg.close('cancel');
+        document.getElementById('tcConfirmTitle').textContent = opts.title || 'Are you sure?';
+        document.getElementById('tcConfirmText').textContent = opts.text || '';
+        var ok = document.getElementById('tcConfirmOk');
+        ok.textContent = opts.ok || 'Confirm';
+        ok.classList.toggle('danger', !!opts.danger);
+        dlg.returnValue = '';
+        dlg.showModal();
+        ok.focus();
+        return new Promise(function (resolve) { done = resolve; });
+    };
+    if (supported) {
+        dlg.addEventListener('close', function () { var r = done; done = null; if (r) r(dlg.returnValue === 'ok'); });
+        dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close('cancel'); });
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+        if (form.dataset.confirmed) { delete form.dataset.confirmed; return; }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var submitter = e.submitter || null;
+        window.dpConfirm({ title: form.dataset.confirm, text: form.dataset.confirmText, ok: form.dataset.confirmOk,
+                           danger: form.hasAttribute('data-confirm-danger') }).then(function (yes) {
+            if (!yes) return;
+            form.dataset.confirmed = '1';
+            if (form.requestSubmit) form.requestSubmit(submitter && form.contains(submitter) ? submitter : undefined);
+            else form.submit();
+        });
+    }, true);
+})();
+</script>
 @include('partials.flash-toast')
 </body>
 </html>

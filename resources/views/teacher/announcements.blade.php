@@ -159,7 +159,7 @@
                 </div>
 
                 <form method="POST" action="{{ route('teacher.announcements.destroy', $announcement->id) }}"
-                      onsubmit="return confirm('Delete this announcement? Students and parents will no longer see it.');">
+                      data-confirm="Delete this announcement?" data-confirm-text="Students and parents will no longer see it." data-confirm-ok="Delete" data-confirm-danger>
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="ta-del" aria-label="Delete “{{ $announcement->title }}”" title="Delete">

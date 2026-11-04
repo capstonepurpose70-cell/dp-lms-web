@@ -1118,6 +1118,28 @@ no JS errors, no sideways scrolling.
 
 ---
 
+## Batch 19 — Teacher portal QA
+
+Checked: all 39 teacher routes need a signed-in, approved teacher. A second teacher tried 16 actions on another
+teacher's records (open, publish or delete a quiz or material, grade a submission, delete an announcement, open,
+mark, re-code or close attendance, open, approve or return an enrollment form): every one refused, nothing changed.
+Guests, students, parents and admins cannot open teacher pages. Titles with `<script>` or `<img onerror>` show as
+text. 32 page views (desktop and phone, detail pages included): no JS errors, no sideways scrolling.
+
+### B19-1 ✅ Pop-ups replaced by the page's own dialog
+- 11 browser pop-ups (`confirm()` / `alert()`) on Announcements, Quizzes, Materials, Attendance and the enrollment
+  review now use one dialog in the teacher layout (forms: `data-confirm`; scripts: `window.dpConfirm()`), and error
+  messages use the 3-second toast. Cancel sends nothing.
+
+### B19-2 ✅ Attendance on a phone
+- The P / L / A buttons were off-screen on phones (the table needed sideways scrolling). Each student is now a small
+  card with the buttons always in view.
+
+### B19-3 ✅ Enrollment review card
+- "Student profile", "Review", Approve and Return cards had no inner padding; text touched the card edge.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

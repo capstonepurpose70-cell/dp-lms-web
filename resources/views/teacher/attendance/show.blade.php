@@ -45,6 +45,20 @@
     .mk { display:inline-flex; gap:6px; }
     .main-content .mk button { width:44px; height:40px; min-height:40px; border-radius:var(--r-sm); border:1px solid var(--border); background:var(--surface); font-weight:800; font-size:13px; cursor:pointer; color:var(--text-2); }
     @media (max-width: 480px) { .main-content .mk button { height:44px; min-height:44px; } }
+    /* phones: each student is a small card, the mark buttons always in view */
+    @media (max-width: 640px) {
+        .lv-table thead { display:none; }
+        .lv-table, .lv-table tbody { display:block; }
+        .lv-table tbody tr { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:6px 10px; align-items:center;
+                             padding:12px 0; border-bottom:1px solid var(--border); }
+        .lv-table tbody tr:last-child { border-bottom:0; }
+        .lv-table td { display:block; padding:0; border:0; }
+        .lv-table td:nth-child(1) { grid-column:1; grid-row:1; }
+        .lv-table td:nth-child(2) { grid-column:2; grid-row:1; justify-self:end; }
+        .lv-table td:nth-child(3) { grid-column:1; grid-row:2; }
+        .lv-table td:nth-child(4) { grid-column:2; grid-row:2; }
+        .lv-table td[colspan] { grid-column:1 / -1; }
+    }
     .mk button.g:hover, .mk button.g.on { background:#16a34a; color:#fff; border-color:#16a34a; }
     .mk button.y:hover, .mk button.y.on { background:#eab308; color:#3f2d00; border-color:#eab308; }
     .mk button.r:hover, .mk button.r.on { background:#dc2626; color:#fff; border-color:#dc2626; }
@@ -96,7 +110,7 @@
                     <button type="button" class="tp-btn ghost sm" id="lvFullBtn">Full screen for the projector</button>
                     <button type="button" class="tp-btn ghost sm" id="lvNewCode">New code</button>
                     <form method="POST" action="{{ route('teacher.attendance.close', $session) }}" style="margin:0;"
-                          onsubmit="return confirm('Close attendance now? Students who have not checked in will be marked absent and their parents notified.');">
+                          data-confirm="Close attendance now?" data-confirm-text="Students who have not checked in will be marked absent and their parents notified." data-confirm-ok="Close attendance" data-confirm-danger>
                         @csrf
                         <button type="submit" class="tp-btn danger sm">Close now</button>
                     </form>
@@ -232,16 +246,19 @@
             body.append('student_id', tr.dataset.id); body.append('status', b.dataset.s);
             fetch(MARK, { method: 'POST', body: body, headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } })
                 .then(function (r) { return r.json(); })
-                .then(function (d) { if (d.ok) { paint(tr.dataset.id, d.status, d.time, true); poll(); } else { alert(d.message || 'Could not update.'); } })
-                .catch(function () { alert('Network error. Please try again.'); });
+                .then(function (d) { if (d.ok) { paint(tr.dataset.id, d.status, d.time, true); poll(); } else { window.dpToast(d.message || 'Could not update.', 'error'); } })
+                .catch(function () { window.dpToast('No connection. Please try again.', 'error'); });
         });
     });
 
     if ($('lvNewCode')) $('lvNewCode').addEventListener('click', function () {
-        if (!confirm('Make a new code? The current code will stop working.')) return;
-        fetch(CODE, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { if (d.ok) { $('lvCode').textContent = d.code; $('lvFullCode').textContent = d.code; } else { alert(d.message); } });
+        window.dpConfirm({ title: 'Make a new code?', text: 'The current code will stop working.', ok: 'Make new code' }).then(function (yes) {
+            if (!yes) return;
+            fetch(CODE, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d.ok) { $('lvCode').textContent = d.code; $('lvFullCode').textContent = d.code; window.dpToast('New code: ' + d.code, 'success'); } else { window.dpToast(d.message || 'Could not make a new code.', 'error'); } })
+                .catch(function () { window.dpToast('No connection. Please try again.', 'error'); });
+        });
     });
 
     if ($('lvFullBtn')) $('lvFullBtn').addEventListener('click', function () {

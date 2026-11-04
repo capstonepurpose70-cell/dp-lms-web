@@ -9,7 +9,7 @@
     .rv-meta { display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; margin-top:4px; font-size:13px; color:var(--text-2); }
     .rv-meta .tp-pill { margin-left:-2px; }
 
-    .rv-card { margin-bottom:14px; }
+    .rv-card { margin-bottom:14px; padding:20px 22px; }
     .rv-card h2 { font-size:15px; font-weight:800; margin:0 0 14px; color:var(--text-1); }
 
     .rv-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px 24px; margin:0; }
@@ -159,7 +159,8 @@
                 you as an adviser first, or leave this request for the correct adviser.
             </div>
         @else
-            <form method="POST" action="{{ route('teacher.enrollments.approve', $enrollment->id) }}" class="tp-card rv-card">
+            <form method="POST" action="{{ route('teacher.enrollments.approve', $enrollment->id) }}" class="tp-card rv-card"
+                  data-confirm="Approve and enroll {{ $name }}?" data-confirm-text="They will be placed in the section you chose and see their classes right away." data-confirm-ok="Approve and enroll">
                 @csrf
                 <h2>Approve and place in a section</h2>
                 <p class="rv-hint">The student is added to the section and gets an email with their section, grade and school year.</p>
@@ -173,16 +174,15 @@
                     @endforeach
                 </select>
                 <div class="rv-actions">
-                    <button type="submit" class="tp-btn rv-approve"
-                            data-msg="Approve and enroll {{ $name }}?"
-                            onclick="return confirm(this.dataset.msg);">
+                    <button type="submit" class="tp-btn rv-approve">
                         Approve and enroll
                     </button>
                 </div>
             </form>
         @endif
 
-        <form method="POST" action="{{ route('teacher.enrollments.reject', $enrollment->id) }}" class="tp-card rv-card">
+        <form method="POST" action="{{ route('teacher.enrollments.reject', $enrollment->id) }}" class="tp-card rv-card"
+              data-confirm="Return this form to {{ $name }}?" data-confirm-text="They can fix their answers and send the form again." data-confirm-ok="Return form" data-confirm-danger>
             @csrf
             <h2>Return the form</h2>
             <label class="rv-label" for="rvRemarks">What needs to change</label>
@@ -190,8 +190,7 @@
             <textarea id="rvRemarks" name="remarks" class="rv-txt" required maxlength="500"
                       placeholder="Example: Please upload your Form 137 from your last school.">{{ old('remarks') }}</textarea>
             <div class="rv-actions">
-                <button type="submit" class="tp-btn danger"
-                        onclick="return confirm('Return this form to the student?');">
+                <button type="submit" class="tp-btn danger">
                     Return form
                 </button>
             </div>
