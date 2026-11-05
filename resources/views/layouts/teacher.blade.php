@@ -579,6 +579,7 @@
                 ['teacher.students.index',      'Students',          'students'],
                 ['teacher.enrollments.index',   'Enrollments',       'enrollments'],
                 ['teacher.attendance.index',    'Attendance',        'attendance'],
+                ['teacher.meet.index',          'Google Meet',       'video'],
                 ['teacher.face-kiosk.index',    'Face Registration', 'face'],
                 ['teacher.messages',            'Messages',          'messages'],
             ];

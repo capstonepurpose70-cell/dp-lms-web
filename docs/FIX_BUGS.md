@@ -1254,13 +1254,26 @@ scrolling.
 
 ---
 
+## Batch 27 — Emails, Google Meet, grade percentages, Railway readiness
+
+- All six school emails use one letterhead with the school logo (`emails/layout.blade.php`), built with tables and inline styles so mail apps keep them. They greet by the given name. `logo-email.png` is a 128 px copy, and its address comes from `APP_URL`.
+- New `php artisan mail:check you@example.com`. The app only logs mail failures, so this shows the provider's answer after a deploy.
+- Google Meet: one link per subject and section, published from the teacher's new Google Meet page. Only that section sees it on the dashboard, and it gets a bell entry and a push. Only real Meet addresses are accepted, and pasted extras such as `?authuser=0` are dropped. The class's current teacher manages the link, so a replacement teacher takes it over. Subjects of the other semester are hidden.
+- Grade percentages per subject, section and quarter, default 25, 50 and 25, whole numbers that must total exactly 100. They lock once that class has a grade in that quarter, so a grade people have seen never changes. Each grade keeps the percentages it used; older grades read as the default and their final grades were not touched.
+- A row lock covers saving a grade and saving percentages, so the two cannot cross.
+- Parent records show the percentage beside each score, because grades in one table can now differ.
+- Behind Railway's proxy every visitor shared one address, so one person reaching a per-IP limit could lock out the school. The app now reads the real visitor address (`trustProxies`).
+- `docs/GO_LIVE_GUIDE.md`: Brevo, Railway, lists and Raspberry Pi steps in order. The wrong defense date was removed from `DEPLOY_CHECKLIST.md`.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |
 |---|---|---|
 | 🔧 | `/api/parent/*` `enrollment_status` is still only "enrolled" / "not enrolled" (the web now shows pending/returned) | `Api/ParentPortal/DashboardController.php` — needs a Flutter change first |
 | 🔧 | A parent with two children cannot link the second child themselves (the school office links them) | `ParentLinkService` — feature decision |
-| 🔧 | Grade weights 25/50/25 for every subject (DepEd differs per subject group) | CLAUDE.md §13 #13 — confirm with the school |
+
 | 🔧 | No "change password" inside the app for students/teachers/parents | CLAUDE.md §13 #14 |
 | 🔧 | `GET /api/messages/thread/{id}` has no contact check | CLAUDE.md §13 #16 |
 | 🔧 | Admin layout not audited yet | `resources/views/layouts/admin.blade.php` |

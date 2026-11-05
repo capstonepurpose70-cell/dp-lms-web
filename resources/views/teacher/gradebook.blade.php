@@ -14,6 +14,22 @@
     .gb-in:disabled { opacity:.6; }
     .gb-final { height:44px; display:flex; align-items:center; gap:8px; padding:0 14px; border-radius:10px; font-weight:800; font-size:14px; white-space:nowrap;
         background:var(--accent-lt); color:var(--text-1); border:1px solid var(--border); }
+    .gb-pct summary { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; list-style:none; }
+    .gb-pct summary::-webkit-details-marker { display:none; }
+    .gb-pct summary:focus-visible { outline:2px solid #2563eb; outline-offset:4px; border-radius:6px; }
+    .gb-pct-title { display:block; font-size:15px; font-weight:800; color:var(--text-1); }
+    .gb-pct-sub { display:block; margin:4px 0 0; }
+    .gb-pct-chev { display:flex; flex-shrink:0; color:var(--text-2); transition:transform .15s ease; }
+    .gb-pct[open] .gb-pct-chev { transform:rotate(90deg); }
+    .gb-pct-body { margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+    .gb-grid.gb-grid-2 { grid-template-columns: 1fr 160px; }
+    .gb-check { display:flex; align-items:center; gap:10px; min-height:40px; margin-top:10px; font-size:13.5px; color:var(--text-1); cursor:pointer; }
+    .gb-check input { width:18px; height:18px; flex-shrink:0; accent-color:#2563eb; }
+    .gb-pct-note { font-size:13px; color:var(--text-2); margin:6px 0 0; line-height:1.5; }
+    .gb-pct-note:empty { display:none; }
+    .gb-pct-note.locked { color:#92400E; font-weight:600; }
+    #p_save { margin-top:12px; }
+    @media (max-width: 760px) { .gb-grid.gb-grid-2 { grid-template-columns: 1fr; } }
     .gb-final.pass { background:rgba(22,163,74,.10); color:#15803d; border-color:rgba(22,163,74,.35); }
     .gb-final.fail { background:rgba(220,38,38,.08); color:#b91c1c; border-color:rgba(220,38,38,.3); }
     .gb-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 20px; border:0; border-radius:11px;
@@ -70,21 +86,76 @@
 
 @php
     $oldClass = old('class_key');
-    $w = collect(\App\Models\Grade::WEIGHTS)->map(fn ($v) => rtrim(rtrim(number_format($v * 100, 1), '0'), '.') . '%');
+    $w = collect(\App\Models\Grade::DEFAULT_WEIGHTS)->map(fn ($v) => $v . '%');
 @endphp
 
 <div class="tp-page">
     <div class="tp-head">
         <div>
             <h1 class="tp-title">Gradebook</h1>
-            <p class="tp-sub">Quarterly grades for your classes, school year {{ $schoolYear }}. Final grade = written works {{ $w['written_works'] }}
-                + performance tasks {{ $w['performance_tasks'] }} + quarterly assessment {{ $w['quarterly_assessment'] }}; passing is
-                {{ \App\Models\Grade::PASSING }}. Saving the same student, subject and quarter again updates the grade.</p>
+            <p class="tp-sub">Quarterly grades for your classes, school year {{ $schoolYear }}. Passing is {{ \App\Models\Grade::PASSING }}.
+                Saving the same student, subject and quarter again updates the grade.</p>
         </div>
     </div>
 
     @if ($errors->any())
         <div class="gb-err" role="alert">{{ $errors->first() }}</div>
+    @endif
+
+    {{-- ── Percentages of one class and quarter ── --}}
+    @if ($classList->isNotEmpty())
+        <details class="gb-card gb-pct" id="pctCard">
+            <summary>
+                <span>
+                    <span class="gb-pct-title">Grade percentages</span>
+                    <span class="gb-muted gb-pct-sub">Each class uses {{ $w['written_works'] }}, {{ $w['performance_tasks'] }} and {{ $w['quarterly_assessment'] }} unless you change it. Set this before saving the first grade of the quarter.</span>
+                </span>
+                <span class="gb-pct-chev" aria-hidden="true"><x-ui-icon name="chevron-right" size="18" /></span>
+            </summary>
+            <form method="POST" action="{{ route('teacher.gradebook.weights') }}" id="pctForm" class="gb-pct-body">
+                @csrf
+                <div class="gb-grid gb-grid-2">
+                    <div>
+                        <label class="gb-label" for="p_class">Class</label>
+                        <select class="gb-in" name="class_key" id="p_class" required>
+                            <option value="">Choose a class</option>
+                            @foreach ($classList as $c)
+                                <option value="{{ $c['key'] }}">{{ $c['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="gb-label" for="p_quarter">Quarter</label>
+                        <select class="gb-in" name="quarter" id="p_quarter" required>
+                            @foreach (\App\Services\GradeService::QUARTERS as $q)
+                                <option value="{{ $q }}">{{ $q }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="gb-grid3">
+                    <div>
+                        <label class="gb-label" for="p_ww">Written works (%)</label>
+                        <input class="gb-in js-pct" type="number" step="1" min="0" max="100" inputmode="numeric" name="written_works" id="p_ww" required>
+                    </div>
+                    <div>
+                        <label class="gb-label" for="p_pt">Performance tasks (%)</label>
+                        <input class="gb-in js-pct" type="number" step="1" min="0" max="100" inputmode="numeric" name="performance_tasks" id="p_pt" required>
+                    </div>
+                    <div>
+                        <label class="gb-label" for="p_qa">Quarterly assessment (%)</label>
+                        <input class="gb-in js-pct" type="number" step="1" min="0" max="100" inputmode="numeric" name="quarterly_assessment" id="p_qa" required>
+                    </div>
+                    <div class="gb-final" id="p_total" aria-live="polite">Total: 100%</div>
+                </div>
+                <label class="gb-check">
+                    <input type="checkbox" name="all_quarters" value="1" id="p_all">
+                    Use these for every quarter that has no grades yet
+                </label>
+                <p class="gb-pct-note" id="p_note" role="status"></p>
+                <button type="submit" class="tp-btn" id="p_save">Save percentages</button>
+            </form>
+        </details>
     @endif
 
     {{-- ── Encode / edit ── --}}
@@ -124,15 +195,15 @@
                 </div>
                 <div class="gb-grid3">
                     <div>
-                        <label class="gb-label" for="f_ww">Written works ({{ $w['written_works'] }})</label>
+                        <label class="gb-label" for="f_ww">Written works (<span data-weight="written_works">{{ $w['written_works'] }}</span>)</label>
                         <input class="gb-in js-score" type="number" step="0.01" min="0" max="100" inputmode="decimal" name="written_works" id="f_ww" value="{{ old('written_works') }}" placeholder="0–100">
                     </div>
                     <div>
-                        <label class="gb-label" for="f_pt">Performance tasks ({{ $w['performance_tasks'] }})</label>
+                        <label class="gb-label" for="f_pt">Performance tasks (<span data-weight="performance_tasks">{{ $w['performance_tasks'] }}</span>)</label>
                         <input class="gb-in js-score" type="number" step="0.01" min="0" max="100" inputmode="decimal" name="performance_tasks" id="f_pt" value="{{ old('performance_tasks') }}" placeholder="0–100">
                     </div>
                     <div>
-                        <label class="gb-label" for="f_qa">Quarterly assessment ({{ $w['quarterly_assessment'] }})</label>
+                        <label class="gb-label" for="f_qa">Quarterly assessment (<span data-weight="quarterly_assessment">{{ $w['quarterly_assessment'] }}</span>)</label>
                         <input class="gb-in js-score" type="number" step="0.01" min="0" max="100" inputmode="decimal" name="quarterly_assessment" id="f_qa" value="{{ old('quarterly_assessment') }}" placeholder="0–100">
                     </div>
                     <div style="display:flex; gap:10px; align-items:end;">
@@ -247,8 +318,11 @@
     if (!form) return;
     var ROSTER  = @json($roster);
     var PASSING = {{ \App\Models\Grade::PASSING }};
-    var W = @json(\App\Models\Grade::WEIGHTS);   // same weights as Grade::computeFinal() on the server
+    var WEIGHTS  = @json($weights);   // per class and quarter, as GradeService::classWeights() gives them
+    var DEFAULTS = @json(\App\Models\Grade::DEFAULT_WEIGHTS);
+    var PARTS = ['written_works', 'performance_tasks', 'quarterly_assessment'];
     var cls = document.getElementById('f_class'), stu = document.getElementById('f_student'), subj = document.getElementById('f_subject');
+    var quarter = document.getElementById('f_quarter');
     var finalBox = document.getElementById('f_final');
     var scores = ['f_ww', 'f_pt', 'f_qa'].map(function (id) { return document.getElementById(id); });
 
@@ -267,15 +341,28 @@
         if (selected) stu.value = String(selected);
     }
 
+    function weightsNow() {
+        return (WEIGHTS[cls.value] && WEIGHTS[cls.value][quarter.value]) || DEFAULTS;
+    }
+
+    function showWeights() {
+        var w = weightsNow();
+        document.querySelectorAll('[data-weight]').forEach(function (el) { el.textContent = w[el.dataset.weight] + '%'; });
+        updateFinal();
+    }
+
     function updateFinal() {
+        var w = weightsNow();
         var v = scores.map(function (el) { var n = parseFloat(el.value); return isNaN(n) ? 0 : n; });
         var any = scores.some(function (el) { return el.value !== ''; });
-        var f = Math.round((v[0] * W.written_works + v[1] * W.performance_tasks + v[2] * W.quarterly_assessment) * 100) / 100;
+        // same formula as Grade::computeFinal() on the server
+        var f = Math.round(v[0] * w.written_works + v[1] * w.performance_tasks + v[2] * w.quarterly_assessment) / 100;
         finalBox.className = 'gb-final' + (any ? (f >= PASSING ? ' pass' : ' fail') : '');
         finalBox.textContent = any ? 'Final ' + f.toFixed(2) + (f >= PASSING ? ', passed' : ', failed') : 'Final: —';
     }
 
-    cls.addEventListener('change', function () { fillStudents(null); });
+    cls.addEventListener('change', function () { fillStudents(null); showWeights(); });
+    quarter.addEventListener('change', showWeights);
     scores.forEach(function (el) { el.addEventListener('input', updateFinal); });
 
     document.querySelectorAll('.js-edit').forEach(function (b) {
@@ -283,16 +370,79 @@
             var d = b.dataset;
             cls.value = d.class;
             fillStudents(d.student);
-            document.getElementById('f_quarter').value = d.quarter || 'Q1';
+            quarter.value = d.quarter || 'Q1';
             scores[0].value = d.ww || ''; scores[1].value = d.pt || ''; scores[2].value = d.qa || '';
-            updateFinal();
+            showWeights();
             document.getElementById('encodeCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
 
+    // ── Percentages of one class and quarter ──
+    var pForm = document.getElementById('pctForm');
+    var pClass = document.getElementById('p_class'), pQuarter = document.getElementById('p_quarter');
+    var pInputs = ['p_ww', 'p_pt', 'p_qa'].map(function (id) { return document.getElementById(id); });
+    var pTotal = document.getElementById('p_total'), pNote = document.getElementById('p_note');
+    var pSave = document.getElementById('p_save'), pAll = document.getElementById('p_all');
+
+    function pctRow() {
+        return WEIGHTS[pClass.value] && WEIGHTS[pClass.value][pQuarter.value];
+    }
+
+    function checkTotal() {
+        var row = pctRow();
+        var sum = pInputs.reduce(function (t, el) { return t + (parseInt(el.value, 10) || 0); }, 0);
+        var locked = row && row.locked && !pAll.checked;
+        pTotal.textContent = 'Total: ' + sum + '%';
+        pTotal.className = 'gb-final' + (sum === 100 ? ' pass' : ' fail');
+        pSave.disabled = !row || locked || sum !== 100;
+    }
+
+    function fillPct() {
+        var row = pctRow();
+        pInputs.forEach(function (el, i) {
+            el.value = (row || DEFAULTS)[PARTS[i]];
+            el.disabled = !row || (row.locked && !pAll.checked);
+        });
+        pNote.className = 'gb-pct-note' + (row && row.locked ? ' locked' : '');
+        pNote.textContent = !row ? 'Choose a class to see its percentages.'
+            : row.locked ? (pAll.checked ? pQuarter.value + ' stays as it is because it already has grades. The other open quarters will change.'
+                                         : 'Locked for ' + pQuarter.value + ' because this class already has grades in that quarter.')
+            : '';
+        checkTotal();
+    }
+
+    pClass.addEventListener('change', fillPct);
+    pQuarter.addEventListener('change', fillPct);
+    pAll.addEventListener('change', fillPct);
+    pInputs.forEach(function (el) { el.addEventListener('input', checkTotal); });
+
+    pForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var key = pClass.value, values = pInputs.map(function (el) { return parseInt(el.value, 10); });
+        pSave.disabled = true;
+        fetch(pForm.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(pForm)
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok) { window.dpToast(data.message, 'error'); return; }
+                data.saved.forEach(function (q) {
+                    PARTS.forEach(function (part, i) { WEIGHTS[key][q][part] = values[i]; });
+                });
+                window.dpToast(data.message, 'success');
+                showWeights();
+            });
+        }).catch(function () {
+            window.dpToast('Could not reach the server. Check your connection and try again.', 'error');
+        }).finally(fillPct);
+    });
+
     // Restore after a validation error
     fillStudents(@json(old('student_id')));
-    updateFinal();
+    showWeights();
+    fillPct();
 })();
 </script>
 @endsection

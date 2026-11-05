@@ -60,7 +60,27 @@ class GradebookController extends Controller
             'roster'     => $roster,
             'filters'    => $filters,
             'schoolYear' => $schoolYear,
+            'weights'    => $gradeService->classWeights($classList),
         ]);
+    }
+
+    // POST /teacher/gradebook/weights — percentages of one class; same rules as the mobile API.
+    public function weights(Request $request, GradeService $grades)
+    {
+        $data = $request->validate(['class_key' => ['required', 'regex:/^\d+-\d+$/']] + GradeService::weightRules());
+        [$sectionId, $subjectId] = array_map('intval', explode('-', $data['class_key']));
+
+        try {
+            $saved = $grades->setWeights(auth()->user(), $sectionId, $subjectId, $data);
+        } catch (ActionNotAllowed $e) {
+            return $request->expectsJson() ? $e->toJson() : back()->with('error', $e->getMessage());
+        }
+
+        $message = 'Percentages saved for ' . implode(', ', $saved) . '.';
+
+        return $request->expectsJson()
+            ? response()->json(['ok' => true, 'saved' => $saved, 'message' => $message])
+            : back()->with('success', $message);
     }
 
     // POST /teacher/gradebook — same logic as the mobile API (GradeService).

@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\LearningMaterial;
 use App\Models\TeacherSubject;
 use App\Services\EnrollmentService;
+use App\Services\MeetLinkService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -110,11 +111,17 @@ class DashboardController extends Controller
                 'performance_tasks'    => $g->performance_tasks,
                 'quarterly_assessment' => $g->quarterly_assessment,
                 'final_grade'          => $g->final_grade,
+                'weights'              => $g->weights(),
                 'remarks'              => $g->remarks,
                 'passed'               => $g->isPassed(),
             ]);
 
         return response()->json($grades);
+    }
+
+    public function meetLinks(MeetLinkService $links)
+    {
+        return response()->json($links->forStudent(auth()->user()));
     }
 
     public function announcements()

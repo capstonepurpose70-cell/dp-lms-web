@@ -235,6 +235,10 @@ Route::middleware(['auth', 'role:teacher', 'approved', 'terms', 'force.password'
         Route::post('/enrollments/{enrollment}/reject', [TeacherEnrollmentController::class, 'reject'])->name('enrollments.reject');
         // ->only(): just the routes that have controller methods
         Route::resource('gradebook',     GradebookController::class)->only(['index', 'store']);
+        Route::post('/gradebook/weights', [GradebookController::class, 'weights'])->name('gradebook.weights');
+        Route::get('/online-classes',     [App\Http\Controllers\Teacher\MeetLinkController::class, 'index'])->name('meet.index');
+        Route::post('/online-classes',    [App\Http\Controllers\Teacher\MeetLinkController::class, 'store'])->name('meet.store');
+        Route::delete('/online-classes',  [App\Http\Controllers\Teacher\MeetLinkController::class, 'destroy'])->name('meet.destroy');
         Route::resource('materials',     MaterialController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
         Route::patch('/materials/{material}/publish', [MaterialController::class, 'togglePublish'])->name('materials.publish');
         Route::resource('announcements', AnnouncementController::class)->only(['index', 'store', 'destroy']);

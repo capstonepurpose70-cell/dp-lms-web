@@ -63,7 +63,6 @@
         'none'     => 'Not enrolled for SY ' . $schoolYear,
     ];
     $statusLabel = ['present' => 'Present', 'late' => 'Late', 'absent' => 'Absent'];
-    $pct = fn (string $key) => rtrim(rtrim(number_format($weights[$key] * 100, 1), '0'), '.') . '%';
 @endphp
 
 <div class="cr-wrap">
@@ -150,9 +149,9 @@
                                 <tr>
                                     <th scope="col">Subject</th>
                                     <th scope="col" class="num">Quarter</th>
-                                    <th scope="col" class="num">Written works ({{ $pct('written_works') }})</th>
-                                    <th scope="col" class="num">Performance tasks ({{ $pct('performance_tasks') }})</th>
-                                    <th scope="col" class="num">Quarterly assessment ({{ $pct('quarterly_assessment') }})</th>
+                                    <th scope="col" class="num">Written works</th>
+                                    <th scope="col" class="num">Performance tasks</th>
+                                    <th scope="col" class="num">Quarterly assessment</th>
                                     <th scope="col" class="num">Grade</th>
                                 </tr>
                             </thead>
@@ -163,7 +162,7 @@
                                             <td class="cr-subj">{{ $s['subject']?->name ?? 'Subject removed' }}</td>
                                             <td class="num">{{ $q }}</td>
                                             @foreach(['written_works', 'performance_tasks', 'quarterly_assessment'] as $part)
-                                                <td class="num">{{ $g->$part !== null ? number_format($g->$part, 2) : '—' }}</td>
+                                                <td class="num">{{ $g->$part !== null ? number_format($g->$part, 2) : '—' }} <span class="cr-dim">({{ $g->weights()[$part] }}%)</span></td>
                                             @endforeach
                                             <td class="num {{ $g->final_grade === null ? 'cr-dim' : ($g->final_grade >= $passing ? 'cr-pass' : 'cr-fail') }}">
                                                 {{ $g->final_grade !== null ? number_format($g->final_grade, 2) : '—' }}

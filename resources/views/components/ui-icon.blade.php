@@ -5,6 +5,7 @@
 @props(['name', 'size' => 20, 'stroke' => 1.75])
 @php
     $paths = [
+        'video'         => '<rect x="2.5" y="6" width="13.5" height="12" rx="2.5"/><path d="m16 10.5 5.5-3v9l-5.5-3"/>',
         'dashboard'     => '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
         'gradebook'     => '<path d="M4.5 19V5.5a2 2 0 0 1 2-2h12.5v14H6.5a2 2 0 0 0-2 2Zm0 0a2 2 0 0 0 2 2H19"/><path d="M9 8h6M9 11.5h4"/>',
         'materials'     => '<path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2.2h7.4a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z"/>',

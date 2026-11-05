@@ -15,6 +15,9 @@ class Grade extends Model
         'performance_tasks',
         'quarterly_assessment',
         'final_grade',
+        'weight_written_works',
+        'weight_performance_tasks',
+        'weight_quarterly_assessment',
         'remarks',
     ];
 
@@ -41,11 +44,11 @@ class Grade extends Model
 
     public const PASSING = 75;
 
-    /** Component weights of a quarter grade. Views read these for their labels. */
-    public const WEIGHTS = [
-        'written_works'        => 0.25,
-        'performance_tasks'    => 0.50,
-        'quarterly_assessment' => 0.25,
+    /** Percentages of a quarter grade unless the teacher set others for the class (GradeService). */
+    public const DEFAULT_WEIGHTS = [
+        'written_works'        => 25,
+        'performance_tasks'    => 50,
+        'quarterly_assessment' => 25,
     ];
 
     public function isPassed(): bool
@@ -53,13 +56,27 @@ class Grade extends Model
         return $this->final_grade !== null && $this->final_grade >= self::PASSING;
     }
 
+    /** The percentages this grade was computed with. Grades older than class percentages used the default. */
+    public function weights(): array
+    {
+        if ($this->weight_written_works === null) {
+            return self::DEFAULT_WEIGHTS;
+        }
+
+        return [
+            'written_works'        => (int) $this->weight_written_works,
+            'performance_tasks'    => (int) $this->weight_performance_tasks,
+            'quarterly_assessment' => (int) $this->weight_quarterly_assessment,
+        ];
+    }
+
     /** Quarter grade from its components. Shared by the web gradebook and the API (GradeService). */
-    public static function computeFinal(?float $ww, ?float $pt, ?float $qa): float
+    public static function computeFinal(?float $ww, ?float $pt, ?float $qa, array $weights = self::DEFAULT_WEIGHTS): float
     {
         return round(
-            ($ww ?? 0) * self::WEIGHTS['written_works']
-            + ($pt ?? 0) * self::WEIGHTS['performance_tasks']
-            + ($qa ?? 0) * self::WEIGHTS['quarterly_assessment'],
+            (($ww ?? 0) * $weights['written_works']
+            + ($pt ?? 0) * $weights['performance_tasks']
+            + ($qa ?? 0) * $weights['quarterly_assessment']) / 100,
             2
         );
     }

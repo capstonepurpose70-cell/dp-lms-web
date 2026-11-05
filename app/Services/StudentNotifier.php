@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Assignment;
 use App\Models\LearningMaterial;
+use App\Models\MeetLink;
 use App\Models\Subject;
 use App\Models\Submission;
 use App\Models\User;
@@ -54,6 +55,25 @@ class StudentNotifier
                 instructor: $teacher->name, type: 'quiz', url: '/student/quizzes',
             ), 'New quiz: ' . $assignment->title, "{$teacher->name} posted a new quiz",
                ['type' => 'quiz', 'id' => $assignment->id]);
+        });
+    }
+
+    /** Google Meet link published or changed — the students of that section. */
+    public function meetLink(MeetLink $link, User $teacher): void
+    {
+        $this->safely('Google Meet', function () use ($link, $teacher) {
+            $link->loadMissing('subject');
+            $subject = $link->subject?->name ?? 'your class';
+
+            $students = User::whereIn('id', User::studentIdsInSections([$link->section_id]))
+                ->where('status', 'approved')
+                ->get();
+
+            $this->send($students, new ActivityAssigned(
+                title: "Google Meet link for {$subject}", subject: 'Online class', instructor: $teacher->name,
+                type: 'meet', url: '/student/dashboard',
+            ), "Google Meet link for {$subject}", "{$teacher->name} posted the link for your online class",
+               ['type' => 'meet', 'id' => $link->id]);
         });
     }
 

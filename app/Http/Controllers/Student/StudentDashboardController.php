@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Rules\NoBadWords;
 use App\Services\EnrollmentService;
 use App\Services\GradeService;
+use App\Services\MeetLinkService;
 use Illuminate\Http\Request;
 
 /*
@@ -73,6 +74,7 @@ class StudentDashboardController extends Controller
             'pendingAssignments' => $pendingAssignments,
             'dueSoon'            => $dueSoon,
             'todayClasses'       => $todayClasses,
+            'meetLinks'          => app(MeetLinkService::class)->forStudent($user),
             'unreadMessages'     => $user->receivedMessages()->where('is_read', false)->count(),
             'announcements'      => Announcement::published()
                                         ->forAudience('student')

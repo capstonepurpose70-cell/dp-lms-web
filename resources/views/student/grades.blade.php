@@ -76,7 +76,8 @@
                                 @foreach($s['quarters'] as $q => $g)
                                     @if($g && $g->final_grade !== null)
                                         <td class="num {{ $g->isPassed() ? 'sg-pass' : 'sg-fail' }}"
-                                            title="Written works {{ $g->written_works }} · Performance tasks {{ $g->performance_tasks }} · Quarterly assessment {{ $g->quarterly_assessment }}">
+                                            @php $w = $g->weights(); @endphp
+                                            title="Written works {{ $g->written_works }} ({{ $w['written_works'] }}%), performance tasks {{ $g->performance_tasks }} ({{ $w['performance_tasks'] }}%), quarterly assessment {{ $g->quarterly_assessment }} ({{ $w['quarterly_assessment'] }}%)">
                                             {{ number_format((float) $g->final_grade, 2) }}
                                         </td>
                                     @else

@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
         'terms'       => \App\Http\Middleware\EnsureTermsAccepted::class,
     ]);
 
+    // Railway's proxy is the only way in. Without this every visitor shares the proxy's address,
+    // so one person hitting a per-IP limit would lock out the whole school.
+    $middleware->trustProxies(at: '*');
+
     // Prepended so it wraps everything: prioritised middleware (auth, bindings) is sorted ahead of
     // appended entries, and a guest redirect from auth would otherwise skip it.
     $middleware->web(prepend: [

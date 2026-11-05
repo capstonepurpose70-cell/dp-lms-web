@@ -1,6 +1,6 @@
-# DP-LMS — Pre-defense deploy checklist (Railway)
+# DP-LMS — Deploy checklist (Railway)
 
-Defense: **November 6, 2026**. Pushing to `main` auto-deploys on Railway, so do steps 1–2 before merging.
+Pushing to `main` auto-deploys on Railway, so do steps 1–2 before merging. For the step-by-step version, follow `docs/GO_LIVE_GUIDE.md`.
 
 ---
 
@@ -40,7 +40,9 @@ Defense: **November 6, 2026**. Pushing to `main` auto-deploys on Railway, so do 
 | `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | reference the MySQL service variables |
 | `ATTENDANCE_DEVICE_KEY` | long random string: `php -r "echo bin2hex(random_bytes(32));"` — same value in the Pi `config.py` |
 | `FIREBASE_CREDENTIALS_BASE64` | base64 of the Firebase service-account JSON (project `dp-lms`) |
-| `MAIL_MAILER` / `BREVO_API_KEY` / `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | your mail settings |
+| `MAIL_MAILER` | `brevo` (Railway Hobby blocks SMTP, so email goes over the Brevo HTTPS API) |
+| `BREVO_API_KEY` / `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | key and verified sender from Brevo. Confirm with `php artisan mail:check you@example.com` |
+| `SESSION_SECURE_COOKIE` | `true` |
 | `FACE_SELF_UPLOAD` | `false` (kiosk-only face registration) |
 | `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` | only for the first seed; remove the password afterwards |
 | `SEMAPHORE_API_KEY` | optional (new key only) |
@@ -72,7 +74,7 @@ git push origin main
 git checkout feature/ui-refresh
 ```
 
-New migrations that run on deploy: parent link codes, trusted devices, nullable email, unique
+New migrations that run on deploy: Google Meet links, grade percentages, parent link codes, trusted devices, nullable email, unique
 contact number, birthdate, schema-drift repair, submission feedback, `general_average`,
 class attendance tables, face kiosk codes.
 
@@ -123,7 +125,9 @@ Practice accounts and `PRACTICE` / `DEMO SECTION` exist only on the laptop, so t
 - [ ] Admin login → Dashboard, Users, Sections, Class Schedules, Enrollment, Reports, Face Verification open.
 - [ ] Import teachers → activation link works → teacher sets password.
 - [ ] Class Schedules: assign a teacher → teacher sees the class in Gradebook / Attendance.
-- [ ] Teacher opens class attendance → student enters the code → parent phone gets the push.
+- [ ] Teacher sends attendance → student checks in with one tap → parent phone gets the push.
+- [ ] Google Meet: teacher publishes a link → only that section sees Join Google Meet.
+- [ ] Gradebook: set percentages for a class and quarter → saving a grade locks them.
 - [ ] Teacher uploads a material (published) → student sees it; Draft → Publish works.
 - [ ] Gradebook: encode a grade → student sees it.
 - [ ] Face kiosk: adviser shows QR → Pi registers → Face Verification shows "Registered".

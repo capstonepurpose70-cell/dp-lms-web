@@ -60,6 +60,7 @@ Route::middleware(['auth:sanctum', 'approved'])->group(function () {
         Route::post('/materials/{id}/like',     [App\Http\Controllers\Api\MaterialInteractionController::class, 'studentToggleLike']);
         Route::post('/materials/{id}/comments', [App\Http\Controllers\Api\MaterialInteractionController::class, 'studentAddComment']);
         Route::get('/grades',        [App\Http\Controllers\Api\Student\DashboardController::class, 'grades']);
+        Route::get('/meet-links',    [App\Http\Controllers\Api\Student\DashboardController::class, 'meetLinks']);
         Route::get('/announcements', [App\Http\Controllers\Api\Student\DashboardController::class, 'announcements']);
         Route::get('/assignments',              [App\Http\Controllers\Api\Student\AssignmentController::class, 'index']);
         Route::get('/assignments/{id}',         [App\Http\Controllers\Api\Student\AssignmentController::class, 'show']);
@@ -87,6 +88,11 @@ Route::middleware(['auth:sanctum', 'approved'])->group(function () {
         Route::post('/materials',    [App\Http\Controllers\Api\Teacher\DashboardController::class, 'storeMaterial']);
         Route::get('/gradebook',     [App\Http\Controllers\Api\Teacher\DashboardController::class, 'gradebook']);
         Route::post('/grades',       [App\Http\Controllers\Api\Teacher\DashboardController::class, 'saveGrade']);
+        Route::get('/grade-weights', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'gradeWeights']);
+        Route::post('/grade-weights',[App\Http\Controllers\Api\Teacher\DashboardController::class, 'saveGradeWeights']);
+        Route::get('/meet-links',    [App\Http\Controllers\Api\Teacher\DashboardController::class, 'meetLinks']);
+        Route::post('/meet-links',   [App\Http\Controllers\Api\Teacher\DashboardController::class, 'saveMeetLink']);
+        Route::delete('/meet-links', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'removeMeetLink']);
         Route::get('/announcements', [App\Http\Controllers\Api\Teacher\DashboardController::class, 'announcements']);
         Route::post('/announcements',[App\Http\Controllers\Api\Teacher\DashboardController::class, 'storeAnnouncement']);
         Route::get('/attendance',    [App\Http\Controllers\Api\Teacher\DashboardController::class, 'attendance']); // gate scans (legacy)

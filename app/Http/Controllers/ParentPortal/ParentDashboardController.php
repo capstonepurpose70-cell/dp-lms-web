@@ -42,7 +42,6 @@ class ParentDashboardController extends Controller
             'days'            => self::RECORD_DAYS,
             'schoolYear'      => GradeService::currentSchoolYear(),
             'passing'         => Grade::PASSING,
-            'weights'         => Grade::WEIGHTS,
         ]);
     }
 }

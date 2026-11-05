@@ -13,6 +13,7 @@ use App\Models\TeacherSubject;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\GradeService;
+use App\Services\MeetLinkService;
 use App\Services\StudentNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -157,12 +158,76 @@ class DashboardController extends Controller
             'performance_tasks'    => $g->performance_tasks,
             'quarterly_assessment' => $g->quarterly_assessment,
             'final_grade'          => $g->final_grade,
+            'weights'              => $g->weights(),
             'remarks'              => $g->remarks,
             'passed'               => $g->isPassed(),
             'school_year'          => $g->school_year,
         ]);
 
         return response()->json($grades);
+    }
+
+    // GET /api/teacher/grade-weights?section_id=&subject_id= — the four quarters of one class
+    public function gradeWeights(Request $request, GradeService $grades)
+    {
+        $class = $request->validate(['section_id' => 'required|integer', 'subject_id' => 'required|integer']);
+        $key   = "{$class['section_id']}-{$class['subject_id']}";
+
+        $teaches = TeacherSubject::where('user_id', auth()->id())
+            ->where('section_id', $class['section_id'])
+            ->where('subject_id', $class['subject_id'])
+            ->exists();
+        if (!$teaches) {
+            return response()->json(['message' => 'You can only view percentages of a class you teach.'], 403);
+        }
+
+        $quarters = $grades->classWeights([$class])[$key];
+
+        return response()->json(collect($quarters)->map(fn ($row, $quarter) => ['quarter' => $quarter] + $row)->values());
+    }
+
+    public function saveGradeWeights(Request $request, GradeService $grades)
+    {
+        $data = $request->validate(['section_id' => 'required|integer', 'subject_id' => 'required|integer'] + GradeService::weightRules());
+
+        try {
+            $saved = $grades->setWeights(auth()->user(), (int) $data['section_id'], (int) $data['subject_id'], $data);
+        } catch (ActionNotAllowed $e) {
+            return response()->json(['message' => $e->getMessage()], $e->status);
+        }
+
+        return response()->json(['message' => 'Percentages saved.', 'saved' => $saved]);
+    }
+
+    public function meetLinks(MeetLinkService $links)
+    {
+        return response()->json($links->forTeacher(auth()->user()));
+    }
+
+    public function saveMeetLink(Request $request, MeetLinkService $links)
+    {
+        $data = $request->validate(['section_id' => 'required|integer', 'subject_id' => 'required|integer', 'url' => 'required|string|max:255']);
+
+        try {
+            $link = $links->publish(auth()->user(), (int) $data['section_id'], (int) $data['subject_id'], $data['url']);
+        } catch (ActionNotAllowed $e) {
+            return response()->json(['message' => $e->getMessage()], $e->status);
+        }
+
+        return response()->json(['message' => 'Link published.', 'url' => $link->url]);
+    }
+
+    public function removeMeetLink(Request $request, MeetLinkService $links)
+    {
+        $data = $request->validate(['section_id' => 'required|integer', 'subject_id' => 'required|integer']);
+
+        try {
+            $links->remove(auth()->user(), (int) $data['section_id'], (int) $data['subject_id']);
+        } catch (ActionNotAllowed $e) {
+            return response()->json(['message' => $e->getMessage()], $e->status);
+        }
+
+        return response()->json(['message' => 'Link removed.']);
     }
 
     // ── POST /api/teacher/grades ──────────────────────────────────────────────

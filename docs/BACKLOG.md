@@ -90,7 +90,7 @@ Same flow as batches 1–8: plan in FIX_BUGS.md → fix → test → commit.
 
 | # | Question | Notes |
 |---|---|---|
-| Q1 | Grade weights: 25/50/25 for every subject? DepEd differs (e.g. JHS Math/Science 40/40/20, MAPEH/TLE 20/60/20) | Now one place to change: `Grade::WEIGHTS` |
+| Q1 | Grade weights | Done: teachers set the percentages per subject, section and quarter in the Gradebook |
 | Q2 | Parent with two children: let them link the second child themselves (with the child's code), or keep it with the school office? | `ParentLinkService` |
 | Q3 | Show "pending / returned" enrollment in the parent app? (web already does) | Needs a Flutter change before the API value set changes |
 | Q4 | SHS strands (ABM, HUMSS, SMAW…) — subjects are per grade only, so all strands see the same subjects | Schema change |

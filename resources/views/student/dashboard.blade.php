@@ -82,6 +82,18 @@
     .sd-empty { padding: 18px 20px 20px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-2); line-height: 1.5; }
     .sd-empty b { display: block; color: var(--text-1); font-size: 14px; margin-bottom: 2px; }
 
+    /* Google Meet join links of the student's own section */
+    .sd-meet { margin-bottom: 18px; border-color: #BFD3EE; }
+    .sd-meet-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 12px 20px; border-top: 1px solid var(--border); }
+    .sd-meet-info { min-width: 0; }
+    .sd-meet-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 700; text-decoration: none; white-space: nowrap; flex-shrink: 0; transition: background-color .15s ease; }
+    .sd-meet-btn:hover { background: var(--accent-dark); }
+    .sd-meet-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 640px) {
+        .sd-meet-row { flex-direction: column; align-items: stretch; padding-left: 16px; padding-right: 16px; }
+        .sd-meet-info .sd-class-name, .sd-meet-info .sd-class-meta { white-space: normal; }
+    }
+
     .sd-in { animation: sdIn .3s cubic-bezier(.22,.61,.36,1) both; }
     @keyframes sdIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
@@ -170,6 +182,26 @@
             <span><span class="sd-stat-num">{{ $unreadMessages }}</span><span class="sd-stat-label">Unread {{ $unreadMessages === 1 ? 'message' : 'messages' }}</span></span>
         </a>
     </nav>
+
+    @if($meetLinks->isNotEmpty())
+        <section class="sd-card sd-meet sd-in" aria-labelledby="sdMeet">
+            <div class="sd-panel-head">
+                <div>
+                    <h2 class="sd-panel-title" id="sdMeet">Online classes</h2>
+                    <p class="sd-panel-sub">Join when your teacher starts the class.</p>
+                </div>
+            </div>
+            @foreach($meetLinks as $meet)
+                <div class="sd-meet-row">
+                    <div class="sd-meet-info">
+                        <p class="sd-class-name">{{ $meet['subject'] }}</p>
+                        <p class="sd-class-meta">{{ $meet['teacher'] ?? 'Teacher to be assigned' }}</p>
+                    </div>
+                    <a class="sd-meet-btn" href="{{ $meet['url'] }}" target="_blank" rel="noopener noreferrer" aria-label="Join Google Meet for {{ $meet['subject'] }}, opens in a new tab">Join Google Meet</a>
+                </div>
+            @endforeach
+        </section>
+    @endif
 
     <div class="sd-grid">
         <div class="sd-col">
