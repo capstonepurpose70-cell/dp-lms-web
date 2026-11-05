@@ -94,14 +94,27 @@ The lists contain real names, so they are **never committed**. They stay in `Doc
 
 Do these in order. Each one shows a preview; nothing is saved until you confirm.
 
-1. **Sections & Advisers:** check that every section exists, especially Grade 7 **AQUINO** and Grade 8 **RAMOS**, which only
-   the advisory seeder creates. Add a missing one with **New section** before importing, or its students will not be placed.
-2. **Faculty Master List → Import list:** upload the teachers' file. An Advisory column makes the teacher the adviser
-   when they activate.
-3. **LRN Master List → Import list:** upload `1-JHS-LRN-import.xlsx`. Leave the grade empty; the file has it.
-   Expect **253 ready, 0 to fix**.
-4. Add the students in `JHS-LRN-to-check-with-advisers.xlsx` one by one after their advisers confirm the LRN.
-5. Activate one real teacher and one real student on the live site, then delete nothing: those accounts are real.
+1. **Sections & Advisers:** every section below must exist before importing, or its students and advisers will not be placed.
+   Add a missing one with **New section**. Check especially Grade 7 **AQUINO**, Grade 8 **RAMOS**, and the two sections
+   this school year added, Grade 11 **ACADEMIC** and **TECHPRO**.
+
+   | Grade | Sections |
+   |---|---|
+   | 7 | AQUINO, CALIMLIM, GUTIERREZ |
+   | 8 | RAMOS, TUVERA |
+   | 9 | GANTE, LAMPIOS, SARIBAY |
+   | 10 | FABRO, NICOLAS |
+   | 11 | ACADEMIC, TECHPRO, ALS |
+   | 12 | ABM SPECIALIST, HUMSS EXPLORER, FBS EXPERT, SMAW CHAMPION, ALS |
+
+2. **Faculty Master List → Import list:** `1-Faculty-import.xlsx`. Expect **25 ready, 0 to fix**. The Advisory column makes a
+   teacher the adviser when they activate.
+3. **LRN Master List → Import list:** `2-JHS-LRN-import.xlsx`. Leave the grade empty. Expect **253 ready, 0 to fix**.
+4. **LRN Master List → Import list:** `3-SHS-LRN-import.xlsx`. Leave the grade empty. Expect **117 ready, 0 to fix**.
+5. Add the students in the two `*-to-check-with-advisers.xlsx` files one by one after their advisers confirm the LRN.
+6. A teacher can hold one advisory on the list. After they activate, set the second one in **Sections & Advisers**:
+   Abegail Gabriel for Grade 11 ALS, Roumella Sampilo for Grade 12 HUMSS EXPLORER.
+7. Activate one real teacher and one real student on the live site. Those accounts are real, so keep them.
 
 Practice accounts and `PRACTICE` / `DEMO SECTION` exist only on the laptop, so the live site starts clean.
 
