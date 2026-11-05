@@ -86,9 +86,29 @@ class GradebookController extends Controller
     // POST /teacher/gradebook — same logic as the mobile API (GradeService).
     public function store(Request $request, GradeService $grades)
     {
-        $data = $request->validate(GradeService::rules(), [], GradeService::attributes());
+        $data = $request->validate(GradeService::rules() + [
+            'class_key'                    => ['required_with:percent', 'nullable', 'regex:/^\d+-\d+$/'],
+            'percent'                      => 'nullable|array',
+            'percent.written_works'        => 'required_with:percent|integer|min:0|max:100',
+            'percent.performance_tasks'    => 'required_with:percent|integer|min:0|max:100',
+            'percent.quarterly_assessment' => 'required_with:percent|integer|min:0|max:100',
+            'all_quarters'                 => 'nullable|boolean',
+        ], [], GradeService::attributes() + [
+            'percent.written_works'        => 'written works percentage',
+            'percent.performance_tasks'    => 'performance tasks percentage',
+            'percent.quarterly_assessment' => 'quarterly assessment percentage',
+        ]);
 
         try {
+            // Percentages typed beside the scores go first, so this grade is computed with them
+            if (!empty($data['percent'])) {
+                [$sectionId, $subjectId] = array_map('intval', explode('-', $data['class_key']));
+                $grades->applyWeights(auth()->user(), $sectionId, $subjectId, $data['percent'] + [
+                    'quarter'      => $data['quarter'],
+                    'all_quarters' => $data['all_quarters'] ?? false,
+                ]);
+            }
+
             $grade = $grades->save(auth()->user(), $data);
         } catch (ActionNotAllowed $e) {
             return back()->with('error', $e->getMessage())->withInput();

@@ -162,8 +162,8 @@ Use one real teacher and one real student. Those accounts stay.
 - [ ] Student activates with their LRN and gets the code by email.
 - [ ] Student sends the enrollment form, the adviser approves it, and the student gets the approval email with the logo.
 - [ ] **Google Meet:** the teacher pastes a link in Google Meet. The student sees **Join Google Meet** on the dashboard and a student from another section does not.
-- [ ] **Grade percentages:** in Gradebook the teacher opens **Grade percentages**, sets a class and quarter, and saves. The Encode form shows the new percentages.
-- [ ] Saving a grade locks the percentages of that class and quarter. Other quarters stay open.
+- [ ] **Grade percentages:** in Gradebook the teacher picks a class and quarter, then types the percentage beside Written works, Performance tasks and Quarterly assessment. The total must be 100, and the Final updates as they type.
+- [ ] **Save grade** saves the percentages with the grade and locks that class and quarter. Other quarters stay open.
 - [ ] Teacher sends attendance, the student checks in with one tap, and the parent's phone gets a notification.
 - [ ] Upload a file, redeploy, and confirm the file still opens. This proves the volume works.
 

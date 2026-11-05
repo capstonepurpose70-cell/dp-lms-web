@@ -131,7 +131,7 @@
         display: flex; align-items: center; justify-content: center;
         cursor: pointer; flex-shrink: 0; color: var(--um-text-3);
         transition: background 150ms, border-color 150ms, color 150ms,
-                    transform 150ms cubic-bezier(0.34,1.56,0.64,1);
+                    transform 150ms ease;
         margin-top: 2px;
     }
     @media (hover: hover) and (pointer: fine) {
@@ -202,7 +202,7 @@
         border: 2px dashed var(--um-border); border-radius: 18px;
         padding: 32px 24px; text-align: center; cursor: pointer;
         position: relative; background: var(--um-bg);
-        transition: border-color 200ms, background 200ms, transform 200ms cubic-bezier(0.34,1.56,0.64,1);
+        transition: border-color 200ms, background 200ms, transform 200ms ease;
     }
     @media (hover: hover) and (pointer: fine) {
         #uploadModal .um-drop:hover {
@@ -221,7 +221,7 @@
         display: flex; align-items: center; justify-content: center;
         margin: 0 auto 12px;
         box-shadow: 0 1px 3px rgba(15,23,42,.06);
-        transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 280ms, border-color 200ms;
+        transition: transform 280ms ease, box-shadow 280ms, border-color 200ms;
     }
     @media (hover: hover) and (pointer: fine) {
         #uploadModal .um-drop:hover .um-drop-icon {
@@ -288,14 +288,14 @@
     #uploadModal .um-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
     #uploadModal .um-track {
         position: absolute; inset: 0; border-radius: 24px; background: #CBD5E1;
-        cursor: pointer; transition: background 220ms cubic-bezier(0.34,1.56,0.64,1);
+        cursor: pointer; transition: background 220ms ease;
     }
     #uploadModal .um-switch input:checked + .um-track { background: var(--green); }
     #uploadModal .um-thumb {
         position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
         border-radius: 50%; background: white; pointer-events: none;
         box-shadow: 0 1px 4px rgba(0,0,0,.2);
-        transition: transform 220ms cubic-bezier(0.34,1.56,0.64,1);
+        transition: transform 220ms ease;
     }
     #uploadModal .um-switch input:checked ~ .um-thumb { transform: translateX(20px); }
 
@@ -326,13 +326,8 @@
         border-radius: 12px; padding: 11px 22px;
         font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
         box-shadow: 0 4px 14px rgba(37,99,235,.3);
-        transition: background 180ms, transform 180ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 180ms;
+        transition: background 180ms, transform 180ms ease, box-shadow 180ms;
         position: relative; overflow: hidden;
-    }
-    #uploadModal .um-btn-primary::before {
-        content: ''; position: absolute; inset: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,.12), transparent);
-        pointer-events: none;
     }
     @media (hover: hover) and (pointer: fine) {
         #uploadModal .um-btn-primary:hover {

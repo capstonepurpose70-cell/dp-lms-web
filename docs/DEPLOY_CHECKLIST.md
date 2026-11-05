@@ -127,7 +127,7 @@ Practice accounts and `PRACTICE` / `DEMO SECTION` exist only on the laptop, so t
 - [ ] Class Schedules: assign a teacher → teacher sees the class in Gradebook / Attendance.
 - [ ] Teacher sends attendance → student checks in with one tap → parent phone gets the push.
 - [ ] Google Meet: teacher publishes a link → only that section sees Join Google Meet.
-- [ ] Gradebook: set percentages for a class and quarter → saving a grade locks them.
+- [ ] Gradebook: type the percentages beside each part of the encode form → saving a grade locks them for that class and quarter.
 - [ ] Teacher uploads a material (published) → student sees it; Draft → Publish works.
 - [ ] Gradebook: encode a grade → student sees it.
 - [ ] Face kiosk: adviser shows QR → Pi registers → Face Verification shows "Registered".

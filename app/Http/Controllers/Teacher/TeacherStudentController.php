@@ -67,6 +67,7 @@ class TeacherStudentController extends Controller
             return [$s->id => [
                 'id'          => $s->id,
                 'name'        => $s->name,
+                'initials'    => $s->initials(),
                 'lrn'         => $s->lrn,
                 'email'       => $s->email,
                 'section'     => $s->section?->name ?? '—',

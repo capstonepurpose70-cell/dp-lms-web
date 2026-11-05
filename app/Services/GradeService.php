@@ -271,6 +271,29 @@ class GradeService
         return $saved;
     }
 
+    /**
+     * Percentages sent together with a grade from the encode form. Nothing changes when they are
+     * what the class already uses, so editing a score in a locked quarter still works.
+     *
+     * @param array $data the three percentages, quarter and all_quarters
+     */
+    public function applyWeights(User $teacher, int $sectionId, int $subjectId, array $data): void
+    {
+        $current = GradeWeight::where('section_id', $sectionId)
+            ->where('subject_id', $subjectId)
+            ->where('quarter', $data['quarter'])
+            ->where('school_year', self::currentSchoolYear())
+            ->first()?->parts() ?? Grade::DEFAULT_WEIGHTS;
+
+        $sent = array_map('intval', array_intersect_key($data, Grade::DEFAULT_WEIGHTS));
+
+        if ($sent == $current && empty($data['all_quarters'])) {
+            return;
+        }
+
+        $this->setWeights($teacher, $sectionId, $subjectId, $data);
+    }
+
     private function teaches(User $teacher, int $sectionId, int $subjectId): bool
     {
         return TeacherSubject::where('user_id', $teacher->id)

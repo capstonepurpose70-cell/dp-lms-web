@@ -1260,7 +1260,9 @@ scrolling.
 - New `php artisan mail:check you@example.com`. The app only logs mail failures, so this shows the provider's answer after a deploy.
 - Google Meet: one link per subject and section, published from the teacher's new Google Meet page. Only that section sees it on the dashboard, and it gets a bell entry and a push. Only real Meet addresses are accepted, and pasted extras such as `?authuser=0` are dropped. The class's current teacher manages the link, so a replacement teacher takes it over. Subjects of the other semester are hidden.
 - Grade percentages per subject, section and quarter, default 25, 50 and 25, whole numbers that must total exactly 100. They lock once that class has a grade in that quarter, so a grade people have seen never changes. Each grade keeps the percentages it used; older grades read as the default and their final grades were not touched.
+- Teachers type the percentages beside each part of the encode form, and the Final follows as they type. Save grade saves them with the grade; **Save percentages only** sets them before any grade exists.
 - A row lock covers saving a grade and saving percentages, so the two cannot cross.
+- The teacher's student list and detail window lost the dark header, decorative circles, gradient avatars, blur and bounce. They now use plain white panels and two-letter initials, and the repeated Section and Grade fields are gone. The bounce and shine on the Materials upload window went too.
 - Parent records show the percentage beside each score, because grades in one table can now differ.
 - Behind Railway's proxy every visitor shared one address, so one person reaching a per-IP limit could lock out the school. The app now reads the real visitor address (`trustProxies`).
 - `docs/GO_LIVE_GUIDE.md`: Brevo, Railway, lists and Raspberry Pi steps in order. The wrong defense date was removed from `DEPLOY_CHECKLIST.md`.

@@ -8,17 +8,6 @@
        Design tokens match layouts/teacher.blade.php.
     ════════════════════════════════════════════════ */
 
-    @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(14px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-up   { animation: fadeUp .38s cubic-bezier(0.16,1,0.3,1) both; }
-    .fade-up-1 { animation-delay: .04s; }
-    .fade-up-2 { animation-delay: .08s; }
-    .fade-up-3 { animation-delay: .13s; }
-
-    /* ── Stat strip ── */
     .stu-stat-strip {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -34,18 +23,11 @@
         display: flex;
         align-items: center;
         gap: 14px;
-        transition: transform .22s cubic-bezier(0.34,1.56,0.64,1), box-shadow .22s;
-        cursor: default;
-    }
-    .stu-stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(0,0,0,.08);
     }
     .stu-stat-icon {
         width: 42px; height: 42px; border-radius: 11px;
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
-        transition: transform .28s cubic-bezier(0.34,1.56,0.64,1);
     }
     .stu-stat-number { font-size: 26px; font-weight: 800; color: #0F172A; line-height: 1; }
     .stu-stat-label  { font-size: 12px; font-weight: 600; color: #6b7280; margin-top: 2px; }
@@ -127,21 +109,10 @@
     .stu-avatar {
         width: 40px; height: 40px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 14px; font-weight: 800; color: #fff;
+        font-size: 13px; font-weight: 800;
+        background: var(--accent-lt); color: var(--accent);
         flex-shrink: 0;
-        transition: transform .22s cubic-bezier(0.34,1.56,0.64,1);
     }
-    .stu-row:hover .stu-avatar { transform: scale(1.1); }
-
-    /* Avatar colour palette — deterministic by student id mod 8 */
-    .av-0 { background: linear-gradient(135deg,#3b82f6,#1d4ed8); }
-    .av-1 { background: linear-gradient(135deg,#8b5cf6,#6d28d9); }
-    .av-2 { background: linear-gradient(135deg,#10b981,#047857); }
-    .av-3 { background: linear-gradient(135deg,#f43f5e,#be123c); }
-    .av-4 { background: linear-gradient(135deg,#f59e0b,#b45309); }
-    .av-5 { background: linear-gradient(135deg,#06b6d4,#0e7490); }
-    .av-6 { background: linear-gradient(135deg,#6366f1,#4338ca); }
-    .av-7 { background: linear-gradient(135deg,#ec4899,#be185d); }
 
     .stu-name {
         font-size: 13px; font-weight: 700; color: #0F172A;
@@ -208,158 +179,84 @@
         transition: background 220ms cubic-bezier(0.23,1,0.32,1) !important;
     }
     #stuModal.is-open {
-        background: rgba(15,23,42,.58) !important;
-        backdrop-filter: blur(6px) !important;
+        background: rgba(15,23,42,.45) !important;
         pointer-events: all !important;
     }
     #stuModal.is-closing {
         background: rgba(15,23,42,0) !important;
-        transition: background 160ms cubic-bezier(0.23,1,0.32,1) !important;
+        transition: background 120ms ease !important;
     }
 
     #stuModal .sm-panel {
-        background: #fff;
-        border-radius: 22px;
-        box-shadow: 0 24px 64px rgba(15,23,42,.18), 0 8px 24px rgba(15,23,42,.08);
-        width: 100%; max-width: 660px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: 0 12px 32px rgba(15,23,42,.14);
+        width: 100%; max-width: 640px;
         max-height: 92dvh;
         overflow: hidden;
         display: flex; flex-direction: column;
         opacity: 0;
-        transform: scale(0.96) translateY(8px);
-        transition: opacity 220ms cubic-bezier(0.23,1,0.32,1),
-                    transform 280ms cubic-bezier(0.34,1.56,0.64,1);
-        will-change: transform, opacity;
-        border: 1.5px solid rgba(255,255,255,.06);
+        transform: translateY(6px);
+        transition: opacity 160ms ease, transform 160ms ease;
     }
-    #stuModal.is-open   .sm-panel { opacity: 1; transform: scale(1) translateY(0); }
-    #stuModal.is-closing .sm-panel {
-        opacity: 0; transform: scale(0.97) translateY(4px);
-        transition: opacity 160ms cubic-bezier(0.23,1,0.32,1),
-                    transform 160ms cubic-bezier(0.23,1,0.32,1);
-    }
+    #stuModal.is-open    .sm-panel { opacity: 1; transform: none; }
+    #stuModal.is-closing .sm-panel { opacity: 0; transition: opacity 120ms ease; }
 
-    /* Hero strip */
-    #stuModal .sm-hero {
-        background: linear-gradient(135deg,#0F172A 0%,#1E293B 100%);
-        padding: 26px 28px 22px;
-        display: flex; align-items: flex-start; gap: 16px;
-        flex-shrink: 0; position: relative; overflow: hidden;
+    #stuModal .sm-head {
+        display: flex; align-items: center; gap: 14px;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
     }
-    #stuModal .sm-hero::before {
-        content: ''; position: absolute;
-        top: -50px; right: -50px;
-        width: 180px; height: 180px; border-radius: 50%;
-        background: rgba(37,99,235,.18); pointer-events: none;
-    }
-    #stuModal .sm-hero::after {
-        content: ''; position: absolute;
-        bottom: -30px; left: 28%;
-        width: 120px; height: 120px; border-radius: 50%;
-        background: rgba(37,99,235,.1); pointer-events: none;
-    }
-
     #stuModal .sm-big-av {
-        width: 62px; height: 62px; border-radius: 50%;
+        width: 46px; height: 46px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 22px; font-weight: 800; color: #fff;
-        flex-shrink: 0; border: 3px solid rgba(255,255,255,.18);
-        position: relative; z-index: 1;
+        font-size: 15px; font-weight: 800;
+        background: var(--accent-lt); color: var(--accent);
+        flex-shrink: 0;
     }
-    #stuModal .sm-hero-info { flex: 1; min-width: 0; position: relative; z-index: 1; }
-    #stuModal .sm-hero-name {
-        font-size: 19px; font-weight: 800; color: #fff;
-        letter-spacing: -.02em; line-height: 1.25;
+    #stuModal .sm-head-info { flex: 1; min-width: 0; }
+    #stuModal .sm-name { font-size: 17px; font-weight: 800; color: var(--text-1); line-height: 1.3; }
+    #stuModal .sm-sub {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px;
+        font-size: 13px; color: var(--text-2); margin-top: 3px;
     }
-    #stuModal .sm-hero-sub {
-        font-size: 12px; color: #94a3b8; margin-top: 5px;   /* #64748b was too dark on the navy hero */
-        display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap;
-    }
-    #stuModal .sm-hero-pills { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
-    #stuModal .sm-pill {
-        padding: 4px 11px; border-radius: 20px;
-        font-size: 11px; font-weight: 700;
-        background: rgba(255,255,255,.09); color: #cbd5e1;
-        border: 1px solid rgba(255,255,255,.1);
-    }
-    #stuModal .sm-pill.green  { background: rgba(34,197,94,.18); color: #4ade80; border-color: rgba(34,197,94,.25); }
-    #stuModal .sm-pill.yellow { background: rgba(234,179,8,.18); color: #fde047; border-color: rgba(234,179,8,.25); }
-    #stuModal .sm-pill.red    { background: rgba(239,68,68,.18); color: #fca5a5; border-color: rgba(239,68,68,.25); }
-
+    #stuModal .sm-pill { padding: 2px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; background: #F1F5F9; color: var(--text-2); }
+    #stuModal .sm-pill.green { background: #DCFCE7; color: #15803D; }
     #stuModal .sm-close {
-        width: 33px; height: 33px; border-radius: 10px;
-        background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+        width: 38px; height: 38px; border-radius: 8px;
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer; flex-shrink: 0; color: #cbd5e1;
-        transition: background .15s, color .15s,
-                    transform .15s cubic-bezier(0.34,1.56,0.64,1);
-        position: relative; z-index: 1;
+        background: transparent; border: 0; color: var(--text-2);
+        cursor: pointer; flex-shrink: 0;
+        transition: background-color .15s ease, color .15s ease;
     }
-    #stuModal .sm-close:hover {
-        background: rgba(239,68,68,.22); border-color: rgba(239,68,68,.3);
-        color: #fca5a5; transform: scale(1.08) rotate(8deg);
-    }
+    #stuModal .sm-close:hover { background: #F1F5F9; color: var(--text-1); }
+    #stuModal .sm-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-    /* Scrollable body */
-    #stuModal .sm-body {
-        overflow-y: auto; overflow-x: hidden; flex: 1;
-        scrollbar-width: thin; scrollbar-color: #e2e8f0 transparent;
-    }
-    #stuModal .sm-body::-webkit-scrollbar { width: 5px; }
-    #stuModal .sm-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+    #stuModal .sm-body { overflow-y: auto; overflow-x: hidden; flex: 1; }
+    #stuModal .sm-sect { padding: 16px 22px; }
+    #stuModal .sm-sect + .sm-sect { border-top: 1px solid var(--border); }
+    #stuModal .sm-sect-title { font-size: 14px; font-weight: 800; color: var(--text-1); margin: 0 0 10px; }
 
-    /* Section blocks inside modal */
-    #stuModal .sm-sect {
-        padding: 18px 28px;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    #stuModal .sm-sect:last-child { border-bottom: none; padding-bottom: 24px; }
-    #stuModal .sm-sect-title {
-        font-size: 14px; font-weight: 800; color: #0F172A;
-        margin: 0 0 12px;
-    }
+    #stuModal .sm-dl { display: grid; grid-template-columns: 1fr 1.7fr 1fr; gap: 12px 20px; margin: 0; }
+    #stuModal .sm-dl dt { font-size: 12.5px; color: var(--text-2); }
+    #stuModal .sm-dl dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; color: var(--text-1); overflow-wrap: anywhere; }
 
-    /* Detail grid */
-    #stuModal .sm-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    #stuModal .sm-grid.cols-3 { grid-template-columns: repeat(3,1fr); }
-    #stuModal .sm-grid.cols-1 { grid-template-columns: 1fr; }
-
-    #stuModal .sm-item {
-        background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px;
-        padding: 10px 13px; transition: border-color .15s;
-    }
-    #stuModal .sm-item:hover { border-color: #dbeafe; }
-    #stuModal .sm-item-label {
-        font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 3px;
-    }
-    #stuModal .sm-item-val {
-        font-size: 13px; font-weight: 600; color: #0F172A; word-break: break-word;
-    }
-    #stuModal .sm-item-val.muted { color: #94a3b8; font-weight: 500; }
-
-    /* Grade table */
-    #stuModal .sm-grade-wrap {
-        border: 1.5px solid #f1f5f9; border-radius: 12px; overflow: hidden;
-    }
-    #stuModal .sm-grade-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #stuModal .sm-grade-wrap { overflow-x: auto; }
+    #stuModal .sm-grade-tbl { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
     #stuModal .sm-grade-tbl thead th {
-        background: #f8faff; padding: 9px 13px;
-        text-align: left; font-size: 12px; font-weight: 700;
-        color: #64748b; border-bottom: 1px solid #f1f5f9; white-space: nowrap;
+        padding: 8px 10px 8px 0;
+        text-align: left; font-size: 12.5px; font-weight: 700;
+        color: var(--text-2); border-bottom: 1px solid var(--border); white-space: nowrap;
     }
-    #stuModal .sm-grade-tbl tbody tr {
-        border-bottom: 1px solid #f9fafb; transition: background .12s;
-    }
-    #stuModal .sm-grade-tbl tbody tr:last-child { border-bottom: none; }
-    #stuModal .sm-grade-tbl tbody tr:hover { background: #f8faff; }
-    #stuModal .sm-grade-tbl tbody td { padding: 10px 13px; font-weight: 500; color: #374151; }
+    #stuModal .sm-grade-tbl tbody tr + tr td { border-top: 1px solid var(--border); }
+    #stuModal .sm-grade-tbl tbody td { padding: 9px 10px 9px 0; font-weight: 500; color: var(--text-1); }
     #stuModal .sm-grade-tbl .gp  { color: #15803d; font-weight: 700; } /* passed  */
     #stuModal .sm-grade-tbl .gf  { color: #dc2626; font-weight: 700; } /* failed  */
     #stuModal .sm-grade-tbl .gnd { color: #94a3b8; }                    /* no data */
-    #stuModal .sm-grade-tbl .gip { color: #64748b; font-weight: 600; }  /* in progress */
-    #stuModal .sm-note { font-size: 11.5px; color: #64748b; margin-top: 8px; line-height: 1.5; }
+    #stuModal .sm-grade-tbl .gip { color: var(--text-2); font-weight: 600; }  /* in progress */
+    #stuModal .sm-note { font-size: 12.5px; color: var(--text-2); margin-top: 10px; line-height: 1.5; }
 
     .stu-meta-grade { display: none; }
     @media (max-width: 640px) {
@@ -373,13 +270,10 @@
         .stu-row { padding: 12px 14px; gap: 12px; }
         .stu-grade-badge { display: none; }
         .stu-meta-grade { display: inline; }
-        #stuModal .sm-grid    { grid-template-columns: 1fr; }
-        #stuModal .sm-grid.cols-3 { grid-template-columns: 1fr 1fr; }
-        #stuModal .sm-hero { padding: 18px 20px; }
-        #stuModal .sm-sect { padding: 16px 20px; }
+        #stuModal .sm-dl { grid-template-columns: 1fr; gap: 10px; }
+        #stuModal .sm-head, #stuModal .sm-sect { padding-left: 16px; padding-right: 16px; }
     }
     @media (prefers-reduced-motion: reduce) {
-        .fade-up { animation: none; }
         #stuModal .sm-panel { transition-duration: 80ms !important; }
     }
 </style>
@@ -387,13 +281,13 @@
 <div class="stu-wrap">
 
     {{-- ── Header ── --}}
-    <div class="stu-head fade-up fade-up-1">
+    <div class="stu-head">
         <h1 class="stu-title">My students</h1>
         <p class="stu-sub">Students in your classes and advisory section. Select a student to see their details and grades.</p>
     </div>
 
     {{-- ── Stat strip ── --}}
-    <div class="stu-stat-strip fade-up fade-up-1">
+    <div class="stu-stat-strip">
         <div class="stu-stat-card">
             <div class="stu-stat-icon" style="background:var(--accent-lt);color:var(--accent);" aria-hidden="true">
                 <x-ui-icon name="students" />
@@ -424,7 +318,7 @@
     </div>
 
     {{-- ── Toolbar ── --}}
-    <div class="stu-toolbar fade-up fade-up-2">
+    <div class="stu-toolbar">
         <div class="stu-search-wrap">
             <span class="stu-search-icon" aria-hidden="true">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -453,7 +347,7 @@
     </div>
 
     {{-- ── Student list ── --}}
-    <div class="stu-table-card fade-up fade-up-3">
+    <div class="stu-table-card">
         @forelse($students as $student)
             <div class="stu-row" role="button" tabindex="0"
                  data-id="{{ $student->id }}"
@@ -462,7 +356,7 @@
                  data-grade="{{ $student->grade_level }}"
                  aria-label="View details for {{ $student->name }}">
 
-                <div class="stu-avatar av-{{ $student->id % 8 }}" aria-hidden="true">{{ mb_strtoupper(mb_substr($student->name, 0, 1)) }}</div>
+                <div class="stu-avatar" aria-hidden="true">{{ $student->initials() }}</div>
 
                 <div class="stu-row-main">
                     <p class="stu-name">{{ $student->name }}</p>
@@ -503,37 +397,24 @@
 {{-- ══════════════ STUDENT DETAIL MODAL ══════════════ --}}
 <div id="stuModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="smName">
     <div class="sm-panel">
-        <div class="sm-hero">
-            <div class="sm-big-av av-0" id="smAv" aria-hidden="true">A</div>
-            <div class="sm-hero-info">
-                <h2 class="sm-hero-name" id="smName">—</h2>
-                <div class="sm-hero-sub">
-                    <span id="smSubSection">—</span>
-                    <span id="smSubGrade">—</span>
-                </div>
-                <div class="sm-hero-pills" id="smPills"></div>
+        <div class="sm-head">
+            <div class="sm-big-av" id="smAv" aria-hidden="true"></div>
+            <div class="sm-head-info">
+                <h2 class="sm-name" id="smName">—</h2>
+                <div class="sm-sub"><span id="smSub">—</span><span id="smPills" style="display:contents;"></span></div>
             </div>
             <button type="button" class="sm-close" id="smClose" aria-label="Close">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
         <div class="sm-body">
             <div class="sm-sect">
-                <h3 class="sm-sect-title">Student</h3>
-                <div class="sm-grid cols-3">
-                    <div class="sm-item"><div class="sm-item-label">LRN</div><div class="sm-item-val" id="smLrn">—</div></div>
-                    <div class="sm-item"><div class="sm-item-label">Section</div><div class="sm-item-val" id="smSection">—</div></div>
-                    <div class="sm-item"><div class="sm-item-label">Grade level</div><div class="sm-item-val" id="smGrade">—</div></div>
-                </div>
-            </div>
-
-            <div class="sm-sect">
-                <h3 class="sm-sect-title">Account</h3>
-                <div class="sm-grid">
-                    <div class="sm-item"><div class="sm-item-label">Email</div><div class="sm-item-val" id="smEmail">—</div></div>
-                    <div class="sm-item"><div class="sm-item-label">Activated</div><div class="sm-item-val" id="smCreated">—</div></div>
-                </div>
+                <dl class="sm-dl">
+                    <div><dt>LRN</dt><dd id="smLrn">—</dd></div>
+                    <div><dt>Email</dt><dd id="smEmail">—</dd></div>
+                    <div><dt>Activated</dt><dd id="smCreated">—</dd></div>
+                </dl>
             </div>
 
             <div class="sm-sect">
@@ -568,25 +449,19 @@
         if (!s) return;
         opener = row || null;
 
-        const av = document.getElementById('smAv');
-        av.className   = 'sm-big-av av-' + (id % 8);
-        av.textContent = s.name.charAt(0).toUpperCase();
-
+        set('smAv', s.initials);
         set('smName', s.name);
-        set('smSubSection', s.section);
-        set('smSubGrade', 'Grade ' + s.grade_level);
+        set('smSub', 'Grade ' + s.grade_level + ' ' + s.section);
         document.getElementById('smPills').innerHTML =
             '<span class="sm-pill green">Enrolled</span>' + (s.adviser ? '<span class="sm-pill">My advisory</span>' : '');
 
         set('smLrn', s.lrn || '—');
-        set('smSection', s.section);
-        set('smGrade', 'Grade ' + s.grade_level);
         set('smEmail', s.email || '—');
         set('smCreated', s.registered);
 
         const tbody = document.getElementById('smGradesTbody');
         if (!s.grades.length) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:22px;color:#64748b;font-size:12px;">No grades recorded yet this school year.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px 0;color:var(--text-2);font-size:13px;">No grades recorded yet this school year.</td></tr>';
         } else {
             const cell = (v) => v === null ? '<td class="gnd">—</td>' : `<td class="${v >= PASS ? 'gp' : 'gf'}">${Number(v).toFixed(2)}</td>`;
             tbody.innerHTML = s.grades.map(g => {
@@ -594,7 +469,7 @@
                     : !g.complete ? '<td class="gip">In progress</td>'
                     : `<td class="${g.passed ? 'gp' : 'gf'}">${g.passed ? 'Passed' : 'Failed'}</td>`;
                 return `<tr>
-                    <td style="font-weight:600;color:#0F172A;">${esc(g.subject)}</td>
+                    <td style="font-weight:600;">${esc(g.subject)}</td>
                     ${cell(g.quarters.Q1)}${cell(g.quarters.Q2)}${cell(g.quarters.Q3)}${cell(g.quarters.Q4)}
                     ${cell(g.average)}${remarks}
                 </tr>`;
