@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\ParentLinkService;
+use App\Services\TrustedDeviceService;
 use Illuminate\Http\Request;
 
 /**
@@ -66,6 +67,8 @@ class ParentLinkController extends Controller
         return response()->json([
             'message' => $message,
             'token'   => $token,
+            // Parents may have no email for a login code, so this phone stays known (POST /api/login)
+            'device_token' => app(TrustedDeviceService::class)->issueToken($parent, request()),
             'user'    => [
                 'id'          => $parent->id,
                 'name'        => $parent->name,

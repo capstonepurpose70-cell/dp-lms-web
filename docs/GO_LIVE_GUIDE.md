@@ -19,13 +19,16 @@ Follow this from top to bottom after paying for Railway. Each part ends with a c
 | Service | Plan | Cost | Notes |
 |---|---|---|---|
 | Railway | Hobby | $5 a month, which includes $5 of usage | Usage above $5 is billed. Check Railway's Usage page after the first week and set a usage limit. |
-| Brevo | Free | $0, no card needed | 300 emails a day. Read the limit below. |
+| Brevo | Starter | About $9 a month for 5,000 emails, no daily limit. Confirm on Brevo's pricing page, and confirm that it includes the transactional API. | Sends the codes for the website and the app. |
+| Domain | Cloudflare `.com` | About $10 a year. Confirm before paying. | This is what keeps codes out of spam. Renew it every year, or the codes stop. |
+
+The Flutter app needs no separate payment or setup. It asks the same server, and the server sends the code through Brevo.
 
 Railway Hobby blocks normal email sending (SMTP), and that block is only lifted on Pro. DP-LMS does not use SMTP. It sends through Brevo's HTTPS API, so Hobby is enough.
 
-**The 300 a day limit matters on activation days.** One student can use up to 3 emails in a day: activation code, login code, enrollment approval. Do not ask the whole school to activate on one day. Open it **one or two sections a day**. If the limit is reached, codes stop arriving until the next day, and nothing on the page says why.
+No provider can promise that every email reaches the inbox. An authenticated domain gives the best chance, and `mail:check` in Part 4 shows where the email lands.
 
-Pay for a Brevo plan only if the school regularly goes above 300 emails a day.
+**If you stay on the Brevo Free plan:** it stops at 300 emails a day, and one student can use up to 3 in a day. Open activation to **one or two sections a day**. When the limit is reached, codes stop arriving until the next day, and nothing on the page says why.
 
 ---
 
@@ -36,7 +39,15 @@ Pay for a Brevo plan only if the school regularly goes above 300 emails a day.
 3. Go to **SMTP & API → API Keys** and create a key. Copy it now, because it is shown once. It goes into Railway in Part 2. Do not paste it in a chat or a document.
 4. **Turn off IP blocking. This step is easy to miss.** Go to **Settings → Security → Authorized IPs** and choose **Deactivate blocking**. After 30 days Brevo starts refusing API calls from addresses it does not know, and Railway's address changes. If you skip this, login codes work for a month and then stop. The menu names may differ slightly in your account.
 
-**About the sender address.** Brevo cannot authenticate `@gmail.com` or other free addresses, because only the owner of a domain can do that. A Gmail sender can still be used for the school's first run, but Brevo may replace it with one of its own addresses and some mail may land in spam. If the school owns a domain, authenticate it under **Senders, Domains and Dedicated IPs → Domains** and send from it.
+**Use your own domain as the sender.** The `up.railway.app` address cannot be used, because Railway owns it and you cannot add email records to it. Brevo also cannot authenticate `@gmail.com`, so a Gmail sender may be replaced with one of Brevo's addresses and may land in spam.
+
+1. Buy a `.com` domain in Cloudflare, under an account the school will keep.
+2. In Brevo, go to **Senders, Domains and Dedicated IPs → Domains**, add the domain, and follow its steps.
+3. In Cloudflare DNS, set the Brevo records to **DNS only (grey cloud)**. Leave "flatten all CNAMEs" off.
+4. Press **Verify** in Brevo. It can take up to 48 hours, so do this before the go-live day.
+5. Add `noreply@your-domain.com` as the sender, and use it for `MAIL_FROM_ADDRESS` in Part 2.
+
+The website can stay on the `up.railway.app` address. If you later move it to `lms.your-domain.com`, keep that record on DNS only as well, and change `APP_URL`, `API_BASE` on the Pi, and the base URL in the app.
 
 **Check:** the sender shows as verified and you have the key.
 
@@ -75,6 +86,7 @@ php -r "echo bin2hex(random_bytes(32));"
 | `BREVO_API_KEY` | the key from Part 1 |
 | `MAIL_FROM_ADDRESS` | the sender you verified in Part 1 |
 | `MAIL_FROM_NAME` | `Sto. Domingo NHS` |
+| `API_LOGIN_OTP` | `false` until the updated app is released, then delete this variable. While it is `false`, the app signs in with the password alone. |
 | `ATTENDANCE_DEVICE_KEY` | the device key from step 5 |
 | `FIREBASE_CREDENTIALS_BASE64` | base64 of the Firebase service account file (`DEPLOY_CHECKLIST.md` shows the command) |
 | `FACE_SELF_UPLOAD` | `false` |
@@ -160,6 +172,7 @@ Use one real teacher and one real student. Those accounts stay.
 
 - [ ] Teacher activates with their employee ID and gets the code by email.
 - [ ] Student activates with their LRN and gets the code by email.
+- [ ] After the updated app is out and `API_LOGIN_OTP` is deleted, signing in on the app asks for the emailed code.
 - [ ] Student sends the enrollment form, the adviser approves it, and the student gets the approval email with the logo.
 - [ ] **Google Meet:** the teacher pastes a link in Google Meet. The student sees **Join Google Meet** on the dashboard and a student from another section does not.
 - [ ] **Grade percentages:** in Gradebook the teacher picks a class and quarter, then types the percentage beside Written works, Performance tasks and Quarterly assessment. The total must be 100, and the Final updates as they type.

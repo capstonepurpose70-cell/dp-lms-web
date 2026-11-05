@@ -1269,6 +1269,18 @@ scrolling.
 
 ---
 
+## Batch 28 — Email code on the app login
+
+- The app signed in with the password alone, so a stolen password got past the website's email code. `POST /api/login` now sends the same code and gives a token only after `POST /api/login/verify`. `POST /api/login/resend` sends a new one.
+- A login token stands for the password step. Only its hash is kept, it lasts 15 minutes and works once. Ten wrong codes end it.
+- The app login now shares the website's limit of 5 wrong passwords per account and IP. Before, it had only 20 tries a minute per IP.
+- "Remember this phone" lasts 30 days and uses the same `trusted_devices` table, so a password change cancels it too.
+- A parent with no email gets a `device_token` at activation and recovery. On a new phone they use the recovery code, same as the website.
+- `API_LOGIN_OTP` defaults to on. It can be set to false only until the updated app is released.
+- `docs/FLUTTER_PROMPT_ALL.md` holds every Flutter task in one file.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

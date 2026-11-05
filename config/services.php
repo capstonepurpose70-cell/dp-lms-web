@@ -43,6 +43,9 @@ return [
 
     // FCM push: service-account JSON, base64-encoded (Railway variable).
     // Local fallback: storage/app/firebase/firebase-service-account.json
+    // The app's login asks for the email code, same as the website. Turn off only until the updated app is out.
+    'api_login_otp' => (bool) env('API_LOGIN_OTP', true),
+
     'firebase' => [
         'credentials_base64' => env('FIREBASE_CREDENTIALS_BASE64'),
     ],

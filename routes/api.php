@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 // ── Public: Login ─────────────────────────────────────────────────────
 // Throttled per IP — the mobile login must not be open to brute force
 Route::post('/login',    [App\Http\Controllers\Api\AuthController::class, 'login'])->middleware('throttle:20,1');
+Route::post('/login/verify', [App\Http\Controllers\Api\AuthController::class, 'verifyLogin'])->middleware('throttle:30,1');
+Route::post('/login/resend', [App\Http\Controllers\Api\AuthController::class, 'resendLogin'])->middleware('throttle:10,1');
 // 410 Gone — replaced by /activate (students) and /parent/activate (parents)
 Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
 

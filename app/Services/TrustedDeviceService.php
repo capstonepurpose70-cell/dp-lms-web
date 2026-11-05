@@ -26,8 +26,12 @@ class TrustedDeviceService
 
     public function isTrusted(User $user, Request $request): bool
     {
-        $token = $request->cookie(static::cookieName($user));
+        return $this->isTrustedToken($user, $request->cookie(static::cookieName($user)), $request);
+    }
 
+    /** The app has no cookies, so it keeps the token itself and sends it at login. */
+    public function isTrustedToken(User $user, mixed $token, Request $request): bool
+    {
         if (!is_string($token) || $token === '') {
             return false;
         }
@@ -46,7 +50,8 @@ class TrustedDeviceService
         return true;
     }
 
-    public function trust(User $user, Request $request): void
+    /** A new remembered device. Returns the token, shown only this once. */
+    public function issueToken(User $user, Request $request): string
     {
         $token = Str::random(64);
 
@@ -57,6 +62,13 @@ class TrustedDeviceService
             'last_used_at' => now(),
             'expires_at'   => now()->addDays(self::DAYS),
         ]);
+
+        return $token;
+    }
+
+    public function trust(User $user, Request $request): void
+    {
+        $token = $this->issueToken($user, $request);
 
         Cookie::queue(Cookie::make(
             static::cookieName($user),

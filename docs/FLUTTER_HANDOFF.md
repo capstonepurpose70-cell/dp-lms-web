@@ -152,7 +152,7 @@ flowchart TD
 
 - `200` → `{ "token", "user": { id, name, email, role, grade_level, status } }`
 - Mobile: tinatanggap ang `+63 917 123 4567`, `09171234567`, atbp. Ang **12-digit na purong numero ay LRN**.
-- **Walang OTP** sa mobile login (hindi nagbago).
+- **May email code na** ang mobile login, kapareho ng website. Sundin ang `FLUTTER_PROMPT_LOGIN_OTP.md`.
 - `403 { "message": "Account not yet approved." }` — pending/rejected na account.
 - **BAGO (2026-10-21):** `403 { "message": "Please log in on the website first and set a new password." }` —
   lumang teacher account na may *temporary password* pa. Ipakita ang `message` as-is (walang token).
