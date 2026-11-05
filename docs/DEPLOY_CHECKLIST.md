@@ -107,7 +107,7 @@ Do these in order. Each one shows a preview; nothing is saved until you confirm.
    | 11 | ACADEMIC, TECHPRO, ALS |
    | 12 | ABM SPECIALIST, HUMSS EXPLORER, FBS EXPERT, SMAW CHAMPION, ALS |
 
-2. **Faculty Master List → Import list:** `1-Faculty-import.xlsx`. Expect **25 ready, 0 to fix**. The Advisory column makes a
+2. **Faculty Master List → Import list:** `1-Faculty-import.xlsx`. Expect **24 ready, 0 to fix**. The Advisory column makes a
    teacher the adviser when they activate.
 3. **LRN Master List → Import list:** `2-JHS-LRN-import.xlsx`. Leave the grade empty. Expect **253 ready, 0 to fix**.
 4. **LRN Master List → Import list:** `3-SHS-LRN-import.xlsx`. Leave the grade empty. Expect **117 ready, 0 to fix**.
