@@ -87,6 +87,24 @@ php artisan faces:make-private          # once: moves face photos saved before 2
 php artisan schedule:list               # shows attendance:finalize every minute
 ```
 
+## 4b. Load the school's real lists (Admin, on the live site)
+
+The live database is separate from the local one: what was imported on the laptop does not travel with the code.
+The lists contain real names, so they are **never committed**. They stay in `Documents/DP-LMS-go-live` on the laptop.
+
+Do these in order. Each one shows a preview; nothing is saved until you confirm.
+
+1. **Sections & Advisers:** check that every section exists, especially Grade 7 **AQUINO** and Grade 8 **RAMOS**, which only
+   the advisory seeder creates. Add a missing one with **New section** before importing, or its students will not be placed.
+2. **Faculty Master List → Import list:** upload the teachers' file. An Advisory column makes the teacher the adviser
+   when they activate.
+3. **LRN Master List → Import list:** upload `1-JHS-LRN-import.xlsx`. Leave the grade empty; the file has it.
+   Expect **253 ready, 0 to fix**.
+4. Add the students in `JHS-LRN-to-check-with-advisers.xlsx` one by one after their advisers confirm the LRN.
+5. Activate one real teacher and one real student on the live site, then delete nothing: those accounts are real.
+
+Practice accounts and `PRACTICE` / `DEMO SECTION` exist only on the laptop, so the live site starts clean.
+
 ## 5. Smoke test (live URL)
 
 - [ ] Admin login → Dashboard, Users, Sections, Class Schedules, Enrollment, Reports, Face Verification open.

@@ -216,6 +216,7 @@ class StudentActivationService
         $name = trim(preg_replace('/\s+/u', ' ', $name));
         if ($name !== '' && $name === mb_strtoupper($name)) {
             $name = mb_convert_case(mb_strtolower($name), MB_CASE_TITLE, 'UTF-8');
+            $name = preg_replace_callback('/\b(Ii|Iii|Iv)\b/u', fn ($m) => mb_strtoupper($m[0]), $name);   // II, III, IV
         }
 
         return $name;

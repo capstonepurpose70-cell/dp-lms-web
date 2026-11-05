@@ -1247,6 +1247,13 @@ scrolling.
 
 ---
 
+## Batch 26 — Real JHS LRN list
+
+- Imported locally through the same preview and checks as the admin page. Steps for the live site: `DEPLOY_CHECKLIST.md` 4b.
+- Names in capitals keep II, III and IV ("Parotina, Ernesto III D."), which normal case had turned into "Iii".
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

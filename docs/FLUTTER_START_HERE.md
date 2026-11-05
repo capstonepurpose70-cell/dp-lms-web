@@ -34,6 +34,7 @@
 | 5 | `FLUTTER_PROMPT_TERMS_TEACHER_ENROLLMENT.md` | Terms of Use screen for every role, teacher self-activation with the employee ID, enrollment states from the dashboard, chat drafts, 3-second messages. Same steps as the website. |
 | 6 | `IOT_ARRIVAL_NOTIFICATIONS.md` | Reference: the full Raspberry Pi → server → parent flow, when no push is sent, and how to test end to end without the gate camera (§4). |
 | 7 | `FLUTTER_PROMPT_SEMESTER_LEAVE_NAMES.md` | A teacher who left the school: login `403` with `status: "inactive"`, no activation. Greeting and avatar from names written surname first ("Dela Cruz, Juan" → "Juan", "JD"). Senior High semester rule for a future timetable screen. New inbox kinds for students and teachers. **Class attendance no longer has a code.** |
+| 8 | `FLUTTER_PROMPT_GO_LIVE.md` | Going live: live server address, the activation paths for real teachers and students, what people will type, and the release test list. |
 
 ---
 
