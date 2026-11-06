@@ -1283,7 +1283,13 @@ scrolling.
 
 ## Batch 29 — Admin sign-in look
 
-- The admin sign-in now has the school photo on the left in navy, with the school's name on a solid plate, a plain form and IBM Plex Sans. It shares nothing with the main sign-in, which keeps the full-colour photo and green. The form, lock timer and all checks are unchanged.
+- The admin sign-in follows the approved design: the school photo in a blue tint on a slant at the left, and a white card with the seal, the form and its icons at the right. Fades and color changes still run when the computer has animations turned off.
+- The page no longer gives details to a stranger: the audit log note, the sample email, the count of tries left and the length of the lock are gone.
+- `trustProxies` no longer trusts forwarded host headers, so a visitor cannot choose the host of the links the system makes.
+- An unknown email now costs the same password check as a real one, so response time does not show which emails are admins.
+- Successful admin sign-ins are now in the audit log. Before, only failures were.
+- Email and password have length limits.
+- Every response now sends `X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy`, plus `Strict-Transport-Security` on HTTPS. `X-Powered-By` is removed so the PHP version is not shown.
 
 ---
 

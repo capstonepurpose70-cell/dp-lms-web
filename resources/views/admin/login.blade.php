@@ -4,141 +4,171 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
-    <title>Administrator sign in — Sto. Domingo NHS</title>
+    <title>Sign in — Sto. Domingo NHS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="{{ asset('images/bg.jpg') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="{{ asset('images/admin-login.jpg') }}">
     <style>
         :root {
-            --navy:   #12305F;
-            --deep:   #0C2347;
-            --red:    #B3262B;
-            --ink:    #14202E;
-            --slate:  #4A5768;
-            --muted:  #66727F;
-            --line:   #C5CDD8;
-            --wash:   #F2F4F7;
+            --ink:    #131F5C;
+            --slate:  #5C6784;
+            --muted:  #6E7893;
+            --line:   #DDE2EF;
+            --tile:   #E9EEFB;
+            --wash:   #F3F6FD;
+            --blue:   #2F47A8;
+            --blue-2: #23378F;
+            --sky:    #93A6FF;
             --danger: #B3261E;
+            --ease:   cubic-bezier(.2, .7, .2, 1);
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
         body {
-            font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            color: var(--ink); background: #fff;
+            font-family: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: var(--ink); background: var(--wash);
             -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
         }
+        .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-        .page { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(460px, 1fr); }
+        .page { position: relative; overflow: hidden; isolation: isolate; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 52% 48%; }
+        /* Soft circles behind the card */
+        .page::before, .page::after { content: ''; position: absolute; z-index: -2; border-radius: 50%; background: rgba(120,142,240,.14); }
+        .page::before { top: -160px; right: -120px; width: 460px; height: 460px; box-shadow: 70px -60px 0 0 rgba(120,142,240,.2); }
+        .page::after  { bottom: -300px; left: 42%; width: 560px; height: 440px; box-shadow: -30px 70px 0 0 rgba(120,142,240,.16); }
 
-        /* Left: the school in navy, with its name on a solid plate */
-        .photo { position: relative; overflow: hidden; isolation: isolate; background: var(--navy); color: #fff; }
-        .photo img.scene {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            object-fit: cover; object-position: 100% 50%;
-            mix-blend-mode: luminosity; filter: contrast(1.02) brightness(1.3);
+        /* Left: the school, cut on a slant */
+        .photo {
+            position: absolute; inset: 0 auto 0 0; width: 55.5%; z-index: -1; overflow: hidden; color: #fff;
+            clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%);
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 0 12% 4% 5.8%;
+            animation: fade .5s ease both;
         }
-        /* Keeps the name beside the seal readable on bright parts of the photo */
-        .photo::after { content: ''; position: absolute; inset: 0 0 auto; height: 150px; background: linear-gradient(rgba(12,35,71,.72), rgba(12,35,71,0)); }
-        .brand, .plate { z-index: 1; }
-        .brand { position: absolute; top: 32px; left: 40px; display: flex; align-items: center; gap: 12px; }
-        .seal { width: 60px; height: 60px; border-radius: 50%; background: #fff; padding: 3px; flex-shrink: 0; }
-        .seal img { width: 100%; height: 100%; display: block; border-radius: 50%; }
-        .brand p { font-size: 13.5px; line-height: 1.35; font-weight: 500; text-shadow: 0 1px 3px rgba(12,35,71,.7); }
-        .brand b { display: block; font-size: 16px; font-weight: 700; }
-        .plate {
-            position: absolute; left: 0; bottom: 0; width: min(600px, 88%);
-            padding: 30px 40px 32px; background: var(--deep); border-top: 4px solid var(--red);
+        .photo > img { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; object-fit: cover; object-position: 50% 42%; }
+        .photo::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(100deg, rgba(20,32,104,.82) 0%, rgba(26,42,128,.6) 48%, rgba(38,58,160,.34) 100%); }
+        .photo-rule { display: block; width: 96px; height: 6px; border-radius: 3px; background: #5D74E8; margin-bottom: 26px; }
+        .photo-name { font-size: clamp(38px, 4.1vw, 66px); font-weight: 600; line-height: 1.12; letter-spacing: -.01em; }
+        .photo-name span { display: block; }
+        .photo-name em { font-style: normal; color: var(--sky); }
+        .photo-name span:last-child { color: #E4E8FF; }
+        .photo-place { margin-top: 12px; font-size: clamp(18px, 1.75vw, 28px); color: #D9DEF5; }
+        .motto {
+            display: inline-flex; align-items: center; gap: 16px; align-self: flex-start;
+            margin-top: 32px; padding: 16px 28px 16px 24px; border-radius: 16px;
+            background: rgba(255,255,255,.12); font-size: 18px; line-height: 1.3;
         }
-        .plate-name { font-size: 34px; font-weight: 700; line-height: 1.14; letter-spacing: -.015em; text-wrap: balance; }
-        .plate-place { margin-top: 8px; font-size: 15px; color: #C9D4E5; }
-        .plate-note { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.18); font-size: 13.5px; color: #C9D4E5; line-height: 1.5; max-width: 52ch; }
-        .plate-note b { color: #fff; font-weight: 600; }
+        .motto svg { flex-shrink: 0; }
+        .motto p { padding-left: 16px; border-left: 1px solid rgba(255,255,255,.35); }
 
-        /* Right: the form */
-        .side { display: flex; align-items: center; justify-content: center; padding: 48px 32px; background: #fff; }
-        .panel { width: 100%; max-width: 372px; }
-        .panel h1 { font-size: 28px; font-weight: 700; letter-spacing: -.015em; line-height: 1.2; }
-        .lead { margin-top: 8px; font-size: 15px; color: var(--slate); line-height: 1.5; text-wrap: pretty; }
+        /* Right: the card */
+        .side { grid-column: 2; display: flex; align-items: center; justify-content: center; padding: 40px 32px; }
+        .panel {
+            width: 100%; max-width: 480px; padding: 32px 36px 28px;
+            background: rgba(255,255,255,.94); border-radius: 26px;
+            box-shadow: 0 18px 50px rgba(44,66,160,.12);
+            animation: rise .45s var(--ease) both;
+        }
+        .school { text-align: center; }
+        .seal { width: 108px; height: 108px; border-radius: 50%; display: block; margin: 0 auto 12px; }
+        .school b { display: block; font-size: 22px; font-weight: 700; line-height: 1.25; }
+        .school span { display: block; margin-top: 2px; font-size: 17px; color: var(--slate); }
+        .panel h1 { display: flex; align-items: center; gap: 18px; margin-top: 20px; font-size: 23px; font-weight: 700; white-space: nowrap; }
+        .panel h1::before, .panel h1::after { content: ''; flex: 1; height: 2px; background: var(--line); }
 
-        .notice { display: flex; gap: 10px; align-items: flex-start; margin-top: 22px; padding: 11px 13px; border-radius: 6px; font-size: 14px; line-height: 1.5; }
+        .notice { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; padding: 11px 13px; border-radius: 10px; font-size: 15px; line-height: 1.4; animation: fade .2s ease both; }
         .notice svg { flex-shrink: 0; margin-top: 1px; }
-        .notice.error { background: #FDF3F2; border: 1px solid #F1C9C5; color: var(--danger); }
-        .notice.ok { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+        .notice.error { background: #FDF4F3; border: 1px solid #F3D3CF; color: var(--danger); }
 
-        form { margin-top: 26px; display: grid; gap: 18px; }
-        form.shake { animation: shake .42s cubic-bezier(.36,.07,.19,.97) .1s both; }
-        .field label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
-        .control { position: relative; }
-        .input {
-            width: 100%; height: 48px; padding: 0 13px;
-            border: 1px solid var(--line); border-radius: 6px; background: #fff;
-            font: inherit; font-size: 15px; color: var(--ink);
-            transition: border-color .15s ease, box-shadow .15s ease;
+        form { margin-top: 20px; display: grid; gap: 18px; }
+        form.shake { animation: nudge .3s ease both; }
+        .control {
+            position: relative; display: flex; align-items: center; height: 58px; padding: 0 7px; overflow: hidden;
+            border: 1.5px solid var(--line); border-radius: 14px; background: #fff;
+            transition: border-color .18s ease, box-shadow .18s ease;
         }
-        .input::placeholder { color: #8591A0; }
-        .input:hover { border-color: #97A3B2; }
-        .input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(18,48,95,.18); }
-        .input[aria-invalid="true"] { border-color: var(--danger); }
-        .field-error { margin-top: 6px; font-size: 13px; color: var(--danger); }
-        .pw .input { padding-right: 50px; }
+        .control:hover { border-color: #C4CDE2; }
+        .control:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(47,71,168,.13); }
+        .tile { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; background: var(--tile); color: #27366F; }
+        .input { flex: 1; min-width: 0; height: 100%; padding: 0 12px 0 14px; border: 0; outline: 0; background: transparent; font: inherit; font-size: 18px; color: var(--ink); }
+        .input::placeholder { color: #7A849E; opacity: 1; }
+        /* A saved login keeps the page's own colors instead of the browser's blue */
+        .input:-webkit-autofill, .input:-webkit-autofill:hover, .input:-webkit-autofill:focus { box-shadow: 0 0 0 40px #fff inset; -webkit-text-fill-color: var(--ink); }
+        .field-error { margin-top: 6px; font-size: 14px; color: var(--danger); }
         .pw-toggle {
-            position: absolute; right: 4px; top: 4px; width: 40px; height: 40px; border-radius: 4px;
+            width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px;
             border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center;
-            transition: background-color .15s ease, color .15s ease;
+            transition: background-color .18s ease, color .18s ease;
         }
         .pw-toggle:hover { background: var(--wash); color: var(--ink); }
-        .pw-toggle svg { grid-area: 1 / 1; }
-        .pw-toggle .off, .pw-toggle[aria-pressed="true"] .on { visibility: hidden; }
-        .pw-toggle[aria-pressed="true"] .off { visibility: visible; }
-        .caps { margin-top: 6px; font-size: 13px; font-weight: 600; color: #92400E; }
+        .pw-toggle svg { grid-area: 1 / 1; transition: opacity .18s ease; }
+        .pw-toggle .off, .pw-toggle[aria-pressed="true"] .on { opacity: 0; }
+        .pw-toggle[aria-pressed="true"] .off { opacity: 1; }
+        .caps { margin-top: 6px; font-size: 14px; color: #8A5A00; }
 
         .submit {
-            height: 48px; margin-top: 4px; border: 0; border-radius: 6px; background: var(--navy); color: #fff;
-            font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-            transition: background-color .15s ease;
+            position: relative; overflow: hidden; isolation: isolate;
+            height: 60px; border: 0; border-radius: 14px; color: #fff; cursor: pointer;
+            background: linear-gradient(180deg, #3A55BE 0%, var(--blue-2) 100%);
+            font: inherit; font-size: 20px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform .12s ease, box-shadow .18s ease;
+            box-shadow: 0 6px 16px rgba(35,55,143,.22);
         }
-        .submit:hover { background: var(--deep); }
-        .submit:disabled { cursor: progress; background: var(--deep); }
-        .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; display: none; animation: spin .7s linear infinite; }
-        .submit.loading .spinner { display: block; }
+        /* A gradient cannot fade, so a dark layer fades over it */
+        .submit::after { content: ''; position: absolute; inset: 0; z-index: -1; background: #1C2C78; opacity: 0; transition: opacity .18s ease; }
+        .submit:hover::after, .submit:disabled::after { opacity: .55; }
+        .submit:hover { box-shadow: 0 8px 20px rgba(35,55,143,.3); }
+        .submit:active { transform: scale(.985); }
+        .submit:disabled { cursor: progress; transform: none; }
+        .go { width: 22px; margin-right: 12px; flex-shrink: 0; transition: width .2s ease, margin-right .2s ease, opacity .2s ease; }
+        .submit.loading .go { width: 0; margin-right: 0; opacity: 0; }
+        /* The spinner opens beside the words, so the label slides over instead of jumping */
+        .spinner {
+            width: 0; height: 18px; margin-right: 0; opacity: 0; border-radius: 50%;
+            border: 0 solid rgba(255,255,255,.35); border-top-color: #fff;
+            animation: spin .7s linear infinite;
+            transition: width .2s ease, margin-right .2s ease, opacity .2s ease;
+        }
+        .submit.loading .spinner { width: 18px; margin-right: 10px; opacity: 1; border-width: 2px; }
 
-        .lock { margin-top: 24px; padding: 20px; border: 1px solid #E9D8A6; border-radius: 6px; background: #FFFBEB; display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
-        .lock-dial { position: relative; width: 96px; height: 96px; }
-        .lock-dial svg { width: 96px; height: 96px; transform: rotate(-90deg); }
-        .lock-dial circle { fill: none; stroke-width: 7; }
-        .lock-dial .track { stroke: #F3E3B3; }
-        .lock-dial .left { stroke: #B45309; stroke-dasharray: 1; transition: stroke-dashoffset 1s linear; }
-        .lock-time { position: absolute; inset: 0; display: grid; place-items: center; font-size: 19px; font-weight: 700; color: #78350F; font-variant-numeric: tabular-nums; }
-        .lock h2 { font-size: 16px; font-weight: 700; color: #78350F; }
-        .lock p { margin-top: 5px; font-size: 14px; color: #92400E; line-height: 1.5; }
+        .lock { margin-top: 18px; padding: 14px 16px; border: 1px solid #EADFC2; border-radius: 12px; background: #FDFAF2; animation: fade .2s ease both; }
+        .lock h2 { font-size: 17px; font-weight: 700; color: #6B4A00; }
+        .lock p { margin-top: 4px; font-size: 16px; color: #7A5A12; line-height: 1.4; }
+        .lock-time { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-        .other { margin-top: 26px; padding-top: 18px; border-top: 1px solid #E2E6EC; font-size: 14px; color: var(--slate); line-height: 1.5; }
-        .other a { color: var(--navy); font-weight: 600; text-underline-offset: 3px; }
-        .copy { margin-top: 12px; font-size: 13px; color: var(--muted); }
+        .copy { margin-top: 20px; text-align: center; font-size: 15px; color: var(--muted); }
 
-        :focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+        :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .input:focus-visible { outline: none; }
 
+        @keyframes fade  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes rise  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        @keyframes nudge { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
         @keyframes spin  { to { transform: rotate(360deg); } }
-        @keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-6px); } 40%, 60% { transform: translateX(6px); } }
 
         @media (max-width: 960px) {
             .page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-            .photo { height: 230px; }
-            .brand { top: 16px; left: 20px; }
-            .seal { width: 48px; height: 48px; }
-            .plate { width: 100%; padding: 14px 20px 16px; border-top-width: 3px; }
-            .plate-name { font-size: 20px; }
-            .plate-place { margin-top: 2px; font-size: 13.5px; }
-            .plate-note { display: none; }
-            .side { align-items: flex-start; padding: 28px 20px 40px; }
-            .panel { max-width: 440px; }
-            .panel h1 { font-size: 25px; }
-            .lock { grid-template-columns: 1fr; justify-items: start; }
+            .photo {
+                position: relative; inset: auto; width: 100%; z-index: 0; padding: 32px 24px 56px;
+                clip-path: polygon(0 0, 100% 0, 100% 84%, 0 100%);
+            }
+            .photo-rule { width: 56px; height: 4px; margin-bottom: 14px; }
+            .photo-name { font-size: 30px; }
+            .photo-place { margin-top: 6px; font-size: 16px; }
+            .motto { display: none; }
+            .side { grid-column: 1; align-items: flex-start; padding: 8px 16px 32px; }
+            .panel { padding: 24px 20px 20px; border-radius: 20px; }
+            .seal { width: 84px; height: 84px; }
+            .school b { font-size: 19px; }
+            .school span { font-size: 15.5px; }
         }
+        /* Keeps the soft fades and color changes; only movement stops */
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+            .panel { animation-name: fade; }
+            form.shake { animation: none; }
+            .submit:active { transform: none; }
         }
     </style>
 </head>
@@ -146,33 +176,32 @@
 <main class="page">
 
     <section class="photo" aria-label="Sto. Domingo National High School">
-        <img class="scene" src="{{ asset('images/bg.jpg') }}" alt="" width="2048" height="907" decoding="async" fetchpriority="high">
-        <div class="brand">
-            <span class="seal"><img src="{{ asset('images/logo.png') }}" alt="" width="54" height="54" decoding="async"></span>
-            <p><b>DP-LMS</b>Administration</p>
-        </div>
-        <div class="plate">
-            <p class="plate-name">Sto. Domingo National High School</p>
-            <p class="plate-place">San Manuel, Pangasinan</p>
-            <p class="plate-note"><b>For school administrators only.</b> Every sign-in and failed attempt on this page is recorded in the audit log.</p>
+        <img src="{{ asset('images/admin-login.jpg') }}" alt="" width="800" height="1120" decoding="async" fetchpriority="high">
+        <span class="photo-rule" aria-hidden="true"></span>
+        <p class="photo-name"><span>Sto. Domingo</span><span>National <em>High School</em></span></p>
+        <p class="photo-place">San Manuel, Pangasinan</p>
+        <div class="motto">
+            <svg width="44" height="50" viewBox="0 0 44 50" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2.5 41 9v15c0 12-8 19.500-19 23.500C11 43.500 3 36 3 24V9L22 2.500Z"/>
+                <path fill="currentColor" stroke="none" d="m22 15 15 6.500L22 28 7 21.500 22 15Z"/>
+                <path d="M13 25.500V32c0 2 4 4.500 9 4.500s9-2.500 9-4.500v-6.500"/>
+            </svg>
+            <p>Academic Excellence<br>for a Brighter Future</p>
         </div>
     </section>
 
     <section class="side">
         <div class="panel">
-            <h1>Administrator sign in</h1>
-            <p class="lead">Use the email and password of your administrator account.</p>
+            <div class="school">
+                <img class="seal" src="{{ asset('images/logo.png') }}" alt="" width="52" height="52" decoding="async">
+                <p><b>Sto. Domingo National High School</b><span>San Manuel, Pangasinan</span></p>
+            </div>
+            <h1>Admin Login</h1>
 
             @if ($lockSeconds > 0)
                 <div class="lock" role="alert" id="lock" data-seconds="{{ $lockSeconds }}">
-                    <div class="lock-dial" aria-hidden="true">
-                        <svg viewBox="0 0 96 96"><circle class="track" cx="48" cy="48" r="42"/><circle class="left" id="lockRing" cx="48" cy="48" r="42" pathLength="1"/></svg>
-                        <span class="lock-time" id="lockTime">{{ sprintf('%02d:%02d', intdiv($lockSeconds, 60), $lockSeconds % 60) }}</span>
-                    </div>
-                    <div>
-                        <h2>Sign-in is paused</h2>
-                        <p>There were too many incorrect attempts. For security, you can try again when the timer ends.</p>
-                    </div>
+                    <h2>Sign-in is paused</h2>
+                    <p>Too many tries. Try again in <span class="lock-time" id="lockTime">{{ sprintf('%02d:%02d', intdiv($lockSeconds, 60), $lockSeconds % 60) }}</span>.</p>
                 </div>
             @else
                 @if (session('error'))
@@ -188,20 +217,21 @@
                       class="{{ session('error') ? 'shake' : '' }}" @if (session('signed_out')) data-signed-out @endif>
                     @csrf
                     <div class="field">
-                        <label for="admin-email">Email</label>
+                        <label class="sr" for="admin-email">Email</label>
                         <div class="control">
-                            <input class="input" type="email" id="admin-email" name="email" value="{{ old('email') }}"
+                            <span class="tile" aria-hidden="true"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.500"/><path stroke-linecap="round" stroke-linejoin="round" d="m3.500 7.500 8.500 6 8.500-6"/></svg></span>
+                            <input class="input" type="email" id="admin-email" name="email" placeholder="Email" value="{{ old('email') }}"
                                    autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required
-                                   placeholder="name@school.edu.ph"
                                    @error('email') aria-invalid="true" aria-describedby="err-email" @enderror>
                         </div>
                         @error('email') <p class="field-error" id="err-email">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="field">
-                        <label for="admin-pw">Password</label>
+                        <label class="sr" for="admin-pw">Password</label>
                         <div class="control pw">
-                            <input class="input" type="password" id="admin-pw" name="password" placeholder="Your password"
+                            <span class="tile" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 0 1 6 0v3H9Zm3 4a1.800 1.800 0 0 1 1 3.300V19h-2v-1.700a1.800 1.800 0 0 1 1-3.300Z"/></svg></span>
+                            <input class="input" type="password" id="admin-pw" name="password" placeholder="Password"
                                    autocomplete="current-password" required
                                    @error('password') aria-invalid="true" aria-describedby="err-pw" @enderror>
                             <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" aria-pressed="false">
@@ -214,13 +244,12 @@
                     </div>
 
                     <button type="submit" class="submit" id="adminSubmit">
+                        <svg class="go" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M3 12h12m-4-4 4 4-4 4"/></svg>
                         <span class="spinner" aria-hidden="true"></span>
                         <span id="adminSubmitText">Sign in</span>
                     </button>
                 </form>
             @endif
-
-            <p class="other">Students, teachers and parents sign in on the <a href="{{ route('login') }}">main sign-in page</a>.</p>
             <p class="copy">&copy; {{ date('Y') }} Sto. Domingo National High School</p>
         </div>
     </section>
@@ -306,12 +335,9 @@
         const total = parseInt(lock.dataset.seconds, 10) || 0;
         const end = Date.now() + total * 1000;
         const time = document.getElementById('lockTime');
-        const ring = document.getElementById('lockRing');
-        const full = 1800;   // the dial shows the share of the 30-minute pause that is left
         const tick = () => {
             const left = Math.max(0, Math.round((end - Date.now()) / 1000));
             time.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
-            ring.style.strokeDashoffset = String(1 - Math.min(1, left / full));
             if (left <= 0) { clearInterval(timer); window.location.replace(window.location.pathname); }
         };
         const timer = setInterval(tick, 1000);

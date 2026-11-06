@@ -21,8 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
 
     // Railway's proxy is the only way in. Without this every visitor shares the proxy's address,
-    // so one person hitting a per-IP limit would lock out the whole school.
-    $middleware->trustProxies(at: '*');
+    // so one person hitting a per-IP limit would lock out the whole school. Forwarded host headers
+    // stay untrusted, so a visitor cannot choose the host of the links the system makes.
+    $middleware->trustProxies(
+        at: '*',
+        headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO,
+    );
+    $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
     // Prepended so it wraps everything: prioritised middleware (auth, bindings) is sorted ahead of
     // appended entries, and a guest redirect from auth would otherwise skip it.

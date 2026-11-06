@@ -7,8 +7,10 @@ use App\Models\Admin;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AdminAuthController extends Controller
 {
@@ -31,8 +33,8 @@ class AdminAuthController extends Controller
     public function submit(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
+            'email'    => 'required|email|max:254',
+            'password' => 'required|string|max:255',
         ]);
 
         // ── 1. Rate limit check FIRST (per IP and per email) ──
@@ -49,7 +51,9 @@ class AdminAuthController extends Controller
         // ── 2. Then the lookup and password check ──
         $admin = Admin::where('email', $request->email)->first();
 
-        if (!$admin || !Hash::check($request->password, $admin->password)) {
+        // An unknown email runs the same password check, so the response time never shows which
+        // emails are admins. The message stays the same and gives no count of tries left.
+        if (!Hash::check($request->password, $admin?->password ?? $this->decoyHash()) || !$admin) {
             RateLimiter::hit($key, self::LOCK_SECONDS);
             RateLimiter::hit($emailKey, self::LOCK_SECONDS);
             AuditLogService::log('Failed admin login', 'Auth', $request->email);
@@ -58,13 +62,7 @@ class AdminAuthController extends Controller
                 return back()->with('lockout_seconds', $wait)->withInput($request->only('email'));
             }
 
-            $left    = RateLimiter::remaining($key, self::MAX_PER_IP);
-            $message = 'Incorrect email or password.';
-            if ($left <= 3) {
-                $message .= ' ' . $left . ' ' . ($left === 1 ? 'attempt' : 'attempts') . ' left before sign-in is paused for 30 minutes.';
-            }
-
-            return back()->with('error', $message)->withInput($request->only('email'));
+            return back()->with('error', 'Incorrect email or password.')->withInput($request->only('email'));
         }
 
         // ── 3. Success ──
@@ -72,6 +70,7 @@ class AdminAuthController extends Controller
         $request->session()->regenerate();   // against session fixation
         RateLimiter::clear($key);
         RateLimiter::clear($emailKey);
+        AuditLogService::log('Admin login', 'Auth', null, $admin);
 
         return redirect()->route('admin.dashboard');
     }
@@ -83,6 +82,12 @@ class AdminAuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('admin.login')->with('signed_out', true);
+    }
+
+    /** Hash of a random value, made with the same cost as real passwords. It matches nothing. */
+    private function decoyHash(): string
+    {
+        return Cache::rememberForever('admin-login-decoy', fn () => Hash::make(Str::random(40)));
     }
 
     private function ipKey(Request $request): string
