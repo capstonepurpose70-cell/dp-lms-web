@@ -1281,6 +1281,12 @@ scrolling.
 
 ---
 
+## Batch 29 — Admin sign-in look
+
+- The admin sign-in now has the school photo on the left in navy, with the school's name on a solid plate, a plain form and IBM Plex Sans. It shares nothing with the main sign-in, which keeps the full-colour photo and green. The form, lock timer and all checks are unchanged.
+
+---
+
 ## Found, not fixed yet
 
 | | Issue | Where |

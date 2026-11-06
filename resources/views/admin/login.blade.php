@@ -7,216 +7,166 @@
     <title>Administrator sign in — Sto. Domingo NHS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="{{ asset('images/logo.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="{{ asset('images/bg.jpg') }}">
     <style>
         :root {
-            --navy:   #0E2A5C;
-            --gold:   #E8B23A;
-            --blue:   #1D4ED8;
-            --blue-2: #1E40AF;
-            --ink:    #0F172A;
-            --slate:  #475569;
-            --muted:  #64748B;
-            --line:   #CBD5E1;
-            --paper:  #F5F7FA;
-            --danger: #B91C1C;
-            --ease:   cubic-bezier(.2, .7, .2, 1);
+            --navy:   #12305F;
+            --deep:   #0C2347;
+            --red:    #B3262B;
+            --ink:    #14202E;
+            --slate:  #4A5768;
+            --muted:  #66727F;
+            --line:   #C5CDD8;
+            --wash:   #F2F4F7;
+            --danger: #B3261E;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
         body {
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-            color: var(--ink); background: var(--paper);
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: var(--ink); background: #fff;
             -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
         }
 
-        .page { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(380px, 44%) 1fr; }
+        .page { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(460px, 1fr); }
 
-        /* ═════ School panel ═════ */
-        .school {
-            position: relative; overflow: hidden; isolation: isolate;
-            background: var(--navy); color: #fff;
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 48px 56px;
+        /* Left: the school in navy, with its name on a solid plate */
+        .photo { position: relative; overflow: hidden; isolation: isolate; background: var(--navy); color: #fff; }
+        .photo img.scene {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; object-position: 100% 50%;
+            mix-blend-mode: luminosity; filter: contrast(1.02) brightness(1.3);
         }
-        /* Rings from the round school seal: drawn in once, then the gold dot circles very slowly */
-        .rings { position: absolute; right: -460px; top: -200px; width: 760px; height: 760px; z-index: -1; pointer-events: none; }
-        .rings-move { transition: transform .6s var(--ease); will-change: transform; }
-        .ring { fill: none; stroke: #fff; stroke-opacity: .1; stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.4s var(--ease) forwards; animation-delay: calc(var(--i) * 110ms); }
-        .ring.gold { stroke: var(--gold); stroke-opacity: .6; stroke-width: 2; animation-duration: 1.8s; }
-        .orbit { transform-origin: 380px 380px; animation: orbit 60s linear infinite, fade-in .6s ease 1.6s both; }
-        .orbit circle { fill: var(--gold); }
-        @keyframes draw { to { stroke-dashoffset: 0; } }
-        @keyframes orbit { to { transform: rotate(360deg); } }
-
-        .school-top { display: flex; align-items: center; gap: 14px; animation: rise .6s var(--ease) both; }
-        .seal { width: 64px; height: 64px; border-radius: 50%; background: #fff; padding: 3px; flex-shrink: 0; box-shadow: 0 0 0 6px rgba(255,255,255,.06); }
+        /* Keeps the name beside the seal readable on bright parts of the photo */
+        .photo::after { content: ''; position: absolute; inset: 0 0 auto; height: 150px; background: linear-gradient(rgba(12,35,71,.72), rgba(12,35,71,0)); }
+        .brand, .plate { z-index: 1; }
+        .brand { position: absolute; top: 32px; left: 40px; display: flex; align-items: center; gap: 12px; }
+        .seal { width: 60px; height: 60px; border-radius: 50%; background: #fff; padding: 3px; flex-shrink: 0; }
         .seal img { width: 100%; height: 100%; display: block; border-radius: 50%; }
-        .school-tag { font-size: 14px; font-weight: 600; color: #C7D4EE; line-height: 1.35; }
-        .school-tag b { display: block; color: #fff; font-size: 15px; font-weight: 800; }
+        .brand p { font-size: 13.5px; line-height: 1.35; font-weight: 500; text-shadow: 0 1px 3px rgba(12,35,71,.7); }
+        .brand b { display: block; font-size: 16px; font-weight: 700; }
+        .plate {
+            position: absolute; left: 0; bottom: 0; width: min(600px, 88%);
+            padding: 30px 40px 32px; background: var(--deep); border-top: 4px solid var(--red);
+        }
+        .plate-name { font-size: 34px; font-weight: 700; line-height: 1.14; letter-spacing: -.015em; text-wrap: balance; }
+        .plate-place { margin-top: 8px; font-size: 15px; color: #C9D4E5; }
+        .plate-note { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.18); font-size: 13.5px; color: #C9D4E5; line-height: 1.5; max-width: 52ch; }
+        .plate-note b { color: #fff; font-weight: 600; }
 
-        .school-rule { display: block; width: 48px; height: 3px; border-radius: 2px; background: var(--gold); margin-bottom: 22px; transform-origin: left; animation: grow .7s var(--ease) .25s both; }
-        .school-name { font-size: 42px; font-weight: 800; line-height: 1.08; letter-spacing: -.025em; }
-        /* Each line of the name rises out of its own mask */
-        .line { display: block; overflow: hidden; padding-bottom: .06em; }
-        .line > span { display: inline-block; animation: line-up .8s var(--ease) both; animation-delay: calc(.3s + var(--i) * 90ms); }
-        .school-place { margin-top: 14px; font-size: 16px; color: #C7D4EE; animation: rise .6s var(--ease) .65s both; }
-        .school-foot { font-size: 13.5px; color: #C7D4EE; line-height: 1.55; max-width: 36ch; animation: rise .6s var(--ease) .8s both; }
-        .school-foot b { color: #fff; font-weight: 700; }
+        /* Right: the form */
+        .side { display: flex; align-items: center; justify-content: center; padding: 48px 32px; background: #fff; }
+        .panel { width: 100%; max-width: 372px; }
+        .panel h1 { font-size: 28px; font-weight: 700; letter-spacing: -.015em; line-height: 1.2; }
+        .lead { margin-top: 8px; font-size: 15px; color: var(--slate); line-height: 1.5; text-wrap: pretty; }
 
-        /* ═════ Form side ═════ */
-        .side { display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
-        .panel { width: 100%; max-width: 400px; }
-        /* One short entrance, in reading order */
-        .enter { animation: rise .55s var(--ease) both; animation-delay: calc(.15s + var(--i) * 60ms); }
-
-        .panel h1 { font-size: 30px; font-weight: 800; letter-spacing: -.025em; line-height: 1.15; }
-        .lead { margin-top: 8px; font-size: 15px; color: var(--slate); line-height: 1.55; }
-
-        .notice { display: flex; gap: 10px; align-items: flex-start; margin-top: 24px; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; animation: drop .4s var(--ease) both; }
+        .notice { display: flex; gap: 10px; align-items: flex-start; margin-top: 22px; padding: 11px 13px; border-radius: 6px; font-size: 14px; line-height: 1.5; }
         .notice svg { flex-shrink: 0; margin-top: 1px; }
-        .notice.error { background: #FEF2F2; border: 1px solid #FECACA; color: var(--danger); }
+        .notice.error { background: #FDF3F2; border: 1px solid #F1C9C5; color: var(--danger); }
         .notice.ok { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
 
-        form { margin-top: 28px; display: grid; gap: 20px; }
-        form.shake { animation: shake .42s cubic-bezier(.36,.07,.19,.97) .15s both; }
-        .field label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; transition: color .15s ease; }
-        .field:focus-within label { color: var(--blue); }
+        form { margin-top: 26px; display: grid; gap: 18px; }
+        form.shake { animation: shake .42s cubic-bezier(.36,.07,.19,.97) .1s both; }
+        .field label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
         .control { position: relative; }
-        .control > svg.lead-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94A3B8; pointer-events: none; transition: color .15s ease; }
-        .field:focus-within .lead-icon { color: var(--blue); }
         .input {
-            width: 100%; height: 50px; padding: 0 14px 0 44px;
-            border: 1px solid var(--line); border-radius: 12px; background: #fff;
+            width: 100%; height: 48px; padding: 0 13px;
+            border: 1px solid var(--line); border-radius: 6px; background: #fff;
             font: inherit; font-size: 15px; color: var(--ink);
-            transition: border-color .15s ease, box-shadow .2s ease;
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
-        .input::placeholder { color: #94A3B8; }
-        .input:hover { border-color: #94A3B8; }
-        .input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 4px rgba(29,78,216,.14); }
+        .input::placeholder { color: #8591A0; }
+        .input:hover { border-color: #97A3B2; }
+        .input:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(18,48,95,.18); }
         .input[aria-invalid="true"] { border-color: var(--danger); }
         .field-error { margin-top: 6px; font-size: 13px; color: var(--danger); }
-        .pw .input { padding-right: 52px; }
+        .pw .input { padding-right: 50px; }
         .pw-toggle {
-            position: absolute; right: 5px; top: 5px; width: 40px; height: 40px; border-radius: 9px;
+            position: absolute; right: 4px; top: 4px; width: 40px; height: 40px; border-radius: 4px;
             border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center;
             transition: background-color .15s ease, color .15s ease;
         }
-        .pw-toggle:hover { background: #F1F5F9; color: var(--ink); }
-        /* Eye icons cross-fade instead of popping */
-        .pw-toggle svg { grid-area: 1 / 1; transition: opacity .18s ease, transform .18s ease, filter .18s ease; }
-        .pw-toggle .off { opacity: 0; transform: scale(.7); filter: blur(2px); }
-        .pw-toggle[aria-pressed="true"] .on { opacity: 0; transform: scale(.7); filter: blur(2px); }
-        .pw-toggle[aria-pressed="true"] .off { opacity: 1; transform: none; filter: none; }
-        .caps { margin-top: 6px; font-size: 13px; font-weight: 600; color: #92400E; animation: drop .25s var(--ease) both; }
+        .pw-toggle:hover { background: var(--wash); color: var(--ink); }
+        .pw-toggle svg { grid-area: 1 / 1; }
+        .pw-toggle .off, .pw-toggle[aria-pressed="true"] .on { visibility: hidden; }
+        .pw-toggle[aria-pressed="true"] .off { visibility: visible; }
+        .caps { margin-top: 6px; font-size: 13px; font-weight: 600; color: #92400E; }
 
         .submit {
-            position: relative; height: 50px; border: 0; border-radius: 12px; background: var(--blue); color: #fff;
-            font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+            height: 48px; margin-top: 4px; border: 0; border-radius: 6px; background: var(--navy); color: #fff;
+            font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
             display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-            box-shadow: 0 1px 2px rgba(15,23,42,.12), 0 8px 20px -10px rgba(29,78,216,.55);
-            transition: background-color .15s ease, transform .12s ease, box-shadow .2s ease;
+            transition: background-color .15s ease;
         }
-        .submit:hover { background: var(--blue-2); }
-        .submit:active { transform: scale(.985); }
-        .submit:disabled { cursor: progress; background: var(--blue-2); }
-        /* The padlock opens on hover and while signing in */
-        .padlock .shackle { transform-origin: 16px 10px; transition: transform .28s var(--ease); }
-        .submit:hover .shackle, .submit.loading .shackle { transform: translateY(-2px) rotate(-18deg); }
+        .submit:hover { background: var(--deep); }
+        .submit:disabled { cursor: progress; background: var(--deep); }
         .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; display: none; animation: spin .7s linear infinite; }
         .submit.loading .spinner { display: block; }
-        .submit.loading .padlock { display: none; }
 
-        /* Lock: circular countdown, echoing the seal's rings */
-        .lock { margin-top: 28px; padding: 24px; border: 1px solid #FDE68A; border-radius: 14px; background: #FFFBEB; display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; animation: drop .45s var(--ease) both; }
-        .lock-dial { position: relative; width: 104px; height: 104px; }
-        .lock-dial svg { width: 104px; height: 104px; transform: rotate(-90deg); }
+        .lock { margin-top: 24px; padding: 20px; border: 1px solid #E9D8A6; border-radius: 6px; background: #FFFBEB; display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+        .lock-dial { position: relative; width: 96px; height: 96px; }
+        .lock-dial svg { width: 96px; height: 96px; transform: rotate(-90deg); }
         .lock-dial circle { fill: none; stroke-width: 7; }
-        .lock-dial .track { stroke: #FDE68A; }
-        .lock-dial .left { stroke: #D97706; stroke-linecap: round; stroke-dasharray: 1; transition: stroke-dashoffset 1s linear; }
-        .lock-time { position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; font-weight: 800; color: #78350F; font-variant-numeric: tabular-nums; }
-        .lock h2 { font-size: 17px; font-weight: 800; color: #78350F; }
-        .lock p { margin-top: 6px; font-size: 14px; color: #92400E; line-height: 1.55; }
+        .lock-dial .track { stroke: #F3E3B3; }
+        .lock-dial .left { stroke: #B45309; stroke-dasharray: 1; transition: stroke-dashoffset 1s linear; }
+        .lock-time { position: absolute; inset: 0; display: grid; place-items: center; font-size: 19px; font-weight: 700; color: #78350F; font-variant-numeric: tabular-nums; }
+        .lock h2 { font-size: 16px; font-weight: 700; color: #78350F; }
+        .lock p { margin-top: 5px; font-size: 14px; color: #92400E; line-height: 1.5; }
 
-        .other { margin-top: 28px; padding-top: 20px; border-top: 1px solid #E2E8F0; font-size: 14px; color: var(--slate); line-height: 1.55; }
-        .other a { color: var(--blue); font-weight: 700; text-decoration: none; background-image: linear-gradient(currentColor, currentColor); background-size: 0 1.5px; background-position: 0 100%; background-repeat: no-repeat; transition: background-size .25s var(--ease); }
-        .other a:hover { background-size: 100% 1.5px; }
-        .copy { margin-top: 16px; font-size: 13px; color: var(--muted); }
+        .other { margin-top: 26px; padding-top: 18px; border-top: 1px solid #E2E6EC; font-size: 14px; color: var(--slate); line-height: 1.5; }
+        .other a { color: var(--navy); font-weight: 600; text-underline-offset: 3px; }
+        .copy { margin-top: 12px; font-size: 13px; color: var(--muted); }
 
-        :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
-        .school :focus-visible { outline-color: #93C5FD; }
+        :focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 
-        @keyframes rise    { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-        @keyframes drop    { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-        @keyframes line-up { from { transform: translateY(105%); } to { transform: none; } }
-        @keyframes grow    { from { transform: scaleX(0); } to { transform: none; } }
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes spin    { to { transform: rotate(360deg); } }
-        @keyframes shake   { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-6px); } 40%, 60% { transform: translateX(6px); } }
+        @keyframes spin  { to { transform: rotate(360deg); } }
+        @keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-6px); } 40%, 60% { transform: translateX(6px); } }
 
         @media (max-width: 960px) {
             .page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-            .school { padding: 24px; gap: 18px; }
-            .rings { width: 420px; height: 420px; right: -170px; top: auto; bottom: -230px; }
-            .seal { width: 52px; height: 52px; }
-            .school-name { font-size: 24px; }
-            .line { display: inline; }
-            .line > span { display: inline; animation-name: rise; }
-            .school-place { margin-top: 6px; font-size: 14px; }
-            .school-rule, .school-foot { display: none; }
-            .side { align-items: flex-start; padding: 32px 20px 40px; }
-            .panel h1 { font-size: 26px; }
+            .photo { height: 230px; }
+            .brand { top: 16px; left: 20px; }
+            .seal { width: 48px; height: 48px; }
+            .plate { width: 100%; padding: 14px 20px 16px; border-top-width: 3px; }
+            .plate-name { font-size: 20px; }
+            .plate-place { margin-top: 2px; font-size: 13.5px; }
+            .plate-note { display: none; }
+            .side { align-items: flex-start; padding: 28px 20px 40px; }
+            .panel { max-width: 440px; }
+            .panel h1 { font-size: 25px; }
             .lock { grid-template-columns: 1fr; justify-items: start; }
         }
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
-            .ring { stroke-dashoffset: 0; }
+            *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
         }
     </style>
 </head>
 <body>
 <main class="page">
 
-    <section class="school" aria-label="Sto. Domingo National High School">
-        <svg class="rings" viewBox="0 0 760 760" aria-hidden="true">
-            <g class="rings-move" id="rings">
-                <circle class="ring" style="--i:0" cx="380" cy="380" r="370" pathLength="1"/>
-                <circle class="ring" style="--i:1" cx="380" cy="380" r="310" pathLength="1"/>
-                <circle class="ring" style="--i:2" cx="380" cy="380" r="190" pathLength="1"/>
-                <circle class="ring" style="--i:3" cx="380" cy="380" r="130" pathLength="1"/>
-                <circle class="ring gold" style="--i:4" cx="380" cy="380" r="250" pathLength="1"/>
-                <g class="orbit"><circle cx="203" cy="557" r="5"/></g>
-            </g>
-        </svg>
-
-        <div class="school-top">
-            <span class="seal"><img src="{{ asset('images/logo.png') }}" alt="" width="58" height="58" decoding="async" fetchpriority="high"></span>
-            <p class="school-tag"><b>DP-LMS</b>Administration</p>
+    <section class="photo" aria-label="Sto. Domingo National High School">
+        <img class="scene" src="{{ asset('images/bg.jpg') }}" alt="" width="2048" height="907" decoding="async" fetchpriority="high">
+        <div class="brand">
+            <span class="seal"><img src="{{ asset('images/logo.png') }}" alt="" width="54" height="54" decoding="async"></span>
+            <p><b>DP-LMS</b>Administration</p>
         </div>
-
-        <div>
-            <span class="school-rule" aria-hidden="true"></span>
-            <p class="school-name">
-                <span class="line"><span style="--i:0">Sto. Domingo</span></span>
-                <span class="line"><span style="--i:1">National</span></span>
-                <span class="line"><span style="--i:2">High School</span></span>
-            </p>
-            <p class="school-place">San Manuel, Pangasinan</p>
+        <div class="plate">
+            <p class="plate-name">Sto. Domingo National High School</p>
+            <p class="plate-place">San Manuel, Pangasinan</p>
+            <p class="plate-note"><b>For school administrators only.</b> Every sign-in and failed attempt on this page is recorded in the audit log.</p>
         </div>
-
-        <p class="school-foot"><b>For school administrators only.</b> Every sign-in and failed attempt on this page is recorded in the audit log.</p>
     </section>
 
     <section class="side">
         <div class="panel">
-            <h1 class="enter" style="--i:1">Administrator sign in</h1>
-            <p class="lead enter" style="--i:2">Use the email and password of your administrator account.</p>
+            <h1>Administrator sign in</h1>
+            <p class="lead">Use the email and password of your administrator account.</p>
 
             @if ($lockSeconds > 0)
                 <div class="lock" role="alert" id="lock" data-seconds="{{ $lockSeconds }}">
                     <div class="lock-dial" aria-hidden="true">
-                        <svg viewBox="0 0 104 104"><circle class="track" cx="52" cy="52" r="46"/><circle class="left" id="lockRing" cx="52" cy="52" r="46" pathLength="1"/></svg>
+                        <svg viewBox="0 0 96 96"><circle class="track" cx="48" cy="48" r="42"/><circle class="left" id="lockRing" cx="48" cy="48" r="42" pathLength="1"/></svg>
                         <span class="lock-time" id="lockTime">{{ sprintf('%02d:%02d', intdiv($lockSeconds, 60), $lockSeconds % 60) }}</span>
                     </div>
                     <div>
@@ -237,10 +187,9 @@
                 <form method="POST" action="{{ route('admin.login.submit') }}" id="adminLoginForm" novalidate
                       class="{{ session('error') ? 'shake' : '' }}" @if (session('signed_out')) data-signed-out @endif>
                     @csrf
-                    <div class="field enter" style="--i:3">
+                    <div class="field">
                         <label for="admin-email">Email</label>
                         <div class="control">
-                            <svg class="lead-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 7l8 6 8-6"/></svg>
                             <input class="input" type="email" id="admin-email" name="email" value="{{ old('email') }}"
                                    autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required
                                    placeholder="name@school.edu.ph"
@@ -249,10 +198,9 @@
                         @error('email') <p class="field-error" id="err-email">{{ $message }}</p> @enderror
                     </div>
 
-                    <div class="field enter" style="--i:4">
+                    <div class="field">
                         <label for="admin-pw">Password</label>
                         <div class="control pw">
-                            <svg class="lead-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.03 5.91c-.56-.1-1.16.03-1.56.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.82c0-.6.24-1.17.66-1.59l6.5-6.5c.4-.4.53-1 .43-1.56A6 6 0 1121.75 8.25z"/></svg>
                             <input class="input" type="password" id="admin-pw" name="password" placeholder="Your password"
                                    autocomplete="current-password" required
                                    @error('password') aria-invalid="true" aria-describedby="err-pw" @enderror>
@@ -265,19 +213,15 @@
                         @error('password') <p class="field-error" id="err-pw">{{ $message }}</p> @enderror
                     </div>
 
-                    <button type="submit" class="submit enter" style="--i:5" id="adminSubmit">
-                        <svg class="padlock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="5" y="11" width="14" height="10" rx="2"/>
-                            <path class="shackle" stroke-linecap="round" d="M8 11V8a4 4 0 018 0v3"/>
-                        </svg>
+                    <button type="submit" class="submit" id="adminSubmit">
                         <span class="spinner" aria-hidden="true"></span>
                         <span id="adminSubmitText">Sign in</span>
                     </button>
                 </form>
             @endif
 
-            <p class="other enter" style="--i:6">Students, teachers and parents sign in on the <a href="{{ route('login') }}">main sign-in page</a>.</p>
-            <p class="copy enter" style="--i:7">&copy; {{ date('Y') }} Sto. Domingo National High School</p>
+            <p class="other">Students, teachers and parents sign in on the <a href="{{ route('login') }}">main sign-in page</a>.</p>
+            <p class="copy">&copy; {{ date('Y') }} Sto. Domingo National High School</p>
         </div>
     </section>
 
@@ -289,7 +233,6 @@
     const pw = document.getElementById('admin-pw');
     const toggle = document.getElementById('pwToggle');
     const submit = document.getElementById('adminSubmit');
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     function showPassword(on) {
@@ -356,20 +299,6 @@
         pw.value = '';
         showPassword(false);
     });
-
-    // The seal rings follow the pointer a little (desktop only); transform only, one frame at a time
-    const rings = document.getElementById('rings');
-    const panel = document.querySelector('.school');
-    if (rings && panel && finePointer && !reduceMotion) {
-        let frame = 0, x = 0, y = 0;
-        panel.addEventListener('pointermove', (e) => {
-            const r = panel.getBoundingClientRect();
-            x = ((e.clientX - r.left) / r.width - .5) * -24;
-            y = ((e.clientY - r.top) / r.height - .5) * -24;
-            if (!frame) frame = requestAnimationFrame(() => { rings.style.transform = `translate(${x}px, ${y}px)`; frame = 0; });
-        });
-        panel.addEventListener('pointerleave', () => { rings.style.transform = ''; });
-    }
 
     // Lockout: the time comes from the server; when it ends, reload so the server decides again
     const lock = document.getElementById('lock');
